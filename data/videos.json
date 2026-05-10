@@ -1,0 +1,92 @@
+[
+  {
+    "id": 1,
+    "title": "Pengenalan SIPIL CARE dan Alur Belajar",
+    "category": "Akademik",
+    "duration": "08:20",
+    "description": "Panduan memakai platform resource akademik secara efektif.",
+    "youtube": "#",
+    "thumbnail": "SC"
+  },
+  {
+    "id": 2,
+    "title": "ETABS Dasar untuk Gedung Beton",
+    "category": "Software",
+    "duration": "24:10",
+    "description": "Pemodelan awal gedung beton bertulang dengan ETABS.",
+    "youtube": "#",
+    "thumbnail": "ET"
+  },
+  {
+    "id": 3,
+    "title": "SAP2000: Analisis Rangka Batang",
+    "category": "Software",
+    "duration": "19:45",
+    "description": "Workflow analisis struktur rangka batang dari nol.",
+    "youtube": "#",
+    "thumbnail": "SP"
+  },
+  {
+    "id": 4,
+    "title": "AutoCAD Sipil: Layout dan Plotting",
+    "category": "Software",
+    "duration": "17:30",
+    "description": "Merapikan gambar kerja, layout, dan plotting profesional.",
+    "youtube": "#",
+    "thumbnail": "AC"
+  },
+  {
+    "id": 5,
+    "title": "Civil 3D: Surface dan Alignment",
+    "category": "Software",
+    "duration": "28:50",
+    "description": "Membangun surface, alignment, dan profil jalan.",
+    "youtube": "#",
+    "thumbnail": "C3"
+  },
+  {
+    "id": 6,
+    "title": "Konsep Dasar Mekanika Tanah",
+    "category": "Geoteknik",
+    "duration": "22:05",
+    "description": "Klasifikasi tanah, parameter dasar, dan pemadatan.",
+    "youtube": "#",
+    "thumbnail": "GT"
+  },
+  {
+    "id": 7,
+    "title": "Perencanaan Beban Gempa SNI 1726",
+    "category": "SNI",
+    "duration": "31:15",
+    "description": "Membaca parameter gempa dan menentukan respons spektrum.",
+    "youtube": "#",
+    "thumbnail": "SN"
+  },
+  {
+    "id": 8,
+    "title": "Desain Balok Beton Bertulang",
+    "category": "Struktur",
+    "duration": "27:40",
+    "description": "Konsep lentur, geser, tulangan, dan kapasitas.",
+    "youtube": "#",
+    "thumbnail": "ST"
+  },
+  {
+    "id": 9,
+    "title": "Dasar Hidrologi untuk Drainase",
+    "category": "Hidrologi",
+    "duration": "20:55",
+    "description": "Curah hujan, intensitas, debit, dan saluran drainase.",
+    "youtube": "#",
+    "thumbnail": "HD"
+  },
+  {
+    "id": 10,
+    "title": "Manajemen Proyek: Kurva S dan Scheduling",
+    "category": "Manajemen Konstruksi",
+    "duration": "26:35",
+    "description": "Jadwal, bobot pekerjaan, dan monitoring progres.",
+    "youtube": "#",
+    "thumbnail": "MK"
+  }
+]

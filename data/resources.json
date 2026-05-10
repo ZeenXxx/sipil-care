@@ -1,36 +1,321 @@
 [
   {
-    "title": "SNI 2847:2019",
+    "id": 1,
+    "title": "SNI 2847:2019 Persyaratan Beton Struktural",
     "category": "SNI",
-    "description": "Structural concrete requirements for buildings.",
-    "link": "#"
+    "type": "PDF",
+    "author": "BSN",
+    "date": "2026-02-01",
+    "description": "Standar acuan desain beton struktural untuk gedung dan infrastruktur.",
+    "file": "#",
+    "thumbnail": "SNI"
   },
-
   {
-    "title": "SNI Gempa 1726:2019",
+    "id": 2,
+    "title": "SNI 1726:2019 Tata Cara Ketahanan Gempa",
     "category": "SNI",
-    "description": "Seismic resistance design standards.",
-    "link": "#"
+    "type": "PDF",
+    "author": "BSN",
+    "date": "2026-02-02",
+    "description": "Referensi parameter gempa, sistem struktur, dan analisis seismik.",
+    "file": "#",
+    "thumbnail": "SNI"
   },
-
   {
-    "title": "Reinforced Concrete Module",
-    "category": "Module",
-    "description": "Learning module for reinforced concrete structures.",
-    "link": "#"
+    "id": 3,
+    "title": "SNI 1727:2020 Beban Desain Minimum",
+    "category": "SNI",
+    "type": "PDF",
+    "author": "BSN",
+    "date": "2026-02-03",
+    "description": "Pedoman pembebanan mati, hidup, angin, hujan, dan kombinasi beban.",
+    "file": "#",
+    "thumbnail": "SNI"
   },
-
   {
-    "title": "ETABS Beginner Tutorial",
+    "id": 4,
+    "title": "SNI 1729:2020 Spesifikasi Bangunan Baja",
+    "category": "SNI",
+    "type": "PDF",
+    "author": "BSN",
+    "date": "2026-02-04",
+    "description": "Acuan desain elemen baja, sambungan, stabilitas, dan kekuatan.",
+    "file": "#",
+    "thumbnail": "SNI"
+  },
+  {
+    "id": 5,
+    "title": "SNI 8460:2017 Persyaratan Geoteknik",
+    "category": "SNI",
+    "type": "PDF",
+    "author": "BSN",
+    "date": "2026-02-05",
+    "description": "Standar penyelidikan tanah, fondasi, dan rekomendasi geoteknik.",
+    "file": "#",
+    "thumbnail": "SNI"
+  },
+  {
+    "id": 6,
+    "title": "SNI 2052:2017 Baja Tulangan Beton",
+    "category": "SNI",
+    "type": "PDF",
+    "author": "BSN",
+    "date": "2026-02-06",
+    "description": "Spesifikasi baja tulangan beton untuk pekerjaan struktur.",
+    "file": "#",
+    "thumbnail": "SNI"
+  },
+  {
+    "id": 7,
+    "title": "SNI 2415:2016 Tata Cara Perhitungan Debit Banjir",
+    "category": "SNI",
+    "type": "PDF",
+    "author": "BSN",
+    "date": "2026-02-07",
+    "description": "Rujukan hidrologi untuk estimasi debit banjir rencana.",
+    "file": "#",
+    "thumbnail": "SNI"
+  },
+  {
+    "id": 8,
+    "title": "SNI 03-1732-1989 Tebal Perkerasan Lentur",
+    "category": "SNI",
+    "type": "PDF",
+    "author": "BSN",
+    "date": "2026-02-08",
+    "description": "Pedoman awal perencanaan tebal perkerasan lentur jalan.",
+    "file": "#",
+    "thumbnail": "SNI"
+  },
+  {
+    "id": 9,
+    "title": "SNI 03-3424-1994 Drainase Permukaan Jalan",
+    "category": "SNI",
+    "type": "PDF",
+    "author": "BSN",
+    "date": "2026-02-09",
+    "description": "Standar perencanaan saluran drainase permukaan jalan.",
+    "file": "#",
+    "thumbnail": "SNI"
+  },
+  {
+    "id": 10,
+    "title": "SNI 7973:2013 Struktur Kayu",
+    "category": "SNI",
+    "type": "PDF",
+    "author": "BSN",
+    "date": "2026-02-10",
+    "description": "Ketentuan desain elemen dan sambungan struktur kayu.",
+    "file": "#",
+    "thumbnail": "SNI"
+  },
+  {
+    "id": 11,
+    "title": "Modul Mekanika Tanah Dasar",
+    "category": "Geoteknik",
+    "type": "PDF",
+    "author": "Tim Akademik",
+    "date": "2026-02-11",
+    "description": "Sifat indeks tanah, klasifikasi, pemadatan, dan permeabilitas.",
+    "file": "#",
+    "thumbnail": "GEO"
+  },
+  {
+    "id": 12,
+    "title": "Modul Analisis Struktur I",
+    "category": "Struktur",
+    "type": "PDF",
+    "author": "Tim Struktur",
+    "date": "2026-02-12",
+    "description": "Reaksi perletakan, gaya dalam, rangka batang, dan garis pengaruh.",
+    "file": "#",
+    "thumbnail": "STR"
+  },
+  {
+    "id": 13,
+    "title": "Modul Analisis Struktur Baja",
+    "category": "Struktur",
+    "type": "PDF",
+    "author": "Tim Struktur",
+    "date": "2026-02-13",
+    "description": "Desain tarik, tekan, lentur, geser, dan sambungan baja.",
+    "file": "#",
+    "thumbnail": "STR"
+  },
+  {
+    "id": 14,
+    "title": "Modul Hidrologi Terapan",
+    "category": "Hidrologi",
+    "type": "PDF",
+    "author": "Tim Hidro",
+    "date": "2026-02-14",
+    "description": "Curah hujan rencana, hidrograf, debit banjir, dan analisis DAS.",
+    "file": "#",
+    "thumbnail": "HID"
+  },
+  {
+    "id": 15,
+    "title": "Modul Drainase Perkotaan",
+    "category": "Hidrologi",
+    "type": "PDF",
+    "author": "Tim Hidro",
+    "date": "2026-02-15",
+    "description": "Perencanaan saluran dan pengendalian limpasan kota.",
+    "file": "#",
+    "thumbnail": "HID"
+  },
+  {
+    "id": 16,
+    "title": "Modul Perencanaan Jalan Raya",
+    "category": "Transportasi",
+    "type": "PDF",
+    "author": "Tim Transportasi",
+    "date": "2026-02-16",
+    "description": "Geometrik jalan, alinyemen, superelevasi, dan perkerasan.",
+    "file": "#",
+    "thumbnail": "TRN"
+  },
+  {
+    "id": 17,
+    "title": "Modul Manajemen Konstruksi",
+    "category": "Manajemen Konstruksi",
+    "type": "PDF",
+    "author": "Tim MK",
+    "date": "2026-02-17",
+    "description": "WBS, scheduling, kurva S, biaya, mutu, dan risiko konstruksi.",
+    "file": "#",
+    "thumbnail": "MK"
+  },
+  {
+    "id": 18,
+    "title": "Template Laporan Praktikum Beton",
+    "category": "Struktur",
+    "type": "DOCX",
+    "author": "Laboratorium",
+    "date": "2026-02-18",
+    "description": "Format laporan uji slump, kuat tekan beton, dan analisis hasil.",
+    "file": "#",
+    "thumbnail": "DOC"
+  },
+  {
+    "id": 19,
+    "title": "Spreadsheet RAB Pekerjaan Gedung",
+    "category": "Manajemen Konstruksi",
+    "type": "XLSX",
+    "author": "PENDPROF",
+    "date": "2026-02-19",
+    "description": "Template volume, AHSP, rekap biaya, dan cashflow sederhana.",
+    "file": "#",
+    "thumbnail": "XLS"
+  },
+  {
+    "id": 20,
+    "title": "Template Presentasi Seminar Proposal",
+    "category": "Manajemen Konstruksi",
+    "type": "PPT",
+    "author": "PENDPROF",
+    "date": "2026-02-20",
+    "description": "Slide akademik untuk proposal, metodologi, dan timeline.",
+    "file": "#",
+    "thumbnail": "PPT"
+  },
+  {
+    "id": 21,
+    "title": "Tutorial ETABS Pemodelan Gedung 5 Lantai",
     "category": "Software",
-    "description": "Introduction and modeling basics using ETABS.",
-    "link": "#"
+    "type": "PDF",
+    "author": "Software Lab",
+    "date": "2026-02-21",
+    "description": "Pemodelan grid, material, section, load pattern, dan analisis.",
+    "file": "#",
+    "thumbnail": "ETA"
   },
-
   {
-    "title": "Hydrology Learning Video",
-    "category": "Video",
-    "description": "Educational video for hydrology fundamentals.",
-    "link": "#"
+    "id": 22,
+    "title": "Tutorial SAP2000 Rangka Batang",
+    "category": "Software",
+    "type": "PDF",
+    "author": "Software Lab",
+    "date": "2026-02-22",
+    "description": "Pemodelan truss, release, load case, dan interpretasi gaya.",
+    "file": "#",
+    "thumbnail": "SAP"
+  },
+  {
+    "id": 23,
+    "title": "Tutorial AutoCAD Sipil untuk Gambar Kerja",
+    "category": "Software",
+    "type": "PDF",
+    "author": "CAD Lab",
+    "date": "2026-02-23",
+    "description": "Layer, lineweight, dimensi, layout, plotting, dan standar gambar.",
+    "file": "#",
+    "thumbnail": "CAD"
+  },
+  {
+    "id": 24,
+    "title": "Civil 3D Tutorial Alignment dan Corridor",
+    "category": "Software",
+    "type": "PDF",
+    "author": "CAD Lab",
+    "date": "2026-02-24",
+    "description": "Workflow surface, alignment, profile, assembly, dan corridor jalan.",
+    "file": "#",
+    "thumbnail": "C3D"
+  },
+  {
+    "id": 25,
+    "title": "Template Excel Analisis Hidrologi",
+    "category": "Hidrologi",
+    "type": "XLSX",
+    "author": "PENDPROF",
+    "date": "2026-02-25",
+    "description": "Hujan rencana, distribusi probabilitas, dan debit rencana.",
+    "file": "#",
+    "thumbnail": "XLS"
+  },
+  {
+    "id": 26,
+    "title": "Paket Referensi Tugas Akhir Struktur",
+    "category": "Struktur",
+    "type": "ZIP",
+    "author": "PENDPROF",
+    "date": "2026-02-26",
+    "description": "Format, checklist, dan referensi awal untuk TA struktur.",
+    "file": "#",
+    "thumbnail": "ZIP"
+  },
+  {
+    "id": 27,
+    "title": "Modul Struktur Beton Bertulang",
+    "category": "Struktur",
+    "type": "PDF",
+    "author": "Tim Struktur",
+    "date": "2026-03-28",
+    "description": "Modul desain balok, pelat, kolom, dan detailing beton bertulang.",
+    "file": "#",
+    "thumbnail": "STR"
+  },
+  {
+    "id": 28,
+    "title": "Tutorial Tekla Structures Dasar",
+    "category": "Software",
+    "type": "PDF",
+    "author": "Software Lab",
+    "date": "2026-03-29",
+    "description": "Pengenalan modelling struktur baja dan detailing menggunakan Tekla.",
+    "file": "#",
+    "thumbnail": "TEK"
+  },
+  {
+    "id": 29,
+    "title": "Tutorial Microsoft Project untuk Konstruksi",
+    "category": "Software",
+    "type": "PDF",
+    "author": "Software Lab",
+    "date": "2026-03-30",
+    "description": "Penyusunan jadwal proyek, baseline, dan tracking progres konstruksi.",
+    "file": "#",
+    "thumbnail": "MSP"
   }
 ]
