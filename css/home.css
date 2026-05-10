@@ -183,67 +183,51 @@
 }
 /* ================= MOBILE RESPONSIVE ================= */
 
-@media screen and (max-width: 768px) {
+@media(max-width:768px){
 
-  .hero {
+  .hero{
 
-    min-height: auto;
+    min-height:auto;
 
-    padding: 70px 20px 60px;
+    padding:80px 20px 60px;
   }
 
-  .hero-content {
+  .hero-content h2{
 
-    max-width: 100%;
+    font-size:32px;
+
+    line-height:1.2;
   }
 
-  .hero-content h2 {
+  .hero-content p{
 
-    font-size: 42px;
+    font-size:16px;
 
-    line-height: 1.2;
+    line-height:1.8;
   }
 
-  .hero-content p {
+  .hero-buttons{
 
-    font-size: 16px;
+    flex-direction:column;
 
-    line-height: 1.8;
-
-    padding: 0;
+    gap:14px;
   }
 
-  .hero-buttons {
+  .hero-buttons a{
 
-    flex-direction: column;
+    width:220px;
 
-    align-items: center;
-
-    gap: 14px;
+    margin:auto;
   }
 
-  .hero-buttons a {
+  .quick-access{
 
-    width: 220px;
-
-    text-align: center;
+    padding:60px 20px;
   }
 
-  .access-grid {
+  .access-grid{
 
-    grid-template-columns: 1fr;
-
-    gap: 20px;
-  }
-
-  .quick-access {
-
-    padding: 60px 20px;
-  }
-
-  .quick-access h3 {
-
-    font-size: 42px;
+    grid-template-columns:1fr;
   }
 
 }
