@@ -39,3 +39,8 @@ img {
   width: 100%;
   display: block;
 }
+html,
+body {
+
+  overflow-x: hidden;
+}
