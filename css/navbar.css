@@ -133,3 +133,93 @@
   }
 
 }
+/* ================= FINAL MOBILE FIX ================= */
+
+@media screen and (max-width: 768px) {
+
+  .navbar {
+
+    position: relative !important;
+
+    display: flex !important;
+
+    justify-content: space-between !important;
+
+    align-items: center !important;
+
+    flex-wrap: wrap !important;
+
+    padding: 16px 20px !important;
+  }
+
+  .menu-toggle {
+
+    display: block !important;
+
+    font-size: 34px !important;
+
+    cursor: pointer !important;
+
+    color: #005c45 !important;
+
+    z-index: 1001 !important;
+  }
+
+  .nav-links {
+
+    position: absolute !important;
+
+    top: 100% !important;
+
+    left: 20px !important;
+
+    right: 20px !important;
+
+    width: auto !important;
+
+    display: none !important;
+
+    flex-direction: column !important;
+
+    background: white !important;
+
+    border-radius: 18px !important;
+
+    overflow: hidden !important;
+
+    box-shadow: 0 10px 25px rgba(0,0,0,0.1) !important;
+
+    border: 1px solid #eee !important;
+
+    z-index: 999 !important;
+  }
+
+  .nav-links.active {
+
+    display: flex !important;
+  }
+
+  .nav-links a {
+
+    width: 100% !important;
+
+    padding: 18px 22px !important;
+
+    border-bottom: 1px solid #f1f1f1 !important;
+
+    background: white !important;
+  }
+
+  .hero {
+
+    padding-top: 80px !important;
+  }
+
+  .hero-content h2 {
+
+    font-size: 34px !important;
+
+    line-height: 1.2 !important;
+  }
+
+}
