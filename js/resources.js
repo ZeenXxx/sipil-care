@@ -1,40 +1,89 @@
 const resourceGrid =
   document.getElementById("resourceGrid");
 
+const searchInput =
+  document.getElementById("searchInput");
+
+let resourcesData = [];
+
+function displayResources(data) {
+
+  resourceGrid.innerHTML = "";
+
+  data.forEach(resource => {
+
+    const card = document.createElement("div");
+
+    card.classList.add("resource-card");
+
+    card.innerHTML = `
+
+      <div class="resource-top">
+
+        <span class="resource-category">
+          ${resource.category}
+        </span>
+
+      </div>
+
+      <h3>${resource.title}</h3>
+
+      <p>${resource.description}</p>
+
+      <a href="${resource.link}">
+        View Resource
+      </a>
+
+    `;
+
+    resourceGrid.appendChild(card);
+
+  });
+
+}
+
 fetch("../data/resources.json")
 
   .then(response => response.json())
 
   .then(data => {
 
-    data.forEach(resource => {
+    resourcesData = data;
 
-      const card = document.createElement("div");
+    displayResources(resourcesData);
 
-      card.classList.add("resource-card");
+  });
 
-      card.innerHTML = `
+searchInput.addEventListener("input", () => {
 
-        <div class="resource-top">
+  const keyword =
+    searchInput.value.toLowerCase();
 
-          <span class="resource-category">
-            ${resource.category}
-          </span>
+  const filteredResources =
+    resourcesData.filter(resource => {
 
-        </div>
+      return (
 
-        <h3>${resource.title}</h3>
+        resource.title
+          .toLowerCase()
+          .includes(keyword)
 
-        <p>${resource.description}</p>
+        ||
 
-        <a href="${resource.link}">
-          View Resource
-        </a>
+        resource.category
+          .toLowerCase()
+          .includes(keyword)
 
-      `;
+        ||
 
-      resourceGrid.appendChild(card);
+        resource.description
+          .toLowerCase()
+          .includes(keyword)
+
+      );
 
     });
 
-  });
+  displayResources(filteredResources);
+
+});
