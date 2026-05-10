@@ -630,9 +630,3 @@ textarea {
     background:var(--primary);
     color:#fff;
 }
-.focus-box{
-    margin-top:28px;
-    padding:20px;
-    background:var(--soft);
-    border-radius:18px;
-}
