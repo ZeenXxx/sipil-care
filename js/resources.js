@@ -1,120 +1,40 @@
-let resources = [];
+const resourceGrid =
+  document.getElementById("resourceGrid");
 
-const resourceGrid = document.getElementById(
-  "resourceGrid"
-);
+fetch("../data/resources.json")
 
-const filterButtons = document.querySelectorAll(
-  ".category-filter button"
-);
+  .then(response => response.json())
 
-const searchInput = document.getElementById(
-  "searchInput"
-);
+  .then(data => {
 
-async function loadResources() {
+    data.forEach(resource => {
 
-  const response = await fetch(
-    "../data/resources.json"
-  );
+      const card = document.createElement("div");
 
-  resources = await response.json();
-  const localResources = JSON.parse(
-  localStorage.getItem("resources")
-  ) || [];
+      card.classList.add("resource-card");
 
-resources = [...resources, ...localResources];
+      card.innerHTML = `
 
-  displayResources(resources);
+        <div class="resource-top">
 
-}
+          <span class="resource-category">
+            ${resource.category}
+          </span>
 
-function displayResources(data) {
+        </div>
 
-  resourceGrid.innerHTML = "";
+        <h3>${resource.title}</h3>
 
-  data.forEach(resource => {
+        <p>${resource.description}</p>
 
-    const card = document.createElement("div");
+        <a href="${resource.link}">
+          View Resource
+        </a>
 
-    card.classList.add("resource-card");
+      `;
 
-    card.innerHTML = `
-    
-      <div class="resource-top">
+      resourceGrid.appendChild(card);
 
-        <span class="resource-category">
-          ${resource.category}
-        </span>
-
-      </div>
-
-      <h3>${resource.title}</h3>
-
-      <p>${resource.description}</p>
-
-      <a 
-        href="${resource.link}" 
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        View Resource
-      </a>
-
-    `;
-
-    resourceGrid.appendChild(card);
+    });
 
   });
-
-}
-
-filterButtons.forEach(button => {
-
-  button.addEventListener("click", () => {
-
-    document
-      .querySelector(".category-filter .active")
-      .classList.remove("active");
-
-    button.classList.add("active");
-
-    const category = button.dataset.category;
-
-    if (category === "All") {
-
-      displayResources(resources);
-
-    } else {
-
-      const filtered = resources.filter(resource =>
-        resource.category === category
-      );
-
-      displayResources(filtered);
-
-    }
-
-  });
-
-});
-
-searchInput.addEventListener("keyup", () => {
-
-  const keyword = searchInput.value.toLowerCase();
-
-  const filtered = resources.filter(resource =>
-
-    resource.title.toLowerCase().includes(keyword) ||
-
-    resource.description.toLowerCase().includes(keyword) ||
-
-    resource.category.toLowerCase().includes(keyword)
-
-  );
-
-  displayResources(filtered);
-
-});
-
-loadResources();
