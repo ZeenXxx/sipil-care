@@ -187,16 +187,16 @@
 
   .hero {
 
-    padding: 80px 20px 60px !important;
+  padding: 140px 20px 70px !important;
   }
 
   .hero h2 {
 
-    font-size: 58px !important;
+  font-size: 38px !important;
 
-    line-height: 1.15 !important;
+  line-height: 1.2;
 
-    text-align: center;
+  text-align: center;
   }
 
   .hero p {
