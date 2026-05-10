@@ -1,0 +1,165 @@
+.resource-header {
+  padding: 100px 80px 60px;
+
+  text-align: center;
+}
+
+.resource-header h2 {
+  font-size: 52px;
+
+  color: var(--primary);
+
+  margin-bottom: 20px;
+}
+
+.resource-header p {
+  max-width: 700px;
+
+  margin: auto;
+
+  line-height: 1.8;
+
+  color: #666;
+}
+
+.search-section {
+  display: flex;
+  justify-content: center;
+
+  padding-bottom: 40px;
+}
+
+.search-section input {
+  width: 600px;
+
+  padding: 18px 24px;
+
+  border-radius: 14px;
+
+  border: 1px solid var(--border);
+
+  font-size: 16px;
+
+  outline: none;
+}
+
+.category-filter {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+
+  padding-bottom: 60px;
+
+  flex-wrap: wrap;
+}
+
+.category-filter button {
+  padding: 12px 22px;
+
+  border-radius: 10px;
+
+  border: none;
+
+  background-color: white;
+
+  cursor: pointer;
+
+  font-weight: 600;
+
+  transition: 0.3s;
+}
+
+.category-filter button.active {
+  background-color: var(--primary);
+  color: white;
+}
+
+.category-filter button:hover {
+  background-color: var(--primary);
+  color: white;
+}
+
+.resource-grid {
+  display: grid;
+
+  grid-template-columns: repeat(3, 1fr);
+
+  gap: 30px;
+
+  padding: 0 80px 100px;
+}
+
+.resource-card {
+  background-color: white;
+
+  padding: 30px;
+
+  border-radius: 18px;
+
+  border: 1px solid var(--border);
+
+  transition: 0.3s;
+}
+
+.resource-card:hover {
+  transform: translateY(-6px);
+
+  box-shadow: 0 8px 20px rgba(0,0,0,0.06);
+}
+
+.resource-category {
+  background-color: rgba(15,77,58,0.1);
+
+  color: var(--primary);
+
+  padding: 8px 14px;
+
+  border-radius: 30px;
+
+  font-size: 14px;
+
+  font-weight: 600;
+}
+
+.resource-card h3 {
+  margin: 25px 0 15px;
+
+  color: var(--primary);
+}
+
+.resource-card p {
+  color: #666;
+
+  line-height: 1.7;
+
+  margin-bottom: 25px;
+}
+
+.resource-card a {
+  color: var(--primary);
+
+  font-weight: 600;
+}
+.footer {
+  width: 100%;
+
+  background: linear-gradient(
+    to right,
+    #0F4D3A,
+    #146C43
+  );
+
+  color: white;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  text-align: center;
+
+  padding: 28px;
+
+  margin-top: 80px;
+
+  font-size: 15px;
+}

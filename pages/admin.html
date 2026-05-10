@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Admin Panel - PENDPROF</title>
+
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="stylesheet" href="../css/navbar.css">
+  <link rel="stylesheet" href="../css/admin.css">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+
+  <!-- NAVBAR -->
+
+  <header class="navbar">
+
+    <div class="logo-section">
+
+      <img src="../assets/images/logo-hms.png" alt="Logo HMS">
+
+      <div class="logo-text">
+        <h1>PENDPROF</h1>
+        <p>Engineering Resource Platform</p>
+      </div>
+
+    </div>
+
+  </header>
+
+  <!-- ADMIN PANEL -->
+
+  <section class="admin-panel">
+
+    <div class="admin-container">
+
+      <h2>Add New Resource</h2>
+
+      <form id="resourceForm">
+
+        <input
+          type="text"
+          id="title"
+          placeholder="Resource Title"
+          required
+        >
+
+        <input
+          type="text"
+          id="category"
+          placeholder="Category"
+          required
+        >
+
+        <textarea
+          id="description"
+          placeholder="Description"
+          required
+        ></textarea>
+
+        <input
+          type="url"
+          id="link"
+          placeholder="Resource Link"
+          required
+        >
+
+        <button type="submit">
+          Add Resource
+        </button>
+
+      </form>
+
+    </div>
+
+  </section>
+
+  <script src="../js/admin.js"></script>
+
+</body>
+
+</html>

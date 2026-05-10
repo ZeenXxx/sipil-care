@@ -1,0 +1,41 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  --primary: #0F4D3A;
+  --accent: #D9C529;
+  --dark: #2B2B2B;
+  --background: #F4F6F5;
+  --border: #D1D5DB;
+  --white: #FFFFFF;
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+
+  color: var(--dark);
+
+  background:
+  linear-gradient(
+  rgba(255,255,255,0.88),
+  rgba(255,255,255,0.88)
+  ),
+  url('../assets/images/engineering-bg.png');
+
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+img {
+  width: 100%;
+  display: block;
+}

@@ -1,0 +1,36 @@
+[
+  {
+    "category": "SNI",
+    "title": "SNI 2847:2019",
+    "description": "Structural concrete requirements for buildings.",
+    "link": "https://example.com/sni2847.pdf"
+  },
+
+  {
+    "category": "Module",
+    "title": "Reinforced Concrete Module",
+    "description": "Learning module for reinforced concrete structures.",
+    "link": "https://example.com/module.pdf"
+  },
+
+  {
+    "category": "Software",
+    "title": "ETABS Beginner Tutorial",
+    "description": "Introduction and modeling basics using ETABS.",
+    "link": "https://youtube.com"
+  },
+
+  {
+    "category": "Video",
+    "title": "Hydrology Learning Video",
+    "description": "Educational video for hydrology fundamentals.",
+    "link": "https://youtube.com"
+  },
+
+  {
+  "category": "Software",
+  "title": "SAP2000 Tutorial",
+  "description": "Basic SAP2000 structural modeling.",
+  "link": "https://youtube.com"
+  }
+]
