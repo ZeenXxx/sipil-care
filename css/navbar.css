@@ -249,3 +249,13 @@
     right: 16px;
   }
 }
+/* Force mobile menu to stay closed until the hamburger is clicked. */
+@media (max-width: 768px) {
+  .navbar .nav-links:not(.active) {
+    display: none !important;
+  }
+
+  .navbar .nav-links.active {
+    display: grid !important;
+  }
+}
