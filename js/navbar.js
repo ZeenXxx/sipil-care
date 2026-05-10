@@ -12,8 +12,9 @@ const closeMenu = () => {
 
 if (menuToggle && navLinks) {
   menuToggle.addEventListener('click', () => {
-    const isOpen = navLinks.classList.toggle('active');
+    const isOpen = !navLinks.classList.contains('active');
 
+    navLinks.classList.toggle('active', isOpen);
     menuToggle.classList.toggle('active', isOpen);
     menuToggle.setAttribute('aria-expanded', String(isOpen));
     document.body.classList.toggle('nav-open', isOpen);
