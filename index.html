@@ -1,1 +1,136 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><link rel="stylesheet" href="css/style.css?v=10"><link rel="stylesheet" href="css/navbar.css?v=10"><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"><link rel="stylesheet" href="css/home.css?v=10"><title>SIPIL CARE</title></head><body><header class="navbar"><a class="brand" href="index.html"><img src="assets/images/logo-hms.png" alt="Logo HMS"><span><strong>SIPIL CARE</strong><small>Center for Academic, Resource & Education</small></span></a><button class="menu-toggle" type="button" aria-label="Toggle navigation" aria-expanded="false"><span></span></button><nav class="nav-links"><a href="index.html">Home</a><a href="pages/resources.html">Resources</a><a href="pages/videos.html">Videos</a><a href="pages/about.html">About</a><a href="pages/developer.html">Developer</a><a href="pages/contact.html">Contact</a></nav></header><main><section class="hero"><div class="container hero-grid"><div><span class="eyebrow">Digital library teknik sipil</span><h1>Platform Resource Akademik untuk Mahasiswa Teknik Sipil</h1><p>Akses modul kuliah, standar SNI, tutorial software, spreadsheet, template laporan, dan video pembelajaran dalam satu platform modern.</p><div class="actions"><a class="btn btn-primary" href="pages/resources.html">Explore Resources</a><a class="btn btn-secondary" href="pages/about.html">Tentang Platform</a></div></div><div class="visual"><div class="visual-panel"><strong>Academic Engineering Hub</strong><p>Struktur, geoteknik, hidrologi, transportasi, software, dan manajemen konstruksi.</p><div class="mini"><span><b>26+</b>Resources</span><span><b>10+</b>Videos</span><span><b>7</b>Kategori</span></div></div></div></div></section><section class="section"><div class="container"><span class="eyebrow">Quick access</span><h2 class="title">Akses cepat kebutuhan akademik</h2><div class="grid g3"><a class="card quick" href="pages/resources.html"><span class="icon">SN</span><h3>SNI</h3><p>Resource pilihan untuk menunjang tugas, praktikum, dan pembelajaran Teknik Sipil.</p></a><a class="card quick" href="pages/resources.html"><span class="icon">MO</span><h3>Modul</h3><p>Resource pilihan untuk menunjang tugas, praktikum, dan pembelajaran Teknik Sipil.</p></a><a class="card quick" href="pages/resources.html"><span class="icon">SO</span><h3>Software</h3><p>Resource pilihan untuk menunjang tugas, praktikum, dan pembelajaran Teknik Sipil.</p></a><a class="card quick" href="pages/videos.html"><span class="icon">VI</span><h3>Video</h3><p>Resource pilihan untuk menunjang tugas, praktikum, dan pembelajaran Teknik Sipil.</p></a><a class="card quick" href="pages/resources.html"><span class="icon">SP</span><h3>Spreadsheet</h3><p>Resource pilihan untuk menunjang tugas, praktikum, dan pembelajaran Teknik Sipil.</p></a><a class="card quick" href="pages/resources.html"><span class="icon">TE</span><h3>Template laporan</h3><p>Resource pilihan untuk menunjang tugas, praktikum, dan pembelajaran Teknik Sipil.</p></a></div></div></section><section class="section soft"><div class="container"><span class="eyebrow">Featured</span><h2 class="title">Resource pilihan minggu ini</h2><div class="grid g3" id="featuredResources"></div></div></section><section class="section stats"><div class="container grid g4"><div class="stat"><b>26+</b><span>Resource akademik</span></div><div class="stat"><b>10+</b><span>Video pembelajaran</span></div><div class="stat"><b>10</b><span>File SNI utama</span></div><div class="stat"><b>7</b><span>Kategori teknik sipil</span></div></div></section><section class="section"><div class="container grid g2"><div><span class="eyebrow">About platform</span><h2 class="title">Dibuat untuk belajar teknik sipil yang lebih terstruktur</h2><p class="lead">SIPIL CARE membantu mahasiswa menemukan referensi yang sering dibutuhkan untuk tugas, praktikum, software, dan persiapan proyek akademik.</p></div><div class="card quick"><h3>Fokus pada kebutuhan nyata mahasiswa</h3><p>Dari standar SNI sampai template RAB, semua dirancang agar mudah dipindai, dicari, dan digunakan ulang saat mengerjakan tugas.</p></div></div></section><section class="section soft"><div class="container card quick" style="text-align:center"><span class="eyebrow">Start learning</span><h2 class="title">Mulai eksplor resource Teknik Sipil</h2><p class="lead" style="margin:auto auto 24px">Gunakan search dan filter untuk menemukan materi yang sesuai kebutuhan mata kuliah atau proyekmu.</p><a class="btn btn-primary" href="pages/resources.html">Buka Resource Library</a></div></section></main><footer class="site-footer"><div class="footer-grid"><div><a class="footer-brand" href="index.html"><img src="assets/images/logo-hms.png" alt="Logo HMS"><span>SIPIL CARE</span></a><p>Platform digital akademik Teknik Sipil untuk akses referensi, standar, modul, video, dan perangkat belajar mahasiswa.</p></div><div><h3>Navigasi</h3><a href="pages/resources.html">Resources</a><a href="pages/videos.html">Videos</a><a href="pages/about.html">About</a></div><div><h3>Kategori</h3><a href="pages/resources.html?category=SNI">SNI</a><a href="pages/resources.html?category=Software">Software</a><a href="pages/resources.html?category=Struktur">Struktur</a></div><div><h3>HMS Teknik Sipil</h3><p>Kampus UNJANI<br>Academic Resource Platform<br>2026</p></div></div><div class="footer-bottom"><span>© 2026 PENDPROF - HMS Teknik Sipil UNJANI</span><span>Built for civil engineering students.</span></div></footer><div class="toast" id="toast"></div><script src="js/navbar.js?v=10"></script><script src="js/script.js?v=10"></script></body></html>
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="css/style.css?v=10">
+    <link rel="stylesheet" href="css/navbar.css?v=10">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="css/home.css?v=10">
+    <title>SIPIL CARE</title>
+</head>
+
+<body>
+    <header class="navbar"><a class="brand" href="index.html"><img src="assets/images/logo-hms.png"
+                alt="Logo HMS"><span><strong>SIPIL CARE</strong><small>Center for Academic, Resource &
+                    Education</small></span></a><button class="menu-toggle" type="button" aria-label="Toggle navigation"
+            aria-expanded="false"><span></span></button>
+        <nav class="nav-links"><a href="index.html">Home</a><a href="pages/resources.html">Resources</a><a
+                href="pages/videos.html">Videos</a><a href="pages/about.html">About</a><a
+                href="pages/developer.html">Developer</a><a href="pages/contact.html">Contact</a></nav>
+    </header>
+    <main>
+        <section class="hero">
+            <div class="container hero-grid">
+                <div><span class="eyebrow">Digital library teknik sipil</span>
+                    <h1>Platform Resource Akademik untuk Mahasiswa Teknik Sipil</h1>
+                    <p>Akses modul kuliah, standar SNI, tutorial software, spreadsheet, template laporan, dan video
+                        pembelajaran dalam satu platform modern.</p>
+                    <div class="actions"><a class="btn btn-primary" href="pages/resources.html">Explore Resources</a><a
+                            class="btn btn-secondary" href="pages/about.html">Tentang Platform</a></div>
+                </div>
+                <div class="visual">
+                    <div class="visual-panel"><strong>Academic Engineering Hub</strong>
+                        <p>Struktur, geoteknik, hidrologi, transportasi, software, dan manajemen konstruksi.</p>
+                        <div class="mini">
+                            <span><b>26+</b>Resources</span><span><b>10+</b>Videos</span><span><b>7</b>Kategori</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <section class="section">
+            <div class="container"><span class="eyebrow">Quick access</span>
+                <h2 class="title">Akses cepat kebutuhan akademik</h2>
+                <div class="grid g3"><a class="card quick" href="pages/resources.html"><span class="icon">SN</span>
+                        <h3>SNI</h3>
+                        <p>Resource pilihan untuk menunjang tugas, praktikum, dan pembelajaran Teknik Sipil.</p>
+                    </a><a class="card quick" href="pages/resources.html"><span class="icon">MO</span>
+                        <h3>Modul</h3>
+                        <p>Resource pilihan untuk menunjang tugas, praktikum, dan pembelajaran Teknik Sipil.</p>
+                    </a><a class="card quick" href="pages/resources.html"><span class="icon">SO</span>
+                        <h3>Software</h3>
+                        <p>Resource pilihan untuk menunjang tugas, praktikum, dan pembelajaran Teknik Sipil.</p>
+                    </a><a class="card quick" href="pages/videos.html"><span class="icon">VI</span>
+                        <h3>Video</h3>
+                        <p>Resource pilihan untuk menunjang tugas, praktikum, dan pembelajaran Teknik Sipil.</p>
+                    </a><a class="card quick" href="pages/resources.html"><span class="icon">SP</span>
+                        <h3>Spreadsheet</h3>
+                        <p>Resource pilihan untuk menunjang tugas, praktikum, dan pembelajaran Teknik Sipil.</p>
+                    </a><a class="card quick" href="pages/resources.html"><span class="icon">TE</span>
+                        <h3>Template laporan</h3>
+                        <p>Resource pilihan untuk menunjang tugas, praktikum, dan pembelajaran Teknik Sipil.</p>
+                    </a></div>
+            </div>
+        </section>
+        <section class="section soft">
+            <div class="container"><span class="eyebrow">Featured</span>
+                <h2 class="title">Resource pilihan minggu ini</h2>
+                <div class="grid g3" id="featuredResources"></div>
+            </div>
+        </section>
+        <section class="section stats">
+            <div class="container grid g4">
+                <div class="stat"><b>26+</b><span>Resource akademik</span></div>
+                <div class="stat"><b>10+</b><span>Video pembelajaran</span></div>
+                <div class="stat"><b>10</b><span>File SNI utama</span></div>
+                <div class="stat"><b>7</b><span>Kategori teknik sipil</span></div>
+            </div>
+        </section>
+        <section class="section">
+            <div class="container grid g2">
+                <div><span class="eyebrow">About platform</span>
+                    <h2 class="title">Dibuat untuk belajar teknik sipil yang lebih terstruktur</h2>
+                    <p class="lead">SIPIL CARE membantu mahasiswa menemukan referensi yang sering dibutuhkan untuk
+                        tugas, praktikum, software, dan persiapan proyek akademik.</p>
+                </div>
+                <div class="card quick">
+                    <h3>Fokus pada kebutuhan nyata mahasiswa</h3>
+                    <p>Dari standar SNI sampai template RAB, semua dirancang agar mudah dipindai, dicari, dan digunakan
+                        ulang saat mengerjakan tugas.</p>
+                </div>
+            </div>
+        </section>
+        <section class="section soft">
+            <div class="container card quick" style="text-align:center"><span class="eyebrow">Start learning</span>
+                <h2 class="title">Mulai eksplor resource Teknik Sipil</h2>
+                <p class="lead" style="margin:auto auto 24px">Gunakan search dan filter untuk menemukan materi yang
+                    sesuai kebutuhan mata kuliah atau proyekmu.</p><a class="btn btn-primary"
+                    href="pages/resources.html">Buka Resource Library</a>
+            </div>
+        </section>
+    </main>
+    <footer class="site-footer">
+        <div class="footer-grid">
+            <div><a class="footer-brand" href="index.html"><img src="assets/images/logo-hms.png"
+                        alt="Logo HMS"><span>SIPIL CARE</span></a>
+                <p>Platform digital akademik Teknik Sipil untuk akses referensi, standar, modul, video, dan perangkat
+                    belajar mahasiswa.</p>
+            </div>
+            <div>
+                <h3>Navigasi</h3><a href="pages/resources.html">Resources</a><a href="pages/videos.html">Videos</a><a
+                    href="pages/about.html">About</a>
+            </div>
+            <div>
+                <h3>Kategori</h3><a href="pages/resources.html?category=SNI">SNI</a><a
+                    href="pages/resources.html?category=Software">Software</a><a
+                    href="pages/resources.html?category=Struktur">Struktur</a>
+            </div>
+            <div>
+                <h3>HMS Teknik Sipil</h3>
+                <p>Kampus UNJANI<br>Academic Resource Platform<br>2026</p>
+            </div>
+        </div>
+        <div class="footer-bottom"><span>© 2026 PENDPROF - HMS Teknik Sipil UNJANI</span><span>Built for civil
+                engineering students.</span></div>
+    </footer>
+    <div class="toast" id="toast"></div>
+    <script src="js/navbar.js?v=10"></script>
+    <script src="js/script.js?v=10"></script>
+</body>
+
+</html>

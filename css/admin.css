@@ -1,1 +1,224 @@
-.login-page{min-height:100vh;background:linear-gradient(120deg,rgba(15,77,58,.9),rgba(15,77,58,.55)),url('../assets/images/engineering-bg.png') center/cover}.login-shell{min-height:100vh;display:grid;place-items:center;padding:24px}.login-card{width:min(430px,100%);padding:34px;border:1px solid rgba(255,255,255,.26);border-radius:8px;background:rgba(255,255,255,.86);box-shadow:0 28px 80px rgba(0,0,0,.24);backdrop-filter:blur(18px)}.login-card h1{margin:10px 0;color:var(--primary);font-size:34px;line-height:1.1}.back-link{display:inline-block;margin-top:18px;color:var(--primary);font-weight:800}.admin-page{display:grid;grid-template-columns:280px 1fr;background:#eef4f1}.admin-sidebar{position:sticky;top:0;height:100vh;padding:24px;background:#0c3328;color:#fff}.admin-sidebar h1{font-size:22px}.admin-sidebar a,.admin-sidebar button{display:flex;width:100%;align-items:center;min-height:44px;margin:8px 0;padding:0 12px;border:0;border-radius:8px;background:transparent;color:#dbe9e4;text-align:left;font-weight:800}.admin-sidebar a:hover,.admin-sidebar button:hover{background:rgba(255,255,255,.1);color:#fff}.admin-main{padding:32px;display:grid;gap:24px}.admin-main h2{margin:8px 0 0;color:var(--primary);font-size:42px}.admin-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:22px}.admin-stat{padding:22px;border-radius:8px;background:#fff;border:1px solid var(--line);box-shadow:0 10px 26px rgba(15,77,58,.08)}.admin-stat b{display:block;color:var(--primary);font-size:34px}.admin-panel-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}.admin-card{padding:24px;border:1px solid var(--line);border-radius:8px;background:#fff;box-shadow:0 10px 26px rgba(15,77,58,.08)}.admin-card h3{margin-top:0;color:var(--primary)}.upload-box{display:grid;place-items:center;min-height:92px;padding:14px;border:1px dashed var(--primary);border-radius:8px;background:var(--soft);color:var(--primary);font-weight:800;text-align:center}.upload-box input{max-width:100%}.admin-table-head{display:flex;justify-content:space-between;gap:16px;align-items:center}.admin-table-head>div{display:flex;gap:10px}.table-wrap{overflow:auto}table{width:100%;border-collapse:collapse;min-width:760px}th,td{padding:14px;border-bottom:1px solid var(--line);text-align:left}th{color:var(--primary);font-size:13px;text-transform:uppercase;letter-spacing:.06em}.action-btn{min-height:34px;padding:0 10px;margin-right:6px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--primary);font-weight:800}.danger{color:#b42318}@media(max-width:900px){.admin-page{grid-template-columns:1fr}.admin-sidebar{position:relative;height:auto}.admin-main{padding:18px}.admin-stats,.admin-panel-grid{grid-template-columns:1fr}.admin-table-head{display:grid}.admin-table-head>div{display:grid}}
+.login-page {
+    min-height: 100vh;
+    background: linear-gradient(120deg, rgba(15, 77, 58, .9), rgba(15, 77, 58, .55)), url('../assets/images/engineering-bg.png') center/cover
+}
+
+.login-shell {
+    min-height: 100vh;
+    display: grid;
+    place-items: center;
+    padding: 24px
+}
+
+.login-card {
+    width: min(430px, 100%);
+    padding: 34px;
+    border: 1px solid rgba(255, 255, 255, .26);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, .86);
+    box-shadow: 0 28px 80px rgba(0, 0, 0, .24);
+    backdrop-filter: blur(18px)
+}
+
+.login-card h1 {
+    margin: 10px 0;
+    color: var(--primary);
+    font-size: 34px;
+    line-height: 1.1
+}
+
+.back-link {
+    display: inline-block;
+    margin-top: 18px;
+    color: var(--primary);
+    font-weight: 800
+}
+
+.admin-page {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    background: #eef4f1
+}
+
+.admin-sidebar {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    padding: 24px;
+    background: #0c3328;
+    color: #fff
+}
+
+.admin-sidebar h1 {
+    font-size: 22px
+}
+
+.admin-sidebar a,
+.admin-sidebar button {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    min-height: 44px;
+    margin: 8px 0;
+    padding: 0 12px;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: #dbe9e4;
+    text-align: left;
+    font-weight: 800
+}
+
+.admin-sidebar a:hover,
+.admin-sidebar button:hover {
+    background: rgba(255, 255, 255, .1);
+    color: #fff
+}
+
+.admin-main {
+    padding: 32px;
+    display: grid;
+    gap: 24px
+}
+
+.admin-main h2 {
+    margin: 8px 0 0;
+    color: var(--primary);
+    font-size: 42px
+}
+
+.admin-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-top: 22px
+}
+
+.admin-stat {
+    padding: 22px;
+    border-radius: 8px;
+    background: #fff;
+    border: 1px solid var(--line);
+    box-shadow: 0 10px 26px rgba(15, 77, 58, .08)
+}
+
+.admin-stat b {
+    display: block;
+    color: var(--primary);
+    font-size: 34px
+}
+
+.admin-panel-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px
+}
+
+.admin-card {
+    padding: 24px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #fff;
+    box-shadow: 0 10px 26px rgba(15, 77, 58, .08)
+}
+
+.admin-card h3 {
+    margin-top: 0;
+    color: var(--primary)
+}
+
+.upload-box {
+    display: grid;
+    place-items: center;
+    min-height: 92px;
+    padding: 14px;
+    border: 1px dashed var(--primary);
+    border-radius: 8px;
+    background: var(--soft);
+    color: var(--primary);
+    font-weight: 800;
+    text-align: center
+}
+
+.upload-box input {
+    max-width: 100%
+}
+
+.admin-table-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    align-items: center
+}
+
+.admin-table-head>div {
+    display: flex;
+    gap: 10px
+}
+
+.table-wrap {
+    overflow: auto
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 760px
+}
+
+th,
+td {
+    padding: 14px;
+    border-bottom: 1px solid var(--line);
+    text-align: left
+}
+
+th {
+    color: var(--primary);
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: .06em
+}
+
+.action-btn {
+    min-height: 34px;
+    padding: 0 10px;
+    margin-right: 6px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #fff;
+    color: var(--primary);
+    font-weight: 800
+}
+
+.danger {
+    color: #b42318
+}
+
+@media(max-width:900px) {
+    .admin-page {
+        grid-template-columns: 1fr
+    }
+
+    .admin-sidebar {
+        position: relative;
+        height: auto
+    }
+
+    .admin-main {
+        padding: 18px
+    }
+
+    .admin-stats,
+    .admin-panel-grid {
+        grid-template-columns: 1fr
+    }
+
+    .admin-table-head {
+        display: grid
+    }
+
+    .admin-table-head>div {
+        display: grid
+    }
+}
