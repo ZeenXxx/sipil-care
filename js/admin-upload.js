@@ -44,6 +44,7 @@ form.addEventListener('submit', async (e) => {
     const url = await getDownloadURL(fileRef);
 
     await addDoc(collection(db, 'resources'), {
+
       title,
       category,
       description,
@@ -52,6 +53,7 @@ form.addEventListener('submit', async (e) => {
       author: 'HMS Sipil',
       date: new Date().toISOString().split('T')[0],
       thumbnail: '📘'
+
     });
 
     alert('Upload berhasil');

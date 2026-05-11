@@ -23,78 +23,13 @@
                 href="contact.html">Contact</a></nav>
     </header>
     <main>
-
-    <section class="page-head">
-        <div class="container">
-
-            <span class="eyebrow">
-                Admin Upload
-            </span>
-
-            <h1>
-                Upload Resource SIPIL CARE
-            </h1>
-
-            <p class="lead">
-                Upload PDF resource secara langsung ke Firebase.
-            </p>
-
-        </div>
-    </section>
-
-    <section class="container">
-
-        <form id="uploadForm" class="card" style="padding:2rem;">
-
-            <input
-                type="text"
-                id="title"
-                placeholder="Judul Resource"
-                required
-            >
-
-            <br><br>
-
-            <select id="category">
-
-                <option value="SNI">SNI</option>
-                <option value="Struktur">Struktur</option>
-                <option value="Geoteknik">Geoteknik</option>
-                <option value="Hidrologi">Hidrologi</option>
-                <option value="Software">Software</option>
-
-            </select>
-
-            <br><br>
-
-            <textarea
-                id="description"
-                placeholder="Deskripsi resource"
-                rows="5"
-            ></textarea>
-
-            <br><br>
-
-            <input
-                type="file"
-                id="file"
-                accept=".pdf"
-                required
-            >
-
-            <br><br>
-
-            <button
-                type="submit"
-                class="btn btn-primary"
-            >
-                Upload Resource
-            </button>
-
-        </form>
-
-    </section>
-
+        <section class="page-head">
+            <div class="container"><span class="eyebrow">Admin access</span>
+                <h1>Panel admin tidak tersedia di navbar public</h1>
+                <p class="lead">Gunakan halaman login khusus untuk mengelola data lokal SIPIL CARE.</p><br><a
+                    class="btn btn-primary" href="../login.html">Masuk Admin</a>
+            </div>
+        </section>
     </main>
     <footer class="site-footer">
         <div class="footer-grid">
@@ -122,7 +57,6 @@
     </footer>
     <div class="toast" id="toast"></div>
     <script src="../js/navbar.js?v=10"></script>
-    <script type="module" src="./js/admin-upload.js"></script>
 </body>
 
 </html>
