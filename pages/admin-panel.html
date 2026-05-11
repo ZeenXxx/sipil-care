@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="stylesheet" href="../css/style.css?v=10">
+    <link rel="stylesheet" href="../css/navbar.css?v=10">
+
+    <title>Admin Panel - SIPIL CARE</title>
+
+</head>
+
+<body>
+
+    <header class="navbar">
+
+        <a class="brand" href="../index.html">
+
+            <img
+                src="../assets/images/logo-hms.png"
+                alt="Logo HMS"
+            >
+
+            <span>
+                <strong>SIPIL CARE</strong>
+            </span>
+
+        </a>
+
+    </header>
+
+    <main>
+
+        <section class="page-head">
+
+            <div class="container">
+
+                <span class="eyebrow">
+                    Admin Dashboard
+                </span>
+
+                <h1>
+                    Upload Resource
+                </h1>
+
+                <p class="lead">
+                    Upload PDF resource ke Firebase.
+                </p>
+
+            </div>
+
+        </section>
+
+        <section class="container">
+
+            <form
+                id="uploadForm"
+                class="card"
+                style="padding:2rem;"
+            >
+
+                <input
+                    type="text"
+                    id="title"
+                    placeholder="Judul Resource"
+                    required
+                >
+
+                <br><br>
+
+                <select id="category">
+
+                    <option value="SNI">SNI</option>
+                    <option value="Struktur">Struktur</option>
+                    <option value="Geoteknik">Geoteknik</option>
+                    <option value="Hidrologi">Hidrologi</option>
+                    <option value="Software">Software</option>
+
+                </select>
+
+                <br><br>
+
+                <textarea
+                    id="description"
+                    placeholder="Deskripsi resource"
+                    rows="5"
+                ></textarea>
+
+                <br><br>
+
+                <input
+                    type="file"
+                    id="file"
+                    accept=".pdf"
+                    required
+                >
+
+                <br><br>
+
+                <button
+                    type="submit"
+                    class="btn btn-primary"
+                >
+                    Upload Resource
+                </button>
+
+            </form>
+
+        </section>
+
+    </main>
+
+    <script
+        type="module"
+        src="../js/admin-upload.js"
+    ></script>
+
+</body>
+
+</html>
