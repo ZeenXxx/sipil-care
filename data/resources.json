@@ -18,7 +18,7 @@
     "author": "BSN",
     "date": "2026-02-02",
     "description": "Referensi parameter gempa, sistem struktur, dan analisis seismik.",
-    "file": "#",
+    "file": "../assets/pdf/SNI-1726-2019.pdf",
     "thumbnail": "SNI"
   },
   {
@@ -29,7 +29,7 @@
     "author": "BSN",
     "date": "2026-02-03",
     "description": "Pedoman pembebanan mati, hidup, angin, hujan, dan kombinasi beban.",
-    "file": "#",
+    "file": "../assets/pdf/SNI-1727-2020.pdf",
     "thumbnail": "SNI"
   },
   {
@@ -56,13 +56,13 @@
   },
   {
     "id": 6,
-    "title": "SNI 2052:2017 Baja Tulangan Beton",
+    "title": "SNI 2052:2024 Baja Tulangan Beton",
     "category": "SNI",
     "type": "PDF",
     "author": "BSN",
     "date": "2026-02-06",
     "description": "Spesifikasi baja tulangan beton untuk pekerjaan struktur.",
-    "file": "#",
+    "file": "..assets/pdf/SNI-2052-2024.pdf",
     "thumbnail": "SNI"
   },
   {
