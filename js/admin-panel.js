@@ -5,7 +5,10 @@ import {
   query,
   orderBy,
   onSnapshot,
-  addDoc
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  doc
 } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
 
 const db = getFirestore(app);
@@ -33,6 +36,7 @@ const adminStats = document.getElementById('adminStats');
 const toastEl = document.getElementById('toast');
 const submitButton = resourceForm?.querySelector('button[type="submit"]');
 let resources = [];
+let editingDocId = null;
 
 const toast = message => {
   if (!toastEl) return;
@@ -89,7 +93,7 @@ function table() {
         <td>${r.category}</td>
         <td>${r.type}</td>
         <td>${r.date}</td>
-        <td><button class="action-btn" data-edit="${r.id}">Edit</button><button class="action-btn danger" data-del="${r.id}">Delete</button></td>
+        <td><button class="action-btn" data-edit="${r.docId}">Edit</button><button class="action-btn danger" data-del="${r.docId}">Delete</button></td>
       </tr>
     `)
     .join('');
@@ -100,6 +104,13 @@ const render = () => {
   stats();
   filters();
   table();
+};
+
+const resetForm = () => {
+  resourceForm.reset();
+  editingDocId = null;
+  resourceId.value = '';
+  if (submitButton) submitButton.textContent = 'Simpan Resource';
 };
 
 resourceForm.addEventListener('submit', async e => {
@@ -122,10 +133,15 @@ resourceForm.addEventListener('submit', async e => {
       file: fileUrl
     };
 
-    await addDoc(collection(db, 'resources'), data);
-    resourceForm.reset();
-    render();
-    toast('Resource tersimpan ke Firestore.');
+    if (editingDocId) {
+      await updateDoc(doc(db, 'resources', editingDocId), data);
+      toast('Resource berhasil diperbarui.');
+    } else {
+      await addDoc(collection(db, 'resources'), data);
+      toast('Resource berhasil disimpan ke Firestore.');
+    }
+    
+    resetForm();
   } catch (err) {
     console.error('Save error:', err);
     toast('Gagal menyimpan resource. Cek console untuk detail.');
@@ -134,10 +150,38 @@ resourceForm.addEventListener('submit', async e => {
   }
 });
 
-resourceTable.addEventListener('click', e => {
-  if (e.target.dataset.del || e.target.dataset.edit) {
-    e.preventDefault();
-    toast('Fitur edit / hapus belum tersedia di panel ini.');
+resourceTable.addEventListener('click', async e => {
+  const docId = e.target.dataset.del || e.target.dataset.edit;
+  if (!docId) return;
+
+  if (e.target.dataset.del) {
+    if (confirm('Yakin hapus resource ini?')) {
+      try {
+        await deleteDoc(doc(db, 'resources', docId));
+        toast('Resource berhasil dihapus.');
+      } catch (err) {
+        console.error('Delete error:', err);
+        toast('Gagal menghapus resource.');
+      }
+    }
+  }
+
+  if (e.target.dataset.edit) {
+    const resource = resources.find(r => r.docId === docId);
+    if (resource) {
+      resourceId.value = docId;
+      resourceTitle.value = resource.title;
+      resourceCategory.value = resource.category;
+      resourceDescription.value = resource.description;
+      resourceAuthor.value = resource.author;
+      resourceDate.value = resource.date;
+      resourceThumb.value = resource.thumbnail;
+      resourceType.value = resource.type;
+      resourceFile.value = resource.file;
+      editingDocId = docId;
+      if (submitButton) submitButton.textContent = 'Update Resource';
+      resourceForm.scrollIntoView({ behavior: 'smooth' });
+    }
   }
 });
 
@@ -146,7 +190,10 @@ adminFilter.addEventListener('change', () => render());
 
 const resourcesQuery = query(collection(db, 'resources'), orderBy('date', 'desc'));
 onSnapshot(resourcesQuery, snapshot => {
-  resources = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  resources = snapshot.docs.map(doc => ({ 
+    docId: doc.id,
+    ...doc.data() 
+  }));
   render();
 }, err => {
   console.error('Firestore error:', err);
