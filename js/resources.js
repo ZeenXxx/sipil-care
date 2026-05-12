@@ -16,6 +16,7 @@ const pagination = document.getElementById('pagination');
 let resources = [];
 let current = 'All';
 let page = 1;
+const softwareElements = ['Struktur', 'Geoteknik', 'Hidrologi', 'Transportasi', 'Manajemen Konstruksi'];
 const cats = ['All', 'Struktur', 'Geoteknik', 'Hidrologi', 'Transportasi', 'Manajemen Konstruksi', 'Software', 'SNI'];
 const per = 9;
 const extractGoogleDriveId = (url) => {
@@ -140,10 +141,24 @@ function render() {
 const params = new URLSearchParams(location.search);
 if (params.get('category')) current = params.get('category');
 
+function normalizeResources(items) {
+  return items.map(item => {
+    const normalized = { ...item };
+    if (normalized.element && normalized.element !== '' && normalized.category !== 'Software') {
+      normalized.category = 'Software';
+    }
+    if (!normalized.element && softwareElements.includes(normalized.type) && normalized.category !== 'Software') {
+      normalized.category = 'Software';
+      normalized.element = normalized.type;
+    }
+    return normalized;
+  });
+}
+
 function loadResourcesFromFirestore() {
   const resourcesQuery = query(collection(db, 'resources'), orderBy('date', 'desc'));
   onSnapshot(resourcesQuery, snapshot => {
-    resources = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    resources = normalizeResources(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     renderFilters();
     render();
   }, err => {
@@ -151,7 +166,7 @@ function loadResourcesFromFirestore() {
     fetch('../data/resources.json')
       .then(r => r.json())
       .then(d => {
-        resources = d;
+        resources = normalizeResources(d);
         renderFilters();
         render();
       });
