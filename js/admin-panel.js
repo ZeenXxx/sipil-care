@@ -170,13 +170,13 @@ resourceForm.addEventListener('submit', async e => {
       toast('Resource berhasil diperbarui.');
     } else {
       await addDoc(collection(db, 'resources'), data);
-      toast('Resource berhasil disimpan ke Firestore.');
+      toast('Resource berhasil diupload.');
     }
     
     resetForm();
   } catch (err) {
     console.error('Save error:', err);
-    toast('Gagal menyimpan resource. Cek console untuk detail.');
+    toast('Gagal menyimpan resource. Coba ulang kembali.');
   } finally {
     setLoading(false);
   }
@@ -220,13 +220,13 @@ videoForm.addEventListener('submit', async e => {
       toast('Video berhasil diperbarui.');
     } else {
       await addDoc(collection(db, 'videos'), data);
-      toast('Video berhasil disimpan ke Firestore.');
+      toast('Video berhasil diupload.');
     }
     
     resetVideoForm();
   } catch (err) {
     console.error('Save video error:', err);
-    toast('Gagal menyimpan video. Cek console untuk detail.');
+    toast('Gagal menyimpan video. Coba ulang kembali.');
   } finally {
     setLoading(false);
   }
