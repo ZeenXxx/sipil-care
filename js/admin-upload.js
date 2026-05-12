@@ -65,6 +65,7 @@ form.addEventListener('submit', async (e) => {
     });
 
     const url = await getDownloadURL(fileRef);
+    const fileType = file.name.split('.').pop().toUpperCase();
 
     await addDoc(collection(db, 'resources'), {
 
@@ -72,7 +73,7 @@ form.addEventListener('submit', async (e) => {
       category,
       description,
       file: url,
-      type: 'PDF',
+      type: fileType,
       author: 'HMS Sipil',
       date: new Date().toISOString().split('T')[0],
       thumbnail: '📘'
