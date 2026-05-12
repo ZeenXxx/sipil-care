@@ -30,13 +30,18 @@ const videoCategoryInput = document.getElementById('videoCategoryInput');
 const videoDuration = document.getElementById('videoDuration');
 const videoYoutube = document.getElementById('videoYoutube');
 const resourceTable = document.getElementById('resourceTable');
+const videoTable = document.getElementById('videoTable');
 const adminSearch = document.getElementById('adminSearch');
 const adminFilter = document.getElementById('adminFilter');
+const videoSearch = document.getElementById('videoSearch');
+const videoFilter = document.getElementById('videoFilter');
 const adminStats = document.getElementById('adminStats');
 const toastEl = document.getElementById('toast');
 const submitButton = resourceForm?.querySelector('button[type="submit"]');
 let resources = [];
+let videos = [];
 let editingDocId = null;
+let editingVideoDocId = null;
 
 const toast = message => {
   if (!toastEl) return;
@@ -70,7 +75,7 @@ function stats() {
   const modules = resources.filter(r => r.title.toLowerCase().includes('modul')).length;
   adminStats.innerHTML = `
     <div class="admin-stat"><b>${resources.length}</b><span>Resource</span></div>
-    <div class="admin-stat"><b>--</b><span>Video</span></div>
+    <div class="admin-stat"><b>${videos.length}</b><span>Video</span></div>
     <div class="admin-stat"><b>${modules}</b><span>Modul</span></div>
     <div class="admin-stat"><b>${cats.size}</b><span>Kategori</span></div>
   `;
@@ -100,10 +105,37 @@ function table() {
   resourceTable.innerHTML = rows || '<tr><td colspan="5">Tidak ada resource.</td></tr>';
 }
 
+function videoTableRender() {
+  const q = (videoSearch?.value || '').toLowerCase();
+  const cat = videoFilter?.value || 'All';
+  const rows = videos
+    .filter(v => (cat === 'All' || v.category === cat) &&
+      [v.title, v.category, v.description].join(' ').toLowerCase().includes(q))
+    .map(v => `
+      <tr>
+        <td>${v.title}</td>
+        <td>${v.category}</td>
+        <td>${v.duration}</td>
+        <td><button class="action-btn" data-edit="${v.docId}">Edit</button><button class="action-btn danger" data-del="${v.docId}">Delete</button></td>
+      </tr>
+    `)
+    .join('');
+  if (videoTable) videoTable.innerHTML = rows || '<tr><td colspan="4">Tidak ada video.</td></tr>';
+}
+
+function videoFilters() {
+  if (videoFilter) {
+    videoFilter.innerHTML = '<option value="All">All</option>' +
+      [...new Set(videos.map(v => v.category))].map(c => `<option>${c}</option>`).join('');
+  }
+}
+
 const render = () => {
   stats();
   filters();
   table();
+  videoFilters();
+  videoTableRender();
 };
 
 const resetForm = () => {
@@ -150,6 +182,56 @@ resourceForm.addEventListener('submit', async e => {
   }
 });
 
+const validateVideoForm = () => {
+  if (!videoTitle.value.trim() || !videoDescription.value.trim() || !videoCategoryInput.value.trim() || !videoDuration.value.trim() || !videoYoutube.value.trim()) {
+    toast('Lengkapi semua field video.');
+    return false;
+  }
+  if (!/^https?:\/\//i.test(videoYoutube.value.trim())) {
+    toast('Link YouTube harus dimulai dengan http:// atau https://');
+    return false;
+  }
+  return true;
+};
+
+const resetVideoForm = () => {
+  videoForm.reset();
+  editingVideoDocId = null;
+};
+
+videoForm.addEventListener('submit', async e => {
+  e.preventDefault();
+  if (!validateVideoForm()) return;
+
+  setLoading(true);
+
+  try {
+    const data = {
+      title: videoTitle.value.trim(),
+      thumbnail: videoThumb.value.trim() || '🎥',
+      description: videoDescription.value.trim(),
+      category: videoCategoryInput.value.trim(),
+      duration: videoDuration.value.trim(),
+      youtube: videoYoutube.value.trim()
+    };
+
+    if (editingVideoDocId) {
+      await updateDoc(doc(db, 'videos', editingVideoDocId), data);
+      toast('Video berhasil diperbarui.');
+    } else {
+      await addDoc(collection(db, 'videos'), data);
+      toast('Video berhasil disimpan ke Firestore.');
+    }
+    
+    resetVideoForm();
+  } catch (err) {
+    console.error('Save video error:', err);
+    toast('Gagal menyimpan video. Cek console untuk detail.');
+  } finally {
+    setLoading(false);
+  }
+});
+
 resourceTable.addEventListener('click', async e => {
   const docId = e.target.dataset.del || e.target.dataset.edit;
   if (!docId) return;
@@ -185,8 +267,44 @@ resourceTable.addEventListener('click', async e => {
   }
 });
 
+if (videoTable) {
+  videoTable.addEventListener('click', async e => {
+    const docId = e.target.dataset.del || e.target.dataset.edit;
+    if (!docId) return;
+
+    if (e.target.dataset.del) {
+      if (confirm('Yakin hapus video ini?')) {
+        try {
+          await deleteDoc(doc(db, 'videos', docId));
+          toast('Video berhasil dihapus.');
+        } catch (err) {
+          console.error('Delete video error:', err);
+          toast('Gagal menghapus video.');
+        }
+      }
+    }
+
+    if (e.target.dataset.edit) {
+      const video = videos.find(v => v.docId === docId);
+      if (video) {
+        videoTitle.value = video.title;
+        videoThumb.value = video.thumbnail;
+        videoDescription.value = video.description;
+        videoCategoryInput.value = video.category;
+        videoDuration.value = video.duration;
+        videoYoutube.value = video.youtube;
+        editingVideoDocId = docId;
+        videoForm.scrollIntoView({ behavior: 'smooth' });
+      }
+    }
+  });
+}
+
 adminSearch.addEventListener('input', () => render());
 adminFilter.addEventListener('change', () => render());
+
+if (videoSearch) videoSearch.addEventListener('input', () => videoTableRender());
+if (videoFilter) videoFilter.addEventListener('change', () => videoTableRender());
 
 const resourcesQuery = query(collection(db, 'resources'), orderBy('date', 'desc'));
 onSnapshot(resourcesQuery, snapshot => {
@@ -198,4 +316,16 @@ onSnapshot(resourcesQuery, snapshot => {
 }, err => {
   console.error('Firestore error:', err);
   toast('Gagal memuat resource dari Firebase.');
+});
+
+const videosQuery = query(collection(db, 'videos'), orderBy('title'));
+onSnapshot(videosQuery, snapshot => {
+  videos = snapshot.docs.map(doc => ({ 
+    docId: doc.id,
+    ...doc.data() 
+  }));
+  render();
+}, err => {
+  console.error('Firestore videos error:', err);
+  toast('Gagal memuat video dari Firebase.');
 });

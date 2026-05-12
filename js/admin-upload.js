@@ -29,6 +29,7 @@ form.addEventListener('submit', async (e) => {
 
   e.preventDefault();
 
+  const uploadType = document.getElementById('uploadType').value;
   const title = document.getElementById('title').value;
   const category = document.getElementById('category').value;
   const description = document.getElementById('description').value;
@@ -67,20 +68,31 @@ form.addEventListener('submit', async (e) => {
     const url = await getDownloadURL(fileRef);
     const fileType = file.name.split('.').pop().toUpperCase();
 
-    await addDoc(collection(db, 'resources'), {
-
-      title,
-      category,
-      description,
-      file: url,
-      type: fileType,
-      author: 'HMS Sipil',
-      date: new Date().toISOString().split('T')[0],
-      thumbnail: '📘'
-
-    });
-
-    setStatus('Upload berhasil. Resource telah tersimpan.');
+    if (uploadType === 'video') {
+      // For video uploads, save to videos collection
+      await addDoc(collection(db, 'videos'), {
+        title,
+        category,
+        description,
+        youtube: url, // Assuming video files are uploaded as YouTube-like links, but actually storing file URL
+        thumbnail: '🎥',
+        duration: '00:00' // Default duration, can be updated later
+      });
+      setStatus('Video berhasil diupload dan disimpan.');
+    } else {
+      // For resource uploads
+      await addDoc(collection(db, 'resources'), {
+        title,
+        category,
+        description,
+        file: url,
+        type: fileType,
+        author: 'HMS Sipil',
+        date: new Date().toISOString().split('T')[0],
+        thumbnail: '📘'
+      });
+      setStatus('Resource berhasil diupload dan disimpan.');
+    }
 
     form.reset();
 
