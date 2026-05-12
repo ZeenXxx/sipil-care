@@ -42,11 +42,16 @@ const adminStats = document.getElementById('adminStats');
 const toastEl = document.getElementById('toast');
 const submitButton = resourceForm?.querySelector('button[type="submit"]');
 let resources = [];
+
+console.log('admin-panel.js elements', { resourceForm, submitButton, fileInput, resourceFile });
 if (!resourceForm) {
   console.error('admin-panel.js: resourceForm not found');
 }
 if (!submitButton) {
   console.error('admin-panel.js: submitButton not found');
+}
+if (submitButton) {
+  submitButton.addEventListener('click', () => console.log('submit button clicked'));
 }
 
 const toast = message => {
