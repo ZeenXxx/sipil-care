@@ -16,7 +16,6 @@ import {
 
 const storage = getStorage(app);
 const db = getFirestore(app);
-console.log('admin-panel.js loaded');
 const resourceForm = document.getElementById('resourceForm');
 const resourceId = document.getElementById('resourceId');
 const resourceTitle = document.getElementById('resourceTitle');
@@ -28,6 +27,7 @@ const resourceThumb = document.getElementById('resourceThumb');
 const resourceType = document.getElementById('resourceType');
 const resourceFile = document.getElementById('resourceFile');
 const fileInput = document.getElementById('resourceFileInput');
+const fileNameLabel = document.getElementById('resourceFileName');
 const videoForm = document.getElementById('videoForm');
 const videoTitle = document.getElementById('videoTitle');
 const videoThumb = document.getElementById('videoThumb');
@@ -43,22 +43,26 @@ const toastEl = document.getElementById('toast');
 const submitButton = resourceForm?.querySelector('button[type="submit"]');
 let resources = [];
 
-console.log('admin-panel.js elements', { resourceForm, submitButton, fileInput, resourceFile });
-if (!resourceForm) {
-  console.error('admin-panel.js: resourceForm not found');
-}
-if (!submitButton) {
-  console.error('admin-panel.js: submitButton not found');
-}
-if (submitButton) {
-  submitButton.addEventListener('click', () => console.log('submit button clicked'));
-}
-
 const toast = message => {
-  console.log('toast:', message);
+  if (!toastEl) return;
   toastEl.textContent = message;
   toastEl.classList.add('show');
   setTimeout(() => toastEl.classList.remove('show'), 2600);
+};
+
+const setLoading = active => {
+  if (submitButton) submitButton.disabled = active;
+};
+
+const updateFileName = () => {
+  const file = fileInput?.files?.[0];
+  if (fileNameLabel) {
+    fileNameLabel.textContent = file ? `File terpilih: ${file.name}` : 'Tidak ada file terpilih.';
+  }
+  if (file && file.name) {
+    const ext = file.name.split('.').pop().toUpperCase();
+    resourceType.value = ext;
+  }
 };
 
 const validateResourceForm = () => {
@@ -105,7 +109,6 @@ function table() {
       </tr>
     `)
     .join('');
-
   resourceTable.innerHTML = rows || '<tr><td colspan="5">Tidak ada resource.</td></tr>';
 }
 
@@ -130,22 +133,17 @@ async function uploadFile(file) {
   return getDownloadURL(fileRef);
 }
 
+fileInput?.addEventListener('change', updateFileName);
+updateFileName();
+
 resourceForm.addEventListener('submit', async e => {
   e.preventDefault();
-  if (!validateResourceForm()) {
-    return;
-  }
-  submitButton.disabled = true;
+  if (!validateResourceForm()) return;
 
+  setLoading(true);
   const file = fileInput?.files?.[0];
   let fileUrl = resourceFile.value.trim();
   let type = resourceType.value;
-
-  if (!file && !fileUrl) {
-    toast('Pilih file atau masukkan link file terlebih dahulu.');
-    submitButton.disabled = false;
-    return;
-  }
 
   try {
     if (file) {
@@ -167,17 +165,15 @@ resourceForm.addEventListener('submit', async e => {
     };
 
     await addDoc(collection(db, 'resources'), data);
-
     resourceForm.reset();
-    resourceId.value = '';
-    fileInput.value = '';
+    updateFileName();
     render();
     toast('Resource tersimpan dan diunggah ke Firebase.');
   } catch (err) {
-    console.error(err);
+    console.error('Upload error:', err);
     toast('Upload gagal. Cek console untuk detail.');
   } finally {
-    submitButton.disabled = false;
+    setLoading(false);
   }
 });
 

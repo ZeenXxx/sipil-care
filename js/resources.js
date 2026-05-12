@@ -18,7 +18,7 @@ let current = 'All';
 let page = 1;
 const cats = ['All', 'Struktur', 'Geoteknik', 'Hidrologi', 'Transportasi', 'Manajemen Konstruksi', 'Software', 'SNI'];
 const per = 9;
-const card = i => `<article class="card resource-card"><div class="icon">${i.thumbnail}</div><div class="meta"><span class="badge">${i.category}</span><span class="badge">${i.type}</span><span class="badge">${i.date}</span></div><h3>${i.title}</h3><p>${i.description}</p><small>Author: ${i.author}</small><div class="actions"><a class="btn btn-primary" href="${i.file}">View</a><a class="btn btn-ghost" href="${i.file}" download>Download</a></div></article>`;
+const card = i => `<article class="card resource-card"><div class="icon">${i.thumbnail}</div><div class="meta"><span class="badge">${i.category}</span><span class="badge">${i.type}</span><span class="badge">${i.date}</span></div><h3>${i.title}</h3><p>${i.description}</p><small>Author: ${i.author}</small><div class="actions"><a class="btn btn-primary" href="${i.file}" target="_blank" rel="noopener">View</a><a class="btn btn-ghost" href="${i.file}" download>Download</a></div></article>`;
 const filtered = () => {
   const q = (resourceSearch?.value || '').toLowerCase();
   const type = typeFilter?.value || 'All';
