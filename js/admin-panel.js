@@ -94,15 +94,15 @@ function stats() {
 }
 
 function filters() {
-  // Exclude software items from the main resource filter
-  const resourceCats = [...new Set(resources.filter(r => r.type !== 'Software').map(r => r.category))];
+  // Include all categories (software will appear under category 'Software')
   adminFilter.innerHTML = '<option value="All">All</option>' +
-    resourceCats.map(c => `<option>${c}</option>`).join('');
+    [...new Set(resources.map(r => r.category))].map(c => `<option>${c}</option>`).join('');
 }
 
 function softwareFilters() {
   if (!softwareFilter) return;
-  const softwareCats = [...new Set(resources.filter(r => r.type === 'Software').map(r => r.category || 'Software'))];
+  // softwareFilter shows elements (sub-category) for software uploads
+  const softwareCats = [...new Set(resources.filter(r => r.type === 'Software').map(r => r.element || 'Software'))];
   softwareFilter.innerHTML = '<option value="All">All</option>' + softwareCats.map(c => `<option>${c}</option>`).join('');
 }
 
@@ -110,7 +110,6 @@ function table() {
   const q = (adminSearch.value || '').toLowerCase();
   const cat = adminFilter.value || 'All';
   const rows = resources
-    .filter(r => r.type !== 'Software')
     .filter(r => (cat === 'All' || r.category === cat) &&
       [r.title, r.category, r.description, r.author].join(' ').toLowerCase().includes(q))
     .map(r => `
@@ -131,12 +130,12 @@ function softwareTableRender() {
   const cat = softwareFilter?.value || 'All';
   const rows = resources
     .filter(r => r.type === 'Software')
-    .filter(r => (cat === 'All' || r.category === cat) &&
-      [r.title, r.category, r.description, r.author].join(' ').toLowerCase().includes(q))
+    .filter(r => (cat === 'All' || (r.element || r.category) === cat) &&
+      [r.title, (r.element || r.category), r.description, r.author].join(' ').toLowerCase().includes(q))
     .map(r => `
       <tr>
         <td>${r.title}</td>
-        <td>${r.category}</td>
+        <td>${r.element || r.category}</td>
         <td>${r.type}</td>
         <td>${r.date}</td>
         <td><button class="action-btn" data-edit="${r.docId}">Edit</button><button class="action-btn danger" data-del="${r.docId}">Delete</button></td>
@@ -251,7 +250,10 @@ if (softwareForm) {
     try {
       const data = {
         title: softwareTitle.value.trim(),
-        category: softwareCategory.value,
+        // top-level category shown in Resources should be 'Software'
+        category: 'Software',
+        // store selected civil element in `element` field
+        element: softwareCategory.value,
         description: softwareDescription.value.trim(),
         author: softwareAuthor.value.trim(),
         date: softwareDate.value,
@@ -450,7 +452,7 @@ if (softwareTable) {
       const item = resources.find(r => r.docId === docId);
       if (item) {
         softwareTitle.value = item.title;
-        softwareCategory.value = item.category;
+        softwareCategory.value = item.element || item.category;
         softwareDescription.value = item.description;
         softwareAuthor.value = item.author;
         softwareDate.value = item.date;
