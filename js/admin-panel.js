@@ -16,6 +16,7 @@ import {
 
 const storage = getStorage(app);
 const db = getFirestore(app);
+console.log('admin-panel.js loaded');
 const resourceForm = document.getElementById('resourceForm');
 const resourceId = document.getElementById('resourceId');
 const resourceTitle = document.getElementById('resourceTitle');
@@ -39,13 +40,32 @@ const adminSearch = document.getElementById('adminSearch');
 const adminFilter = document.getElementById('adminFilter');
 const adminStats = document.getElementById('adminStats');
 const toastEl = document.getElementById('toast');
-const submitButton = resourceForm.querySelector('button[type="submit"]');
+const submitButton = resourceForm?.querySelector('button[type="submit"]');
 let resources = [];
+if (!resourceForm) {
+  console.error('admin-panel.js: resourceForm not found');
+}
+if (!submitButton) {
+  console.error('admin-panel.js: submitButton not found');
+}
 
 const toast = message => {
+  console.log('toast:', message);
   toastEl.textContent = message;
   toastEl.classList.add('show');
   setTimeout(() => toastEl.classList.remove('show'), 2600);
+};
+
+const validateResourceForm = () => {
+  if (!resourceTitle.value.trim() || !resourceDescription.value.trim() || !resourceAuthor.value.trim() || !resourceDate.value) {
+    toast('Lengkapi Judul, Deskripsi, Author, dan Tanggal.');
+    return false;
+  }
+  if (!fileInput?.files?.[0] && !resourceFile.value.trim()) {
+    toast('Pilih file atau masukkan link file terlebih dahulu.');
+    return false;
+  }
+  return true;
 };
 
 function stats() {
@@ -107,6 +127,9 @@ async function uploadFile(file) {
 
 resourceForm.addEventListener('submit', async e => {
   e.preventDefault();
+  if (!validateResourceForm()) {
+    return;
+  }
   submitButton.disabled = true;
 
   const file = fileInput?.files?.[0];
