@@ -83,20 +83,22 @@ const validateResourceForm = () => {
 };
 
 function stats() {
+  const academicResources = resources.filter(r => r.category !== 'Software');
+  const softwareResources = resources.filter(r => r.category === 'Software');
   const cats = new Set(resources.map(r => r.category));
-  const modules = resources.filter(r => r.title.toLowerCase().includes('modul')).length;
+  const modules = academicResources.filter(r => r.title.toLowerCase().includes('modul')).length;
   adminStats.innerHTML = `
-    <div class="admin-stat"><b>${resources.length}</b><span>Resource</span></div>
+    <div class="admin-stat"><b>${academicResources.length}</b><span>Resource</span></div>
     <div class="admin-stat"><b>${videos.length}</b><span>Video</span></div>
     <div class="admin-stat"><b>${modules}</b><span>Modul</span></div>
-    <div class="admin-stat"><b>${cats.size}</b><span>Kategori</span></div>
+    <div class="admin-stat"><b>${softwareResources.length}</b><span>Software</span></div>
   `;
 }
 
 function filters() {
-  // Include all categories (software will appear under category 'Software')
+  // Resource Management intentionally excludes Software.
   adminFilter.innerHTML = '<option value="All">All</option>' +
-    [...new Set(resources.map(r => r.category))].map(c => `<option>${c}</option>`).join('');
+    [...new Set(resources.filter(r => r.category !== 'Software').map(r => r.category))].map(c => `<option>${c}</option>`).join('');
 }
 
 function softwareFilters() {
@@ -110,6 +112,7 @@ function table() {
   const q = (adminSearch.value || '').toLowerCase();
   const cat = adminFilter.value || 'All';
   const rows = resources
+    .filter(r => r.category !== 'Software')
     .filter(r => (cat === 'All' || r.category === cat) &&
       [r.title, r.category, r.description, r.author].join(' ').toLowerCase().includes(q))
     .map(r => `
@@ -349,7 +352,7 @@ resourceTable.addEventListener('click', async e => {
 
   if (e.target.dataset.edit) {
     const resource = resources.find(r => r.docId === docId);
-    if (resource) {
+    if (resource && resource.category !== 'Software') {
       resourceId.value = docId;
       resourceTitle.value = resource.title;
       resourceCategory.value = resource.category;
