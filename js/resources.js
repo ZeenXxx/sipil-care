@@ -18,7 +18,27 @@ let current = 'All';
 let page = 1;
 const cats = ['All', 'Struktur', 'Geoteknik', 'Hidrologi', 'Transportasi', 'Manajemen Konstruksi', 'Software', 'SNI'];
 const per = 9;
-const card = i => `<article class="card resource-card"><div class="icon">${i.thumbnail}</div><div class="meta"><span class="badge">${i.category}</span><span class="badge">${i.type}</span><span class="badge">${i.date}</span></div><h3>${i.title}</h3><p>${i.description}</p><small>Author: ${i.author}</small><div class="actions"><a class="btn btn-primary" href="${i.file}" target="_blank" rel="noopener">View</a><a class="btn btn-ghost" href="${i.file}" download>Download</a></div></article>`;
+const downloadFile = async (url, filename) => {
+  try {
+    const response = await fetch(url, { mode: 'cors' });
+    if (!response.ok) throw new Error('Download gagal');
+    const blob = await response.blob();
+    const objUrl = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = objUrl;
+    link.download = filename || 'file';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(objUrl);
+  } catch (err) {
+    console.error('Download error:', err);
+    alert('Gagal download. Coba buka di browser atau ulang.');
+    window.open(url, '_blank');
+  }
+};
+
+const card = i => `<article class="card resource-card"><div class="icon">${i.thumbnail}</div><div class="meta"><span class="badge">${i.category}</span><span class="badge">${i.type}</span><span class="badge">${i.date}</span></div><h3>${i.title}</h3><p>${i.description}</p><small>Author: ${i.author}</small><div class="actions"><a class="btn btn-primary" href="${i.file}" target="_blank" rel="noopener">View</a><button class="btn btn-ghost" data-url="${i.file}" data-name="${i.title}" data-type="${i.type}">Download</button></div></article>`;
 const filtered = () => {
   const q = (resourceSearch?.value || '').toLowerCase();
   const type = typeFilter?.value || 'All';
@@ -45,6 +65,17 @@ function render() {
   const start = (page - 1) * per;
 
   resourceGrid.innerHTML = d.slice(start, start + per).map(card).join('') || '<div class="card empty">Resource tidak ditemukan.</div>';
+  
+  // Add download listeners
+  resourceGrid.querySelectorAll('button.btn-ghost').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const url = btn.dataset.url;
+      const name = btn.dataset.name;
+      const type = btn.dataset.type;
+      downloadFile(url, `${name}.${type.toLowerCase()}`);
+    });
+  });
+
   pagination.innerHTML = Array.from({ length: pages }, (_, i) => `<button class="${i + 1 === page ? 'active' : ''}" data-p="${i + 1}">${i + 1}</button>`).join('');
   pagination.querySelectorAll('button').forEach(b => b.onclick = () => {
     page = +b.dataset.p;
@@ -54,6 +85,15 @@ function render() {
   const f = document.getElementById('featuredResources');
   if (f) {
     f.innerHTML = resources.filter(i => ['SNI', 'Software', 'Struktur'].includes(i.category)).slice(0, 3).map(card).join('');
+    // Add download listeners for featured too
+    f.querySelectorAll('button.btn-ghost').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const url = btn.dataset.url;
+        const name = btn.dataset.name;
+        const type = btn.dataset.type;
+        downloadFile(url, `${name}.${type.toLowerCase()}`);
+      });
+    });
   }
 }
 
@@ -79,6 +119,9 @@ function loadResourcesFromFirestore() {
 }
 
 loadResourcesFromFirestore();
+
+// Expose downloadFile globally for inline onclick
+window.downloadFile = downloadFile;
 
 resourceSearch?.addEventListener('input', () => {
   page = 1;
