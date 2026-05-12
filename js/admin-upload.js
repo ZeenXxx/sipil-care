@@ -33,11 +33,21 @@ form.addEventListener('submit', async (e) => {
   const title = document.getElementById('title').value;
   const category = document.getElementById('category').value;
   const description = document.getElementById('description').value;
-  const file = document.getElementById('file').files[0];
+  const fileInput = document.getElementById('file');
+  const file = fileInput ? fileInput.files[0] : null;
+  const fileLinkInput = document.getElementById('fileLink');
+  const fileLink = fileLinkInput ? fileLinkInput.value.trim() : '';
 
-  if (!file) {
-    setStatus('Pilih file terlebih dahulu.', true);
-    return;
+  if (uploadType === 'video') {
+    if (!fileLink) {
+      setStatus('Masukkan link video terlebih dahulu.', true);
+      return;
+    }
+  } else {
+    if (!file) {
+      setStatus('Pilih file terlebih dahulu.', true);
+      return;
+    }
   }
 
   submitButton.disabled = true;
@@ -45,42 +55,42 @@ form.addEventListener('submit', async (e) => {
 
   try {
 
-    const timestamp = Date.now();
-    const fileRef = ref(
-      storage,
-      `resources/${timestamp}-${file.name}`
-    );
-
-    const uploadTask = uploadBytesResumable(fileRef, file);
-
-    await new Promise((resolve, reject) => {
-      uploadTask.on(
-        'state_changed',
-        (snapshot) => {
-          const progress = Math.floor((snapshot.bytesTransferred / snapshot.totalBytes) * 100);
-          setStatus(`Uploading: ${progress}%`);
-        },
-        (error) => reject(error),
-        () => resolve()
-      );
-    });
-
-    const url = await getDownloadURL(fileRef);
-    const fileType = file.name.split('.').pop().toUpperCase();
-
     if (uploadType === 'video') {
-      // For video uploads, save to videos collection
+      // For videos: store the provided link (no file upload)
       await addDoc(collection(db, 'videos'), {
         title,
         category,
         description,
-        youtube: url, // Assuming video files are uploaded as YouTube-like links, but actually storing file URL
+        youtube: fileLink,
         thumbnail: '🎥',
-        duration: '00:00' // Default duration, can be updated later
+        duration: '00:00'
       });
-      setStatus('Video berhasil diupload dan disimpan.');
+      setStatus('Video link berhasil disimpan.');
     } else {
-      // For resource uploads
+      // For resource uploads: upload file to Storage then save metadata
+      const timestamp = Date.now();
+      const fileRef = ref(
+        storage,
+        `resources/${timestamp}-${file.name}`
+      );
+
+      const uploadTask = uploadBytesResumable(fileRef, file);
+
+      await new Promise((resolve, reject) => {
+        uploadTask.on(
+          'state_changed',
+          (snapshot) => {
+            const progress = Math.floor((snapshot.bytesTransferred / snapshot.totalBytes) * 100);
+            setStatus(`Uploading: ${progress}%`);
+          },
+          (error) => reject(error),
+          () => resolve()
+        );
+      });
+
+      const url = await getDownloadURL(fileRef);
+      const fileType = file.name.split('.').pop().toUpperCase();
+
       await addDoc(collection(db, 'resources'), {
         title,
         category,
