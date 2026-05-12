@@ -23,24 +23,22 @@ const extractGoogleDriveId = (url) => {
   return match ? match[1] : null;
 };
 
-const getDirectDownloadUrl = (url) => {
-  const gdId = extractGoogleDriveId(url);
-  if (gdId) return `https://drive.google.com/uc?id=${gdId}&export=download`;
-  return url;
-};
-
 const downloadFile = async (url, filename) => {
+  const gdId = extractGoogleDriveId(url);
+  
+  if (gdId) {
+    // For Google Drive: open download link directly
+    const dlUrl = `https://drive.google.com/uc?id=${gdId}&export=download`;
+    window.location.href = dlUrl;
+    return;
+  }
+  
+  // For other URLs: try fetch download
   try {
-    const dlUrl = getDirectDownloadUrl(url);
-    const response = await fetch(dlUrl, { mode: 'no-cors' });
+    const response = await fetch(url);
+    if (!response.ok) throw new Error('Download gagal');
     const blob = await response.blob();
     
-    // If blob is too small or text, try direct link fallback
-    if (blob.size < 1000 && blob.type.startsWith('text')) {
-      window.open(dlUrl, '_blank');
-      return;
-    }
-
     const objUrl = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = objUrl;
@@ -51,13 +49,24 @@ const downloadFile = async (url, filename) => {
     URL.revokeObjectURL(objUrl);
   } catch (err) {
     console.error('Download error:', err);
-    window.open(getDirectDownloadUrl(url), '_blank');
+    window.open(url, '_blank');
   }
 };
 
-const truncateText = (text, len = 80) => text.length > len ? text.slice(0, len) + '...' : text;
+const truncateText = (text, len = 80) => {
+  if (!text) return '';
+  return text.length > len ? text.slice(0, len) + '...' : text;
+};
 
-const card = i => `<article class="card resource-card"><div class="icon">${i.thumbnail}</div><div class="meta"><span class="badge">${i.category}</span><span class="badge">${i.type}</span><span class="badge">${i.date}</span></div><h3>${i.title}</h3><p>${truncateText(i.description)}</p><small>Author: ${i.author}</small><div class="actions"><a class="btn btn-primary" href="${i.file}" target="_blank" rel="noopener">View</a><button class="btn btn-ghost" data-url="${i.file}" data-name="${i.title}" data-type="${i.type}">Download</button></div></article>`;
+const getThumbnailDisplay = (thumb) => {
+  if (!thumb) return 'RES';
+  // Jika thumbnail masih URL, ambil 3 karakter pertama atau kategori
+  if (thumb.includes('http') || thumb.includes('/')) return 'RES';
+  // Bersihkan dari special chars
+  return thumb.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 3) || 'RES';
+};
+
+const card = i => `<article class="card resource-card"><div class="icon">${getThumbnailDisplay(i.thumbnail)}</div><div class="meta"><span class="badge">${i.category}</span><span class="badge">${i.type}</span><span class="badge">${i.date}</span></div><h3>${i.title}</h3><p>${truncateText(i.description, 120)}</p><small>Author: ${i.author}</small><div class="actions"><a class="btn btn-primary" href="${i.file}" target="_blank" rel="noopener">View</a><button class="btn btn-ghost" data-url="${i.file}" data-name="${i.title}" data-type="${i.type}">Download</button></div></article>`;
 const filtered = () => {
   const q = (resourceSearch?.value || '').toLowerCase();
   const type = typeFilter?.value || 'All';
