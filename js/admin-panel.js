@@ -135,8 +135,8 @@ function softwareTableRender() {
     .map(r => `
       <tr>
         <td>${r.title}</td>
-        <td>${r.type || r.element || r.category}</td>
-        <td>${r.type || r.element || r.category}</td>
+        <td>${r.category}</td>
+        <td>${r.type || r.element || 'Software'}</td>
         <td>${r.date}</td>
         <td><button class="action-btn" data-edit="${r.docId}">Edit</button><button class="action-btn danger" data-del="${r.docId}">Delete</button></td>
       </tr>
