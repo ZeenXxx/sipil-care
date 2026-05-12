@@ -456,3 +456,20 @@ th  {
   color: #fff;
 
 }
+
+
+.student-mode {
+  margin: 12px 0 0;
+  padding: 10px 12px;
+  border: 1px solid rgba(15, 77, 58, 0.14);
+  border-radius: 8px;
+  background: rgba(237, 244, 241, 0.84);
+  color: var(--primary);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.student-note code {
+  color: var(--primary);
+  font-weight: 900;
+}
