@@ -101,8 +101,8 @@ function filters() {
 
 function softwareFilters() {
   if (!softwareFilter) return;
-  // softwareFilter shows elements (sub-category) for software uploads
-  const softwareCats = [...new Set(resources.filter(r => r.type === 'Software').map(r => r.element || 'Software'))];
+  // softwareFilter shows elements (sub-category) for software uploads - read from `type`
+  const softwareCats = [...new Set(resources.filter(r => r.category === 'Software').map(r => r.type || 'Software'))];
   softwareFilter.innerHTML = '<option value="All">All</option>' + softwareCats.map(c => `<option>${c}</option>`).join('');
 }
 
@@ -129,14 +129,14 @@ function softwareTableRender() {
   const q = (softwareSearch?.value || '').toLowerCase();
   const cat = softwareFilter?.value || 'All';
   const rows = resources
-    .filter(r => r.type === 'Software')
-    .filter(r => (cat === 'All' || (r.element || r.category) === cat) &&
-      [r.title, (r.element || r.category), r.description, r.author].join(' ').toLowerCase().includes(q))
+    .filter(r => r.category === 'Software')
+    .filter(r => (cat === 'All' || (r.type || r.element || r.category) === cat) &&
+      [r.title, (r.type || r.element || r.category), r.description, r.author].join(' ').toLowerCase().includes(q))
     .map(r => `
       <tr>
         <td>${r.title}</td>
-        <td>${r.element || r.category}</td>
-        <td>${r.type}</td>
+        <td>${r.type || r.element || r.category}</td>
+        <td>${r.type || r.element || r.category}</td>
         <td>${r.date}</td>
         <td><button class="action-btn" data-edit="${r.docId}">Edit</button><button class="action-btn danger" data-del="${r.docId}">Delete</button></td>
       </tr>
@@ -252,13 +252,14 @@ if (softwareForm) {
         title: softwareTitle.value.trim(),
         // top-level category shown in Resources should be 'Software'
         category: 'Software',
-        // store selected civil element in `element` field
+        // use `type` to store the selected civil element so Resources shows it as type
+        type: softwareCategory.value,
+        // keep `element` for backward compatibility
         element: softwareCategory.value,
         description: softwareDescription.value.trim(),
         author: softwareAuthor.value.trim(),
         date: softwareDate.value,
         thumbnail: softwareThumb.value.trim() || 'SW',
-        type: 'Software',
         file: softwareFile.value.trim()
       };
 
@@ -452,7 +453,7 @@ if (softwareTable) {
       const item = resources.find(r => r.docId === docId);
       if (item) {
         softwareTitle.value = item.title;
-        softwareCategory.value = item.element || item.category;
+        softwareCategory.value = item.type || item.element || item.category;
         softwareDescription.value = item.description;
         softwareAuthor.value = item.author;
         softwareDate.value = item.date;
