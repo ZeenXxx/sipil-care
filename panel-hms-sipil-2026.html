@@ -23,7 +23,7 @@
     <main class="admin-main">
         <section id="dashboard"><span class="eyebrow">CMS Akademik</span>
             <h2>Admin Dashboard</h2>
-            <p>Kelola resource dan video secara lokal menggunakan localStorage.</p>
+            <p>Kelola resource dan video melalui Firebase. Upload file akan disimpan di Storage dan metadata di Firestore.</p>
             <div class="admin-stats" id="adminStats"></div>
         </section>
         <section id="upload" class="admin-panel-grid">
@@ -46,8 +46,8 @@
                     <option>XLSX</option>
                     <option>PPT</option>
                     <option>ZIP</option>
-                </select><input class="control" id="resourceFile" placeholder="Link file" required><label
-                    class="upload-box"><input type="file" accept=".pdf,.docx,.xlsx,.ppt,.pptx,.zip">Upload
+                </select><input class="control" id="resourceFile" placeholder="Link file"><label
+                    class="upload-box"><input id="resourceFileInput" type="file" accept=".pdf,.docx,.xlsx,.ppt,.pptx,.zip">Upload
                     PDF/DOCX/XLSX/PPT/ZIP</label><button class="btn btn-primary" type="submit">Simpan Resource</button>
             </form>
             <form class="admin-card" id="videoForm">
@@ -94,7 +94,7 @@
     </main>
     <div class="toast" id="toast"></div>
     <script src="js/auth.js?v=10"></script>
-    <script src="js/admin-panel.js?v=10"></script>
+    <script type="module" src="js/admin-panel.js?v=10"></script>
 </body>
 
 </html>
