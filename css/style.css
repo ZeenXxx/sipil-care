@@ -609,6 +609,12 @@ textarea {
     color:var(--muted);
 }
 
+.developer-role{
+    margin: 8px 0 0;
+    color: var(--primary);
+    font-weight: 600;
+}
+
 .developer-contact{
     display:flex;
     gap:14px;
