@@ -46,9 +46,7 @@
                     <option>XLSX</option>
                     <option>PPT</option>
                     <option>ZIP</option>
-                </select><input class="control" id="resourceFile" placeholder="Link file (opsional jika pilih file)"><label
-                    class="upload-box"><input id="resourceFileInput" type="file" accept=".pdf,.docx,.xlsx,.ppt,.pptx,.zip"><span>Choose File</span></label>
-                <div class="small-text" id="resourceFileName">Tidak ada file terpilih.</div>
+                </select><input class="control" id="resourceFile" placeholder="Link file (Google Drive, GitHub, atau hosting lain)" required><label class="small-text">Masukkan URL file yang sudah di-host (PDF, DOCX, XLSX, PPT, ZIP)</label>
                 <button id="submitResourceBtn" class="btn btn-primary" type="submit" onclick="console.log('Simpan Resource clicked')">Simpan Resource</button>
             </form>
             <form class="admin-card" id="videoForm">

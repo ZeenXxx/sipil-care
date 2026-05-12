@@ -1,11 +1,5 @@
 import { app } from './firebase-config.js';
 import {
-  getStorage,
-  ref,
-  uploadBytesResumable,
-  getDownloadURL
-} from "https://www.gstatic.com/firebasejs/12.13.0/firebase-storage.js";
-import {
   getFirestore,
   collection,
   query,
@@ -14,7 +8,6 @@ import {
   addDoc
 } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
 
-const storage = getStorage(app);
 const db = getFirestore(app);
 const resourceForm = document.getElementById('resourceForm');
 const resourceId = document.getElementById('resourceId');
@@ -26,8 +19,6 @@ const resourceDate = document.getElementById('resourceDate');
 const resourceThumb = document.getElementById('resourceThumb');
 const resourceType = document.getElementById('resourceType');
 const resourceFile = document.getElementById('resourceFile');
-const fileInput = document.getElementById('resourceFileInput');
-const fileNameLabel = document.getElementById('resourceFileName');
 const videoForm = document.getElementById('videoForm');
 const videoTitle = document.getElementById('videoTitle');
 const videoThumb = document.getElementById('videoThumb');
@@ -54,24 +45,17 @@ const setLoading = active => {
   if (submitButton) submitButton.disabled = active;
 };
 
-const updateFileName = () => {
-  const file = fileInput?.files?.[0];
-  if (fileNameLabel) {
-    fileNameLabel.textContent = file ? `File terpilih: ${file.name}` : 'Tidak ada file terpilih.';
-  }
-  if (file && file.name) {
-    const ext = file.name.split('.').pop().toUpperCase();
-    resourceType.value = ext;
-  }
-};
-
 const validateResourceForm = () => {
   if (!resourceTitle.value.trim() || !resourceDescription.value.trim() || !resourceAuthor.value.trim() || !resourceDate.value) {
     toast('Lengkapi Judul, Deskripsi, Author, dan Tanggal.');
     return false;
   }
-  if (!fileInput?.files?.[0] && !resourceFile.value.trim()) {
-    toast('Pilih file atau masukkan link file terlebih dahulu.');
+  if (!resourceFile.value.trim()) {
+    toast('Masukkan link file terlebih dahulu.');
+    return false;
+  }
+  if (!/^https?:\/\//i.test(resourceFile.value.trim())) {
+    toast('Link file harus dimulai dengan http:// atau https://');
     return false;
   }
   return true;
@@ -118,41 +102,15 @@ const render = () => {
   table();
 };
 
-async function uploadFile(file) {
-  const timestamp = Date.now();
-  const fileRef = ref(storage, `resources/${timestamp}-${file.name}`);
-  const uploadTask = uploadBytesResumable(fileRef, file);
-  await new Promise((resolve, reject) => {
-    uploadTask.on(
-      'state_changed',
-      null,
-      err => reject(err),
-      () => resolve()
-    );
-  });
-  return getDownloadURL(fileRef);
-}
-
-fileInput?.addEventListener('change', updateFileName);
-updateFileName();
-
 resourceForm.addEventListener('submit', async e => {
   e.preventDefault();
   if (!validateResourceForm()) return;
 
   setLoading(true);
-  const file = fileInput?.files?.[0];
-  let fileUrl = resourceFile.value.trim();
-  let type = resourceType.value;
+  const fileUrl = resourceFile.value.trim();
+  const type = resourceFile.value.split('.').pop().toUpperCase();
 
   try {
-    if (file) {
-      fileUrl = await uploadFile(file);
-      type = file.name.split('.').pop().toUpperCase();
-      resourceFile.value = fileUrl;
-      resourceType.value = type;
-    }
-
     const data = {
       title: resourceTitle.value.trim(),
       category: resourceCategory.value,
@@ -166,12 +124,11 @@ resourceForm.addEventListener('submit', async e => {
 
     await addDoc(collection(db, 'resources'), data);
     resourceForm.reset();
-    updateFileName();
     render();
-    toast('Resource tersimpan dan diunggah ke Firebase.');
+    toast('Resource tersimpan ke Firestore.');
   } catch (err) {
-    console.error('Upload error:', err);
-    toast('Upload gagal. Cek console untuk detail.');
+    console.error('Save error:', err);
+    toast('Gagal menyimpan resource. Cek console untuk detail.');
   } finally {
     setLoading(false);
   }
