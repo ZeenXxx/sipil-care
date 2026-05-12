@@ -8,24 +8,110 @@ import {
 } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
 
 const db = getFirestore(app);
-const card = i => `<article class="card resource-card"><div class="icon">${i.thumbnail}</div><div class="meta"><span class="badge">${i.category}</span><span class="badge">${i.type}</span></div><h3>${i.title}</h3><p>${i.description}</p><div class="actions"><a class="btn btn-primary" href="${i.file}">View</a><a class="btn btn-ghost" href="${i.file}" download>Download</a></div></article>`;
 
-async function loadFeaturedResources() {
+const escapeText = value => String(value || '').replace(/[&<>"']/g, char => ({
+  '&': '&amp;',
+  '<': '&lt;',
+  '>': '&gt;',
+  '"': '&quot;',
+  "'": '&#39;'
+}[char]));
+
+const videoCard = item => `
+  <article class="card video-card">
+    <div class="thumb">${escapeText(item.thumbnail || 'VI')}</div>
+    <div class="video-body">
+      <div class="meta">
+        <span class="badge">${escapeText(item.category || 'Video')}</span>
+        <span class="badge">${escapeText(item.duration || 'Learning')}</span>
+      </div>
+      <h3>${escapeText(item.title)}</h3>
+      <p>${escapeText(item.description)}</p>
+      <div class="actions">
+        <a class="btn btn-primary" href="${escapeText(item.youtube || '#')}" target="_blank" rel="noopener">Watch</a>
+        <a class="btn btn-ghost" href="pages/videos.html">More Videos</a>
+      </div>
+    </div>
+  </article>
+`;
+
+const announcementCard = item => {
+  const image = item.photoUrl
+    ? `<img src="${escapeText(item.photoUrl)}" alt="${escapeText(item.title)}">`
+    : `<span>${escapeText((item.type || 'Info').slice(0, 2).toUpperCase())}</span>`;
+
+  return `
+    <article class="card announcement-card">
+      <div class="announcement-media ${item.photoUrl ? 'has-image' : ''}">${image}</div>
+      <div class="announcement-body">
+        <div class="meta">
+          <span class="badge">${escapeText(item.type || 'Pemberitahuan')}</span>
+          <span class="badge">${escapeText(item.date || 'Update')}</span>
+        </div>
+        <h3>${escapeText(item.title)}</h3>
+        <p>${escapeText(item.description)}</p>
+      </div>
+    </article>
+  `;
+};
+
+const fallbackAnnouncements = [
+  {
+    title: 'Pemberitahuan kegiatan akan tampil di sini',
+    type: 'Info HMS',
+    date: 'Terbaru',
+    description: 'Admin HMS dapat menambahkan agenda, dokumentasi kegiatan, atau pengumuman melalui panel HMS.'
+  },
+  {
+    title: 'Dokumentasi kegiatan PENDPROF',
+    type: 'Dokumentasi',
+    date: 'Arsip',
+    description: 'Foto kegiatan yang diunggah dari panel akan disimpan di Supabase Storage dan ditampilkan pada halaman awal.'
+  },
+  {
+    title: 'Update akademik mahasiswa',
+    type: 'Akademik',
+    date: 'Ongoing',
+    description: 'Gunakan fitur ini untuk menyampaikan informasi kelas, seminar, pelatihan, atau program kerja.'
+  }
+];
+
+async function loadHomeVideos() {
+  const target = document.getElementById('homeVideoHighlights');
+  if (!target) return;
+
   try {
-    const resourcesRef = query(collection(db, 'resources'), orderBy('date', 'desc'));
-    const snapshot = await getDocs(resourcesRef);
+    const videosRef = query(collection(db, 'videos'), orderBy('title'));
+    const snapshot = await getDocs(videosRef);
     const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    const t = document.getElementById('featuredResources');
-    if (t) t.innerHTML = data.slice(0, 3).map(card).join('');
+    target.innerHTML = data.slice(0, 3).map(videoCard).join('') || '<div class="empty span-2">Belum ada video.</div>';
   } catch (err) {
-    console.error('Firestore fetch failed:', err);
-    fetch('data/resources.json')
-      .then(r => r.json())
-      .then(d => {
-        const t = document.getElementById('featuredResources');
-        if (t) t.innerHTML = d.slice(0, 3).map(card).join('');
+    console.error('Firestore videos fetch failed:', err);
+    fetch('data/videos.json')
+      .then(response => response.json())
+      .then(data => {
+        target.innerHTML = data.slice(0, 3).map(videoCard).join('');
+      })
+      .catch(() => {
+        target.innerHTML = '<div class="empty span-2">Video belum tersedia.</div>';
       });
   }
 }
 
-loadFeaturedResources();
+async function loadAnnouncements() {
+  const target = document.getElementById('homeAnnouncements');
+  if (!target) return;
+
+  try {
+    const announcementsRef = query(collection(db, 'announcements'), orderBy('date', 'desc'));
+    const snapshot = await getDocs(announcementsRef);
+    const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    target.innerHTML = (data.length ? data : fallbackAnnouncements).slice(0, 3).map(announcementCard).join('');
+  } catch (err) {
+    console.error('Firestore announcements fetch failed:', err);
+    target.innerHTML = fallbackAnnouncements.map(announcementCard).join('');
+  }
+}
+
+loadAnnouncements();
+loadHomeVideos();
