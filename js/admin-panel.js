@@ -31,6 +31,17 @@ const videoDuration = document.getElementById('videoDuration');
 const videoYoutube = document.getElementById('videoYoutube');
 const resourceTable = document.getElementById('resourceTable');
 const videoTable = document.getElementById('videoTable');
+const softwareTable = document.getElementById('softwareTable');
+const softwareForm = document.getElementById('softwareForm');
+const softwareTitle = document.getElementById('softwareTitle');
+const softwareCategory = document.getElementById('softwareCategory');
+const softwareDescription = document.getElementById('softwareDescription');
+const softwareAuthor = document.getElementById('softwareAuthor');
+const softwareDate = document.getElementById('softwareDate');
+const softwareThumb = document.getElementById('softwareThumb');
+const softwareFile = document.getElementById('softwareFile');
+const softwareSearch = document.getElementById('softwareSearch');
+const softwareFilter = document.getElementById('softwareFilter');
 const adminSearch = document.getElementById('adminSearch');
 const adminFilter = document.getElementById('adminFilter');
 const videoSearch = document.getElementById('videoSearch');
@@ -42,6 +53,7 @@ let resources = [];
 let videos = [];
 let editingDocId = null;
 let editingVideoDocId = null;
+let editingSoftwareDocId = null;
 
 const toast = message => {
   if (!toastEl) return;
@@ -82,14 +94,23 @@ function stats() {
 }
 
 function filters() {
+  // Exclude software items from the main resource filter
+  const resourceCats = [...new Set(resources.filter(r => r.type !== 'Software').map(r => r.category))];
   adminFilter.innerHTML = '<option value="All">All</option>' +
-    [...new Set(resources.map(r => r.category))].map(c => `<option>${c}</option>`).join('');
+    resourceCats.map(c => `<option>${c}</option>`).join('');
+}
+
+function softwareFilters() {
+  if (!softwareFilter) return;
+  const softwareCats = [...new Set(resources.filter(r => r.type === 'Software').map(r => r.category || 'Software'))];
+  softwareFilter.innerHTML = '<option value="All">All</option>' + softwareCats.map(c => `<option>${c}</option>`).join('');
 }
 
 function table() {
   const q = (adminSearch.value || '').toLowerCase();
   const cat = adminFilter.value || 'All';
   const rows = resources
+    .filter(r => r.type !== 'Software')
     .filter(r => (cat === 'All' || r.category === cat) &&
       [r.title, r.category, r.description, r.author].join(' ').toLowerCase().includes(q))
     .map(r => `
@@ -103,6 +124,26 @@ function table() {
     `)
     .join('');
   resourceTable.innerHTML = rows || '<tr><td colspan="5">Tidak ada resource.</td></tr>';
+}
+
+function softwareTableRender() {
+  const q = (softwareSearch?.value || '').toLowerCase();
+  const cat = softwareFilter?.value || 'All';
+  const rows = resources
+    .filter(r => r.type === 'Software')
+    .filter(r => (cat === 'All' || r.category === cat) &&
+      [r.title, r.category, r.description, r.author].join(' ').toLowerCase().includes(q))
+    .map(r => `
+      <tr>
+        <td>${r.title}</td>
+        <td>${r.category}</td>
+        <td>${r.type}</td>
+        <td>${r.date}</td>
+        <td><button class="action-btn" data-edit="${r.docId}">Edit</button><button class="action-btn danger" data-del="${r.docId}">Delete</button></td>
+      </tr>
+    `)
+    .join('');
+  if (softwareTable) softwareTable.innerHTML = rows || '<tr><td colspan="5">Tidak ada software.</td></tr>';
 }
 
 function videoTableRender() {
@@ -134,6 +175,8 @@ const render = () => {
   stats();
   filters();
   table();
+  softwareFilters();
+  softwareTableRender();
   videoFilters();
   videoTableRender();
 };
@@ -143,6 +186,14 @@ const resetForm = () => {
   editingDocId = null;
   resourceId.value = '';
   if (submitButton) submitButton.textContent = 'Simpan Resource';
+};
+
+const resetSoftwareForm = () => {
+  if (!softwareForm) return;
+  softwareForm.reset();
+  editingSoftwareDocId = null;
+  const btn = softwareForm.querySelector('button[type="submit"]');
+  if (btn) btn.textContent = 'Simpan Software';
 };
 
 resourceForm.addEventListener('submit', async e => {
@@ -181,6 +232,51 @@ resourceForm.addEventListener('submit', async e => {
     setLoading(false);
   }
 });
+
+// Software form submit: saves into `resources` with type 'Software'
+if (softwareForm) {
+  softwareForm.addEventListener('submit', async e => {
+    e.preventDefault();
+    // basic validation
+    if (!softwareTitle.value.trim() || !softwareDescription.value.trim() || !softwareAuthor.value.trim() || !softwareDate.value) {
+      toast('Lengkapi Judul, Deskripsi, Author, dan Tanggal.');
+      return;
+    }
+    if (!softwareFile.value.trim() || !/^https?:\/\//i.test(softwareFile.value.trim())) {
+      toast('Masukkan link file software yang valid (http/https).');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const data = {
+        title: softwareTitle.value.trim(),
+        category: softwareCategory.value,
+        description: softwareDescription.value.trim(),
+        author: softwareAuthor.value.trim(),
+        date: softwareDate.value,
+        thumbnail: softwareThumb.value.trim() || 'SW',
+        type: 'Software',
+        file: softwareFile.value.trim()
+      };
+
+      if (editingSoftwareDocId) {
+        await updateDoc(doc(db, 'resources', editingSoftwareDocId), data);
+        toast('Software berhasil diperbarui.');
+      } else {
+        await addDoc(collection(db, 'resources'), data);
+        toast('Software berhasil diupload.');
+      }
+
+      resetSoftwareForm();
+    } catch (err) {
+      console.error('Save software error:', err);
+      toast('Gagal menyimpan software. Coba ulang kembali.');
+    } finally {
+      setLoading(false);
+    }
+  });
+}
 
 const validateVideoForm = () => {
   if (!videoTitle.value.trim() || !videoDescription.value.trim() || !videoCategoryInput.value.trim() || !videoDuration.value.trim() || !videoYoutube.value.trim()) {
@@ -303,6 +399,9 @@ if (videoTable) {
 adminSearch.addEventListener('input', () => render());
 adminFilter.addEventListener('change', () => render());
 
+if (softwareSearch) softwareSearch.addEventListener('input', () => softwareTableRender());
+if (softwareFilter) softwareFilter.addEventListener('change', () => softwareTableRender());
+
 if (videoSearch) videoSearch.addEventListener('input', () => videoTableRender());
 if (videoFilter) videoFilter.addEventListener('change', () => videoTableRender());
 
@@ -329,3 +428,37 @@ onSnapshot(videosQuery, snapshot => {
   console.error('Firestore videos error:', err);
   toast('Gagal memuat video dari Firebase.');
 });
+
+if (softwareTable) {
+  softwareTable.addEventListener('click', async e => {
+    const docId = e.target.dataset.del || e.target.dataset.edit;
+    if (!docId) return;
+
+    if (e.target.dataset.del) {
+      if (confirm('Yakin hapus software ini?')) {
+        try {
+          await deleteDoc(doc(db, 'resources', docId));
+          toast('Software berhasil dihapus.');
+        } catch (err) {
+          console.error('Delete software error:', err);
+          toast('Gagal menghapus software.');
+        }
+      }
+    }
+
+    if (e.target.dataset.edit) {
+      const item = resources.find(r => r.docId === docId);
+      if (item) {
+        softwareTitle.value = item.title;
+        softwareCategory.value = item.category;
+        softwareDescription.value = item.description;
+        softwareAuthor.value = item.author;
+        softwareDate.value = item.date;
+        softwareThumb.value = item.thumbnail;
+        softwareFile.value = item.file;
+        editingSoftwareDocId = docId;
+        softwareForm.scrollIntoView({ behavior: 'smooth' });
+      }
+    }
+  });
+}

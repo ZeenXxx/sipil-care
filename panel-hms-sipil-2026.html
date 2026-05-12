@@ -49,6 +49,22 @@
                 </select><input class="control" id="resourceFile" placeholder="Link file (Google Drive, GitHub, atau hosting lain)" required><label class="small-text">Masukkan URL file yang sudah di-host (PDF, DOCX, XLSX, PPT, ZIP)</label>
                 <button id="submitResourceBtn" class="btn btn-primary" type="submit" onclick="console.log('Simpan Resource clicked')">Simpan Resource</button>
             </form>
+            <form class="admin-card" id="softwareForm" novalidate>
+                <h3>Upload Software</h3>
+                <input type="hidden" id="softwareId">
+                <input class="control" id="softwareTitle" placeholder="Judul" required>
+                <select class="control" id="softwareCategory">
+                    <option>Software</option>
+                    <option>Software Add-on</option>
+                </select>
+                <textarea class="control textarea" id="softwareDescription" placeholder="Deskripsi" required></textarea>
+                <input class="control" id="softwareAuthor" placeholder="Author" required>
+                <input class="control" id="softwareDate" type="date" required>
+                <input class="control" id="softwareThumb" placeholder="Thumbnail label">
+                <input class="control" id="softwareFile" placeholder="Link file (hosting / GitHub)" required>
+                <label class="small-text">Masukkan URL file software yang sudah di-host</label>
+                <button id="submitSoftwareBtn" class="btn btn-primary" type="submit">Simpan Software</button>
+            </form>
             <form class="admin-card" id="videoForm">
                 <h3>Upload Video</h3><input class="control" id="videoTitle" placeholder="Judul video" required><input
                     class="control" id="videoThumb" placeholder="Thumbnail label" required><textarea
@@ -79,6 +95,29 @@
                         </tr>
                     </thead>
                     <tbody id="resourceTable"></tbody>
+                </table>
+            </div>
+        </section>
+        <section id="software" class="admin-card">
+            <div class="admin-table-head">
+                <h3>Software Management</h3>
+                <div><input class="control" id="softwareSearch" placeholder="Search"><select class="control"
+                        id="softwareFilter">
+                        <option value="All">All</option>
+                    </select></div>
+            </div>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Judul</th>
+                            <th>Kategori</th>
+                            <th>Tipe</th>
+                            <th>Tanggal</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="softwareTable"></tbody>
                 </table>
             </div>
         </section>
