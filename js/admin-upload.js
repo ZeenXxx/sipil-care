@@ -3,7 +3,7 @@ import { app } from './firebase-config.js';
 import {
   getStorage,
   ref,
-  uploadBytes,
+  uploadBytesResumable,
   getDownloadURL
 } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-storage.js";
 
@@ -17,6 +17,13 @@ const storage = getStorage(app);
 const db = getFirestore(app);
 
 const form = document.getElementById('uploadForm');
+const statusEl = document.getElementById('uploadStatus');
+const submitButton = form.querySelector('button[type="submit"]');
+
+function setStatus(message, isError = false) {
+  statusEl.textContent = message;
+  statusEl.style.color = isError ? '#c0392b' : '#2c3e50';
+}
 
 form.addEventListener('submit', async (e) => {
 
@@ -28,18 +35,34 @@ form.addEventListener('submit', async (e) => {
   const file = document.getElementById('file').files[0];
 
   if (!file) {
-    alert('Pilih file terlebih dahulu');
+    setStatus('Pilih file terlebih dahulu.', true);
     return;
   }
 
+  submitButton.disabled = true;
+  setStatus('Memulai upload...');
+
   try {
 
+    const timestamp = Date.now();
     const fileRef = ref(
       storage,
-      `resources/${Date.now()}-${file.name}`
+      `resources/${timestamp}-${file.name}`
     );
 
-    await uploadBytes(fileRef, file);
+    const uploadTask = uploadBytesResumable(fileRef, file);
+
+    await new Promise((resolve, reject) => {
+      uploadTask.on(
+        'state_changed',
+        (snapshot) => {
+          const progress = Math.floor((snapshot.bytesTransferred / snapshot.totalBytes) * 100);
+          setStatus(`Uploading: ${progress}%`);
+        },
+        (error) => reject(error),
+        () => resolve()
+      );
+    });
 
     const url = await getDownloadURL(fileRef);
 
@@ -56,15 +79,17 @@ form.addEventListener('submit', async (e) => {
 
     });
 
-    alert('Upload berhasil');
+    setStatus('Upload berhasil. Resource telah tersimpan.');
 
     form.reset();
 
   } catch (err) {
 
     console.error(err);
-    alert('Upload gagal');
+    setStatus('Upload gagal. Cek console untuk detail.', true);
 
+  } finally {
+    submitButton.disabled = false;
   }
 
 });

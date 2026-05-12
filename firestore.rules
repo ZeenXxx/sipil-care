@@ -1,0 +1,15 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /resources/{resourceId} {
+      // Semua user dapat membaca resource.
+      allow read: if true;
+
+      // Semua user dapat menambahkan resource melalui admin panel.
+      allow create: if true;
+
+      // Disable update / delete dari client tanpa otentikasi.
+      allow update, delete: if false;
+    }
+  }
+}
