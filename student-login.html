@@ -1,45 +1,43 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Student Login - SIPIL CARE</title>
-    <link rel="stylesheet" href="css/style.css?v=12">
-    <link rel="stylesheet" href="css/admin.css?v=12">
+    <link rel="stylesheet" href="css/style.css?v=13">
+    <link rel="stylesheet" href="css/admin.css?v=13">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-    <script src="js/student-config.js?v=12"></script>
-    <script src="js/student-auth.js?v=12"></script>
+    <script src="js/student-config.js?v=13"></script>
+    <script src="js/student-auth.js?v=13"></script>
   </head>
   <body class="login-page student-login-page">
     <main class="login-shell">
       <section class="login-card">
         <span class="eyebrow">Akses mahasiswa UNJANI</span>
         <h1>Masuk ke SIPIL CARE</h1>
-        <p>Gunakan NIM sebagai username. Password dibuat sendiri saat registrasi pertama.</p>
+        <p>Gunakan NIM dan password awal yang diberikan admin/HMS. Setelah login pertama, ubah password agar hanya kamu yang tahu.</p>
         <p class="student-mode" id="storageModeLabel"></p>
 
         <div class="student-tabs" role="tablist">
           <button class="student-tab active" type="button" data-mode="login">Login</button>
-          <button class="student-tab" type="button" data-mode="register">Daftar</button>
-          <button class="student-tab" type="button" data-mode="reset">Reset</button>
+          <button class="student-tab" type="button" data-mode="change">Ubah Password</button>
         </div>
 
         <form id="studentLoginForm" class="form-grid student-form" data-mode="login">
           <input class="form-control" id="studentNim" placeholder="NIM mahasiswa" inputmode="numeric" autocomplete="username" required>
           <input class="form-control" id="studentPassword" type="password" placeholder="Password" autocomplete="current-password" required>
-          <input class="form-control" id="studentName" placeholder="Nama lengkap" autocomplete="name" hidden>
-          <input class="form-control" id="studentRecoveryCode" placeholder="Kode pemulihan" hidden>
           <input class="form-control" id="studentNewPassword" type="password" placeholder="Password baru" hidden>
           <button class="btn btn-primary" id="studentSubmit" type="submit">Login</button>
         </form>
 
         <p class="student-note">
-          Untuk akun lintas device, aktifkan Supabase di <code>js/student-config.js</code>. Kode pemulihan dipakai saat reset password.
+          Akun tidak bisa dibuat sendiri. Jika belum punya akun, hubungi admin/HMS untuk mendapatkan password awal.
         </p>
       </section>
     </main>
     <div class="toast" id="toast"></div>
   </body>
 </html>
+

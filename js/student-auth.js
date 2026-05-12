@@ -1,4 +1,4 @@
-(() => {
+﻿(() => {
   const CONFIG = window.SIPILCARE_AUTH_CONFIG || { mode: "local" };
   const STUDENTS_KEY = "sipilcare_students";
   const SESSION_KEY = "sipilcare_student_session";
@@ -48,51 +48,40 @@
     return supabaseClient;
   };
 
+  const tableName = () => CONFIG.tableName || "students";
+
   const remoteFindStudent = async (nim) => {
     const db = await getSupabase();
     const { data, error } = await db
-      .from(CONFIG.tableName || "students")
-      .select("nim,name,password_hash,recovery_code_hash")
+      .from(tableName())
+      .select("nim,name,password_hash,must_change_password")
       .eq("nim", nim)
       .maybeSingle();
     if (error) throw error;
     return data;
   };
 
-  const remoteRegister = async ({ nim, name, password, recoveryCode }) => {
-    const existing = await remoteFindStudent(nim);
-    if (existing) throw new Error("NIM sudah terdaftar. Silakan login.");
-    const db = await getSupabase();
-    const { error } = await db.from(CONFIG.tableName || "students").insert({
-      nim,
-      name,
-      password_hash: await sha256(password),
-      recovery_code_hash: await sha256(recoveryCode),
-      created_at: new Date().toISOString()
-    });
-    if (error) throw error;
-  };
-
   const remoteLogin = async ({ nim, password }) => {
     const student = await remoteFindStudent(nim);
     if (!student || student.password_hash !== await sha256(password)) {
-      throw new Error("NIM atau password salah.");
+      throw new Error("NIM atau password salah. Pastikan akun sudah dibuat oleh admin HMS.");
     }
     return student;
   };
 
-  const remoteReset = async ({ nim, newPassword, recoveryCode }) => {
-    const student = await remoteFindStudent(nim);
-    if (!student) throw new Error("NIM belum terdaftar.");
-    if (student.recovery_code_hash !== await sha256(recoveryCode)) {
-      throw new Error("Kode pemulihan salah.");
-    }
+  const remoteChangePassword = async ({ nim, currentPassword, newPassword }) => {
+    const student = await remoteLogin({ nim, password: currentPassword });
     const db = await getSupabase();
     const { error } = await db
-      .from(CONFIG.tableName || "students")
-      .update({ password_hash: await sha256(newPassword), updated_at: new Date().toISOString() })
+      .from(tableName())
+      .update({
+        password_hash: await sha256(newPassword),
+        must_change_password: false,
+        updated_at: new Date().toISOString()
+      })
       .eq("nim", nim);
     if (error) throw error;
+    return student;
   };
 
   if (!isStudentLogin && !isAdminLogin && !isAdminPanel) {
@@ -130,31 +119,24 @@
     const tabs = document.querySelectorAll(".student-tab");
     const nimInput = document.getElementById("studentNim");
     const passwordInput = document.getElementById("studentPassword");
-    const nameInput = document.getElementById("studentName");
     const newPasswordInput = document.getElementById("studentNewPassword");
-    const recoveryInput = document.getElementById("studentRecoveryCode");
     const submit = document.getElementById("studentSubmit");
     const modeLabel = document.getElementById("storageModeLabel");
     let mode = "login";
 
     if (modeLabel) {
       modeLabel.textContent = usingSupabase
-        ? "Mode cloud aktif: akun dapat dipakai lintas device."
-        : "Mode lokal aktif: isi Supabase config agar akun terbaca lintas device.";
+        ? "Mode cloud aktif: hanya NIM yang sudah dibuat admin HMS yang bisa login."
+        : "Mode lokal hanya untuk demo. Aktifkan Supabase agar akun lintas device dan pre-provisioned.";
     }
 
     const setMode = (nextMode) => {
       mode = nextMode;
       tabs.forEach((tab) => tab.classList.toggle("active", tab.dataset.mode === mode));
-      nameInput.hidden = mode !== "register";
-      newPasswordInput.hidden = mode !== "reset";
-      recoveryInput.hidden = mode === "login";
-      passwordInput.hidden = mode === "reset";
-      nameInput.required = mode === "register";
-      newPasswordInput.required = mode === "reset";
-      recoveryInput.required = mode !== "login";
-      passwordInput.required = mode !== "reset";
-      submit.textContent = mode === "login" ? "Login" : mode === "register" ? "Daftar Akun" : "Reset Password";
+      newPasswordInput.hidden = mode !== "change";
+      newPasswordInput.required = mode === "change";
+      passwordInput.placeholder = mode === "change" ? "Password saat ini / password awal" : "Password";
+      submit.textContent = mode === "login" ? "Login" : "Ubah Password";
     };
 
     tabs.forEach((tab) => tab.addEventListener("click", () => setMode(tab.dataset.mode)));
@@ -165,62 +147,50 @@
       const nim = nimInput.value.trim();
       const password = passwordInput.value;
       const newPassword = newPasswordInput.value;
-      const recoveryCode = recoveryInput.value.trim();
 
       try {
         if (!isValidNim(nim)) throw new Error("NIM harus berupa angka 8-14 digit.");
 
         if (usingSupabase) {
-          if (mode === "register") {
-            if (password.length < 6) throw new Error("Password minimal 6 karakter.");
-            if (recoveryCode.length < 6) throw new Error("Kode pemulihan minimal 6 karakter.");
-            await remoteRegister({ nim, name: nameInput.value.trim() || "Mahasiswa UNJANI", password, recoveryCode });
-            sessionStorage.setItem(SESSION_KEY, JSON.stringify({ nim, name: nameInput.value.trim() || "Mahasiswa UNJANI" }));
-            location.href = nextUrl();
-            return;
-          }
-          if (mode === "reset") {
+          if (mode === "change") {
             if (newPassword.length < 6) throw new Error("Password baru minimal 6 karakter.");
-            await remoteReset({ nim, newPassword, recoveryCode });
-            showToast("Password berhasil direset. Silakan login.");
-            form.reset();
-            setMode("login");
+            const student = await remoteChangePassword({ nim, currentPassword: password, newPassword });
+            sessionStorage.setItem(SESSION_KEY, JSON.stringify({ nim, name: student.name }));
+            showToast("Password berhasil diubah. Mengalihkan ke halaman utama...");
+            setTimeout(() => location.href = nextUrl(), 700);
             return;
           }
           const student = await remoteLogin({ nim, password });
+          if (student.must_change_password) {
+            showToast("Silakan ubah password awal terlebih dahulu.");
+            setMode("change");
+            return;
+          }
           sessionStorage.setItem(SESSION_KEY, JSON.stringify({ nim, name: student.name }));
           location.href = nextUrl();
           return;
         }
 
         const students = getStudents();
-        if (mode === "register") {
-          if (students[nim]) throw new Error("NIM sudah terdaftar. Silakan login.");
-          if (password.length < 6) throw new Error("Password minimal 6 karakter.");
-          if (recoveryCode.length < 6) throw new Error("Kode pemulihan minimal 6 karakter.");
-          students[nim] = {
-            nim,
-            name: nameInput.value.trim() || "Mahasiswa UNJANI",
-            password,
-            recoveryCode
-          };
+        if (mode === "change") {
+          if (!students[nim]) throw new Error("NIM belum tersedia. Akun harus dibuat admin.");
+          if (students[nim].password !== password) throw new Error("Password saat ini salah.");
+          if (newPassword.length < 6) throw new Error("Password baru minimal 6 karakter.");
+          students[nim].password = newPassword;
+          students[nim].mustChangePassword = false;
           saveStudents(students);
           sessionStorage.setItem(SESSION_KEY, JSON.stringify({ nim, name: students[nim].name }));
           location.href = nextUrl();
           return;
         }
-        if (mode === "reset") {
-          if (!students[nim]) throw new Error("NIM belum terdaftar.");
-          if (students[nim].recoveryCode !== recoveryCode) throw new Error("Kode pemulihan salah.");
-          if (newPassword.length < 6) throw new Error("Password baru minimal 6 karakter.");
-          students[nim].password = newPassword;
-          saveStudents(students);
-          showToast("Password berhasil direset. Silakan login.");
-          form.reset();
-          setMode("login");
+        if (!students[nim] || students[nim].password !== password) {
+          throw new Error("NIM atau password salah. Akun harus dibuat admin terlebih dahulu.");
+        }
+        if (students[nim].mustChangePassword) {
+          showToast("Silakan ubah password awal terlebih dahulu.");
+          setMode("change");
           return;
         }
-        if (!students[nim] || students[nim].password !== password) throw new Error("NIM atau password salah.");
         sessionStorage.setItem(SESSION_KEY, JSON.stringify({ nim, name: students[nim].name }));
         location.href = nextUrl();
       } catch (error) {
