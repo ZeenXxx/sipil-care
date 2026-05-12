@@ -12,6 +12,8 @@ Login berbasis `localStorage` hanya tersimpan di browser/device yang sama. Agar 
 Jalankan SQL ini di Supabase SQL Editor:
 
 ```sql
+drop table if exists public.students;
+
 create table if not exists public.students (
   nim text primary key,
   name text not null,
