@@ -119,7 +119,7 @@ resourceForm.addEventListener('submit', async e => {
 
   setLoading(true);
   const fileUrl = resourceFile.value.trim();
-  const type = resourceFile.value.split('.').pop().toUpperCase();
+  const type = resourceType.value;
 
   try {
     const data = {
