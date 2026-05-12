@@ -23,6 +23,12 @@ const extractGoogleDriveId = (url) => {
   return match ? match[1] : null;
 };
 
+const getFileExtensionFromUrl = (url) => {
+  const cleanUrl = url.split('?')[0];
+  const match = cleanUrl.match(/\.([0-9a-zA-Z]+)$/);
+  return match ? match[1] : null;
+};
+
 const downloadFile = async (url, filename) => {
   const gdId = extractGoogleDriveId(url);
   
@@ -100,7 +106,10 @@ function render() {
       const url = btn.dataset.url;
       const name = btn.dataset.name;
       const type = btn.dataset.type;
-      downloadFile(url, `${name}.${type.toLowerCase()}`);
+      const ext = ['pdf', 'docx', 'xlsx', 'ppt', 'zip'].includes((type || '').toLowerCase())
+        ? type.toLowerCase()
+        : getFileExtensionFromUrl(url) || 'file';
+      downloadFile(url, `${name}.${ext}`);
     });
   });
 
@@ -119,7 +128,10 @@ function render() {
         const url = btn.dataset.url;
         const name = btn.dataset.name;
         const type = btn.dataset.type;
-        downloadFile(url, `${name}.${type.toLowerCase()}`);
+        const ext = ['pdf', 'docx', 'xlsx', 'ppt', 'zip'].includes((type || '').toLowerCase())
+          ? type.toLowerCase()
+          : getFileExtensionFromUrl(url) || 'file';
+        downloadFile(url, `${name}.${ext}`);
       });
     });
   }
