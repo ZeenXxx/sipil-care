@@ -1,6 +1,6 @@
 ﻿# SIPIL CARE Student Login Lintas Device
 
-Login mahasiswa sekarang memakai konsep akun pre-provisioned: mahasiswa tidak bisa membuat akun sendiri. Admin/HMS harus membuat akun terlebih dahulu berisi NIM dan password awal acak. Setelah mahasiswa login pertama, mereka dapat mengubah password sendiri.
+Login mahasiswa sekarang memakai konsep akun pre-provisioned: mahasiswa tidak bisa membuat akun sendiri. Admin/HMS harus membuat akun terlebih dahulu berisi NIM, password awal acak, dan kode pemulihan. Saat memakai password awal, mahasiswa tidak dipaksa mengganti password, tetapi akan ditanya apakah ingin menggantinya.
 
 ## 1. Buat Project Supabase
 
@@ -19,6 +19,7 @@ create table public.students (
   nim text primary key,
   name text not null,
   password_hash text not null,
+  recovery_code_hash text not null,
   must_change_password boolean default true,
   created_at timestamptz default now(),
   updated_at timestamptz
@@ -42,9 +43,9 @@ with check (true);
 
 Tidak ada policy `insert` untuk anon. Artinya pengunjung website tidak bisa membuat akun sendiri dari halaman public.
 
-## 3. Generate Hash Password Awal
+## 3. Generate Hash Password Awal dan Kode Pemulihan
 
-Password tidak disimpan mentah. Gunakan SHA-256 hash.
+Password dan kode pemulihan tidak disimpan mentah. Gunakan SHA-256 hash.
 
 Contoh di browser console atau Node.js:
 
@@ -55,7 +56,8 @@ async function hash(text) {
   return Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
-await hash("A7K9Q2M1");
+await hash("A7K9Q2M1"); // password awal
+await hash("R7C2-9QK1"); // kode pemulihan
 ```
 
 ## 4. Tambahkan Akun Mahasiswa
@@ -63,13 +65,22 @@ await hash("A7K9Q2M1");
 Contoh insert akun:
 
 ```sql
-insert into public.students (nim, name, password_hash, must_change_password)
+insert into public.students (nim, name, password_hash, recovery_code_hash, must_change_password)
 values
-('2350031020', 'Nama Mahasiswa 1', 'ISI_HASH_PASSWORD_AWAL', true),
-('2350031021', 'Nama Mahasiswa 2', 'ISI_HASH_PASSWORD_AWAL', true);
+('2350031020', 'Nama Mahasiswa 1', 'ISI_HASH_PASSWORD_AWAL', 'ISI_HASH_KODE_PEMULIHAN', true),
+('2350031021', 'Nama Mahasiswa 2', 'ISI_HASH_PASSWORD_AWAL', 'ISI_HASH_KODE_PEMULIHAN', true);
 ```
 
-Berikan NIM dan password awal acak ke mahasiswa. Saat login pertama, sistem akan meminta mereka mengubah password.
+Berikan NIM, password awal acak, dan kode pemulihan ke mahasiswa. Kode pemulihan dipakai jika mahasiswa lupa password dan ingin membuat password baru.
+
+Jika tabel `students` sudah terlanjur dibuat tanpa kolom kode pemulihan, jalankan:
+
+```sql
+alter table public.students
+add column if not exists recovery_code_hash text;
+```
+
+Lalu isi `recovery_code_hash` untuk setiap NIM sebelum fitur lupa password digunakan.
 
 ## 5. Aktifkan Mode Supabase
 

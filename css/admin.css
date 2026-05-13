@@ -445,6 +445,18 @@ th  {
 
 }
 
+.student-help  {
+
+  margin: -6px 0 16px;
+
+  color: var(--muted);
+
+  font-size: 13px;
+
+  line-height: 1.55
+
+}
+
 .student-logout  {
   
   min-height: 42px;
