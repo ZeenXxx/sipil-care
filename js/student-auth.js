@@ -7,6 +7,8 @@
   const isAdminLogin = currentPage === "login.html";
   const isAdminPanel = currentPage === "panel-hms-sipil-2026.html";
   const usingSupabase = CONFIG.mode === "supabase" && CONFIG.supabaseUrl && CONFIG.supabaseAnonKey;
+  const HMS_INSTAGRAM = "https://www.instagram.com/hmsunjani";
+  const HMS_YOUTUBE = "https://youtube.com/@hmsunjani1986?si=d_lPiLa4u7yzBDYE";
 
   let supabaseClient = null;
 
@@ -136,6 +138,18 @@
       passwordButton.addEventListener("click", () => {
         location.href = `${prefix}student-login.html?mode=change&next=${encodeURIComponent(nextTarget)}`;
       });
+      const instagram = document.createElement("a");
+      instagram.className = "student-social";
+      instagram.href = HMS_INSTAGRAM;
+      instagram.target = "_blank";
+      instagram.rel = "noopener";
+      instagram.textContent = "Instagram HMS";
+      const youtube = document.createElement("a");
+      youtube.className = "student-social";
+      youtube.href = HMS_YOUTUBE;
+      youtube.target = "_blank";
+      youtube.rel = "noopener";
+      youtube.textContent = "YouTube HMS";
       const logout = document.createElement("button");
       logout.className = "student-logout";
       logout.type = "button";
@@ -145,6 +159,8 @@
         sessionStorage.removeItem(SESSION_KEY);
         location.href = prefix + "student-login.html";
       });
+      nav.appendChild(instagram);
+      nav.appendChild(youtube);
       nav.appendChild(passwordButton);
       nav.appendChild(logout);
     });

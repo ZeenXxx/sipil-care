@@ -524,7 +524,7 @@ body.nav-open:before  {
 
 }
 
-.student-logout, .student-password {
+.student-logout, .student-password, .student-social {
   min-height:42px;
   padding:0 15px;
   border:1px solid rgba(15, 77, 58, .14);
@@ -534,13 +534,13 @@ body.nav-open:before  {
   font-weight:900
 }
 
-.student-logout:hover, .student-password:hover {
+.student-logout:hover, .student-password:hover, .student-social:hover {
   background:var(--primary);
   color:#fff
 }
 
 @media(max-width:820px) {
-  .student-logout, .student-password {
+  .student-logout, .student-password, .student-social {
   width:100%;
   justify-content:space-between;
   min-height:54px;
