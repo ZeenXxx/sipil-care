@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="id">
   <head>
     <meta charset="UTF-8">
@@ -26,11 +26,11 @@
           <div>
             <span class="eyebrow">Structural tools</span>
             <h1>Structural Diagram Analyzer</h1>
-            <p class="lead">Gambar balok 1D sederhana, tambahkan support dan beban, lalu hitung reaksi tumpuan, shear force diagram, bending moment diagram, dan tabel gaya dalam.</p>
+            <p class="lead">Gambar balok 1D sederhana, tambahkan support dan beban, lalu hitung reaksi tumpuan, axial force, shear force diagram, bending moment diagram, dan tabel gaya dalam.</p>
           </div>
           <div class="sign-card">
             <h2>Konvensi tanda</h2>
-            <p>Beban vertikal positif ke bawah. Reaksi vertikal positif ke atas. SFD positif bila gaya geser internal ke atas pada sisi kiri potongan. BMD positif untuk sagging, negatif untuk hogging.</p>
+            <p>Beban vertikal positif ke bawah, beban horizontal positif ke kanan. Reaksi vertikal positif ke atas. Axial positif tarik. SFD positif bila gaya geser internal ke atas pada sisi kiri potongan. BMD positif sagging dan digambar ke bawah, negatif hogging digambar ke atas.</p>
           </div>
         </div>
       </section>
@@ -68,10 +68,11 @@
             </details>
 
             <details open>
-              <summary>Beban titik vertikal</summary>
+              <summary>Beban titik</summary>
               <div class="form-grid two">
                 <div><label for="pointLoadTarget">Target</label><select class="control" id="pointLoadTarget"><option value="node">Node</option><option value="element">Element</option></select></div>
-                <div><label for="pointLoadValue">P (kN)</label><input class="control" id="pointLoadValue" type="number" step="0.01" placeholder="Downward +"></div>
+                <div><label for="pointLoadDirection">Arah</label><select class="control" id="pointLoadDirection"><option value="vertical">Vertikal ke bawah (+)</option><option value="horizontal">Horizontal ke kanan (+)</option></select></div>
+                <div class="span-2"><label for="pointLoadValue">Besar beban (kN)</label><input class="control" id="pointLoadValue" type="number" step="0.01" placeholder="Vertikal turun +, horizontal kanan +"></div>
                 <div><label for="pointLoadNode">Node</label><select class="control" id="pointLoadNode"></select></div>
                 <div><label for="pointLoadElement">Element</label><select class="control" id="pointLoadElement"></select></div>
                 <div class="span-2"><label for="pointLoadOffset">Jarak dari node awal element (m)</label><input class="control" id="pointLoadOffset" type="number" step="0.01" min="0" value="0"></div>
@@ -104,13 +105,14 @@
 
             <div class="diagram-panel result-panel">
               <div class="panel-heading"><span>03</span><h2>Hasil analisis</h2></div>
-              <div class="output-switch"><label for="diagramOutput">Output utama</label><select class="control" id="diagramOutput"><option value="both">SFD dan BMD</option><option value="sfd">Shear Force Diagram</option><option value="bmd">Bending Moment Diagram</option></select></div>
+              <div class="output-switch"><label for="diagramOutput">Output utama</label><select class="control" id="diagramOutput"><option value="all">AFD, SFD, dan BMD</option><option value="afd">Axial Force Diagram</option><option value="sfd">Shear Force Diagram</option><option value="bmd">Bending Moment Diagram</option></select></div>
               <div class="result-grid" id="reactionResults"></div>
               <div class="chart-grid">
+                <div class="chart-card" id="afdCard"><h3>Axial Force Diagram</h3><canvas id="afdChart"></canvas></div>
                 <div class="chart-card" id="sfdCard"><h3>Shear Force Diagram</h3><canvas id="sfdChart"></canvas></div>
                 <div class="chart-card" id="bmdCard"><h3>Bending Moment Diagram</h3><canvas id="bmdChart"></canvas></div>
               </div>
-              <div class="table-wrap"><table><thead><tr><th>Element</th><th>x awal</th><th>x akhir</th><th>V awal</th><th>V akhir</th><th>M awal</th><th>M tengah</th><th>M akhir</th></tr></thead><tbody id="forceTableBody"><tr><td colspan="8">Belum ada hasil analisis.</td></tr></tbody></table></div>
+              <div class="table-wrap"><table><thead><tr><th>Element</th><th>x awal</th><th>x akhir</th><th>N awal</th><th>N akhir</th><th>V awal</th><th>V akhir</th><th>M awal</th><th>M tengah</th><th>M akhir</th></tr></thead><tbody id="forceTableBody"><tr><td colspan="10">Belum ada hasil analisis.</td></tr></tbody></table></div>
             </div>
           </section>
         </div>

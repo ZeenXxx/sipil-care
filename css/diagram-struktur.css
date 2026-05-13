@@ -42,12 +42,13 @@ summary { cursor: pointer; color: var(--primary); font-weight: 900; }
 .chart-card canvas { max-height: 200px; }
 .chart-card h3 { margin: 0 0 12px; color: var(--primary); }
 .table-wrap { overflow-x: auto; margin-top: 18px; border: 1px solid var(--line); border-radius: 8px; }
-table { width: 100%; border-collapse: collapse; min-width: 760px; }
+table { width: 100%; border-collapse: collapse; min-width: 980px; }
 th, td { padding: 12px; border-bottom: 1px solid var(--line); text-align: left; font-size: 14px; }
 th { background: var(--soft); color: var(--primary); }
 .diagram-node { fill: #fff; stroke: #0f4d3a; stroke-width: 3; }
 .diagram-element { stroke: #0f4d3a; stroke-width: 8; stroke-linecap: round; }
 .diagram-load { stroke: #c93434; stroke-width: 3; marker-end: url(#arrowDown); }
+.diagram-hload { stroke: #6b4fd8; stroke-width: 3; marker-end: url(#arrowRight); }
 .diagram-udl { stroke: #d67a00; stroke-width: 2.5; marker-end: url(#arrowOrange); }
 .diagram-support { fill: #d9c529; stroke: #0f4d3a; stroke-width: 2; }
 .diagram-label { fill: #17231f; font-size: 14px; font-weight: 800; }

@@ -5,6 +5,7 @@ const state = {
   nextNodeId: 1,
   nextElementId: 1,
   nextLoadId: 1,
+  afdChart: null,
   sfdChart: null,
   bmdChart: null
 };
@@ -22,6 +23,7 @@ const controls = {
   supportNode: $('#supportNode'),
   supportType: $('#supportType'),
   pointLoadTarget: $('#pointLoadTarget'),
+  pointLoadDirection: $('#pointLoadDirection'),
   pointLoadValue: $('#pointLoadValue'),
   pointLoadNode: $('#pointLoadNode'),
   pointLoadElement: $('#pointLoadElement'),
@@ -70,7 +72,7 @@ function renderModelList() {
     return `<p>E${element.id}: N${element.startNode}-N${element.endNode}, L=${fmt(ends.length)} m</p>`;
   }).join('') || '<p>Belum ada element.</p>';
   const loads = state.loads.map(load => load.type === 'point'
-    ? `<p>${load.label}: P=${fmt(load.p)} kN di x=${fmt(load.x)} m</p>`
+    ? `<p>${load.label}: ${load.direction === 'horizontal' ? 'H' : 'P'}=${fmt(load.p)} kN di x=${fmt(load.x)} m</p>`
     : `<p>${load.label}: w=${fmt(load.w)} kN/m di E${load.elementId}</p>`).join('') || '<p>Belum ada beban.</p>';
   $('#modelList').innerHTML = `<article><h3>Node</h3>${nodes}</article><article><h3>Element</h3>${elements}</article><article><h3>Beban</h3>${loads}</article>`;
 }
@@ -97,7 +99,7 @@ function renderSvg() {
   const sx = x => left + ((x - minX) / span) * (right - left);
 
   let content = `
-    <defs><marker id="arrowDown" markerWidth="10" markerHeight="10" refX="5" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 Z" fill="#c93434"/></marker><marker id="arrowOrange" markerWidth="10" markerHeight="10" refX="5" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 Z" fill="#d67a00"/></marker></defs>
+    <defs><marker id="arrowDown" markerWidth="10" markerHeight="10" refX="5" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 Z" fill="#c93434"/></marker><marker id="arrowRight" markerWidth="10" markerHeight="10" refX="5" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 Z" fill="#6b4fd8"/></marker><marker id="arrowOrange" markerWidth="10" markerHeight="10" refX="5" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 Z" fill="#d67a00"/></marker></defs>
     <line x1="${left}" y1="${y + 92}" x2="${right}" y2="${y + 92}" stroke="#dce6e2" stroke-width="2"/>
   `;
 
@@ -110,7 +112,13 @@ function renderSvg() {
   state.loads.forEach(load => {
     if (load.type === 'point') {
       const x = sx(load.x);
-      content += `<line class="diagram-load" x1="${x}" y1="${y - 78}" x2="${x}" y2="${y - 20}"></line><text class="diagram-label" x="${x - 24}" y="${y - 88}">${load.label} ${fmt(load.p)} kN</text>`;
+      if (load.direction === 'horizontal') {
+        const start = load.p >= 0 ? x - 76 : x + 76;
+        const end = load.p >= 0 ? x - 18 : x + 18;
+        content += `<line class="diagram-hload" x1="${start}" y1="${y - 42}" x2="${end}" y2="${y - 42}"></line><text class="diagram-label" x="${Math.min(start, end) - 8}" y="${y - 56}">${load.label} ${fmt(load.p)} kN</text>`;
+      } else {
+        content += `<line class="diagram-load" x1="${x}" y1="${y - 78}" x2="${x}" y2="${y - 20}"></line><text class="diagram-label" x="${x - 24}" y="${y - 88}">${load.label} ${fmt(load.p)} kN</text>`;
+      }
     } else {
       const ends = elementEnds(getElement(load.elementId));
       const x1 = sx(ends.left.x);
@@ -155,6 +163,11 @@ function validateModel() {
   const fixed = state.nodes.filter(node => node.support === 'fixed');
   const verticalSupports = state.nodes.filter(node => ['pin', 'roller', 'fixed'].includes(node.support));
   const simpleSupports = state.nodes.filter(node => ['pin', 'roller'].includes(node.support));
+  const horizontalLoads = state.loads.filter(load => load.type === 'point' && load.direction === 'horizontal');
+  const horizontalSupports = state.nodes.filter(node => ['pin', 'fixed'].includes(node.support));
+
+  if (horizontalLoads.length && horizontalSupports.length < 1) throw new Error('Beban horizontal membutuhkan support pin atau fixed.');
+  if (horizontalLoads.length && horizontalSupports.length > 1) throw new Error('Model dengan lebih dari satu restraint horizontal belum didukung pada versi awal.');
 
   if (fixed.length === 1 && verticalSupports.length === 1) return { type: 'cantilever', supports: fixed };
   if (fixed.length === 0 && simpleSupports.length === 2) {
@@ -176,19 +189,27 @@ function normalizeLoads() {
 
 function solveReactions(model, loads) {
   const reactions = [];
-  const pointAndUdl = loads.map(load => load.type === 'point'
-    ? { total: load.p, x: load.x }
-    : { total: load.total, x: load.centroid });
-  const totalLoad = pointAndUdl.reduce((sum, load) => sum + load.total, 0);
+  const verticalLoads = loads
+    .filter(load => load.type === 'udl' || load.direction !== 'horizontal')
+    .map(load => load.type === 'point' ? { total: load.p, x: load.x } : { total: load.total, x: load.centroid });
+  const horizontalLoads = loads.filter(load => load.type === 'point' && load.direction === 'horizontal');
+  const totalLoad = verticalLoads.reduce((sum, load) => sum + load.total, 0);
+  const totalHorizontal = horizontalLoads.reduce((sum, load) => sum + load.p, 0);
+  const horizontalSupport = state.nodes.find(node => ['pin', 'fixed'].includes(node.support));
+
+  const applyHorizontalReaction = reaction => {
+    reaction.horizontal = horizontalSupport && reaction.nodeId === horizontalSupport.id ? -totalHorizontal : 0;
+    return reaction;
+  };
 
   if (model.type === 'simple') {
     const [a, b] = model.supports;
     const span = b.x - a.x;
-    const momentAboutA = pointAndUdl.reduce((sum, load) => sum + load.total * (load.x - a.x), 0);
+    const momentAboutA = verticalLoads.reduce((sum, load) => sum + load.total * (load.x - a.x), 0);
     const rb = momentAboutA / span;
     const ra = totalLoad - rb;
-    reactions.push({ nodeId: a.id, x: a.x, vertical: ra, moment: 0 });
-    reactions.push({ nodeId: b.id, x: b.x, vertical: rb, moment: 0 });
+    reactions.push(applyHorizontalReaction({ nodeId: a.id, x: a.x, vertical: ra, moment: 0 }));
+    reactions.push(applyHorizontalReaction({ nodeId: b.id, x: b.x, vertical: rb, moment: 0 }));
   }
 
   if (model.type === 'cantilever') {
@@ -196,19 +217,18 @@ function solveReactions(model, loads) {
     const minX = Math.min(...state.nodes.map(node => node.x));
     const maxX = Math.max(...state.nodes.map(node => node.x));
     const isLeftFixed = Math.abs(support.x - minX) < eps;
-    const momentMagnitude = pointAndUdl.reduce((sum, load) => sum + load.total * Math.abs(load.x - support.x), 0);
-    reactions.push({ nodeId: support.id, x: support.x, vertical: totalLoad, moment: -momentMagnitude, includeMomentInLeftExpression: isLeftFixed });
+    const momentMagnitude = verticalLoads.reduce((sum, load) => sum + load.total * Math.abs(load.x - support.x), 0);
+    reactions.push(applyHorizontalReaction({ nodeId: support.id, x: support.x, vertical: totalLoad, moment: -momentMagnitude, includeMomentInLeftExpression: isLeftFixed }));
     if (Math.abs(support.x - minX) > eps && Math.abs(support.x - maxX) > eps) throw new Error('Model ini belum didukung pada versi awal.');
   }
 
   return reactions;
 }
-
 function shearAt(x, loads, reactions) {
   let shear = 0;
   reactions.forEach(reaction => { if (x >= reaction.x - eps) shear += reaction.vertical; });
   loads.forEach(load => {
-    if (load.type === 'point' && x >= load.x - eps) shear -= load.p;
+    if (load.type === 'point' && load.direction !== 'horizontal' && x >= load.x - eps) shear -= load.p;
     if (load.type === 'udl' && x > load.a + eps) shear -= load.w * Math.min(x - load.a, load.b - load.a);
   });
   return Math.abs(shear) < 1e-7 ? 0 : shear;
@@ -223,7 +243,7 @@ function momentAt(x, loads, reactions) {
     }
   });
   loads.forEach(load => {
-    if (load.type === 'point' && x >= load.x - eps) moment -= load.p * (x - load.x);
+    if (load.type === 'point' && load.direction !== 'horizontal' && x >= load.x - eps) moment -= load.p * (x - load.x);
     if (load.type === 'udl' && x > load.a + eps) {
       const length = Math.min(x - load.a, load.b - load.a);
       const centroid = load.a + length / 2;
@@ -231,6 +251,14 @@ function momentAt(x, loads, reactions) {
     }
   });
   return Math.abs(moment) < 1e-7 ? 0 : moment;
+}
+
+function axialAt(x, loads, reactions) {
+  let sumFxLeft = 0;
+  reactions.forEach(reaction => { if (x >= reaction.x - eps) sumFxLeft += reaction.horizontal || 0; });
+  loads.forEach(load => { if (load.type === 'point' && load.direction === 'horizontal' && x >= load.x - eps) sumFxLeft += load.p; });
+  const axial = -sumFxLeft;
+  return Math.abs(axial) < 1e-7 ? 0 : axial;
 }
 
 function sampleBeam(loads, reactions) {
@@ -262,7 +290,7 @@ function sampleBeam(loads, reactions) {
     }
   }
 
-  return [...samples].sort((a, b) => a - b).map(x => ({ x, shear: shearAt(x, loads, reactions), moment: momentAt(x, loads, reactions) }));
+  return [...samples].sort((a, b) => a - b).map(x => ({ x, axial: axialAt(x, loads, reactions), shear: shearAt(x, loads, reactions), moment: momentAt(x, loads, reactions) }));
 }
 
 function buildElementTable(loads, reactions) {
@@ -273,6 +301,8 @@ function buildElementTable(loads, reactions) {
       id: element.id,
       start: ends.left.x,
       end: ends.right.x,
+      nStart: axialAt(ends.left.x + 1e-6, loads, reactions),
+      nEnd: axialAt(ends.right.x - 1e-6, loads, reactions),
       vStart: shearAt(ends.left.x + 1e-6, loads, reactions),
       vEnd: shearAt(ends.right.x - 1e-6, loads, reactions),
       mStart: momentAt(ends.left.x + 1e-6, loads, reactions),
@@ -286,14 +316,15 @@ function renderSummary(reactions, samples) {
   const maxMoment = samples.reduce((max, item) => Math.abs(item.moment) > Math.abs(max.moment) ? item : max, samples[0] || { x: 0, moment: 0 });
   const reactionCards = reactions.map(reaction => {
     const supportMoment = reaction.moment ? '<span>M = ' + fmt(reaction.moment) + ' kNm</span>' : '';
-    return '<article class="result-card-small"><span>N' + reaction.nodeId + ' @ x=' + fmt(reaction.x) + ' m</span><strong>Ry = ' + fmt(reaction.vertical) + ' kN</strong>' + supportMoment + '</article>';
+    const horizontal = reaction.horizontal ? '<span>Rx = ' + fmt(reaction.horizontal) + ' kN</span>' : '';
+    return '<article class="result-card-small"><span>N' + reaction.nodeId + ' @ x=' + fmt(reaction.x) + ' m</span><strong>Ry = ' + fmt(reaction.vertical) + ' kN</strong>' + horizontal + supportMoment + '</article>';
   }).join('');
   const sign = maxMoment.moment >= 0 ? 'Sagging' : 'Hogging';
   const mmaxCard = '<article class="result-card-small highlight"><span>Mmax @ x=' + fmt(maxMoment.x) + ' m</span><strong>' + fmt(maxMoment.moment) + ' kNm</strong><span>' + sign + '</span></article>';
   $('#reactionResults').innerHTML = reactionCards + mmaxCard;
 }
 function renderTable(rows) {
-  $('#forceTableBody').innerHTML = rows.map(row => `<tr><td>E${row.id}</td><td>${fmt(row.start)} m</td><td>${fmt(row.end)} m</td><td>${fmt(row.vStart)} kN</td><td>${fmt(row.vEnd)} kN</td><td>${fmt(row.mStart)} kNm</td><td>${fmt(row.mMid)} kNm</td><td>${fmt(row.mEnd)} kNm</td></tr>`).join('');
+  $('#forceTableBody').innerHTML = rows.map(row => `<tr><td>E${row.id}</td><td>${fmt(row.start)} m</td><td>${fmt(row.end)} m</td><td>${fmt(row.nStart)} kN</td><td>${fmt(row.nEnd)} kN</td><td>${fmt(row.vStart)} kN</td><td>${fmt(row.vEnd)} kN</td><td>${fmt(row.mStart)} kNm</td><td>${fmt(row.mMid)} kNm</td><td>${fmt(row.mEnd)} kNm</td></tr>`).join('');
 }
 
 const valueLabelPlugin = {
@@ -324,6 +355,7 @@ function chartDataset(label, data, color, unit) {
 
 function renderCharts(samples) {
   const labels = samples.map(item => fmt(item.x));
+  const afdData = samples.map(item => item.axial);
   const sfdData = samples.map(item => item.shear);
   const bmdData = samples.map(item => item.moment);
   const paddedRange = values => {
@@ -342,16 +374,19 @@ function renderCharts(samples) {
     }
   });
 
+  if (state.afdChart) state.afdChart.destroy();
   if (state.sfdChart) state.sfdChart.destroy();
   if (state.bmdChart) state.bmdChart.destroy();
+  state.afdChart = new Chart($('#afdChart'), { type: 'line', data: { labels, datasets: [chartDataset('N', afdData, '#6b4fd8', 'kN')] }, options: baseOptions('N (kN)', afdData), plugins: [valueLabelPlugin] });
   state.sfdChart = new Chart($('#sfdChart'), { type: 'line', data: { labels, datasets: [chartDataset('V', sfdData, '#004dff', 'kN')] }, options: baseOptions('V (kN)', sfdData), plugins: [valueLabelPlugin] });
-  state.bmdChart = new Chart($('#bmdChart'), { type: 'line', data: { labels, datasets: [chartDataset('M', bmdData, '#d40000', 'kNm')] }, options: baseOptions('M (kNm)', bmdData), plugins: [valueLabelPlugin] });
+  state.bmdChart = new Chart($('#bmdChart'), { type: 'line', data: { labels, datasets: [chartDataset('M', bmdData, '#d40000', 'kNm')] }, options: { ...baseOptions('M (kNm)', bmdData), scales: { ...baseOptions('M (kNm)', bmdData).scales, y: { ...baseOptions('M (kNm)', bmdData).scales.y, reverse: true } } }, plugins: [valueLabelPlugin] });
   updateChartVisibility();
 }
 function updateChartVisibility() {
   const mode = controls.diagramOutput.value;
-  $('#sfdCard').style.display = mode === 'bmd' ? 'none' : '';
-  $('#bmdCard').style.display = mode === 'sfd' ? 'none' : '';
+  $('#afdCard').style.display = mode !== 'all' && mode !== 'afd' ? 'none' : '';
+  $('#sfdCard').style.display = mode !== 'all' && mode !== 'sfd' ? 'none' : '';
+  $('#bmdCard').style.display = mode !== 'all' && mode !== 'bmd' ? 'none' : '';
 }
 
 function analyze() {
@@ -367,7 +402,7 @@ function analyze() {
     showMessage('Analisis berhasil untuk model ' + (model.type === 'simple' ? 'simply supported beam.' : 'fixed-end cantilever.'), true);
   } catch (error) {
     $('#reactionResults').innerHTML = '';
-    $('#forceTableBody').innerHTML = '<tr><td colspan="8">Belum ada hasil analisis.</td></tr>';
+    $('#forceTableBody').innerHTML = '<tr><td colspan="10">Belum ada hasil analisis.</td></tr>';
     showMessage(error.message);
   }
 }
@@ -417,7 +452,9 @@ function addPointLoad() {
     if (!Number.isFinite(offset) || offset < -eps || offset > ends.length + eps) return showMessage('Beban tidak boleh berada di luar panjang element.');
     x = getNode(element.startNode).x <= getNode(element.endNode).x ? getNode(element.startNode).x + offset : getNode(element.startNode).x - offset;
   }
-  state.loads.push({ id: state.nextLoadId, type: 'point', x, p, label: `P${state.nextLoadId}` });
+  const direction = controls.pointLoadDirection.value;
+  const prefix = direction === 'horizontal' ? 'H' : 'P';
+  state.loads.push({ id: state.nextLoadId, type: 'point', direction, x, p, label: `${prefix}${state.nextLoadId}` });
   state.nextLoadId += 1;
   controls.pointLoadValue.value = '';
   refresh();
@@ -441,12 +478,14 @@ function resetModel() {
   state.nextNodeId = 1;
   state.nextElementId = 1;
   state.nextLoadId = 1;
+  if (state.afdChart) state.afdChart.destroy();
   if (state.sfdChart) state.sfdChart.destroy();
   if (state.bmdChart) state.bmdChart.destroy();
+  state.afdChart = null;
   state.sfdChart = null;
   state.bmdChart = null;
   $('#reactionResults').innerHTML = '';
-  $('#forceTableBody').innerHTML = '<tr><td colspan="8">Belum ada hasil analisis.</td></tr>';
+  $('#forceTableBody').innerHTML = '<tr><td colspan="10">Belum ada hasil analisis.</td></tr>';
   showMessage('Model direset. Tambahkan node sesuai panjang balok yang diinginkan.', true);
   refresh();
 }
