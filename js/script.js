@@ -36,9 +36,21 @@ const videoCard = item => `
 `;
 
 const announcementCard = item => {
+  const description = String(item.description || '').trim();
+  const hasLongDescription = description.length > 150;
+  const excerpt = hasLongDescription ? `${description.slice(0, 150).trim()}...` : description;
   const image = item.photoUrl
     ? `<img src="${escapeText(item.photoUrl)}" alt="${escapeText(item.title)}">`
     : `<span>${escapeText((item.type || 'Info').slice(0, 2).toUpperCase())}</span>`;
+  const descriptionMarkup = hasLongDescription
+    ? `
+      <p class="announcement-excerpt">${escapeText(excerpt)}</p>
+      <details class="announcement-details">
+        <summary>Baca selengkapnya</summary>
+        <p>${escapeText(description)}</p>
+      </details>
+    `
+    : `<p>${escapeText(description)}</p>`;
 
   return `
     <article class="card announcement-card">
@@ -49,7 +61,7 @@ const announcementCard = item => {
           <span class="badge">${escapeText(item.date || 'Update')}</span>
         </div>
         <h3>${escapeText(item.title)}</h3>
-        <p>${escapeText(item.description)}</p>
+        ${descriptionMarkup}
       </div>
     </article>
   `;

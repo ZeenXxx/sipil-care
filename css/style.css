@@ -705,17 +705,22 @@ button, input, select, textarea  {
 .announcement-card  {
     overflow: hidden;
     display: flex;
-    flex-direction: column
+    flex-direction: column;
+    position: relative;
+    background: #fff
 }
 
 .announcement-media  {
-    height: 190px;
+    width: 100%;
+    height: 220px;
+    flex: 0 0 220px;
     display: grid;
     place-items: center;
     background: linear-gradient(135deg, #0f4d3a, #d9c529);
     color: #fff;
     font-size: 42px;
-    font-weight: 900
+    font-weight: 900;
+    overflow: hidden
 }
 
 .announcement-media.has-image  {
@@ -729,11 +734,15 @@ button, input, select, textarea  {
 }
 
 .announcement-body  {
+    position: relative;
+    z-index: 1;
     padding: 24px;
+    background: #fff;
     display: flex;
     flex-direction: column;
     gap: 12px;
-    flex: 1
+    flex: 1;
+    color: var(--ink)
 }
 
 .announcement-body h3  {
@@ -744,7 +753,45 @@ button, input, select, textarea  {
 
 .announcement-body p  {
     margin: 0;
+    color: var(--muted);
+    overflow-wrap: anywhere
+}
+
+.announcement-excerpt  {
+    margin-bottom: -4px
+}
+
+.announcement-details  {
     color: var(--muted)
+}
+
+.announcement-details summary  {
+    width: max-content;
+    max-width: 100%;
+    cursor: pointer;
+    color: var(--primary);
+    font-weight: 900;
+    list-style: none
+}
+
+.announcement-details summary::-webkit-details-marker  {
+    display: none
+}
+
+.announcement-details summary:after  {
+    content: " +";
+    color: var(--gold)
+}
+
+.announcement-details[open] summary:after  {
+    content: " -"
+}
+
+.announcement-details p  {
+    margin-top: 10px;
+    padding-top: 12px;
+    border-top: 1px solid var(--line);
+    white-space: pre-line
 }
 
 .cta-card  {
