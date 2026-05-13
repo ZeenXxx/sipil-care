@@ -75,7 +75,7 @@ const fallbackAnnouncements = [
     description: 'Admin HMS dapat menambahkan agenda, dokumentasi kegiatan, atau pengumuman melalui panel HMS.'
   },
   {
-    title: 'Dokumentasi kegiatan PENDPROF',
+    title: 'Dokumentasi kegiatan PENDPROF HMS',
     type: 'Dokumentasi',
     date: 'Arsip',
     description: 'Foto kegiatan yang diunggah dari panel akan disimpan di Supabase Storage dan ditampilkan pada halaman awal.'

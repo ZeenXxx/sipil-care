@@ -308,7 +308,7 @@ function messageTableRender() {
       [item.name, item.nim, item.email, item.category, item.subject, item.message, item.reply].join(' ').toLowerCase().includes(q))
     .map(item => `
       <tr>
-        <td><b>${escapeText(item.name)}</b><br><span class="small-text">${escapeText(item.nim)} · ${escapeText(item.email)}</span></td>
+        <td><b>${escapeText(item.name)}</b><br><span class="small-text">${escapeText(item.nim)} Â· ${escapeText(item.email)}</span></td>
         <td>${escapeText(item.category)}</td>
         <td>${escapeText(item.subject)}</td>
         <td class="message-preview">${escapeText(item.message)}${item.reply ? `<div class="message-reply">Balasan: ${escapeText(item.reply)}</div>` : ''}</td>
@@ -341,7 +341,7 @@ function liveChatRender() {
     <article class="chat-thread">
       <h4>${escapeText(thread.latest.senderName || 'Mahasiswa')} ${thread.latest.nim ? `(${escapeText(thread.latest.nim)})` : ''}</h4>
       <p><b>Pesan terbaru:</b> ${escapeText(thread.latest.message)}</p>
-      <p><b>Jumlah chat:</b> ${thread.messages.length} · <b>Terakhir:</b> ${new Date(thread.latest.createdAt).toLocaleString('id-ID')}</p>
+      <p><b>Jumlah chat:</b> ${thread.messages.length} Â· <b>Terakhir:</b> ${new Date(thread.latest.createdAt).toLocaleString('id-ID')}</p>
       <button class="action-btn" data-reply-chat="${escapeText(thread.threadId)}">Balas Chat</button>
       <button class="action-btn danger" data-close-chat="${escapeText(thread.threadId)}">Hapus Thread</button>
     </article>
@@ -711,14 +711,14 @@ liveChatThreads.addEventListener('click', async e => {
   const closeThread = e.target.dataset.closeChat;
 
   if (replyThread) {
-    const reply = prompt('Balasan live chat dari HMS/PENDPROF:');
+    const reply = prompt('Balasan live chat dari HMS UNJANI / PENDPROF HMS:');
     if (!reply?.trim()) return;
     const latest = liveChatMessages.findLast ? liveChatMessages.findLast(item => item.threadId === replyThread) : [...liveChatMessages].reverse().find(item => item.threadId === replyThread);
     try {
       await addDoc(collection(db, 'live_chat_messages'), {
         threadId: replyThread,
         sender: 'admin',
-        senderName: 'HMS / PENDPROF',
+        senderName: 'HMS UNJANI / PENDPROF HMS',
         nim: latest?.nim || '',
         message: reply.trim(),
         createdAt: new Date().toISOString()

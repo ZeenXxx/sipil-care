@@ -126,7 +126,7 @@ function renderChat(messages) {
 
   chatFeed.innerHTML = messages.map(item => `
     <div class="chat-bubble ${item.sender === 'admin' ? 'admin' : 'student'}">
-      <strong>${item.sender === 'admin' ? 'HMS / PENDPROF' : escapeText(item.senderName || 'Mahasiswa')}</strong>
+      <strong>${item.sender === 'admin' ? 'HMS UNJANI / PENDPROF HMS' : escapeText(item.senderName || 'Mahasiswa')}</strong>
       <p>${escapeText(item.message)}</p>
       <small>${new Date(item.createdAt).toLocaleString('id-ID')}</small>
     </div>
