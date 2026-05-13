@@ -90,21 +90,25 @@ const fallbackAnnouncements = [
 
 async function loadHomeVideos() {
   const target = document.getElementById('homeVideoHighlights');
+  const countTarget = document.getElementById('homeVideoCount');
   if (!target) return;
 
   try {
     const videosRef = query(collection(db, 'videos'), orderBy('title'));
     const snapshot = await getDocs(videosRef);
     const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    if (countTarget) countTarget.textContent = data.length;
     target.innerHTML = data.slice(0, 3).map(videoCard).join('') || '<div class="empty span-2">Belum ada video.</div>';
   } catch (err) {
     console.error('Firestore videos fetch failed:', err);
     fetch('data/videos.json')
       .then(response => response.json())
       .then(data => {
+        if (countTarget) countTarget.textContent = data.length;
         target.innerHTML = data.slice(0, 3).map(videoCard).join('');
       })
       .catch(() => {
+        if (countTarget) countTarget.textContent = '0';
         target.innerHTML = '<div class="empty span-2">Video belum tersedia.</div>';
       });
   }
