@@ -23,12 +23,13 @@ const controls = {
   supportNode: $('#supportNode'),
   supportType: $('#supportType'),
   pointLoadTarget: $('#pointLoadTarget'),
-  pointLoadDirection: $('#pointLoadDirection'),
   pointLoadValue: $('#pointLoadValue'),
+  pointLoadAngle: $('#pointLoadAngle'),
   pointLoadNode: $('#pointLoadNode'),
   pointLoadElement: $('#pointLoadElement'),
   pointLoadOffset: $('#pointLoadOffset'),
-  udlElement: $('#udlElement'),
+  udlStartNode: $('#udlStartNode'),
+  udlEndNode: $('#udlEndNode'),
   udlValue: $('#udlValue'),
   diagramOutput: $('#diagramOutput')
 };
@@ -40,6 +41,8 @@ const showMessage = (text, ok = false) => {
 
 const getNode = id => state.nodes.find(node => node.id === Number(id));
 const getElement = id => state.elements.find(element => element.id === Number(id));
+const pointFx = load => Number.isFinite(load.fx) ? load.fx : (load.direction === 'horizontal' ? load.p : 0);
+const pointFy = load => Number.isFinite(load.fy) ? load.fy : (load.direction === 'horizontal' ? 0 : load.p);
 const sortedNodes = () => [...state.nodes].sort((a, b) => a.x - b.x || a.id - b.id);
 
 const elementEnds = element => {
@@ -47,6 +50,36 @@ const elementEnds = element => {
   const b = getNode(element.endNode);
   return a.x <= b.x ? { left: a, right: b, length: b.x - a.x } : { left: b, right: a, length: a.x - b.x };
 };
+
+function udlRange(load) {
+  if (load.startNode && load.endNode) {
+    const a = getNode(load.startNode);
+    const b = getNode(load.endNode);
+    if (!a || !b) return { a: 0, b: 0, length: 0 };
+    const left = Math.min(a.x, b.x);
+    const right = Math.max(a.x, b.x);
+    return { a: left, b: right, length: right - left };
+  }
+  const ends = elementEnds(getElement(load.elementId));
+  return { a: ends.left.x, b: ends.right.x, length: ends.length };
+}
+
+function isUdlRangeCovered(startNode, endNode) {
+  const leftX = Math.min(startNode.x, endNode.x);
+  const rightX = Math.max(startNode.x, endNode.x);
+  const intervals = state.elements
+    .map(element => elementEnds(element))
+    .map(ends => ({ a: ends.left.x, b: ends.right.x }))
+    .sort((a, b) => a.a - b.a || a.b - b.b);
+  let coveredUntil = leftX;
+  for (const interval of intervals) {
+    if (interval.b <= coveredUntil + eps) continue;
+    if (interval.a > coveredUntil + eps) return false;
+    coveredUntil = Math.max(coveredUntil, interval.b);
+    if (coveredUntil >= rightX - eps) return true;
+  }
+  return false;
+}
 
 const option = (value, label) => `<option value="${value}">${label}</option>`;
 
@@ -57,8 +90,8 @@ function refreshSelects() {
     return option(element.id, `E${element.id} - N${element.startNode} ke N${element.endNode} (${fmt(ends.length)} m)`);
   }).join('');
 
-  [controls.elementStart, controls.elementEnd, controls.supportNode, controls.pointLoadNode].forEach(select => { select.innerHTML = nodeOptions; });
-  [controls.pointLoadElement, controls.udlElement].forEach(select => { select.innerHTML = elementOptions; });
+  [controls.elementStart, controls.elementEnd, controls.supportNode, controls.pointLoadNode, controls.udlStartNode, controls.udlEndNode].forEach(select => { select.innerHTML = nodeOptions; });
+  [controls.pointLoadElement].forEach(select => { select.innerHTML = elementOptions; });
 
   controls.pointLoadElement.closest('div').style.display = controls.pointLoadTarget.value === 'element' ? '' : 'none';
   controls.pointLoadOffset.closest('div').style.display = controls.pointLoadTarget.value === 'element' ? '' : 'none';
@@ -71,9 +104,11 @@ function renderModelList() {
     const ends = elementEnds(element);
     return `<p>E${element.id}: N${element.startNode}-N${element.endNode}, L=${fmt(ends.length)} m</p>`;
   }).join('') || '<p>Belum ada element.</p>';
-  const loads = state.loads.map(load => load.type === 'point'
-    ? `<p>${load.label}: ${load.direction === 'horizontal' ? 'H' : 'P'}=${fmt(load.p)} kN di x=${fmt(load.x)} m</p>`
-    : `<p>${load.label}: w=${fmt(load.w)} kN/m di E${load.elementId}</p>`).join('') || '<p>Belum ada beban.</p>';
+  const loads = state.loads.map(load => {
+    if (load.type === 'point') return `<p>${load.label}: P=${fmt(load.p)} kN, sudut=${fmt(load.angle ?? 90)}&deg;, Fx=${fmt(pointFx(load))} kN, Fy=${fmt(pointFy(load))} kN di x=${fmt(load.x)} m</p>`;
+    const range = udlRange(load);
+    return `<p>${load.label}: w=${fmt(load.w)} kN/m dari N${load.startNode} ke N${load.endNode} (${fmt(range.a)}-${fmt(range.b)} m)</p>`;
+  }).join('') || '<p>Belum ada beban.</p>';
   $('#modelList').innerHTML = `<article><h3>Node</h3>${nodes}</article><article><h3>Element</h3>${elements}</article><article><h3>Beban</h3>${loads}</article>`;
 }
 
@@ -112,17 +147,21 @@ function renderSvg() {
   state.loads.forEach(load => {
     if (load.type === 'point') {
       const x = sx(load.x);
-      if (load.direction === 'horizontal') {
-        const start = load.p >= 0 ? x - 76 : x + 76;
-        const end = load.p >= 0 ? x - 18 : x + 18;
-        content += `<line class="diagram-hload" x1="${start}" y1="${y - 42}" x2="${end}" y2="${y - 42}"></line><text class="diagram-label" x="${Math.min(start, end) - 8}" y="${y - 56}">${load.label} ${fmt(load.p)} kN</text>`;
-      } else {
-        content += `<line class="diagram-load" x1="${x}" y1="${y - 78}" x2="${x}" y2="${y - 20}"></line><text class="diagram-label" x="${x - 24}" y="${y - 88}">${load.label} ${fmt(load.p)} kN</text>`;
-      }
+      const fx = pointFx(load);
+      const fy = pointFy(load);
+      const magnitude = Math.hypot(fx, fy) || 1;
+      const ux = fx / magnitude;
+      const uy = fy / magnitude;
+      const endX = x;
+      const endY = y - 20;
+      const startX = endX - ux * 66;
+      const startY = endY - uy * 66;
+      const lineClass = Math.abs(fx) > Math.abs(fy) ? 'diagram-hload' : 'diagram-load';
+      content += `<line class="${lineClass}" x1="${startX}" y1="${startY}" x2="${endX}" y2="${endY}"></line><text class="diagram-label" x="${Math.min(startX, endX) - 8}" y="${Math.min(startY, endY) - 12}">${load.label} ${fmt(load.p)} kN @ ${fmt(load.angle ?? 90)}&deg;</text>`;
     } else {
-      const ends = elementEnds(getElement(load.elementId));
-      const x1 = sx(ends.left.x);
-      const x2 = sx(ends.right.x);
+      const range = udlRange(load);
+      const x1 = sx(range.a);
+      const x2 = sx(range.b);
       for (let x = x1 + 14; x < x2; x += 34) content += `<line class="diagram-udl" x1="${x}" y1="${y - 72}" x2="${x}" y2="${y - 18}"></line>`;
       content += `<line x1="${x1}" y1="${y - 72}" x2="${x2}" y2="${y - 72}" stroke="#d67a00" stroke-width="2"/><text class="diagram-label" x="${x1 + 8}" y="${y - 88}">${load.label} ${fmt(load.w)} kN/m</text>`;
     }
@@ -148,8 +187,11 @@ function validateModel() {
 
   for (const load of state.loads) {
     if (load.type === 'udl') {
-      const element = getElement(load.elementId);
-      if (!element) throw new Error(`${load.label} berada pada element yang tidak ada.`);
+      const startNode = getNode(load.startNode);
+      const endNode = getNode(load.endNode);
+      if (!startNode || !endNode) throw new Error(`${load.label} harus punya node awal dan node akhir.`);
+      if (Math.abs(startNode.x - endNode.x) < eps) throw new Error(`${load.label} tidak boleh memiliki panjang nol.`);
+      if (!isUdlRangeCovered(startNode, endNode)) throw new Error(`${load.label} harus berada pada rentang node yang terhubung element.`);
     }
     if (load.type === 'point') {
       const insideAny = state.elements.some(element => {
@@ -163,7 +205,7 @@ function validateModel() {
   const fixed = state.nodes.filter(node => node.support === 'fixed');
   const verticalSupports = state.nodes.filter(node => ['pin', 'roller', 'fixed'].includes(node.support));
   const simpleSupports = state.nodes.filter(node => ['pin', 'roller'].includes(node.support));
-  const horizontalLoads = state.loads.filter(load => load.type === 'point' && load.direction === 'horizontal');
+  const horizontalLoads = state.loads.filter(load => load.type === 'point' && Math.abs(pointFx(load)) > eps);
   const horizontalSupports = state.nodes.filter(node => ['pin', 'fixed'].includes(node.support));
 
   if (horizontalLoads.length && horizontalSupports.length < 1) throw new Error('Beban horizontal membutuhkan support pin atau fixed.');
@@ -181,20 +223,20 @@ function validateModel() {
 
 function normalizeLoads() {
   return state.loads.map(load => {
-    if (load.type === 'point') return { ...load };
-    const ends = elementEnds(getElement(load.elementId));
-    return { ...load, a: ends.left.x, b: ends.right.x, total: load.w * ends.length, centroid: (ends.left.x + ends.right.x) / 2 };
+    if (load.type === 'point') return { ...load, fx: pointFx(load), fy: pointFy(load) };
+    const range = udlRange(load);
+    return { ...load, a: range.a, b: range.b, total: load.w * range.length, centroid: (range.a + range.b) / 2 };
   });
 }
 
 function solveReactions(model, loads) {
   const reactions = [];
   const verticalLoads = loads
-    .filter(load => load.type === 'udl' || load.direction !== 'horizontal')
-    .map(load => load.type === 'point' ? { total: load.p, x: load.x } : { total: load.total, x: load.centroid });
-  const horizontalLoads = loads.filter(load => load.type === 'point' && load.direction === 'horizontal');
+    .filter(load => load.type === 'udl' || Math.abs(pointFy(load)) > eps)
+    .map(load => load.type === 'point' ? { total: pointFy(load), x: load.x } : { total: load.total, x: load.centroid });
+  const horizontalLoads = loads.filter(load => load.type === 'point' && Math.abs(pointFx(load)) > eps);
   const totalLoad = verticalLoads.reduce((sum, load) => sum + load.total, 0);
-  const totalHorizontal = horizontalLoads.reduce((sum, load) => sum + load.p, 0);
+  const totalHorizontal = horizontalLoads.reduce((sum, load) => sum + pointFx(load), 0);
   const horizontalSupport = state.nodes.find(node => ['pin', 'fixed'].includes(node.support));
 
   const applyHorizontalReaction = reaction => {
@@ -228,7 +270,7 @@ function shearAt(x, loads, reactions) {
   let shear = 0;
   reactions.forEach(reaction => { if (x >= reaction.x - eps) shear += reaction.vertical; });
   loads.forEach(load => {
-    if (load.type === 'point' && load.direction !== 'horizontal' && x >= load.x - eps) shear -= load.p;
+    if (load.type === 'point' && x >= load.x - eps) shear -= pointFy(load);
     if (load.type === 'udl' && x > load.a + eps) shear -= load.w * Math.min(x - load.a, load.b - load.a);
   });
   return Math.abs(shear) < 1e-7 ? 0 : shear;
@@ -243,7 +285,7 @@ function momentAt(x, loads, reactions) {
     }
   });
   loads.forEach(load => {
-    if (load.type === 'point' && load.direction !== 'horizontal' && x >= load.x - eps) moment -= load.p * (x - load.x);
+    if (load.type === 'point' && x >= load.x - eps) moment -= pointFy(load) * (x - load.x);
     if (load.type === 'udl' && x > load.a + eps) {
       const length = Math.min(x - load.a, load.b - load.a);
       const centroid = load.a + length / 2;
@@ -256,7 +298,7 @@ function momentAt(x, loads, reactions) {
 function axialAt(x, loads, reactions) {
   let sumFxLeft = 0;
   reactions.forEach(reaction => { if (x >= reaction.x - eps) sumFxLeft += reaction.horizontal || 0; });
-  loads.forEach(load => { if (load.type === 'point' && load.direction === 'horizontal' && x >= load.x - eps) sumFxLeft += load.p; });
+  loads.forEach(load => { if (load.type === 'point' && x >= load.x - eps) sumFxLeft += pointFx(load); });
   const axial = -sumFxLeft;
   return Math.abs(axial) < 1e-7 ? 0 : axial;
 }
@@ -452,20 +494,27 @@ function addPointLoad() {
     if (!Number.isFinite(offset) || offset < -eps || offset > ends.length + eps) return showMessage('Beban tidak boleh berada di luar panjang element.');
     x = getNode(element.startNode).x <= getNode(element.endNode).x ? getNode(element.startNode).x + offset : getNode(element.startNode).x - offset;
   }
-  const direction = controls.pointLoadDirection.value;
-  const prefix = direction === 'horizontal' ? 'H' : 'P';
-  state.loads.push({ id: state.nextLoadId, type: 'point', direction, x, p, label: `${prefix}${state.nextLoadId}` });
+  const angle = Number(controls.pointLoadAngle.value || 90);
+  if (!Number.isFinite(angle)) return showMessage('Sudut beban harus berupa angka derajat.');
+  const radians = (angle * Math.PI) / 180;
+  const fx = Math.abs(p * Math.cos(radians)) < 1e-7 ? 0 : p * Math.cos(radians);
+  const fy = Math.abs(p * Math.sin(radians)) < 1e-7 ? 0 : p * Math.sin(radians);
+  state.loads.push({ id: state.nextLoadId, type: 'point', direction: 'inclined', x, p, angle, fx, fy, label: `P${state.nextLoadId}` });
   state.nextLoadId += 1;
   controls.pointLoadValue.value = '';
+  controls.pointLoadAngle.value = '90';
   refresh();
 }
 
 function addUdl() {
-  const element = getElement(controls.udlElement.value);
+  const startNode = getNode(controls.udlStartNode.value);
+  const endNode = getNode(controls.udlEndNode.value);
   const w = Number(controls.udlValue.value);
-  if (!element) return showMessage('Pilih element untuk beban merata.');
+  if (!startNode || !endNode) return showMessage('Pilih node awal dan node akhir beban merata.');
+  if (startNode.id === endNode.id || Math.abs(startNode.x - endNode.x) < eps) return showMessage('Rentang beban merata tidak boleh nol.');
+  if (!isUdlRangeCovered(startNode, endNode)) return showMessage('Rentang beban merata harus mengikuti element yang sudah dibuat.');
   if (!Number.isFinite(w) || Math.abs(w) < eps) return showMessage('Nilai beban merata harus diisi.');
-  state.loads.push({ id: state.nextLoadId, type: 'udl', elementId: element.id, w, label: `w${state.nextLoadId}` });
+  state.loads.push({ id: state.nextLoadId, type: 'udl', startNode: startNode.id, endNode: endNode.id, w, label: `w${state.nextLoadId}` });
   state.nextLoadId += 1;
   controls.udlValue.value = '';
   refresh();

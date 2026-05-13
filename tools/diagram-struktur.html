@@ -30,7 +30,7 @@
           </div>
           <div class="sign-card">
             <h2>Konvensi tanda</h2>
-            <p>Beban vertikal positif ke bawah, beban horizontal positif ke kanan. Reaksi vertikal positif ke atas. Axial positif tarik. SFD positif bila gaya geser internal ke atas pada sisi kiri potongan. BMD positif sagging dan digambar ke bawah, negatif hogging digambar ke atas.</p>
+            <p>Beban titik memakai sudut: 0&deg; ke kanan, 90&deg; ke bawah, 180&deg; ke kiri, -90&deg; ke atas. Reaksi vertikal positif ke atas. Axial positif tarik. SFD positif bila gaya geser internal ke atas pada sisi kiri potongan. BMD positif sagging dan digambar ke bawah, negatif hogging digambar ke atas.</p>
           </div>
         </div>
       </section>
@@ -71,8 +71,8 @@
               <summary>Beban titik</summary>
               <div class="form-grid two">
                 <div><label for="pointLoadTarget">Target</label><select class="control" id="pointLoadTarget"><option value="node">Node</option><option value="element">Element</option></select></div>
-                <div><label for="pointLoadDirection">Arah</label><select class="control" id="pointLoadDirection"><option value="vertical">Vertikal ke bawah (+)</option><option value="horizontal">Horizontal ke kanan (+)</option></select></div>
-                <div class="span-2"><label for="pointLoadValue">Besar beban (kN)</label><input class="control" id="pointLoadValue" type="number" step="0.01" placeholder="Vertikal turun +, horizontal kanan +"></div>
+                <div><label for="pointLoadAngle">Sudut gaya (&deg;)</label><input class="control" id="pointLoadAngle" type="number" step="1" value="90" placeholder="0 kanan, 90 bawah"></div>
+                <div class="span-2"><label for="pointLoadValue">Besar beban P (kN)</label><input class="control" id="pointLoadValue" type="number" step="0.01" placeholder="Contoh: 25"></div>
                 <div><label for="pointLoadNode">Node</label><select class="control" id="pointLoadNode"></select></div>
                 <div><label for="pointLoadElement">Element</label><select class="control" id="pointLoadElement"></select></div>
                 <div class="span-2"><label for="pointLoadOffset">Jarak dari node awal element (m)</label><input class="control" id="pointLoadOffset" type="number" step="0.01" min="0" value="0"></div>
@@ -83,8 +83,9 @@
             <details open>
               <summary>Beban merata vertikal</summary>
               <div class="form-grid two">
-                <div><label for="udlElement">Element</label><select class="control" id="udlElement"></select></div>
-                <div><label for="udlValue">w (kN/m)</label><input class="control" id="udlValue" type="number" step="0.01" placeholder="Downward +"></div>
+                <div><label for="udlStartNode">Node awal</label><select class="control" id="udlStartNode"></select></div>
+                <div><label for="udlEndNode">Node akhir</label><select class="control" id="udlEndNode"></select></div>
+                <div class="span-2"><label for="udlValue">w (kN/m)</label><input class="control" id="udlValue" type="number" step="0.01" placeholder="Downward +"></div>
               </div>
               <button class="btn btn-primary full-btn" id="addUdlBtn" type="button">Tambah beban merata</button>
             </details>
