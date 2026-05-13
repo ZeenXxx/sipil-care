@@ -3,19 +3,19 @@
   <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="css/style.css?v=15">
+    <link rel="stylesheet" href="css/style.css?v=19">
     <link rel="stylesheet" href="css/navbar.css?v=18">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
     rel="stylesheet">
-    <link rel="stylesheet" href="css/admin.css?v=18">
+    <link rel="stylesheet" href="css/admin.css?v=19">
     <title>Admin Dashboard - SIPIL CARE</title>
   </head>
   <body class="admin-page">
     <aside class="admin-sidebar">
       <h1>SIPIL CARE</h1><a href="#dashboard">Dashboard</a><a href="#resources">Resources</a><a
-      href="#software">Software</a><a href="#videos">Videos</a><a href="#announcements">Pemberitahuan</a><a href="#upload">Upload</a><a href="#analytics">Analytics</a><a
+      href="#software">Software</a><a href="#videos">Videos</a><a href="#announcements">Pemberitahuan</a><a href="#messages">Pesan Mahasiswa</a><a href="#live-chat-admin">Live Chat</a><a href="#upload">Upload</a><a href="#analytics">Analytics</a><a
       href="#settings">Settings</a><button id="logoutBtn">Logout</button>
     </aside>
     <main class="admin-main">
@@ -185,6 +185,39 @@
     </table>
   </div>
 </section>
+<section id="messages" class="admin-card">
+  <div class="admin-table-head">
+    <h3>Pesan Mahasiswa</h3>
+    <div><input class="control" id="messageSearch" placeholder="Search"><select class="control"
+      id="messageFilter">
+      <option value="All">All</option>
+      <option value="new">Belum dibalas</option>
+      <option value="answered">Sudah dibalas</option>
+    </select></div>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Mahasiswa</th>
+          <th>Kategori</th>
+          <th>Subjek</th>
+          <th>Pesan</th>
+          <th>Status</th>
+          <th>Aksi</th>
+        </tr>
+      </thead>
+      <tbody id="messageTable"></tbody>
+    </table>
+  </div>
+</section>
+<section id="live-chat-admin" class="admin-card">
+  <div class="admin-table-head">
+    <h3>Live Chat Mahasiswa</h3>
+    <div><input class="control" id="liveChatSearch" placeholder="Search chat"></div>
+  </div>
+  <div class="chat-thread-list" id="liveChatThreads"></div>
+</section>
 <section id="analytics" class="admin-card">
   <h3>Analytics</h3>
   <p>Simulasi analytics lokal dihitung dari data yang tersimpan di browser.</p>
@@ -197,7 +230,7 @@
 <div class="toast" id="toast"></div>
 <script src="js/auth.js?v=15"></script>
 <script src="js/student-config.js?v=18"></script>
-<script type="module" src="js/admin-panel.js?v=15"></script>
+<script type="module" src="js/admin-panel.js?v=19"></script>
 </body>
 </html>
 

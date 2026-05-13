@@ -59,6 +59,11 @@ const announcementImage = document.getElementById('announcementImage');
 const announcementSearch = document.getElementById('announcementSearch');
 const announcementFilter = document.getElementById('announcementFilter');
 const announcementTable = document.getElementById('announcementTable');
+const messageSearch = document.getElementById('messageSearch');
+const messageFilter = document.getElementById('messageFilter');
+const messageTable = document.getElementById('messageTable');
+const liveChatSearch = document.getElementById('liveChatSearch');
+const liveChatThreads = document.getElementById('liveChatThreads');
 
 const resourceTable = document.getElementById('resourceTable');
 const adminSearch = document.getElementById('adminSearch');
@@ -70,6 +75,8 @@ const submitButton = resourceForm?.querySelector('button[type="submit"]');
 let resources = [];
 let videos = [];
 let announcements = [];
+let contactMessages = [];
+let liveChatMessages = [];
 let editingDocId = null;
 let editingVideoDocId = null;
 let editingSoftwareDocId = null;
@@ -189,7 +196,7 @@ function stats() {
     <div class="admin-stat"><b>${academicResources.length}</b><span>Resource</span></div>
     <div class="admin-stat"><b>${softwareResources.length}</b><span>Software</span></div>
     <div class="admin-stat"><b>${videos.length}</b><span>Video</span></div>
-    <div class="admin-stat"><b>${announcements.length}</b><span>Pemberitahuan</span></div>
+    <div class="admin-stat"><b>${contactMessages.length}</b><span>Pesan Mahasiswa</span></div>
   `;
 }
 
@@ -293,6 +300,54 @@ function announcementTableRender() {
   if (announcementTable) announcementTable.innerHTML = rows || '<tr><td colspan="5">Belum ada pemberitahuan.</td></tr>';
 }
 
+function messageTableRender() {
+  const q = (messageSearch?.value || '').toLowerCase();
+  const status = messageFilter?.value || 'All';
+  const rows = contactMessages
+    .filter(item => (status === 'All' || item.status === status) &&
+      [item.name, item.nim, item.email, item.category, item.subject, item.message, item.reply].join(' ').toLowerCase().includes(q))
+    .map(item => `
+      <tr>
+        <td><b>${escapeText(item.name)}</b><br><span class="small-text">${escapeText(item.nim)} · ${escapeText(item.email)}</span></td>
+        <td>${escapeText(item.category)}</td>
+        <td>${escapeText(item.subject)}</td>
+        <td class="message-preview">${escapeText(item.message)}${item.reply ? `<div class="message-reply">Balasan: ${escapeText(item.reply)}</div>` : ''}</td>
+        <td><span class="badge">${item.status === 'answered' ? 'Sudah dibalas' : 'Belum dibalas'}</span></td>
+        <td><button class="action-btn" data-reply-message="${item.docId}">Balas</button><button class="action-btn danger" data-del-message="${item.docId}">Delete</button></td>
+      </tr>
+    `)
+    .join('');
+  if (messageTable) messageTable.innerHTML = rows || '<tr><td colspan="6">Belum ada pesan mahasiswa.</td></tr>';
+}
+
+function liveChatRender() {
+  if (!liveChatThreads) return;
+  const q = (liveChatSearch?.value || '').toLowerCase();
+  const grouped = liveChatMessages.reduce((acc, item) => {
+    if (!acc[item.threadId]) acc[item.threadId] = [];
+    acc[item.threadId].push(item);
+    return acc;
+  }, {});
+  const threads = Object.entries(grouped)
+    .map(([threadId, messages]) => ({
+      threadId,
+      messages: messages.sort((a, b) => String(a.createdAt).localeCompare(String(b.createdAt))),
+      latest: messages[messages.length - 1]
+    }))
+    .sort((a, b) => String(b.latest.createdAt).localeCompare(String(a.latest.createdAt)))
+    .filter(thread => [thread.latest.senderName, thread.latest.nim, thread.latest.message, thread.threadId].join(' ').toLowerCase().includes(q));
+
+  liveChatThreads.innerHTML = threads.map(thread => `
+    <article class="chat-thread">
+      <h4>${escapeText(thread.latest.senderName || 'Mahasiswa')} ${thread.latest.nim ? `(${escapeText(thread.latest.nim)})` : ''}</h4>
+      <p><b>Pesan terbaru:</b> ${escapeText(thread.latest.message)}</p>
+      <p><b>Jumlah chat:</b> ${thread.messages.length} · <b>Terakhir:</b> ${new Date(thread.latest.createdAt).toLocaleString('id-ID')}</p>
+      <button class="action-btn" data-reply-chat="${escapeText(thread.threadId)}">Balas Chat</button>
+      <button class="action-btn danger" data-close-chat="${escapeText(thread.threadId)}">Hapus Thread</button>
+    </article>
+  `).join('') || '<div class="empty">Belum ada live chat.</div>';
+}
+
 const render = () => {
   stats();
   filters();
@@ -303,6 +358,8 @@ const render = () => {
   videoTableRender();
   announcementFilters();
   announcementTableRender();
+  messageTableRender();
+  liveChatRender();
 };
 
 const resetForm = () => {
@@ -616,6 +673,74 @@ announcementTable.addEventListener('click', async e => {
   }
 });
 
+messageTable.addEventListener('click', async e => {
+  const replyId = e.target.dataset.replyMessage;
+  const deleteId = e.target.dataset.delMessage;
+
+  if (replyId) {
+    const item = contactMessages.find(message => message.docId === replyId);
+    const reply = prompt(`Balasan untuk ${item?.name || 'mahasiswa'}:`, item?.reply || '');
+    if (reply === null) return;
+    try {
+      await updateDoc(doc(db, 'contact_messages', replyId), {
+        reply: reply.trim(),
+        status: reply.trim() ? 'answered' : 'new',
+        updatedAt: new Date().toISOString()
+      });
+      toast('Balasan pesan berhasil disimpan.');
+    } catch (err) {
+      console.error('Reply message error:', err);
+      toast('Gagal menyimpan balasan.');
+    }
+  }
+
+  if (deleteId && confirm('Yakin hapus pesan mahasiswa ini?')) {
+    try {
+      await deleteDoc(doc(db, 'contact_messages', deleteId));
+      toast('Pesan berhasil dihapus.');
+    } catch (err) {
+      console.error('Delete message error:', err);
+      toast('Gagal menghapus pesan.');
+    }
+  }
+});
+
+liveChatThreads.addEventListener('click', async e => {
+  const replyThread = e.target.dataset.replyChat;
+  const closeThread = e.target.dataset.closeChat;
+
+  if (replyThread) {
+    const reply = prompt('Balasan live chat dari HMS/PENDPROF:');
+    if (!reply?.trim()) return;
+    const latest = liveChatMessages.findLast ? liveChatMessages.findLast(item => item.threadId === replyThread) : [...liveChatMessages].reverse().find(item => item.threadId === replyThread);
+    try {
+      await addDoc(collection(db, 'live_chat_messages'), {
+        threadId: replyThread,
+        sender: 'admin',
+        senderName: 'HMS / PENDPROF',
+        nim: latest?.nim || '',
+        message: reply.trim(),
+        createdAt: new Date().toISOString()
+      });
+      toast('Balasan live chat terkirim.');
+    } catch (err) {
+      console.error('Reply chat error:', err);
+      toast('Gagal mengirim balasan chat.');
+    }
+  }
+
+  if (closeThread && confirm('Yakin hapus semua chat pada thread ini?')) {
+    const items = liveChatMessages.filter(item => item.threadId === closeThread);
+    try {
+      await Promise.all(items.map(item => deleteDoc(doc(db, 'live_chat_messages', item.docId))));
+      toast('Thread live chat berhasil dihapus.');
+    } catch (err) {
+      console.error('Delete chat thread error:', err);
+      toast('Gagal menghapus thread live chat.');
+    }
+  }
+});
+
 adminSearch.addEventListener('input', () => render());
 adminFilter.addEventListener('change', () => render());
 softwareSearch.addEventListener('input', () => softwareTableRender());
@@ -624,6 +749,9 @@ videoSearch.addEventListener('input', () => videoTableRender());
 videoFilter.addEventListener('change', () => videoTableRender());
 announcementSearch.addEventListener('input', () => announcementTableRender());
 announcementFilter.addEventListener('change', () => announcementTableRender());
+messageSearch.addEventListener('input', () => messageTableRender());
+messageFilter.addEventListener('change', () => messageTableRender());
+liveChatSearch.addEventListener('input', () => liveChatRender());
 
 const resourcesQuery = query(collection(db, 'resources'), orderBy('date', 'desc'));
 onSnapshot(resourcesQuery, snapshot => {
@@ -659,4 +787,28 @@ onSnapshot(announcementsQuery, snapshot => {
 }, err => {
   console.error('Firestore announcements error:', err);
   toast('Gagal memuat pemberitahuan dari Firebase.');
+});
+
+const contactMessagesQuery = query(collection(db, 'contact_messages'), orderBy('createdAt', 'desc'));
+onSnapshot(contactMessagesQuery, snapshot => {
+  contactMessages = snapshot.docs.map(documentSnapshot => ({
+    docId: documentSnapshot.id,
+    ...documentSnapshot.data()
+  }));
+  render();
+}, err => {
+  console.error('Firestore contact messages error:', err);
+  toast('Gagal memuat pesan mahasiswa.');
+});
+
+const liveChatQuery = query(collection(db, 'live_chat_messages'), orderBy('createdAt', 'desc'));
+onSnapshot(liveChatQuery, snapshot => {
+  liveChatMessages = snapshot.docs.map(documentSnapshot => ({
+    docId: documentSnapshot.id,
+    ...documentSnapshot.data()
+  }));
+  render();
+}, err => {
+  console.error('Firestore live chat error:', err);
+  toast('Gagal memuat live chat.');
 });
