@@ -1,4 +1,4 @@
-﻿.diagram-hero { padding: 88px 0 64px; background: linear-gradient(135deg, #0f4d3a, #17664e); color: #fff; }
+.diagram-hero { padding: 88px 0 64px; background: linear-gradient(135deg, #0f4d3a, #17664e); color: #fff; }
 .diagram-hero .eyebrow, .diagram-hero .lead { color: #fff; }
 .diagram-hero-grid { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 32px; align-items: center; }
 .diagram-hero h1 { margin: 12px 0 16px; font-size: clamp(36px, 6vw, 72px); line-height: 1.02; }
@@ -34,10 +34,12 @@ summary { cursor: pointer; color: var(--primary); font-weight: 900; }
 .output-switch .control { width: min(280px, 100%); }
 .result-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-bottom: 18px; }
 .result-card-small { border: 1px solid var(--line); border-radius: 8px; padding: 14px; background: var(--soft); }
+.result-card-small.highlight { background: #fff8d8; border-color: rgba(217,197,41,.8); }
 .result-card-small span { display: block; color: var(--muted); font-size: 13px; }
 .result-card-small strong { color: var(--primary); font-size: 22px; }
 .chart-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
-.chart-card { border: 1px solid var(--line); border-radius: 8px; padding: 16px; min-height: 320px; background: #fff; }
+.chart-card { border: 1px solid var(--line); border-radius: 8px; padding: 14px; height: 260px; min-height: 260px; background: #fff; }
+.chart-card canvas { max-height: 200px; }
 .chart-card h3 { margin: 0 0 12px; color: var(--primary); }
 .table-wrap { overflow-x: auto; margin-top: 18px; border: 1px solid var(--line); border-radius: 8px; }
 table { width: 100%; border-collapse: collapse; min-width: 760px; }

@@ -1,16 +1,10 @@
-﻿const state = {
-  nodes: [
-    { id: 1, x: 0, support: 'pin' },
-    { id: 2, x: 6, support: 'roller' }
-  ],
-  elements: [{ id: 1, startNode: 1, endNode: 2 }],
-  loads: [
-    { id: 1, type: 'point', x: 3, p: 12, label: 'P1' },
-    { id: 2, type: 'udl', elementId: 1, w: 2, label: 'w1' }
-  ],
-  nextNodeId: 3,
-  nextElementId: 2,
-  nextLoadId: 3,
+const state = {
+  nodes: [],
+  elements: [],
+  loads: [],
+  nextNodeId: 1,
+  nextElementId: 1,
+  nextLoadId: 1,
   sfdChart: null,
   bmdChart: null
 };
@@ -90,6 +84,10 @@ function drawSupport(node, x, y) {
 
 function renderSvg() {
   const nodes = sortedNodes();
+  if (!nodes.length) {
+    svg.innerHTML = '<text class="diagram-label" x="300" y="170">Tambahkan node untuk mulai menggambar balok.</text><line x1="90" y1="220" x2="870" y2="220" stroke="#dce6e2" stroke-width="2"/>';
+    return;
+  }
   const minX = Math.min(...nodes.map(node => node.x), 0);
   const maxX = Math.max(...nodes.map(node => node.x), 1);
   const span = Math.max(maxX - minX, 1);
@@ -239,12 +237,31 @@ function sampleBeam(loads, reactions) {
   const minX = Math.min(...state.nodes.map(node => node.x));
   const maxX = Math.max(...state.nodes.map(node => node.x));
   const samples = new Set();
+  const breakpoints = new Set([minX, maxX]);
+
   for (let i = 0; i <= 120; i += 1) samples.add(minX + ((maxX - minX) * i) / 120);
-  state.nodes.forEach(node => samples.add(node.x));
+  state.nodes.forEach(node => { samples.add(node.x); breakpoints.add(node.x); });
+  reactions.forEach(reaction => breakpoints.add(reaction.x));
   loads.forEach(load => {
-    if (load.type === 'point') samples.add(load.x);
-    if (load.type === 'udl') { samples.add(load.a); samples.add(load.b); }
+    if (load.type === 'point') { samples.add(load.x); breakpoints.add(load.x); }
+    if (load.type === 'udl') { samples.add(load.a); samples.add(load.b); breakpoints.add(load.a); breakpoints.add(load.b); }
   });
+
+  const sortedBreaks = [...breakpoints].sort((a, b) => a - b);
+  for (let i = 0; i < sortedBreaks.length - 1; i += 1) {
+    const left = sortedBreaks[i];
+    const right = sortedBreaks[i + 1];
+    if (right - left < eps) continue;
+    const vLeft = shearAt(left + 1e-7, loads, reactions);
+    const vRight = shearAt(right - 1e-7, loads, reactions);
+    if (Math.abs(vLeft) < 1e-7) samples.add(left);
+    if (Math.abs(vRight) < 1e-7) samples.add(right);
+    if (vLeft * vRight < 0) {
+      const root = left + (Math.abs(vLeft) / (Math.abs(vLeft) + Math.abs(vRight))) * (right - left);
+      if (root > minX - eps && root < maxX + eps) samples.add(root);
+    }
+  }
+
   return [...samples].sort((a, b) => a - b).map(x => ({ x, shear: shearAt(x, loads, reactions), moment: momentAt(x, loads, reactions) }));
 }
 
@@ -265,31 +282,72 @@ function buildElementTable(loads, reactions) {
   });
 }
 
-function renderReactions(reactions) {
-  $('#reactionResults').innerHTML = reactions.map(reaction => `<article class="result-card-small"><span>N${reaction.nodeId} @ x=${fmt(reaction.x)} m</span><strong>Ry = ${fmt(reaction.vertical)} kN</strong>${reaction.moment ? `<span>M = ${fmt(reaction.moment)} kNm</span>` : ''}</article>`).join('');
+function renderSummary(reactions, samples) {
+  const maxMoment = samples.reduce((max, item) => Math.abs(item.moment) > Math.abs(max.moment) ? item : max, samples[0] || { x: 0, moment: 0 });
+  const reactionCards = reactions.map(reaction => {
+    const supportMoment = reaction.moment ? '<span>M = ' + fmt(reaction.moment) + ' kNm</span>' : '';
+    return '<article class="result-card-small"><span>N' + reaction.nodeId + ' @ x=' + fmt(reaction.x) + ' m</span><strong>Ry = ' + fmt(reaction.vertical) + ' kN</strong>' + supportMoment + '</article>';
+  }).join('');
+  const sign = maxMoment.moment >= 0 ? 'Sagging' : 'Hogging';
+  const mmaxCard = '<article class="result-card-small highlight"><span>Mmax @ x=' + fmt(maxMoment.x) + ' m</span><strong>' + fmt(maxMoment.moment) + ' kNm</strong><span>' + sign + '</span></article>';
+  $('#reactionResults').innerHTML = reactionCards + mmaxCard;
 }
-
 function renderTable(rows) {
   $('#forceTableBody').innerHTML = rows.map(row => `<tr><td>E${row.id}</td><td>${fmt(row.start)} m</td><td>${fmt(row.end)} m</td><td>${fmt(row.vStart)} kN</td><td>${fmt(row.vEnd)} kN</td><td>${fmt(row.mStart)} kNm</td><td>${fmt(row.mMid)} kNm</td><td>${fmt(row.mEnd)} kNm</td></tr>`).join('');
 }
 
-function chartDataset(label, data, color) {
-  return { label, data, borderColor: color, backgroundColor: color + '22', fill: true, tension: 0, pointRadius: 0, borderWidth: 2 };
+const valueLabelPlugin = {
+  id: 'valueLabelPlugin',
+  afterDatasetsDraw(chart) {
+    const dataset = chart.data.datasets[0];
+    if (!dataset?.data?.length) return;
+    const values = dataset.data;
+    const indices = new Set([values.indexOf(Math.max(...values)), values.indexOf(Math.min(...values))]);
+    const meta = chart.getDatasetMeta(0);
+    const ctx = chart.ctx;
+    ctx.save();
+    ctx.font = '700 11px Inter, sans-serif';
+    ctx.fillStyle = dataset.borderColor;
+    indices.forEach(index => {
+      const point = meta.data[index];
+      if (!point) return;
+      const value = values[index];
+      ctx.fillText(fmt(value) + ' ' + dataset.unit, point.x + 6, point.y + (value >= 0 ? -8 : 16));
+    });
+    ctx.restore();
+  }
+};
+
+function chartDataset(label, data, color, unit) {
+  return { label, data, unit, borderColor: color, backgroundColor: color + '10', fill: false, tension: 0, pointRadius: 0, pointHitRadius: 8, borderWidth: 2 };
 }
 
 function renderCharts(samples) {
   const labels = samples.map(item => fmt(item.x));
   const sfdData = samples.map(item => item.shear);
   const bmdData = samples.map(item => item.moment);
-  const baseOptions = unit => ({ responsive: true, maintainAspectRatio: false, scales: { x: { title: { display: true, text: 'x (m)' } }, y: { title: { display: true, text: unit } } } });
+  const paddedRange = values => {
+    const min = Math.min(...values, 0);
+    const max = Math.max(...values, 0);
+    const pad = Math.max((max - min) * 0.18, 1);
+    return { suggestedMin: min - pad, suggestedMax: max + pad };
+  };
+  const baseOptions = (unit, values) => ({
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { title: { display: true, text: 'x (m)' }, ticks: { maxTicksLimit: 8 } },
+      y: { ...paddedRange(values), title: { display: true, text: unit }, ticks: { maxTicksLimit: 5 } }
+    }
+  });
 
   if (state.sfdChart) state.sfdChart.destroy();
   if (state.bmdChart) state.bmdChart.destroy();
-  state.sfdChart = new Chart($('#sfdChart'), { type: 'line', data: { labels, datasets: [chartDataset('V (kN)', sfdData, '#0f4d3a')] }, options: baseOptions('V (kN)') });
-  state.bmdChart = new Chart($('#bmdChart'), { type: 'line', data: { labels, datasets: [chartDataset('M (kNm)', bmdData, '#d67a00')] }, options: baseOptions('M (kNm)') });
+  state.sfdChart = new Chart($('#sfdChart'), { type: 'line', data: { labels, datasets: [chartDataset('V', sfdData, '#004dff', 'kN')] }, options: baseOptions('V (kN)', sfdData), plugins: [valueLabelPlugin] });
+  state.bmdChart = new Chart($('#bmdChart'), { type: 'line', data: { labels, datasets: [chartDataset('M', bmdData, '#d40000', 'kNm')] }, options: baseOptions('M (kNm)', bmdData), plugins: [valueLabelPlugin] });
   updateChartVisibility();
 }
-
 function updateChartVisibility() {
   const mode = controls.diagramOutput.value;
   $('#sfdCard').style.display = mode === 'bmd' ? 'none' : '';
@@ -303,7 +361,7 @@ function analyze() {
     const reactions = solveReactions(model, loads);
     const samples = sampleBeam(loads, reactions);
     const table = buildElementTable(loads, reactions);
-    renderReactions(reactions);
+    renderSummary(reactions, samples);
     renderTable(table);
     renderCharts(samples);
     showMessage('Analisis berhasil untuk model ' + (model.type === 'simple' ? 'simply supported beam.' : 'fixed-end cantilever.'), true);
@@ -377,14 +435,11 @@ function addUdl() {
 }
 
 function resetModel() {
-  state.nodes = [
-    { id: 1, x: 0, support: 'pin' },
-    { id: 2, x: 6, support: 'roller' }
-  ];
-  state.elements = [{ id: 1, startNode: 1, endNode: 2 }];
+  state.nodes = [];
+  state.elements = [];
   state.loads = [];
-  state.nextNodeId = 3;
-  state.nextElementId = 2;
+  state.nextNodeId = 1;
+  state.nextElementId = 1;
   state.nextLoadId = 1;
   if (state.sfdChart) state.sfdChart.destroy();
   if (state.bmdChart) state.bmdChart.destroy();
@@ -392,10 +447,9 @@ function resetModel() {
   state.bmdChart = null;
   $('#reactionResults').innerHTML = '';
   $('#forceTableBody').innerHTML = '<tr><td colspan="8">Belum ada hasil analisis.</td></tr>';
-  showMessage('Model direset.', true);
+  showMessage('Model direset. Tambahkan node sesuai panjang balok yang diinginkan.', true);
   refresh();
 }
-
 function refresh() {
   refreshSelects();
   renderSvg();
@@ -413,4 +467,4 @@ controls.pointLoadTarget.addEventListener('change', refreshSelects);
 controls.diagramOutput.addEventListener('change', updateChartVisibility);
 
 refresh();
-analyze();
+showMessage('Mulai dengan menambahkan node sesuai panjang balok yang diinginkan.', true);
