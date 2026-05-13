@@ -179,18 +179,6 @@
     passwordButton.addEventListener("click", () => {
       location.href = `${prefix}student-login.html?mode=change&next=${encodeURIComponent(nextTarget)}`;
     });
-    const instagram = document.createElement("a");
-    instagram.className = "student-social";
-    instagram.href = HMS_INSTAGRAM;
-    instagram.target = "_blank";
-    instagram.rel = "noopener";
-    instagram.textContent = "Instagram HMS";
-    const youtube = document.createElement("a");
-    youtube.className = "student-social";
-    youtube.href = HMS_YOUTUBE;
-    youtube.target = "_blank";
-    youtube.rel = "noopener";
-    youtube.textContent = "YouTube HMS";
     const logout = document.createElement("button");
     logout.className = "student-logout";
     logout.type = "button";
@@ -200,8 +188,6 @@
       clearSession();
       location.href = prefix + "student-login.html";
     });
-    nav.appendChild(instagram);
-    nav.appendChild(youtube);
     nav.appendChild(passwordButton);
     nav.appendChild(logout);
   };
