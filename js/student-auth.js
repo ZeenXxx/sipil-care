@@ -2,6 +2,7 @@
   const CONFIG = window.SIPILCARE_AUTH_CONFIG || { mode: "local" };
   const STUDENTS_KEY = "sipilcare_students";
   const SESSION_KEY = "sipilcare_student_session";
+  const SESSION_TTL = 7 * 24 * 60 * 60 * 1000;
   const currentPage = location.pathname.split("/").pop() || "index.html";
   const isStudentLogin = currentPage === "student-login.html";
   const isAdminLogin = currentPage === "login.html";
@@ -25,6 +26,43 @@
   const isValidNim = (nim) => /^[0-9]{8,14}$/.test(nim);
   const nextUrl = () => new URLSearchParams(location.search).get("next") || "index.html";
   const queryMode = () => new URLSearchParams(location.search).get("mode") || "login";
+
+  const readSession = () => {
+    try {
+      const raw = localStorage.getItem(SESSION_KEY) || sessionStorage.getItem(SESSION_KEY);
+      if (!raw) return null;
+      const session = JSON.parse(raw);
+      if (!session?.nim || !session?.lastSeenAt) return null;
+      if (Date.now() - session.lastSeenAt > SESSION_TTL) {
+        localStorage.removeItem(SESSION_KEY);
+        sessionStorage.removeItem(SESSION_KEY);
+        return null;
+      }
+      session.lastSeenAt = Date.now();
+      localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+      sessionStorage.setItem(SESSION_KEY, JSON.stringify(session));
+      return session;
+    } catch {
+      localStorage.removeItem(SESSION_KEY);
+      sessionStorage.removeItem(SESSION_KEY);
+      return null;
+    }
+  };
+
+  const saveSession = (student) => {
+    const session = {
+      nim: student.nim,
+      name: student.name,
+      lastSeenAt: Date.now()
+    };
+    localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+    sessionStorage.setItem(SESSION_KEY, JSON.stringify(session));
+  };
+
+  const clearSession = () => {
+    localStorage.removeItem(SESSION_KEY);
+    sessionStorage.removeItem(SESSION_KEY);
+  };
 
   const sha256 = async (value) => {
     const data = new TextEncoder().encode(value);
@@ -118,7 +156,7 @@
   const addStudentNavActions = () => {
     const nav = document.querySelector(".nav-links");
     if (!nav || nav.querySelector("[data-student-nav-action]")) return;
-    const session = sessionStorage.getItem(SESSION_KEY);
+    const session = readSession();
     const currentFile = location.pathname.split("/").pop() || "index.html";
     const nextTarget = location.pathname.includes("/pages/") ? "pages/" + currentFile : currentFile;
     const prefix = location.pathname.includes("/pages/") ? "../" : "";
@@ -159,7 +197,7 @@
     logout.dataset.studentLogout = "true";
     logout.textContent = "Logout";
     logout.addEventListener("click", () => {
-      sessionStorage.removeItem(SESSION_KEY);
+      clearSession();
       location.href = prefix + "student-login.html";
     });
     nav.appendChild(instagram);
@@ -169,7 +207,7 @@
   };
 
   if (!isStudentLogin && !isAdminLogin && !isAdminPanel) {
-    if (!sessionStorage.getItem(SESSION_KEY) && !isHomePage) {
+    if (!readSession() && !isHomePage) {
       const currentFile = location.pathname.split("/").pop() || "index.html";
       const nextTarget = location.pathname.includes("/pages/") ? "pages/" + currentFile : currentFile;
       const next = encodeURIComponent(nextTarget);
@@ -193,7 +231,7 @@
     const submit = document.getElementById("studentSubmit");
     const modeLabel = document.getElementById("storageModeLabel");
     const helpText = document.getElementById("studentHelpText");
-    const session = JSON.parse(sessionStorage.getItem(SESSION_KEY) || "null");
+    const session = readSession();
     let mode = ["login", "change", "recover"].includes(queryMode()) ? queryMode() : "login";
 
     if (modeLabel) {
@@ -223,7 +261,7 @@
           ? "Masukkan NIM, kode pemulihan, dan password baru. Kode pemulihan diberikan oleh admin sejak akun dibuat."
           : mode === "change"
             ? "Gunakan password saat ini untuk mengganti password. Jika lupa, pilih Lupa Password."
-            : "Jika masih memakai password awal dari admin, kamu boleh langsung masuk atau memilih mengganti password.";
+            : "Masuk dengan NIM dan password. Sesi login tersimpan 7 hari sejak terakhir membuka website.";
       }
     };
 
@@ -247,7 +285,7 @@
           if (mode === "change") {
             if (newPassword.length < 6) throw new Error("Password baru minimal 6 karakter.");
             const student = await remoteChangePassword({ nim, currentPassword: password, newPassword });
-            sessionStorage.setItem(SESSION_KEY, JSON.stringify({ nim, name: student.name }));
+            saveSession(student);
             showToast("Password berhasil diubah. Mengalihkan ke halaman utama...");
             setTimeout(() => location.href = nextUrl(), 700);
             return;
@@ -255,21 +293,13 @@
           if (mode === "recover") {
             if (newPassword.length < 6) throw new Error("Password baru minimal 6 karakter.");
             const student = await remoteResetPassword({ nim, recoveryCode: password, newPassword });
-            sessionStorage.setItem(SESSION_KEY, JSON.stringify({ nim, name: student.name }));
+            saveSession(student);
             showToast("Password berhasil direset. Mengalihkan ke halaman utama...");
             setTimeout(() => location.href = nextUrl(), 700);
             return;
           }
           const student = await remoteLogin({ nim, password });
-          if (student.must_change_password) {
-            const wantsChange = confirm("Password ini masih password awal dari admin. Mau ubah password sekarang?");
-            if (wantsChange) {
-              showToast("Silakan buat password baru terlebih dahulu.");
-              setMode("change");
-              return;
-            }
-          }
-          sessionStorage.setItem(SESSION_KEY, JSON.stringify({ nim, name: student.name }));
+          saveSession(student);
           location.href = nextUrl();
           return;
         }
@@ -282,7 +312,7 @@
           students[nim].password = newPassword;
           students[nim].mustChangePassword = false;
           saveStudents(students);
-          sessionStorage.setItem(SESSION_KEY, JSON.stringify({ nim, name: students[nim].name }));
+          saveSession({ nim, name: students[nim].name });
           location.href = nextUrl();
           return;
         }
@@ -293,22 +323,14 @@
           students[nim].password = newPassword;
           students[nim].mustChangePassword = false;
           saveStudents(students);
-          sessionStorage.setItem(SESSION_KEY, JSON.stringify({ nim, name: students[nim].name }));
+          saveSession({ nim, name: students[nim].name });
           location.href = nextUrl();
           return;
         }
         if (!students[nim] || students[nim].password !== password) {
           throw new Error("NIM atau password salah. Akun harus dibuat admin terlebih dahulu.");
         }
-        if (students[nim].mustChangePassword) {
-          const wantsChange = confirm("Password ini masih password awal dari admin. Mau ubah password sekarang?");
-          if (wantsChange) {
-            showToast("Silakan buat password baru terlebih dahulu.");
-            setMode("change");
-            return;
-          }
-        }
-        sessionStorage.setItem(SESSION_KEY, JSON.stringify({ nim, name: students[nim].name }));
+        saveSession({ nim, name: students[nim].name });
         location.href = nextUrl();
       } catch (error) {
         showToast(error.message || "Terjadi kesalahan login.");
