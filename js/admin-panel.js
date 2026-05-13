@@ -75,6 +75,7 @@ let editingVideoDocId = null;
 let editingSoftwareDocId = null;
 let editingAnnouncementDocId = null;
 let supabaseClient = null;
+const ANNOUNCEMENT_BUCKET = 'sipilcare';
 
 const escapeText = value => String(value || '').replace(/[&<>"']/g, char => ({
   '&': '&amp;',
@@ -135,14 +136,14 @@ async function uploadAnnouncementPhoto(file) {
   const ext = file.name.split('.').pop() || 'jpg';
   const id = crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
   const photoPath = `home/${Date.now()}-${id}.${ext}`;
-  const { error } = await supabase.storage.from('announcements').upload(photoPath, file, {
+  const { error } = await supabase.storage.from(ANNOUNCEMENT_BUCKET).upload(photoPath, file, {
     cacheControl: '3600',
     upsert: false
   });
 
   if (error) throw error;
 
-  const { data } = supabase.storage.from('announcements').getPublicUrl(photoPath);
+  const { data } = supabase.storage.from(ANNOUNCEMENT_BUCKET).getPublicUrl(photoPath);
   return {
     photoUrl: data.publicUrl,
     photoPath

@@ -1,12 +1,12 @@
 # Supabase Storage untuk Foto Pemberitahuan
 
-Fitur pemberitahuan di panel HMS menyimpan metadata ke Firestore collection `announcements`, sedangkan foto disimpan ke Supabase Storage bucket `announcements`.
+Fitur pemberitahuan di panel HMS menyimpan metadata ke Firestore collection `announcements`, sedangkan foto disimpan ke Supabase Storage bucket `sipilcare`.
 
-Jalankan SQL ini di Supabase SQL Editor jika bucket belum ada:
+Jalankan SQL ini di Supabase SQL Editor jika bucket `sipilcare` belum ada:
 
 ```sql
 insert into storage.buckets (id, name, public)
-values ('announcements', 'announcements', true)
+values ('sipilcare', 'sipilcare', true)
 on conflict (id) do update set public = true;
 ```
 
@@ -17,13 +17,13 @@ create policy "Public read announcement photos"
 on storage.objects
 for select
 to anon
-using (bucket_id = 'announcements');
+using (bucket_id = 'sipilcare');
 
 create policy "Upload announcement photos"
 on storage.objects
 for insert
 to anon
-with check (bucket_id = 'announcements');
+with check (bucket_id = 'sipilcare');
 ```
 
 Catatan penting: karena website ini tanpa backend, anon key Supabase tetap terlihat di browser. Untuk produksi yang lebih aman, upload foto sebaiknya dipindahkan ke backend/serverless function agar hanya admin yang benar-benar bisa mengunggah file.
