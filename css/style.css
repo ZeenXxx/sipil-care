@@ -724,13 +724,16 @@ button, input, select, textarea  {
 }
 
 .announcement-media.has-image  {
-    background: #edf4f1
+    height: auto;
+    min-height: 0;
+    flex: 0 0 auto;
+    background: #f8fbfa
 }
 
 .announcement-media img  {
     width: 100%;
-    height: 100%;
-    object-fit: cover
+    height: auto;
+    object-fit: contain
 }
 
 .announcement-body  {
