@@ -23,7 +23,7 @@ const videoCard = item => `
     <div class="video-body">
       <div class="meta">
         <span class="badge">${escapeText(item.category || 'Video')}</span>
-        <span class="badge">${escapeText(item.duration || 'Learning')}</span>
+        <span class="badge">Channel: ${escapeText(item.channel || item.duration || 'Learning')}</span>
       </div>
       <h3>${escapeText(item.title)}</h3>
       <p>${escapeText(item.description)}</p>

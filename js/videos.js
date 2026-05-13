@@ -16,7 +16,8 @@ const videoSearch = document.getElementById('videoSearch');
 const videoCategory = document.getElementById('videoCategory');
 const featuredVideo = document.getElementById('featuredVideo');
 
-const card = v => `<article class="card video-card"><div class="thumb">${v.thumbnail}</div><div class="video-body"><div class="meta"><span class="badge">${v.category}</span><span class="badge">${v.duration}</span></div><h3>${v.title}</h3><p>${v.description}</p><br><a class="btn btn-primary" href="${v.youtube}" target="_blank" rel="noopener">Watch</a></div></article>`;
+const channelLabel = v => v.channel || v.duration || 'Channel';
+const card = v => `<article class="card video-card"><div class="thumb">${v.thumbnail}</div><div class="video-body"><div class="meta"><span class="badge">${v.category}</span><span class="badge">Channel: ${channelLabel(v)}</span></div><h3>${v.title}</h3><p>${v.description}</p><br><a class="btn btn-primary" href="${v.youtube}" target="_blank" rel="noopener">Watch</a></div></article>`;
 
 function render() {
 	const q = (videoSearch?.value || '').toLowerCase();
@@ -29,7 +30,7 @@ function updateUI() {
 	if (!videos || videos.length === 0) return;
 	if (videoCategory) videoCategory.innerHTML = '<option value="All">Semua kategori</option>' + [...new Set(videos.map(v => v.category || 'Uncategorized'))].map(c => `<option>${c}</option>`).join('');
 	const top = videos[0];
-	if (featuredVideo && top) featuredVideo.innerHTML = `<div class="thumb">${top.thumbnail}</div><div><span class="eyebrow">Featured video</span><h2 class="title">${top.title}</h2><p class="lead">${top.description}</p><br><a class="btn btn-primary" href="${top.youtube}" target="_blank" rel="noopener">Watch Video</a></div>`;
+	if (featuredVideo && top) featuredVideo.innerHTML = `<div class="thumb">${top.thumbnail}</div><div><span class="eyebrow">Featured video</span><h2 class="title">${top.title}</h2><div class="meta"><span class="badge">Channel: ${channelLabel(top)}</span></div><p class="lead">${top.description}</p><br><a class="btn btn-primary" href="${top.youtube}" target="_blank" rel="noopener">Watch Video</a></div>`;
 	render();
 }
 

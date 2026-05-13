@@ -41,7 +41,7 @@ const videoTitle = document.getElementById('videoTitle');
 const videoThumb = document.getElementById('videoThumb');
 const videoDescription = document.getElementById('videoDescription');
 const videoCategoryInput = document.getElementById('videoCategoryInput');
-const videoDuration = document.getElementById('videoDuration');
+const videoChannel = document.getElementById('videoChannel');
 const videoYoutube = document.getElementById('videoYoutube');
 const videoSearch = document.getElementById('videoSearch');
 const videoFilter = document.getElementById('videoFilter');
@@ -170,7 +170,7 @@ function validateResourceForm() {
 }
 
 function validateVideoForm() {
-  if (!videoTitle.value.trim() || !videoDescription.value.trim() || !videoCategoryInput.value.trim() || !videoDuration.value.trim() || !videoYoutube.value.trim()) {
+  if (!videoTitle.value.trim() || !videoDescription.value.trim() || !videoCategoryInput.value.trim() || !videoChannel.value.trim() || !videoYoutube.value.trim()) {
     toast('Lengkapi semua field video.');
     return false;
   }
@@ -273,7 +273,7 @@ function videoTableRender() {
       <tr>
         <td>${escapeText(v.title)}</td>
         <td>${escapeText(v.category)}</td>
-        <td>${escapeText(v.duration)}</td>
+        <td>${escapeText(v.channel || v.duration || 'Channel')}</td>
         <td><button class="action-btn" data-edit="${v.docId}">Edit</button><button class="action-btn danger" data-del="${v.docId}">Delete</button></td>
       </tr>
     `)
@@ -481,7 +481,8 @@ videoForm.addEventListener('submit', async e => {
       thumbnail: videoThumb.value.trim() || 'VI',
       description: videoDescription.value.trim(),
       category: videoCategoryInput.value.trim(),
-      duration: videoDuration.value.trim(),
+      channel: videoChannel.value.trim(),
+      duration: videoChannel.value.trim(),
       youtube: videoYoutube.value.trim()
     };
 
@@ -631,7 +632,7 @@ videoTable.addEventListener('click', async e => {
       videoThumb.value = video.thumbnail;
       videoDescription.value = video.description;
       videoCategoryInput.value = video.category;
-      videoDuration.value = video.duration;
+      videoChannel.value = video.channel || video.duration || '';
       videoYoutube.value = video.youtube;
       editingVideoDocId = docId;
       videoForm.scrollIntoView({ behavior: 'smooth' });
