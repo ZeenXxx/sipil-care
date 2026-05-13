@@ -38,3 +38,9 @@ body { background: #f5f8f7; }
 .download-link { display: inline-flex; align-items: center; justify-content: center; min-height: 42px; padding: 0 16px; border-radius: 8px; background: var(--primary); color: #fff; font-weight: 900; }
 @media (max-width: 860px) { .tools-hero-grid, .tool-layout { grid-template-columns: 1fr; } .tool-header { display: grid; } .tools-tabs { grid-template-columns: repeat(2, minmax(0, 1fr)); } .tool-panel { padding: 18px; } }
 @media (max-width: 520px) { .tools-tabs, .tool-grid-2 { grid-template-columns: 1fr; } .tools-hero-panel span { font-size: 54px; } .tool-header > div { align-items: flex-start; } }
+.pdf-image-results { width: 100%; display: grid; gap: 16px; align-content: start; }
+.pdf-image-item { display: grid; gap: 12px; padding: 14px; border: 1px solid var(--line); border-radius: 8px; background: #fff; }
+.pdf-image-item div { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.pdf-image-item strong { color: var(--primary); }
+.pdf-image-item img { width: 100%; max-height: 520px; object-fit: contain; }
+.image-page-fields input:disabled { opacity: .55; cursor: not-allowed; }
