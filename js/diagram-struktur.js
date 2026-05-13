@@ -202,6 +202,14 @@ function validateModel() {
     }
   }
 
+  const activeNodeIds = new Set();
+  state.elements.forEach(element => {
+    activeNodeIds.add(element.startNode);
+    activeNodeIds.add(element.endNode);
+  });
+  const invalidSupport = state.nodes.find(node => node.support !== 'free' && !activeNodeIds.has(node.id));
+  if (invalidSupport) throw new Error(`Support N${invalidSupport.id} harus berada pada node ujung element. Split element pada node tersebut terlebih dahulu.`);
+
   const fixed = state.nodes.filter(node => node.support === 'fixed');
   const verticalSupports = state.nodes.filter(node => ['pin', 'roller', 'fixed'].includes(node.support));
   const simpleSupports = state.nodes.filter(node => ['pin', 'roller'].includes(node.support));
@@ -211,14 +219,10 @@ function validateModel() {
   if (horizontalLoads.length && horizontalSupports.length < 1) throw new Error('Beban horizontal membutuhkan support pin atau fixed.');
   if (horizontalLoads.length && horizontalSupports.length > 1) throw new Error('Model dengan lebih dari satu restraint horizontal belum didukung pada versi awal.');
 
-  if (fixed.length === 1 && verticalSupports.length === 1) return { type: 'cantilever', supports: fixed };
-  if (fixed.length === 0 && simpleSupports.length === 2) {
-    if (Math.abs(simpleSupports[0].x - simpleSupports[1].x) < eps) throw new Error('Dua support tidak boleh berada pada posisi X yang sama.');
-    return { type: 'simple', supports: [...simpleSupports].sort((a, b) => a.x - b.x) };
-  }
-
   if (verticalSupports.length < 1) throw new Error('Struktur harus punya support yang cukup.');
-  throw new Error('Model ini belum didukung pada versi awal.');
+  if (fixed.length === 0 && simpleSupports.length < 2) throw new Error('Balok tanpa fixed membutuhkan minimal dua support vertikal.');
+
+  return { type: 'stiffness', supports: verticalSupports };
 }
 
 function normalizeLoads() {
@@ -229,42 +233,159 @@ function normalizeLoads() {
   });
 }
 
+
+function addEquivalentPointLoad(force, element, x, p, nodeIndex) {
+  const ends = elementEnds(element);
+  const leftIndex = nodeIndex.get(ends.left.id);
+  const rightIndex = nodeIndex.get(ends.right.id);
+  const localX = x - ends.left.x;
+  const r = localX / ends.length;
+  const n1 = 1 - 3 * r * r + 2 * r * r * r;
+  const n2 = ends.length * (r - 2 * r * r + r * r * r);
+  const n3 = 3 * r * r - 2 * r * r * r;
+  const n4 = ends.length * (-r * r + r * r * r);
+  force[leftIndex * 2] -= p * n1;
+  force[leftIndex * 2 + 1] -= p * n2;
+  force[rightIndex * 2] -= p * n3;
+  force[rightIndex * 2 + 1] -= p * n4;
+}
+
+function addEquivalentUdl(force, element, a, b, w, nodeIndex) {
+  const ends = elementEnds(element);
+  const leftIndex = nodeIndex.get(ends.left.id);
+  const rightIndex = nodeIndex.get(ends.right.id);
+  const from = Math.max(a, ends.left.x);
+  const to = Math.min(b, ends.right.x);
+  if (to <= from + eps) return;
+  const mid = (from + to) / 2;
+  const half = (to - from) / 2;
+  const gauss = [
+    { x: -0.8611363116, weight: 0.3478548451 },
+    { x: -0.3399810436, weight: 0.6521451549 },
+    { x: 0.3399810436, weight: 0.6521451549 },
+    { x: 0.8611363116, weight: 0.3478548451 }
+  ];
+  gauss.forEach(point => {
+    const globalX = mid + half * point.x;
+    const r = (globalX - ends.left.x) / ends.length;
+    const n1 = 1 - 3 * r * r + 2 * r * r * r;
+    const n2 = ends.length * (r - 2 * r * r + r * r * r);
+    const n3 = 3 * r * r - 2 * r * r * r;
+    const n4 = ends.length * (-r * r + r * r * r);
+    const scale = w * half * point.weight;
+    force[leftIndex * 2] -= scale * n1;
+    force[leftIndex * 2 + 1] -= scale * n2;
+    force[rightIndex * 2] -= scale * n3;
+    force[rightIndex * 2 + 1] -= scale * n4;
+  });
+}
+
+function solveLinearSystem(matrix, vector) {
+  const n = vector.length;
+  const a = matrix.map((row, i) => [...row, vector[i]]);
+  for (let col = 0; col < n; col += 1) {
+    let pivot = col;
+    for (let row = col + 1; row < n; row += 1) {
+      if (Math.abs(a[row][col]) > Math.abs(a[pivot][col])) pivot = row;
+    }
+    if (Math.abs(a[pivot][col]) < 1e-10) throw new Error('Struktur tidak stabil atau support belum cukup. Periksa lagi tipe support dan posisi tumpuan.');
+    [a[col], a[pivot]] = [a[pivot], a[col]];
+    const divisor = a[col][col];
+    for (let j = col; j <= n; j += 1) a[col][j] /= divisor;
+    for (let row = 0; row < n; row += 1) {
+      if (row === col) continue;
+      const factor = a[row][col];
+      for (let j = col; j <= n; j += 1) a[row][j] -= factor * a[col][j];
+    }
+  }
+  return a.map(row => row[n]);
+}
+
 function solveReactions(model, loads) {
-  const reactions = [];
-  const verticalLoads = loads
-    .filter(load => load.type === 'udl' || Math.abs(pointFy(load)) > eps)
-    .map(load => load.type === 'point' ? { total: pointFy(load), x: load.x } : { total: load.total, x: load.centroid });
-  const horizontalLoads = loads.filter(load => load.type === 'point' && Math.abs(pointFx(load)) > eps);
-  const totalLoad = verticalLoads.reduce((sum, load) => sum + load.total, 0);
-  const totalHorizontal = horizontalLoads.reduce((sum, load) => sum + pointFx(load), 0);
-  const horizontalSupport = state.nodes.find(node => ['pin', 'fixed'].includes(node.support));
+  const activeNodeIds = new Set();
+  state.elements.forEach(element => {
+    activeNodeIds.add(element.startNode);
+    activeNodeIds.add(element.endNode);
+  });
+  const nodes = sortedNodes().filter(node => activeNodeIds.has(node.id));
+  const nodeIndex = new Map(nodes.map((node, index) => [node.id, index]));
+  const dofCount = nodes.length * 2;
+  const stiffness = Array.from({ length: dofCount }, () => Array(dofCount).fill(0));
+  const force = Array(dofCount).fill(0);
+  const ei = 1;
 
-  const applyHorizontalReaction = reaction => {
-    reaction.horizontal = horizontalSupport && reaction.nodeId === horizontalSupport.id ? -totalHorizontal : 0;
-    return reaction;
-  };
+  state.elements.forEach(element => {
+    const ends = elementEnds(element);
+    const leftIndex = nodeIndex.get(ends.left.id);
+    const rightIndex = nodeIndex.get(ends.right.id);
+    const l = ends.length;
+    const local = [
+      [12 * ei / l ** 3, 6 * ei / l ** 2, -12 * ei / l ** 3, 6 * ei / l ** 2],
+      [6 * ei / l ** 2, 4 * ei / l, -6 * ei / l ** 2, 2 * ei / l],
+      [-12 * ei / l ** 3, -6 * ei / l ** 2, 12 * ei / l ** 3, -6 * ei / l ** 2],
+      [6 * ei / l ** 2, 2 * ei / l, -6 * ei / l ** 2, 4 * ei / l]
+    ];
+    const map = [leftIndex * 2, leftIndex * 2 + 1, rightIndex * 2, rightIndex * 2 + 1];
+    for (let i = 0; i < 4; i += 1) {
+      for (let j = 0; j < 4; j += 1) stiffness[map[i]][map[j]] += local[i][j];
+    }
+  });
 
-  if (model.type === 'simple') {
-    const [a, b] = model.supports;
-    const span = b.x - a.x;
-    const momentAboutA = verticalLoads.reduce((sum, load) => sum + load.total * (load.x - a.x), 0);
-    const rb = momentAboutA / span;
-    const ra = totalLoad - rb;
-    reactions.push(applyHorizontalReaction({ nodeId: a.id, x: a.x, vertical: ra, moment: 0 }));
-    reactions.push(applyHorizontalReaction({ nodeId: b.id, x: b.x, vertical: rb, moment: 0 }));
+  loads.forEach(load => {
+    if (load.type === 'point' && Math.abs(pointFy(load)) > eps) {
+      const nodeAtLoad = nodes.find(node => Math.abs(node.x - load.x) < eps);
+      if (nodeAtLoad) {
+        force[nodeIndex.get(nodeAtLoad.id) * 2] -= pointFy(load);
+      } else {
+        const element = state.elements.find(item => {
+          const ends = elementEnds(item);
+          return load.x > ends.left.x + eps && load.x < ends.right.x - eps;
+        });
+        if (!element) throw new Error(`${load.label} berada di luar element.`);
+        addEquivalentPointLoad(force, element, load.x, pointFy(load), nodeIndex);
+      }
+    }
+    if (load.type === 'udl') {
+      state.elements.forEach(element => addEquivalentUdl(force, element, load.a, load.b, load.w, nodeIndex));
+    }
+  });
+
+  const constrained = new Set();
+  nodes.forEach((node, index) => {
+    if (['pin', 'roller', 'fixed'].includes(node.support)) constrained.add(index * 2);
+    if (node.support === 'fixed') constrained.add(index * 2 + 1);
+  });
+  const free = Array.from({ length: dofCount }, (_, index) => index).filter(index => !constrained.has(index));
+  if (!constrained.size) throw new Error('Struktur harus punya support yang cukup.');
+
+  const displacements = Array(dofCount).fill(0);
+  if (free.length) {
+    const reducedK = free.map(row => free.map(col => stiffness[row][col]));
+    const reducedF = free.map(row => force[row]);
+    const solved = solveLinearSystem(reducedK, reducedF);
+    free.forEach((dof, index) => { displacements[dof] = solved[index]; });
   }
 
-  if (model.type === 'cantilever') {
-    const support = model.supports[0];
-    const minX = Math.min(...state.nodes.map(node => node.x));
-    const maxX = Math.max(...state.nodes.map(node => node.x));
-    const isLeftFixed = Math.abs(support.x - minX) < eps;
-    const momentMagnitude = verticalLoads.reduce((sum, load) => sum + load.total * Math.abs(load.x - support.x), 0);
-    reactions.push(applyHorizontalReaction({ nodeId: support.id, x: support.x, vertical: totalLoad, moment: -momentMagnitude, includeMomentInLeftExpression: isLeftFixed }));
-    if (Math.abs(support.x - minX) > eps && Math.abs(support.x - maxX) > eps) throw new Error('Model ini belum didukung pada versi awal.');
-  }
+  const reactionsByDof = stiffness.map(row => row.reduce((sum, value, col) => sum + value * displacements[col], 0)).map((value, index) => value - force[index]);
+  const totalHorizontal = loads.filter(load => load.type === 'point').reduce((sum, load) => sum + pointFx(load), 0);
+  const horizontalSupports = nodes.filter(node => ['pin', 'fixed'].includes(node.support));
+  const horizontalSupport = horizontalSupports[0];
 
-  return reactions;
+  return nodes
+    .map((node, index) => ({
+      nodeId: node.id,
+      x: node.x,
+      vertical: constrained.has(index * 2) ? reactionsByDof[index * 2] : 0,
+      moment: constrained.has(index * 2 + 1) ? reactionsByDof[index * 2 + 1] : 0,
+      horizontal: horizontalSupport && node.id === horizontalSupport.id ? -totalHorizontal : 0
+    }))
+    .filter(reaction => Math.abs(reaction.vertical) > 1e-7 || Math.abs(reaction.moment) > 1e-7 || Math.abs(reaction.horizontal) > 1e-7)
+    .map(reaction => ({
+      ...reaction,
+      vertical: Math.abs(reaction.vertical) < 1e-7 ? 0 : reaction.vertical,
+      moment: Math.abs(reaction.moment) < 1e-7 ? 0 : reaction.moment,
+      horizontal: Math.abs(reaction.horizontal) < 1e-7 ? 0 : reaction.horizontal
+    }));
 }
 function shearAt(x, loads, reactions) {
   let shear = 0;
@@ -281,7 +402,7 @@ function momentAt(x, loads, reactions) {
   reactions.forEach(reaction => {
     if (x >= reaction.x - eps) {
       moment += reaction.vertical * (x - reaction.x);
-      if (reaction.includeMomentInLeftExpression) moment += reaction.moment;
+      if (reaction.moment) moment -= reaction.moment;
     }
   });
   loads.forEach(load => {
@@ -441,7 +562,7 @@ function analyze() {
     renderSummary(reactions, samples);
     renderTable(table);
     renderCharts(samples);
-    showMessage('Analisis berhasil untuk model ' + (model.type === 'simple' ? 'simply supported beam.' : 'fixed-end cantilever.'), true);
+    showMessage('Analisis berhasil. Support pin, roller, dan fixed dihitung dengan metode kekakuan balok 1D.', true);
   } catch (error) {
     $('#reactionResults').innerHTML = '';
     $('#forceTableBody').innerHTML = '<tr><td colspan="10">Belum ada hasil analisis.</td></tr>';
