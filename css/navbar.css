@@ -620,3 +620,121 @@ body.nav-open:before  {
     height: 22px;
   }
 }
+
+.student-account {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.student-account-toggle {
+  width: 44px;
+  height: 44px;
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid rgba(15, 77, 58, .16);
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--primary), #238464);
+  color: #fff;
+  box-shadow: 0 12px 24px rgba(15, 77, 58, .16);
+  cursor: pointer;
+}
+
+.student-account-toggle span {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .16);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.student-account-menu {
+  position: absolute;
+  top: calc(100% + 12px);
+  right: 0;
+  width: min(280px, calc(100vw - 32px));
+  display: none;
+  padding: 10px;
+  border: 1px solid rgba(15, 77, 58, .14);
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 22px 48px rgba(15, 77, 58, .18);
+  z-index: 1200;
+}
+
+.student-account.open .student-account-menu {
+  display: grid;
+  gap: 8px;
+  animation: navDropIn .18s ease;
+}
+
+.student-account-info {
+  padding: 12px;
+  border-radius: 8px;
+  background: var(--soft);
+}
+
+.student-account-info strong,
+.student-account-info span {
+  display: block;
+  overflow-wrap: anywhere;
+}
+
+.student-account-info strong {
+  color: var(--primary);
+  font-size: 15px;
+  line-height: 1.25;
+}
+
+.student-account-info span {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.student-account-action {
+  width: 100%;
+  min-height: 42px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--primary);
+  text-align: left;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.student-account-action:hover {
+  background: rgba(15, 77, 58, .08);
+}
+
+.student-account-action.danger {
+  color: #b42318;
+}
+
+.student-account-action.danger:hover {
+  background: rgba(180, 35, 24, .08);
+}
+
+@media(max-width:820px) {
+  .student-account {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .student-account-toggle {
+    width: 52px;
+    height: 52px;
+  }
+
+  .student-account-menu {
+    top: calc(100% + 8px);
+    right: 0;
+  }
+}

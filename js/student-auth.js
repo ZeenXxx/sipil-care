@@ -23,6 +23,14 @@
     toast.classList.add("show");
     setTimeout(() => toast.classList.remove("show"), 3200);
   };
+  const escapeHtml = (value) => String(value || "").replace(/[&<>"']/g, (char) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    "\"": "&quot;",
+    "'": "&#39;"
+  }[char]));
+  const escapeInitial = (value) => escapeHtml(String(value || "U").trim().slice(0, 1).toUpperCase() || "U");
   const isValidNim = (nim) => /^[0-9]{8,14}$/.test(nim);
   const nextUrl = () => new URLSearchParams(location.search).get("next") || "index.html";
   const queryMode = () => new URLSearchParams(location.search).get("mode") || "login";
@@ -158,8 +166,10 @@
     if (!nav || nav.querySelector("[data-student-nav-action]")) return;
     const session = readSession();
     const currentFile = location.pathname.split("/").pop() || "index.html";
-    const nextTarget = location.pathname.includes("/pages/") ? "pages/" + currentFile : currentFile;
-    const prefix = location.pathname.includes("/pages/") ? "../" : "";
+    const inPages = location.pathname.includes("/pages/");
+    const inTools = location.pathname.includes("/tools/");
+    const nextTarget = inPages ? "pages/" + currentFile : inTools ? "tools/" + currentFile : currentFile;
+    const prefix = inPages || inTools ? "../" : "";
 
     if (!session) {
       const login = document.createElement("a");
@@ -171,16 +181,36 @@
       return;
     }
 
+    const account = document.createElement("div");
+    account.className = "student-account";
+    account.dataset.studentNavAction = "true";
+
+    const accountButton = document.createElement("button");
+    accountButton.className = "student-account-toggle";
+    accountButton.type = "button";
+    accountButton.setAttribute("aria-label", "Buka menu akun mahasiswa");
+    accountButton.setAttribute("aria-expanded", "false");
+    accountButton.innerHTML = `<span>${escapeInitial(session.name || session.nim)}</span>`;
+
+    const menu = document.createElement("div");
+    menu.className = "student-account-menu";
+    menu.innerHTML = `
+      <div class="student-account-info">
+        <strong>${escapeHtml(session.name || "Mahasiswa SIPIL CARE")}</strong>
+        <span>NIM ${escapeHtml(session.nim)}</span>
+      </div>
+    `;
+
     const passwordButton = document.createElement("button");
-    passwordButton.className = "student-password";
+    passwordButton.className = "student-account-action";
     passwordButton.type = "button";
-    passwordButton.dataset.studentNavAction = "true";
-    passwordButton.textContent = "Ganti Password";
+    passwordButton.textContent = "Change Password";
     passwordButton.addEventListener("click", () => {
       location.href = `${prefix}student-login.html?mode=change&next=${encodeURIComponent(nextTarget)}`;
     });
+
     const logout = document.createElement("button");
-    logout.className = "student-logout";
+    logout.className = "student-account-action danger";
     logout.type = "button";
     logout.dataset.studentLogout = "true";
     logout.textContent = "Logout";
@@ -188,16 +218,41 @@
       clearSession();
       location.href = prefix + "student-login.html";
     });
-    nav.appendChild(passwordButton);
-    nav.appendChild(logout);
+
+    const closeAccountMenu = () => {
+      account.classList.remove("open");
+      accountButton.setAttribute("aria-expanded", "false");
+    };
+
+    accountButton.addEventListener("click", (event) => {
+      event.stopPropagation();
+      const open = !account.classList.contains("open");
+      account.classList.toggle("open", open);
+      accountButton.setAttribute("aria-expanded", String(open));
+    });
+
+    document.addEventListener("click", (event) => {
+      if (!account.contains(event.target)) closeAccountMenu();
+    });
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") closeAccountMenu();
+    });
+
+    menu.appendChild(passwordButton);
+    menu.appendChild(logout);
+    account.appendChild(accountButton);
+    account.appendChild(menu);
+    nav.appendChild(account);
   };
 
   if (!isStudentLogin && !isAdminLogin && !isAdminPanel) {
     if (!readSession() && !isHomePage) {
       const currentFile = location.pathname.split("/").pop() || "index.html";
-      const nextTarget = location.pathname.includes("/pages/") ? "pages/" + currentFile : currentFile;
+      const inPages = location.pathname.includes("/pages/");
+      const inTools = location.pathname.includes("/tools/");
+      const nextTarget = inPages ? "pages/" + currentFile : inTools ? "tools/" + currentFile : currentFile;
       const next = encodeURIComponent(nextTarget);
-      const prefix = location.pathname.includes("/pages/") ? "../" : "";
+      const prefix = inPages || inTools ? "../" : "";
       location.replace(prefix + "student-login.html?next=" + next);
       return;
     }
