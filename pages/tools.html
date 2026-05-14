@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="../css/style.css?v=14">
     <link rel="stylesheet" href="../css/navbar.css?v=23">
-    <link rel="stylesheet" href="../css/tools.css?v=2">
+    <link rel="stylesheet" href="../css/tools.css?v=3">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -61,9 +61,9 @@
             </div>
           </section>
           <section class="tool-panel" id="tool-merge">
-            <div class="tool-header"><div><span class="tool-code">PM</span><h2>PDF merger</h2></div><p>Gabungkan beberapa PDF menjadi satu file. Urutan file mengikuti daftar yang tampil.</p></div>
+            <div class="tool-header"><div><span class="tool-code">PM</span><h2>PDF merger</h2></div><p>Gabungkan beberapa PDF menjadi satu file. Urutan mengikuti urutan kamu memilih file, bukan urutan nama di folder.</p></div>
             <div class="tool-layout">
-              <div class="card tool-card"><label for="mergeFiles">Pilih file PDF</label><input class="control file-control" id="mergeFiles" type="file" accept="application/pdf" multiple><div class="file-list" id="mergeList"><p>Belum ada PDF dipilih.</p></div><button class="btn btn-primary full-btn" type="button" id="mergeBtn">Gabungkan PDF</button></div>
+              <div class="card tool-card"><label for="mergeFiles">Pilih file PDF sesuai urutan</label><input class="control file-control" id="mergeFiles" type="file" accept="application/pdf" multiple><div class="file-list" id="mergeList"><p>Belum ada PDF dipilih.</p></div><div class="action-row"><button class="btn btn-primary full-btn" type="button" id="mergeBtn">Gabungkan PDF</button><button class="btn btn-secondary full-btn" type="button" id="clearMergeBtn">Reset urutan</button></div></div>
               <div class="tool-note"><h3>Privasi file</h3><p>File PDF diproses lokal di browser. Tidak ada upload ke server SIPIL CARE.</p><p class="small-text">Untuk file besar, proses bisa membutuhkan beberapa detik tergantung perangkat.</p></div>
             </div>
           </section>
@@ -98,6 +98,6 @@
     <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
     <script src="../js/navbar.js?v=20"></script>
-    <script src="../js/tools.js?v=2"></script>
+    <script src="../js/tools.js?v=3"></script>
   </body>
 </html>

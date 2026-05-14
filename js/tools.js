@@ -81,13 +81,26 @@ document.getElementById('exportForm').addEventListener('submit', event => {
 
 const mergeFiles = document.getElementById('mergeFiles');
 const mergeList = document.getElementById('mergeList');
+const mergeBtn = document.getElementById('mergeBtn');
+const clearMergeBtn = document.getElementById('clearMergeBtn');
+let selectedMergeFiles = [];
 const renderMergeList = () => {
-  const files = Array.from(mergeFiles.files || []);
-  mergeList.innerHTML = files.length ? files.map((file, index) => '<div class="file-item"><span>' + (index + 1) + '. ' + file.name + '</span><small>' + (file.size / 1024 / 1024).toFixed(2) + ' MB</small></div>').join('') : '<p>Belum ada PDF dipilih.</p>';
+  mergeList.innerHTML = selectedMergeFiles.length ? selectedMergeFiles.map((file, index) => '<div class="file-item"><span>' + (index + 1) + '. ' + file.name + '</span><small>' + (file.size / 1024 / 1024).toFixed(2) + ' MB</small></div>').join('') : '<p>Belum ada PDF dipilih.</p>';
 };
-mergeFiles.addEventListener('change', renderMergeList);
-document.getElementById('mergeBtn').addEventListener('click', async () => {
-  const files = Array.from(mergeFiles.files || []);
+mergeFiles.addEventListener('change', () => {
+  const pickedFiles = Array.from(mergeFiles.files || []);
+  selectedMergeFiles = selectedMergeFiles.concat(pickedFiles);
+  mergeFiles.value = '';
+  renderMergeList();
+});
+clearMergeBtn?.addEventListener('click', () => {
+  selectedMergeFiles = [];
+  mergeFiles.value = '';
+  renderMergeList();
+  showToast('Urutan PDF direset. Pilih ulang file sesuai urutan yang diinginkan.');
+});
+mergeBtn.addEventListener('click', async () => {
+  const files = selectedMergeFiles;
   if (files.length < 2) return showToast('Pilih minimal dua file PDF untuk digabung.');
   if (!window.PDFLib?.PDFDocument) return showToast('Library PDF merger belum siap. Coba ulang beberapa detik lagi.');
   try {
@@ -98,7 +111,7 @@ document.getElementById('mergeBtn').addEventListener('click', async () => {
       copiedPages.forEach(page => mergedPdf.addPage(page));
     }
     downloadBlob(new Blob([await mergedPdf.save()], { type: 'application/pdf' }), 'sipil-care-merged.pdf');
-    showToast('PDF berhasil digabung.');
+    showToast('PDF berhasil digabung sesuai urutan daftar.');
   } catch (error) { console.error(error); showToast('Gagal menggabungkan PDF. Pastikan file tidak rusak atau terkunci.'); }
 });
 
