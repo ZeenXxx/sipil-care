@@ -161,3 +161,61 @@ document.getElementById('imageBtn').addEventListener('click', async () => {
     showToast('Gagal mengubah PDF ke gambar.');
   }
 });
+
+const jpgPdfFiles = document.getElementById('jpgPdfFiles');
+const jpgPdfList = document.getElementById('jpgPdfList');
+const renderJpgPdfList = () => {
+  const files = Array.from(jpgPdfFiles?.files || []);
+  jpgPdfList.innerHTML = files.length ? files.map((file, index) => '<div class="file-item"><span>' + (index + 1) + '. ' + file.name + '</span><small>' + (file.size / 1024 / 1024).toFixed(2) + ' MB</small></div>').join('') : '<p>Belum ada gambar dipilih.</p>';
+};
+
+const readImageData = file => new Promise((resolve, reject) => {
+  const reader = new FileReader();
+  reader.onload = () => {
+    const image = new Image();
+    image.onload = () => resolve({ dataUrl: reader.result, width: image.naturalWidth, height: image.naturalHeight });
+    image.onerror = reject;
+    image.src = reader.result;
+  };
+  reader.onerror = reject;
+  reader.readAsDataURL(file);
+});
+
+jpgPdfFiles?.addEventListener('change', renderJpgPdfList);
+
+document.getElementById('jpgPdfBtn')?.addEventListener('click', async () => {
+  const files = Array.from(jpgPdfFiles?.files || []);
+  if (!files.length) return showToast('Pilih minimal satu gambar JPG/JPEG.');
+  if (!window.jspdf?.jsPDF) return showToast('Library PDF belum siap. Coba ulang beberapa detik lagi.');
+  const invalid = files.find(file => !/^image\/jpe?g$/i.test(file.type) && !/\.jpe?g$/i.test(file.name));
+  if (invalid) return showToast('Gunakan file JPG atau JPEG saja.');
+
+  try {
+    const { jsPDF } = window.jspdf;
+    const orientationSetting = document.getElementById('jpgPdfOrientation').value;
+    let doc = null;
+    for (const [index, file] of files.entries()) {
+      const image = await readImageData(file);
+      const orientation = orientationSetting === 'auto' ? (image.width >= image.height ? 'landscape' : 'portrait') : orientationSetting;
+      if (!doc) doc = new jsPDF({ unit: 'mm', format: 'a4', orientation });
+      else doc.addPage('a4', orientation);
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      const margin = 10;
+      const maxWidth = pageWidth - margin * 2;
+      const maxHeight = pageHeight - margin * 2;
+      const ratio = Math.min(maxWidth / image.width, maxHeight / image.height);
+      const width = image.width * ratio;
+      const height = image.height * ratio;
+      const x = (pageWidth - width) / 2;
+      const y = (pageHeight - height) / 2;
+      doc.addImage(image.dataUrl, 'JPEG', x, y, width, height, undefined, 'FAST');
+      if (index === 0) doc.setProperties({ title: slug(file.name), subject: 'JPG to PDF SIPIL CARE' });
+    }
+    doc.save(slug(files[0].name) + (files.length > 1 ? '-and-' + (files.length - 1) + '-more' : '') + '.pdf');
+    showToast(files.length + ' gambar berhasil diexport ke PDF.');
+  } catch (error) {
+    console.error(error);
+    showToast('Gagal membuat PDF dari gambar. Pastikan file JPG tidak rusak.');
+  }
+});
