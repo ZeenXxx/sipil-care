@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/home.css?v=22">
+    <link rel="stylesheet" href="css/home.css?v=23">
     <title>SIPIL CARE</title>
     <script src="js/student-config.js?v=18"></script>
     <script src="js/student-auth.js?v=25"></script>
@@ -39,21 +39,21 @@
       <section class="hero">
         <div class="container hero-grid">
           <div>
-            <span class="eyebrow">Digital learning hub teknik sipil</span>
-            <h1>Platform Akademik untuk Belajar, Berkegiatan, dan Berkembang</h1>
-            <p>SIPIL CARE membantu mahasiswa Teknik Sipil UNJANI mengikuti video pembelajaran, informasi HMS, dokumentasi kegiatan, modul kuliah, dan kebutuhan akademik dalam satu platform tertata.</p>
+            <span class="eyebrow">Pusat info dan tools akademik teknik sipil</span>
+            <h1>Pemberitahuan HMS, Tools Tugas, dan Belajar Teknik Sipil dalam Satu Tempat</h1>
+            <p>SIPIL CARE menonjolkan update resmi HMS UNJANI/PENDPROF HMS dan tools praktis untuk membantu mahasiswa menyelesaikan kebutuhan akademik harian.</p>
             <div class="actions">
-              <a class="btn btn-primary" href="pages/videos.html">Lihat Video Pembelajaran</a>
-              <a class="btn btn-secondary" href="#pemberitahuan">Lihat Pemberitahuan</a>
+              <a class="btn btn-primary" href="#pemberitahuan">Lihat Pemberitahuan</a>
+              <a class="btn btn-secondary" href="tools/diagram-struktur.html">Buka Structural Analyzer</a>
             </div>
           </div>
           <div class="visual">
             <div class="visual-panel">
-              <strong>Academic Activity Center</strong>
-              <p>Update video, agenda Himpunan Mahasiswa Sipil Universitas Jenderal Achmad Yani (HMS UNJANI), dokumentasi kegiatan, dan materi belajar dikurasi untuk mahasiswa Teknik Sipil.</p>
+              <strong>Announcement & Tools Center</strong>
+              <p>Agenda, dokumentasi, dan tools seperti Structural Analyzer, PDF tools, converter, dan JPG to PDF disiapkan agar aktivitas akademik lebih cepat dikerjakan.</p>
               <div class="mini">
-                <span><b>Video</b>Highlight belajar</span>
-                <span><b>HMS</b>Info kegiatan</span>
+                <span><b>Info</b>Pemberitahuan</span>
+                <span><b>Tools</b>Analyzer & PDF</span>
                 <span><b>Care</b>Support akademik</span>
               </div>
             </div>
@@ -70,6 +70,42 @@
         </div>
       </section>
 
+      <section class="section tools-focus" id="tools-highlight">
+        <div class="container">
+          <span class="eyebrow">Tools akademik</span>
+          <h2 class="title">Tools yang langsung membantu tugas mahasiswa</h2>
+          <p class="lead">Mulai dari analisis diagram struktur sampai pengelolaan file PDF, semua dibuat agar pekerjaan akademik lebih praktis langsung dari browser.</p>
+          <div class="tools-home-grid">
+            <article class="structural-highlight card">
+              <div>
+                <span class="badge">Highlight utama</span>
+                <h3>Structural Diagram Analyzer</h3>
+                <p>Gambar balok 1D, atur node, element, support, beban titik, beban merata, lalu lihat reaksi tumpuan, AFD, SFD, BMD, dan tabel gaya dalam.</p>
+                <div class="actions">
+                  <a class="btn btn-primary" href="tools/diagram-struktur.html">Buka Analyzer</a>
+                  <a class="btn btn-secondary" href="pages/tools.html#jpgpdf">Lihat Tools PDF</a>
+                </div>
+              </div>
+              <div class="structure-mini-diagram" aria-hidden="true">
+                <span class="beam"></span>
+                <span class="support left"></span>
+                <span class="support right"></span>
+                <span class="load l1"></span>
+                <span class="load l2"></span>
+                <span class="moment-line"></span>
+              </div>
+            </article>
+            <div class="tool-mini-grid">
+              <a class="card tool-mini" href="pages/tools.html#converter"><span>CV</span><strong>Converter</strong><p>Konversi satuan teknik sipil.</p></a>
+              <a class="card tool-mini" href="pages/tools.html#export"><span>EP</span><strong>Export PDF</strong><p>Buat catatan menjadi PDF.</p></a>
+              <a class="card tool-mini" href="pages/tools.html#merge"><span>PM</span><strong>PDF Merger</strong><p>Gabungkan beberapa PDF.</p></a>
+              <a class="card tool-mini" href="pages/tools.html#image"><span>PI</span><strong>PDF to Image</strong><p>Ubah halaman PDF ke PNG.</p></a>
+              <a class="card tool-mini" href="pages/tools.html#jpgpdf"><span>JP</span><strong>JPG to PDF</strong><p>Export gambar JPG ke PDF.</p></a>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <section class="section soft">
         <div class="container">
           <span class="eyebrow">Video highlight</span>
@@ -82,7 +118,7 @@
       <section class="section">
         <div class="container">
           <span class="eyebrow">Quick access</span>
-          <h2 class="title">Akses cepat aktivitas akademik</h2>
+          <h2 class="title">Akses cepat info dan tools</h2>
           <div class="grid g3">
             <a class="card quick" href="#pemberitahuan">
               <span class="icon">IN</span>
@@ -94,10 +130,10 @@
               <h3>Video Learning</h3>
               <p>Akses video pembelajaran dan dokumentasi edukatif yang relevan untuk mahasiswa.</p>
             </a>
-            <a class="card quick" href="pages/tools.html">
-              <span class="icon">TL</span>
-              <h3>Tools Akademik</h3>
-              <p>Gunakan converter, export PDF, PDF merger, dan PDF to image untuk membantu tugas.</p>
+            <a class="card quick featured-quick" href="tools/diagram-struktur.html">
+              <span class="icon">SA</span>
+              <h3>Structural Analyzer</h3>
+              <p>Hitung reaksi tumpuan, axial force, shear force, dan bending moment untuk model balok 1D.</p>
             </a>
             <a class="card quick" href="pages/resources.html">
               <span class="icon">MO</span>
@@ -127,8 +163,8 @@
         <div class="container grid g4">
           <div class="stat"><b id="homeVideoCount">0</b><span>Video pembelajaran</span></div>
           <div class="stat"><b>HMS</b><span>Info kegiatan</span></div>
+          <div class="stat"><b>5</b><span>Tools akademik</span></div>
           <div class="stat"><b>24/7</b><span>Akses mahasiswa</span></div>
-          <div class="stat"><b>7</b><span>Bidang akademik</span></div>
         </div>
       </section>
 
@@ -136,8 +172,8 @@
         <div class="container grid g2">
           <div>
             <span class="eyebrow">About platform</span>
-            <h2 class="title">Dibuat untuk belajar teknik sipil yang lebih terarah</h2>
-            <p class="lead">Halaman awal kini menonjolkan video dan pemberitahuan internal. Resource akademik tetap tersedia untuk mahasiswa yang sudah login, namun tidak langsung diekspos sebagai fokus utama.</p>
+            <h2 class="title">Dibuat untuk info kampus dan pekerjaan akademik harian</h2>
+            <p class="lead">Halaman awal kini menonjolkan pemberitahuan resmi, dokumentasi kegiatan, dan tools praktis. Resource akademik tetap tersedia untuk mahasiswa yang sudah login, namun bukan fokus utama home.</p>
           </div>
           <div class="card quick">
             <h3>Informasi lebih terkontrol</h3>
@@ -149,11 +185,11 @@
       <section class="section soft">
         <div class="container card quick cta-card">
           <span class="eyebrow">Start learning</span>
-          <h2 class="title">Mulai dari video dan informasi terbaru</h2>
-          <p class="lead">Gunakan halaman video untuk belajar cepat, lalu buka resource library sesuai kebutuhan akademik.</p>
+          <h2 class="title">Mulai dari pemberitahuan dan tools utama</h2>
+          <p class="lead">Cek update HMS/PENDPROF HMS terlebih dahulu, lalu gunakan Structural Analyzer atau tools PDF sesuai kebutuhan tugas.</p>
           <div class="actions center-actions">
-            <a class="btn btn-primary" href="pages/videos.html">Buka Video</a>
-            <a class="btn btn-secondary" href="pages/resources.html">Buka Resource Library</a>
+            <a class="btn btn-primary" href="#pemberitahuan">Cek Pemberitahuan</a>
+            <a class="btn btn-secondary" href="tools/diagram-struktur.html">Buka Structural Analyzer</a>
           </div>
         </div>
       </section>
