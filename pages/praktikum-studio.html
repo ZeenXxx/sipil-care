@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="../css/style.css?v=14">
+    <link rel="stylesheet" href="../css/navbar.css?v=23">
+    <link rel="stylesheet" href="../css/praktikum-studio.css?v=1">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <title>Praktikum & Studio - SIPIL CARE</title>
+    <script src="../js/student-config.js?v=18"></script>
+    <script src="../js/student-auth.js?v=26"></script>
+  </head>
+  <body>
+    <header class="navbar">
+      <a class="brand" href="../index.html"><img src="../assets/images/logo-hms.png" alt="Logo HMS"><span><strong>SIPIL CARE</strong><small>Center for Academic, Resource &amp; Education</small></span></a>
+      <button class="menu-toggle" type="button" aria-label="Toggle navigation" aria-expanded="false"><span></span></button>
+      <nav class="nav-links"><a href="../index.html">Home</a><a href="resources.html">Resources</a><a href="praktikum-studio.html">Praktikum &amp; Studio</a><a href="videos.html">Videos</a><a href="tools.html">Tools</a><a href="about.html">About</a><a href="developer.html">Developer</a><a href="contact.html">Contact</a></nav>
+    </header>
+    <main>
+      <section class="page-head practicum-hero">
+        <div class="container">
+          <span class="eyebrow">Praktikum & Studio</span>
+          <h1>Modul pembelajaran praktikum dan studio per semester</h1>
+          <p class="lead">Akses modul yang diunggah admin HMS/PENDPROF sesuai semester. Kategori P berarti Praktikum, sedangkan S berarti Studio.</p>
+        </div>
+      </section>
+      <section class="section">
+        <div class="container">
+          <div class="practicum-toolbar">
+            <input class="control" id="practicumSearch" type="search" placeholder="Cari CAD, BIM, hidraulika, geoteknik...">
+            <select class="control" id="semesterFilter"><option value="All">Semua semester</option></select>
+          </div>
+          <div class="semester-tabs" id="semesterTabs"></div>
+          <div class="semester-grid" id="semesterGrid"></div>
+        </div>
+      </section>
+    </main>
+    <footer class="site-footer">
+      <div class="footer-grid">
+        <div><a class="footer-brand" href="../index.html"><img src="../assets/images/logo-hms.png" alt="Logo HMS"><span>SIPIL CARE</span></a><p>Platform digital akademik Teknik Sipil untuk video pembelajaran, informasi HMS, dokumentasi kegiatan, dan resource mahasiswa.</p></div>
+        <div><h3>Navigasi</h3><a href="resources.html">Resources</a><a href="praktikum-studio.html">Praktikum &amp; Studio</a><a href="videos.html">Videos</a><a href="tools.html">Tools</a></div>
+        <div><h3>Kategori</h3><a href="praktikum-studio.html#semester-1">Semester 1</a><a href="praktikum-studio.html#semester-3">Semester 3</a><a href="praktikum-studio.html#semester-6">Semester 6</a></div>
+        <div><h3>HMS Unjani</h3><p>Kampus UNJANI<br>Academic Resource Platform<br>2026</p></div>
+      </div>
+      <div class="footer-bottom"><span>&copy; 2026 PENDPROF HMS - HMS UNJANI</span><span>Built for civil engineering students.</span></div>
+    </footer>
+    <div class="toast" id="toast"></div>
+    <script src="../js/navbar.js?v=20"></script>
+    <script type="module" src="../js/praktikum-studio.js?v=1"></script>
+  </body>
+</html>

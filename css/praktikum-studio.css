@@ -1,0 +1,25 @@
+body { background: #f6f9f8; }
+.practicum-hero { background: linear-gradient(135deg, rgba(15,77,58,.96), rgba(35,132,100,.84)); color: #fff; }
+.practicum-hero .eyebrow, .practicum-hero h1, .practicum-hero .lead { color: #fff; }
+.practicum-toolbar { display: grid; grid-template-columns: minmax(0, 1fr) 240px; gap: 14px; margin-bottom: 18px; }
+.practicum-toolbar > * { min-width: 0; }
+.semester-tabs { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 24px; }
+.semester-tabs a { min-height: 40px; display: inline-flex; align-items: center; padding: 0 14px; border: 1px solid var(--line); border-radius: 8px; background: #fff; color: var(--primary); font-weight: 900; }
+.semester-tabs a:hover { background: var(--primary); color: #fff; }
+.semester-grid { display: grid; gap: 22px; }
+.semester-block { width: 100%; min-width: 0; border: 1px solid var(--line); border-radius: 8px; background: #fff; box-shadow: var(--shadow); overflow: hidden; }
+.semester-head { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 22px; border-bottom: 1px solid var(--line); background: linear-gradient(180deg, #fff, #f2f7f5); }
+.semester-head h2 { margin: 0; color: var(--primary); font-size: clamp(24px, 3vw, 36px); }
+.semester-head span { color: var(--muted); font-weight: 800; }
+.course-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; padding: 22px; }
+.course-card { min-width: 0; display: grid; gap: 12px; padding: 18px; border: 1px solid var(--line); border-radius: 8px; background: #fbfdfc; }
+.course-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.course-card h3 { margin: 0; color: var(--primary); line-height: 1.25; }
+.course-type { flex: 0 0 auto; display: inline-grid; place-items: center; min-width: 42px; min-height: 34px; padding: 0 10px; border-radius: 8px; background: var(--soft); color: var(--primary); font-weight: 900; }
+.module-list { display: grid; gap: 10px; }
+.module-item { display: grid; gap: 8px; padding: 12px; border-radius: 8px; background: #fff; border: 1px solid rgba(15,77,58,.1); }
+.module-item strong { color: var(--primary); }
+.module-item p { margin: 0; color: var(--muted); }
+.module-item .actions { margin-top: 2px; }
+.empty-module { margin: 0; color: var(--muted); }
+@media (max-width: 780px) { .practicum-toolbar, .course-grid { grid-template-columns: 1fr; } .semester-head { display: grid; } }
