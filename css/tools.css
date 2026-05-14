@@ -35,6 +35,37 @@ body { background: #f5f8f7; }
 .file-list p { margin: 0; color: var(--muted); }
 .file-item { display: flex; justify-content: space-between; gap: 12px; padding: 10px 12px; border-radius: 8px; background: #fff; color: var(--ink); font-weight: 700; flex-wrap: wrap; overflow-wrap: anywhere; }
 .file-item small { color: var(--muted); font-weight: 600; white-space: nowrap; }
+.merge-file-item {
+  align-items: center;
+}
+
+.file-order-controls {
+  display: inline-flex;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.file-order-controls button {
+  min-height: 32px;
+  padding: 0 10px;
+  border: 1px solid rgba(15, 77, 58, .14);
+  border-radius: 8px;
+  background: var(--soft);
+  color: var(--primary);
+  font-size: 12px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.file-order-controls button:hover:not(:disabled) {
+  background: var(--primary);
+  color: #fff;
+}
+
+.file-order-controls button:disabled {
+  opacity: .45;
+  cursor: not-allowed;
+}
 .image-preview { min-height: 320px; display: grid; align-content: center; justify-items: center; gap: 16px; overflow-x: auto; overflow-y: hidden; }
 .image-preview img { width: 100%; height: auto; border: 1px solid var(--line); border-radius: 8px; background: #fff; }
 .download-link { display: inline-flex; align-items: center; justify-content: center; min-height: 42px; padding: 0 16px; border-radius: 8px; background: var(--primary); color: #fff; font-weight: 900; }

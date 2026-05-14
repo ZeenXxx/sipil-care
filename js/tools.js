@@ -85,8 +85,27 @@ const mergeBtn = document.getElementById('mergeBtn');
 const clearMergeBtn = document.getElementById('clearMergeBtn');
 let selectedMergeFiles = [];
 const renderMergeList = () => {
-  mergeList.innerHTML = selectedMergeFiles.length ? selectedMergeFiles.map((file, index) => '<div class="file-item"><span>' + (index + 1) + '. ' + file.name + '</span><small>' + (file.size / 1024 / 1024).toFixed(2) + ' MB</small></div>').join('') : '<p>Belum ada PDF dipilih.</p>';
+  mergeList.innerHTML = selectedMergeFiles.length ? selectedMergeFiles.map((file, index) => `
+    <div class="file-item merge-file-item">
+      <span>${index + 1}. ${file.name}</span>
+      <small>${(file.size / 1024 / 1024).toFixed(2)} MB</small>
+      <div class="file-order-controls" aria-label="Atur urutan ${file.name}">
+        <button type="button" data-merge-move="up" data-index="${index}" ${index === 0 ? 'disabled' : ''}>Naik</button>
+        <button type="button" data-merge-move="down" data-index="${index}" ${index === selectedMergeFiles.length - 1 ? 'disabled' : ''}>Turun</button>
+      </div>
+    </div>
+  `).join('') : '<p>Belum ada PDF dipilih.</p>';
 };
+mergeList.addEventListener('click', event => {
+  const button = event.target.closest('[data-merge-move]');
+  if (!button) return;
+  const index = Number(button.dataset.index);
+  const direction = button.dataset.mergeMove;
+  const targetIndex = direction === 'up' ? index - 1 : index + 1;
+  if (targetIndex < 0 || targetIndex >= selectedMergeFiles.length) return;
+  [selectedMergeFiles[index], selectedMergeFiles[targetIndex]] = [selectedMergeFiles[targetIndex], selectedMergeFiles[index]];
+  renderMergeList();
+});
 mergeFiles.addEventListener('change', () => {
   const pickedFiles = Array.from(mergeFiles.files || []);
   selectedMergeFiles = selectedMergeFiles.concat(pickedFiles);
