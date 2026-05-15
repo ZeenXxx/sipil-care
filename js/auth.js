@@ -1,4 +1,12 @@
-const U = 'adminsipil', P = 'sipilcare123';
+const ADMINS = {
+  adminsipil: {
+    username: 'adminsipil',
+    password: 'sipilcare123',
+    name: 'Admin SIPIL CARE',
+    role: 'super_admin',
+    roleLabel: 'Super Admin'
+  }
+};
 const toast = m => {
   const t = document.getElementById('toast');
   if (!t) return;
@@ -27,8 +35,15 @@ if ((path.includes('admin-panel.html') || path.includes('login.html')) && sessio
 document.getElementById('loginForm')?.addEventListener('submit', e => {
   e.preventDefault();
 
-  if (username?.value.trim() === U && password?.value === P) {
+  const admin = ADMINS[username?.value.trim()];
+  if (admin && password?.value === admin.password) {
     sessionStorage.setItem('sipilcare_admin', 'true');
+    sessionStorage.setItem('sipilcare_admin_profile', JSON.stringify({
+      username: admin.username,
+      name: admin.name,
+      role: admin.role,
+      roleLabel: admin.roleLabel
+    }));
     location.href = panelHmsPath;
   } else {
     toast('Username atau password salah.');
@@ -37,5 +52,6 @@ document.getElementById('loginForm')?.addEventListener('submit', e => {
 
 document.getElementById('logoutBtn')?.addEventListener('click', () => {
   sessionStorage.removeItem('sipilcare_admin');
+  sessionStorage.removeItem('sipilcare_admin_profile');
   location.href = loginPagePath;
 });

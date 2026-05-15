@@ -90,6 +90,10 @@ const studentActivityTable = document.getElementById('studentActivityTable');
 const studentTotalCount = document.getElementById('studentTotalCount');
 const studentOnlineCount = document.getElementById('studentOnlineCount');
 const studentLastSync = document.getElementById('studentLastSync');
+const auditSearch = document.getElementById('auditSearch');
+const auditFilter = document.getElementById('auditFilter');
+const auditTable = document.getElementById('auditTable');
+const auditTotalCount = document.getElementById('auditTotalCount');
 
 const resourceTable = document.getElementById('resourceTable');
 const adminSearch = document.getElementById('adminSearch');
@@ -107,6 +111,7 @@ let announcements = [];
 let contactMessages = [];
 let liveChatMessages = [];
 let students = [];
+let auditLogs = [];
 let editingDocId = null;
 let editingVideoDocId = null;
 let editingSoftwareDocId = null;
@@ -118,6 +123,7 @@ const ADMIN_PUSH_TOKEN_COLLECTION = 'admin_push_tokens';
 const ADMIN_LIVE_CHAT_LAST_SEEN_KEY = 'sipilcare_admin_live_chat_last_seen';
 const ADMIN_PUSH_ENABLED_KEY = 'sipilcare_admin_push_enabled';
 const ADMIN_PUSH_TOKEN_ID_KEY = 'sipilcare_admin_push_token_id';
+const ADMIN_AUDIT_COLLECTION = 'admin_audit_logs';
 const STUDENT_ONLINE_WINDOW = 2 * 60 * 1000;
 let liveChatSnapshotReady = false;
 const practicumCategories = [
@@ -135,6 +141,70 @@ const practicumCategories = [
 ];
 
 const isPracticumResource = item => practicumCategories.includes(item?.category);
+
+const getAdminProfile = () => {
+  try {
+    return JSON.parse(sessionStorage.getItem('sipilcare_admin_profile') || '{}');
+  } catch {
+    return {};
+  }
+};
+
+const currentAdmin = () => {
+  const profile = getAdminProfile();
+  return {
+    username: profile.username || 'adminsipil',
+    name: profile.name || 'Admin SIPIL CARE',
+    role: profile.role || 'super_admin',
+    roleLabel: profile.roleLabel || 'Super Admin'
+  };
+};
+
+const auditActionLabels = {
+  CREATE_RESOURCE: 'Tambah resource',
+  UPDATE_RESOURCE: 'Edit resource',
+  DELETE_RESOURCE: 'Hapus resource',
+  CREATE_SOFTWARE: 'Tambah software',
+  UPDATE_SOFTWARE: 'Edit software',
+  DELETE_SOFTWARE: 'Hapus software',
+  CREATE_PRACTICUM: 'Tambah praktikum/studio',
+  UPDATE_PRACTICUM: 'Edit praktikum/studio',
+  DELETE_PRACTICUM: 'Hapus praktikum/studio',
+  CREATE_VIDEO: 'Tambah video',
+  UPDATE_VIDEO: 'Edit video',
+  DELETE_VIDEO: 'Hapus video',
+  CREATE_ANNOUNCEMENT: 'Tambah pemberitahuan',
+  UPDATE_ANNOUNCEMENT: 'Edit pemberitahuan',
+  DELETE_ANNOUNCEMENT: 'Hapus pemberitahuan',
+  REPLY_MESSAGE: 'Balas pesan',
+  DELETE_MESSAGE: 'Hapus pesan',
+  REPLY_LIVE_CHAT: 'Balas live chat',
+  DELETE_LIVE_CHAT_THREAD: 'Hapus thread live chat'
+};
+
+async function writeAuditLog({ action, targetType, targetId = '', targetTitle = '', detail = '', metadata = {} }) {
+  try {
+    const admin = currentAdmin();
+    await addDoc(collection(db, ADMIN_AUDIT_COLLECTION), {
+      action,
+      actionLabel: auditActionLabels[action] || action,
+      targetType,
+      targetId,
+      targetTitle,
+      detail,
+      metadata,
+      adminUsername: admin.username,
+      adminName: admin.name,
+      adminRole: admin.role,
+      adminRoleLabel: admin.roleLabel,
+      page: location.pathname,
+      userAgent: navigator.userAgent,
+      createdAt: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Audit log error:', error);
+  }
+}
 
 const selectedPracticumMeta = () => {
   const option = practicumCategory?.selectedOptions?.[0];
@@ -432,6 +502,7 @@ function stats() {
     <div class="admin-stat"><b>${practicumModules.length}</b><span>Praktikum/Studio</span></div>
     <div class="admin-stat"><b>${videos.length}</b><span>Video</span></div>
     <div class="admin-stat"><b>${contactMessages.length}</b><span>Pesan Mahasiswa</span></div>
+    <div class="admin-stat"><b>${auditLogs.length}</b><span>Audit Log</span></div>
   `;
 }
 
@@ -656,6 +727,44 @@ function studentActivityRender() {
   studentActivityTable.innerHTML = rows || '<tr><td colspan="6">Tidak ada mahasiswa yang cocok dengan pencarian.</td></tr>';
 }
 
+function auditFilters() {
+  if (!auditFilter) return;
+  const actions = [...new Set(auditLogs.map(item => item.actionLabel || item.action).filter(Boolean))];
+  auditFilter.innerHTML = '<option value="All">Semua aksi</option>' +
+    actions.map(action => `<option>${escapeText(action)}</option>`).join('');
+}
+
+function auditTableRender() {
+  if (!auditTable) return;
+  const q = (auditSearch?.value || '').toLowerCase();
+  const action = auditFilter?.value || 'All';
+  const filtered = auditLogs.filter(item => {
+    const label = item.actionLabel || item.action || '';
+    if (action !== 'All' && label !== action) return false;
+    return [
+      item.adminName,
+      item.adminUsername,
+      item.adminRoleLabel,
+      label,
+      item.targetType,
+      item.targetTitle,
+      item.detail
+    ].join(' ').toLowerCase().includes(q);
+  });
+
+  if (auditTotalCount) auditTotalCount.textContent = filtered.length;
+  auditTable.innerHTML = filtered.map(item => `
+    <tr>
+      <td>${escapeText(formatDateTime(item.createdAt))}</td>
+      <td><b>${escapeText(item.adminName || item.adminUsername)}</b><br><span class="small-text">${escapeText(item.adminRoleLabel || item.adminRole || '-')}</span></td>
+      <td><span class="badge">${escapeText(item.actionLabel || item.action)}</span></td>
+      <td>${escapeText(item.targetType || '-')}</td>
+      <td>${escapeText(item.targetTitle || item.targetId || '-')}</td>
+      <td class="message-preview">${escapeText(item.detail || '-')}</td>
+    </tr>
+  `).join('') || '<tr><td colspan="6">Belum ada aktivitas admin yang cocok.</td></tr>';
+}
+
 const render = () => {
   stats();
   filters();
@@ -671,6 +780,8 @@ const render = () => {
   messageTableRender();
   liveChatRender();
   studentActivityRender();
+  auditFilters();
+  auditTableRender();
 };
 
 const resetForm = () => {
@@ -735,9 +846,23 @@ on(resourceForm, 'submit', async e => {
 
     if (editingDocId) {
       await updateDoc(doc(db, 'resources', editingDocId), data);
+      await writeAuditLog({
+        action: 'UPDATE_RESOURCE',
+        targetType: 'resource',
+        targetId: editingDocId,
+        targetTitle: data.title,
+        detail: `Resource kategori ${data.category} diperbarui.`
+      });
       toast('Resource berhasil diperbarui.');
     } else {
-      await addDoc(collection(db, 'resources'), data);
+      const created = await addDoc(collection(db, 'resources'), data);
+      await writeAuditLog({
+        action: 'CREATE_RESOURCE',
+        targetType: 'resource',
+        targetId: created.id,
+        targetTitle: data.title,
+        detail: `Resource kategori ${data.category} ditambahkan.`
+      });
       toast('Resource berhasil diupload.');
     }
 
@@ -777,9 +902,23 @@ on(softwareForm, 'submit', async e => {
 
     if (editingSoftwareDocId) {
       await updateDoc(doc(db, 'resources', editingSoftwareDocId), data);
+      await writeAuditLog({
+        action: 'UPDATE_SOFTWARE',
+        targetType: 'software',
+        targetId: editingSoftwareDocId,
+        targetTitle: data.title,
+        detail: `Software kategori ${data.type} diperbarui.`
+      });
       toast('Software berhasil diperbarui.');
     } else {
-      await addDoc(collection(db, 'resources'), data);
+      const created = await addDoc(collection(db, 'resources'), data);
+      await writeAuditLog({
+        action: 'CREATE_SOFTWARE',
+        targetType: 'software',
+        targetId: created.id,
+        targetTitle: data.title,
+        detail: `Software kategori ${data.type} ditambahkan.`
+      });
       toast('Software berhasil diupload.');
     }
 
@@ -816,9 +955,23 @@ on(practicumForm, 'submit', async e => {
 
     if (editingPracticumDocId) {
       await updateDoc(doc(db, 'practicum_studio_modules', editingPracticumDocId), data);
+      await writeAuditLog({
+        action: 'UPDATE_PRACTICUM',
+        targetType: 'practicum_studio',
+        targetId: editingPracticumDocId,
+        targetTitle: data.title,
+        detail: `Modul ${data.category} diperbarui.`
+      });
       toast('Modul praktikum/studio berhasil diperbarui.');
     } else {
-      await addDoc(collection(db, 'practicum_studio_modules'), data);
+      const created = await addDoc(collection(db, 'practicum_studio_modules'), data);
+      await writeAuditLog({
+        action: 'CREATE_PRACTICUM',
+        targetType: 'practicum_studio',
+        targetId: created.id,
+        targetTitle: data.title,
+        detail: `Modul ${data.category} ditambahkan.`
+      });
       toast('Modul praktikum/studio berhasil diupload.');
     }
 
@@ -849,9 +1002,23 @@ on(videoForm, 'submit', async e => {
 
     if (editingVideoDocId) {
       await updateDoc(doc(db, 'videos', editingVideoDocId), data);
+      await writeAuditLog({
+        action: 'UPDATE_VIDEO',
+        targetType: 'video',
+        targetId: editingVideoDocId,
+        targetTitle: data.title,
+        detail: `Video kategori ${data.category} diperbarui.`
+      });
       toast('Video berhasil diperbarui.');
     } else {
-      await addDoc(collection(db, 'videos'), data);
+      const created = await addDoc(collection(db, 'videos'), data);
+      await writeAuditLog({
+        action: 'CREATE_VIDEO',
+        targetType: 'video',
+        targetId: created.id,
+        targetTitle: data.title,
+        detail: `Video kategori ${data.category} ditambahkan.`
+      });
       toast('Video berhasil diupload.');
     }
 
@@ -885,11 +1052,25 @@ on(announcementForm, 'submit', async e => {
 
     if (editingAnnouncementDocId) {
       await updateDoc(doc(db, 'announcements', editingAnnouncementDocId), data);
+      await writeAuditLog({
+        action: 'UPDATE_ANNOUNCEMENT',
+        targetType: 'announcement',
+        targetId: editingAnnouncementDocId,
+        targetTitle: data.title,
+        detail: `Pemberitahuan tipe ${data.type} diperbarui.`
+      });
       toast('Pemberitahuan berhasil diperbarui.');
     } else {
-      await addDoc(collection(db, 'announcements'), {
+      const created = await addDoc(collection(db, 'announcements'), {
         ...data,
         createdAt: new Date().toISOString()
+      });
+      await writeAuditLog({
+        action: 'CREATE_ANNOUNCEMENT',
+        targetType: 'announcement',
+        targetId: created.id,
+        targetTitle: data.title,
+        detail: `Pemberitahuan tipe ${data.type} ditambahkan.`
       });
       toast('Pemberitahuan berhasil diupload.');
     }
@@ -910,7 +1091,15 @@ on(resourceTable, 'click', async e => {
   if (e.target.dataset.del) {
     if (confirm('Yakin hapus resource ini?')) {
       try {
+        const item = resources.find(r => r.docId === docId);
         await deleteDoc(doc(db, 'resources', docId));
+        await writeAuditLog({
+          action: 'DELETE_RESOURCE',
+          targetType: 'resource',
+          targetId: docId,
+          targetTitle: item?.title || docId,
+          detail: `Resource kategori ${item?.category || '-'} dihapus.`
+        });
         toast('Resource berhasil dihapus.');
       } catch (err) {
         console.error('Delete error:', err);
@@ -945,7 +1134,15 @@ on(softwareTable, 'click', async e => {
   if (e.target.dataset.del) {
     if (confirm('Yakin hapus software ini?')) {
       try {
+        const item = resources.find(r => r.docId === docId);
         await deleteDoc(doc(db, 'resources', docId));
+        await writeAuditLog({
+          action: 'DELETE_SOFTWARE',
+          targetType: 'software',
+          targetId: docId,
+          targetTitle: item?.title || docId,
+          detail: `Software kategori ${item?.type || item?.element || '-'} dihapus.`
+        });
         toast('Software berhasil dihapus.');
       } catch (err) {
         console.error('Delete software error:', err);
@@ -978,7 +1175,15 @@ on(practicumTable, 'click', async e => {
   if (e.target.dataset.del) {
     if (confirm('Yakin hapus modul praktikum/studio ini?')) {
       try {
+        const item = practicumModules.find(module => module.docId === docId);
         await deleteDoc(doc(db, 'practicum_studio_modules', docId));
+        await writeAuditLog({
+          action: 'DELETE_PRACTICUM',
+          targetType: 'practicum_studio',
+          targetId: docId,
+          targetTitle: item?.title || docId,
+          detail: `Modul ${item?.category || '-'} dihapus.`
+        });
         toast('Modul praktikum/studio berhasil dihapus.');
       } catch (err) {
         console.error('Delete practicum/studio error:', err);
@@ -1013,7 +1218,15 @@ on(videoTable, 'click', async e => {
   if (e.target.dataset.del) {
     if (confirm('Yakin hapus video ini?')) {
       try {
+        const item = videos.find(video => video.docId === docId);
         await deleteDoc(doc(db, 'videos', docId));
+        await writeAuditLog({
+          action: 'DELETE_VIDEO',
+          targetType: 'video',
+          targetId: docId,
+          targetTitle: item?.title || docId,
+          detail: `Video kategori ${item?.category || '-'} dihapus.`
+        });
         toast('Video berhasil dihapus.');
       } catch (err) {
         console.error('Delete video error:', err);
@@ -1044,7 +1257,15 @@ on(announcementTable, 'click', async e => {
   if (e.target.dataset.del) {
     if (confirm('Yakin hapus pemberitahuan ini?')) {
       try {
+        const item = announcements.find(announcement => announcement.docId === docId);
         await deleteDoc(doc(db, 'announcements', docId));
+        await writeAuditLog({
+          action: 'DELETE_ANNOUNCEMENT',
+          targetType: 'announcement',
+          targetId: docId,
+          targetTitle: item?.title || docId,
+          detail: `Pemberitahuan tipe ${item?.type || '-'} dihapus.`
+        });
         toast('Pemberitahuan berhasil dihapus.');
       } catch (err) {
         console.error('Delete announcement error:', err);
@@ -1085,6 +1306,13 @@ on(messageTable, 'click', async e => {
         status: reply.trim() ? 'answered' : 'new',
         updatedAt: new Date().toISOString()
       });
+      await writeAuditLog({
+        action: 'REPLY_MESSAGE',
+        targetType: 'contact_message',
+        targetId: replyId,
+        targetTitle: item?.subject || item?.name || replyId,
+        detail: `Pesan dari ${item?.name || 'mahasiswa'} ${reply.trim() ? 'dibalas' : 'dikosongkan balasannya'}.`
+      });
       toast('Balasan pesan berhasil disimpan.');
     } catch (err) {
       console.error('Reply message error:', err);
@@ -1094,7 +1322,15 @@ on(messageTable, 'click', async e => {
 
   if (deleteId && confirm('Yakin hapus pesan mahasiswa ini?')) {
     try {
+      const item = contactMessages.find(message => message.docId === deleteId);
       await deleteDoc(doc(db, 'contact_messages', deleteId));
+      await writeAuditLog({
+        action: 'DELETE_MESSAGE',
+        targetType: 'contact_message',
+        targetId: deleteId,
+        targetTitle: item?.subject || item?.name || deleteId,
+        detail: `Pesan dari ${item?.name || 'mahasiswa'} dihapus.`
+      });
       toast('Pesan berhasil dihapus.');
     } catch (err) {
       console.error('Delete message error:', err);
@@ -1120,6 +1356,13 @@ on(liveChatThreads, 'click', async e => {
         message: reply.trim(),
         createdAt: new Date().toISOString()
       });
+      await writeAuditLog({
+        action: 'REPLY_LIVE_CHAT',
+        targetType: 'live_chat',
+        targetId: replyThread,
+        targetTitle: latest?.senderName || latest?.nim || replyThread,
+        detail: `Live chat untuk ${latest?.senderName || latest?.nim || 'mahasiswa'} dibalas.`
+      });
       toast('Balasan live chat terkirim.');
     } catch (err) {
       console.error('Reply chat error:', err);
@@ -1131,6 +1374,13 @@ on(liveChatThreads, 'click', async e => {
     const items = liveChatMessages.filter(item => item.threadId === closeThread);
     try {
       await Promise.all(items.map(item => deleteDoc(doc(db, 'live_chat_messages', item.docId))));
+      await writeAuditLog({
+        action: 'DELETE_LIVE_CHAT_THREAD',
+        targetType: 'live_chat',
+        targetId: closeThread,
+        targetTitle: items[0]?.senderName || items[0]?.nim || closeThread,
+        detail: `${items.length} pesan live chat dihapus dari thread ini.`
+      });
       toast('Thread live chat berhasil dihapus.');
     } catch (err) {
       console.error('Delete chat thread error:', err);
@@ -1156,6 +1406,8 @@ on(liveChatNotifyBtn, 'click', () => toggleAdminPushNotifications());
 on(studentActivitySearch, 'input', () => studentActivityRender());
 on(studentActivityFilter, 'change', () => studentActivityRender());
 on(studentActivityRefresh, 'click', () => loadStudentActivity({ manual: true }));
+on(auditSearch, 'input', () => auditTableRender());
+on(auditFilter, 'change', () => auditTableRender());
 syncNotificationButton();
 
 const setActiveAdminNav = id => {
@@ -1297,4 +1549,16 @@ onSnapshot(liveChatQuery, snapshot => {
 }, err => {
   console.error('Firestore live chat error:', err);
   toast('Gagal memuat live chat.');
+});
+
+const auditQuery = query(collection(db, ADMIN_AUDIT_COLLECTION), orderBy('createdAt', 'desc'));
+onSnapshot(auditQuery, snapshot => {
+  auditLogs = snapshot.docs.map(documentSnapshot => ({
+    docId: documentSnapshot.id,
+    ...documentSnapshot.data()
+  }));
+  render();
+}, err => {
+  console.error('Firestore audit log error:', err);
+  if (auditTable) auditTable.innerHTML = '<tr><td colspan="6">Gagal memuat audit log admin.</td></tr>';
 });
