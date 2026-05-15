@@ -11,7 +11,7 @@ import {
   deleteDoc,
   doc
 } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
-import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-messaging.js";
+import { getMessaging, getToken, deleteToken, onMessage } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-messaging.js";
 
 const db = getFirestore(app);
 
@@ -105,6 +105,8 @@ let supabaseClient = null;
 const ANNOUNCEMENT_BUCKET = 'sipilcare';
 const ADMIN_PUSH_TOKEN_COLLECTION = 'admin_push_tokens';
 const ADMIN_LIVE_CHAT_LAST_SEEN_KEY = 'sipilcare_admin_live_chat_last_seen';
+const ADMIN_PUSH_ENABLED_KEY = 'sipilcare_admin_push_enabled';
+const ADMIN_PUSH_TOKEN_ID_KEY = 'sipilcare_admin_push_token_id';
 let liveChatSnapshotReady = false;
 const practicumCategories = [
   'Computer Aided Design (CAD)-S',
@@ -136,6 +138,18 @@ const selectedPracticumMeta = () => {
 
 const updateNotificationStatus = message => {
   if (liveChatNotifyStatus) liveChatNotifyStatus.textContent = message;
+};
+
+const isAdminPushEnabled = () => localStorage.getItem(ADMIN_PUSH_ENABLED_KEY) === 'true';
+
+const syncNotificationButton = () => {
+  if (!liveChatNotifyBtn) return;
+  const enabled = isAdminPushEnabled();
+  liveChatNotifyBtn.textContent = enabled ? 'Nonaktifkan Notifikasi' : 'Aktifkan Notifikasi';
+  liveChatNotifyBtn.classList.toggle('danger', enabled);
+  updateNotificationStatus(enabled
+    ? 'Notifikasi admin aktif di device ini.'
+    : 'Aktifkan notifikasi agar admin mendapat pemberitahuan chat baru.');
 };
 
 const safeTokenDocId = token => token.replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 900);
@@ -185,7 +199,8 @@ async function enableAdminPushNotifications() {
 
     if (!token) throw new Error('Token FCM tidak tersedia.');
 
-    await setDoc(doc(db, ADMIN_PUSH_TOKEN_COLLECTION, safeTokenDocId(token)), {
+    const tokenDocId = safeTokenDocId(token);
+    await setDoc(doc(db, ADMIN_PUSH_TOKEN_COLLECTION, tokenDocId), {
       token,
       role: 'admin',
       enabled: true,
@@ -193,8 +208,9 @@ async function enableAdminPushNotifications() {
       updatedAt: new Date().toISOString()
     }, { merge: true });
 
-    localStorage.setItem('sipilcare_admin_push_enabled', 'true');
-    updateNotificationStatus('Notifikasi admin aktif di device ini.');
+    localStorage.setItem(ADMIN_PUSH_ENABLED_KEY, 'true');
+    localStorage.setItem(ADMIN_PUSH_TOKEN_ID_KEY, tokenDocId);
+    syncNotificationButton();
     toast('Notifikasi live chat admin aktif.');
 
     onMessage(messaging, payload => {
@@ -208,6 +224,50 @@ async function enableAdminPushNotifications() {
     liveChatNotifyBtn.disabled = false;
   }
 }
+async function disableAdminPushNotifications() {
+  try {
+    liveChatNotifyBtn.disabled = true;
+    const tokenDocId = localStorage.getItem(ADMIN_PUSH_TOKEN_ID_KEY);
+    if (tokenDocId) {
+      await setDoc(doc(db, ADMIN_PUSH_TOKEN_COLLECTION, tokenDocId), {
+        enabled: false,
+        disabledAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      }, { merge: true });
+    }
+
+    const vapidKey = window.SIPILCARE_PUSH_CONFIG?.vapidKey || '';
+    if ('serviceWorker' in navigator && vapidKey && !vapidKey.includes('ISI_')) {
+      const registration = await navigator.serviceWorker.getRegistration('firebase-messaging-sw.js');
+      if (registration) {
+        const messaging = getMessaging(app);
+        const token = await getToken(messaging, {
+          vapidKey,
+          serviceWorkerRegistration: registration
+        }).catch(() => '');
+        if (token) await deleteToken(messaging).catch(() => false);
+      }
+    }
+
+    localStorage.removeItem(ADMIN_PUSH_ENABLED_KEY);
+    localStorage.removeItem(ADMIN_PUSH_TOKEN_ID_KEY);
+    syncNotificationButton();
+    toast('Notifikasi live chat admin dinonaktifkan di device ini.');
+  } catch (error) {
+    console.error('Disable admin push notification failed:', error);
+    toast('Gagal menonaktifkan notifikasi.');
+  } finally {
+    liveChatNotifyBtn.disabled = false;
+  }
+}
+
+const toggleAdminPushNotifications = () => {
+  if (isAdminPushEnabled()) {
+    disableAdminPushNotifications();
+  } else {
+    enableAdminPushNotifications();
+  }
+};
 const escapeText = value => String(value || '').replace(/[&<>"']/g, char => ({
   '&': '&amp;',
   '<': '&lt;',
@@ -1000,8 +1060,8 @@ announcementFilter.addEventListener('change', () => announcementTableRender());
 messageSearch.addEventListener('input', () => messageTableRender());
 messageFilter.addEventListener('change', () => messageTableRender());
 liveChatSearch.addEventListener('input', () => liveChatRender());
-liveChatNotifyBtn?.addEventListener('click', () => enableAdminPushNotifications());
-if (localStorage.getItem('sipilcare_admin_push_enabled') === 'true') updateNotificationStatus('Notifikasi admin aktif di device ini.');
+liveChatNotifyBtn?.addEventListener('click', () => toggleAdminPushNotifications());
+syncNotificationButton();
 
 const resourcesQuery = query(collection(db, 'resources'), orderBy('date', 'desc'));
 onSnapshot(resourcesQuery, snapshot => {
