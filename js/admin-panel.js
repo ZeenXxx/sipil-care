@@ -6,10 +6,12 @@ import {
   orderBy,
   onSnapshot,
   addDoc,
+  setDoc,
   updateDoc,
   deleteDoc,
   doc
 } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
+import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-messaging.js";
 
 const db = getFirestore(app);
 
@@ -77,6 +79,8 @@ const messageSearch = document.getElementById('messageSearch');
 const messageFilter = document.getElementById('messageFilter');
 const messageTable = document.getElementById('messageTable');
 const liveChatSearch = document.getElementById('liveChatSearch');
+const liveChatNotifyBtn = document.getElementById('liveChatNotifyBtn');
+const liveChatNotifyStatus = document.getElementById('liveChatNotifyStatus');
 const liveChatThreads = document.getElementById('liveChatThreads');
 
 const resourceTable = document.getElementById('resourceTable');
@@ -99,6 +103,9 @@ let editingPracticumDocId = null;
 let editingAnnouncementDocId = null;
 let supabaseClient = null;
 const ANNOUNCEMENT_BUCKET = 'sipilcare';
+const ADMIN_PUSH_TOKEN_COLLECTION = 'admin_push_tokens';
+const ADMIN_LIVE_CHAT_LAST_SEEN_KEY = 'sipilcare_admin_live_chat_last_seen';
+let liveChatSnapshotReady = false;
 const practicumCategories = [
   'Computer Aided Design (CAD)-S',
   'Praktik Kimia-P',
@@ -126,6 +133,81 @@ const selectedPracticumMeta = () => {
   };
 };
 
+
+const updateNotificationStatus = message => {
+  if (liveChatNotifyStatus) liveChatNotifyStatus.textContent = message;
+};
+
+const safeTokenDocId = token => token.replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 900);
+
+const showAdminLiveChatNotification = item => {
+  const title = 'Live chat baru - SIPIL CARE';
+  const body = `${item.senderName || 'Mahasiswa'}${item.nim ? ` (${item.nim})` : ''}: ${item.message || 'Mengirim pesan baru.'}`;
+  if ('Notification' in window && Notification.permission === 'granted') {
+    new Notification(title, {
+      body,
+      icon: 'assets/images/logo-hms.png',
+      tag: `sipilcare-live-chat-${item.threadId || item.docId}`
+    });
+  }
+  toast(body);
+};
+
+async function enableAdminPushNotifications() {
+  if (!('serviceWorker' in navigator) || !('Notification' in window)) {
+    updateNotificationStatus('Browser ini belum mendukung push notification.');
+    toast('Browser ini belum mendukung push notification.');
+    return;
+  }
+
+  const vapidKey = window.SIPILCARE_PUSH_CONFIG?.vapidKey || '';
+  if (!vapidKey || vapidKey.includes('ISI_')) {
+    updateNotificationStatus('VAPID key FCM belum diisi di js/push-config.js.');
+    toast('Isi VAPID key FCM terlebih dahulu di js/push-config.js.');
+    return;
+  }
+
+  const permission = await Notification.requestPermission();
+  if (permission !== 'granted') {
+    updateNotificationStatus('Izin notifikasi belum diberikan.');
+    toast('Izin notifikasi belum diberikan oleh browser.');
+    return;
+  }
+
+  try {
+    liveChatNotifyBtn.disabled = true;
+    const registration = await navigator.serviceWorker.register('firebase-messaging-sw.js');
+    const messaging = getMessaging(app);
+    const token = await getToken(messaging, {
+      vapidKey,
+      serviceWorkerRegistration: registration
+    });
+
+    if (!token) throw new Error('Token FCM tidak tersedia.');
+
+    await setDoc(doc(db, ADMIN_PUSH_TOKEN_COLLECTION, safeTokenDocId(token)), {
+      token,
+      role: 'admin',
+      enabled: true,
+      userAgent: navigator.userAgent,
+      updatedAt: new Date().toISOString()
+    }, { merge: true });
+
+    localStorage.setItem('sipilcare_admin_push_enabled', 'true');
+    updateNotificationStatus('Notifikasi admin aktif di device ini.');
+    toast('Notifikasi live chat admin aktif.');
+
+    onMessage(messaging, payload => {
+      toast(payload.notification?.body || 'Ada live chat baru.');
+    });
+  } catch (error) {
+    console.error('Enable admin push notification failed:', error);
+    updateNotificationStatus('Notifikasi gagal diaktifkan. Cek console atau VAPID key.');
+    toast('Notifikasi gagal diaktifkan.');
+  } finally {
+    liveChatNotifyBtn.disabled = false;
+  }
+}
 const escapeText = value => String(value || '').replace(/[&<>"']/g, char => ({
   '&': '&amp;',
   '<': '&lt;',
@@ -918,6 +1000,8 @@ announcementFilter.addEventListener('change', () => announcementTableRender());
 messageSearch.addEventListener('input', () => messageTableRender());
 messageFilter.addEventListener('change', () => messageTableRender());
 liveChatSearch.addEventListener('input', () => liveChatRender());
+liveChatNotifyBtn?.addEventListener('click', () => enableAdminPushNotifications());
+if (localStorage.getItem('sipilcare_admin_push_enabled') === 'true') updateNotificationStatus('Notifikasi admin aktif di device ini.');
 
 const resourcesQuery = query(collection(db, 'resources'), orderBy('date', 'desc'));
 onSnapshot(resourcesQuery, snapshot => {
@@ -981,11 +1065,25 @@ onSnapshot(contactMessagesQuery, snapshot => {
 
 const liveChatQuery = query(collection(db, 'live_chat_messages'), orderBy('createdAt', 'desc'));
 onSnapshot(liveChatQuery, snapshot => {
+  const latestStudentMessage = snapshot.docChanges()
+    .filter(change => change.type === 'added')
+    .map(change => ({ docId: change.doc.id, ...change.doc.data() }))
+    .filter(item => item.sender === 'student')
+    .sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)))[0];
+
   liveChatMessages = snapshot.docs.map(documentSnapshot => ({
     docId: documentSnapshot.id,
     ...documentSnapshot.data()
   }));
   render();
+
+  if (latestStudentMessage) {
+    const lastSeen = localStorage.getItem(ADMIN_LIVE_CHAT_LAST_SEEN_KEY) || '';
+    const messageTime = latestStudentMessage.createdAt || '';
+    if (liveChatSnapshotReady && messageTime > lastSeen) showAdminLiveChatNotification(latestStudentMessage);
+    if (messageTime > lastSeen) localStorage.setItem(ADMIN_LIVE_CHAT_LAST_SEEN_KEY, messageTime);
+  }
+  liveChatSnapshotReady = true;
 }, err => {
   console.error('Firestore live chat error:', err);
   toast('Gagal memuat live chat.');

@@ -268,8 +268,11 @@
 </section>
 <section id="live-chat-admin" class="admin-card">
   <div class="admin-table-head">
-    <h3>Live Chat Mahasiswa</h3>
-    <div><input class="control" id="liveChatSearch" placeholder="Search chat"></div>
+    <div>
+      <h3>Live Chat Mahasiswa</h3>
+      <p class="small-text" id="liveChatNotifyStatus">Aktifkan notifikasi agar admin mendapat pemberitahuan chat baru.</p>
+    </div>
+    <div><button class="action-btn" id="liveChatNotifyBtn" type="button">Aktifkan Notifikasi</button><input class="control" id="liveChatSearch" placeholder="Search chat"></div>
   </div>
   <div class="chat-thread-list" id="liveChatThreads"></div>
 </section>
@@ -285,7 +288,8 @@
 <div class="toast" id="toast"></div>
 <script src="js/auth.js?v=15"></script>
 <script src="js/student-config.js?v=18"></script>
-<script type="module" src="js/admin-panel.js?v=24"></script>
+<script src="js/push-config.js?v=1"></script>
+<script type="module" src="js/admin-panel.js?v=25"></script>
 </body>
 </html>
 

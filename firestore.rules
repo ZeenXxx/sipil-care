@@ -12,6 +12,14 @@ service cloud.firestore {
       allow update, delete: if false;
     }
 
+    match /practicum_studio_modules/{moduleId} {
+      allow read, create, update, delete: if true;
+    }
+
+    match /admin_push_tokens/{tokenId} {
+      allow read, create, update, delete: if true;
+    }
+
     match /contact_messages/{messageId} {
       allow read, create, update, delete: if true;
     }
