@@ -109,9 +109,7 @@
               <div class="output-switch"><label for="diagramOutput">Output utama</label><select class="control" id="diagramOutput"><option value="all">AFD, SFD, dan BMD</option><option value="afd">Axial Force Diagram</option><option value="sfd">Shear Force Diagram</option><option value="bmd">Bending Moment Diagram</option></select></div>
               <div class="result-grid" id="reactionResults"></div>
               <div class="chart-grid">
-                <div class="chart-card" id="afdCard"><h3>Axial Force Diagram</h3><canvas id="afdChart"></canvas></div>
-                <div class="chart-card" id="sfdCard"><h3>Shear Force Diagram</h3><canvas id="sfdChart"></canvas></div>
-                <div class="chart-card" id="bmdCard"><h3>Bending Moment Diagram</h3><canvas id="bmdChart"></canvas></div>
+                <div class="chart-card combined-chart-card" id="forceDiagramCard"><h3>Diagram Gaya Dalam</h3><canvas id="forceDiagramChart"></canvas></div>
               </div>
               <div class="table-wrap"><table><thead><tr><th>Element</th><th>x awal</th><th>x akhir</th><th>N awal</th><th>N akhir</th><th>V awal</th><th>V akhir</th><th>M awal</th><th>M tengah</th><th>M akhir</th></tr></thead><tbody id="forceTableBody"><tr><td colspan="10">Belum ada hasil analisis.</td></tr></tbody></table></div>
             </div>
@@ -127,11 +125,11 @@
         <div><h3>Tools</h3><a href="../pages/tools.html">Tools Center</a><a href="diagram-struktur.html">Structural Analyzer</a></div>
         <div><h3>HMS Unjani</h3><p>Kampus UNJANI<br>Academic Resource Platform<br>2026</p></div>
       </div>
-      <div class="footer-bottom"><span>© 2026 PENDPROF HMS - HMS UNJANI</span><span>Built for civil engineering students.</span></div>
+      <div class="footer-bottom"><span>Â© 2026 PENDPROF HMS - HMS UNJANI</span><span>Built for civil engineering students.</span></div>
     </footer>
     <div class="toast" id="toast"></div>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <script src="../js/navbar.js?v=20"></script>
-    <script src="../js/diagram-struktur.js?v=1"></script>
+    <script src="../js/diagram-struktur.js?v=2"></script>
   </body>
 </html>
