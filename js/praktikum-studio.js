@@ -21,7 +21,7 @@ const courses = [
   { semester: 6, title: 'Pengantar Building Information Modeling (BIM)', type: 'S' }
 ];
 const courseKeys = courses.map(item => item.title.toLowerCase());
-let resources = [];
+let modules = [];
 
 const escapeText = value => String(value || '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
 const normalize = value => String(value || '').toLowerCase().replace(/\s+/g, ' ').trim();
@@ -51,8 +51,8 @@ function render() {
     .map(semester => {
       const semesterCourses = courses.filter(course => course.semester === semester);
       const cards = semesterCourses.map(course => {
-        const modules = resources.filter(item => matchesCourse(item, course)).filter(item => normalize([item.title, item.description, item.author, item.category].join(' ')).includes(q));
-        return `<article class="course-card"><div class="course-top"><h3>${escapeText(course.title)}</h3><span class="course-type">${course.type}</span></div><p class="empty-module">${courseKind(course.type)} semester ${semester}</p><div class="module-list">${modules.length ? modules.map(resourceCard).join('') : '<p class="empty-module">Modul belum tersedia. Admin dapat upload resource dengan kategori ' + escapeText(courseCategory(course)) + '.</p>'}</div></article>`;
+        const courseModules = modules.filter(item => matchesCourse(item, course)).filter(item => normalize([item.title, item.description, item.author, item.category, item.course].join(' ')).includes(q));
+        return `<article class="course-card"><div class="course-top"><h3>${escapeText(course.title)}</h3><span class="course-type">${course.type}</span></div><p class="empty-module">${courseKind(course.type)} semester ${semester}</p><div class="module-list">${courseModules.length ? courseModules.map(resourceCard).join('') : '<p class="empty-module">Modul belum tersedia. Admin dapat upload modul Praktikum &amp; Studio dengan kategori ' + escapeText(courseCategory(course)) + '.</p>'}</div></article>`;
       }).join('');
       return `<section class="semester-block" id="semester-${semester}"><div class="semester-head"><h2>Semester ${semester}</h2><span>${semesterCourses.length} kategori praktikum/studio</span></div><div class="course-grid">${cards}</div></section>`;
     }).join('');
@@ -62,13 +62,13 @@ semesterFilter.innerHTML += [...new Set(courses.map(item => item.semester))].map
 search.addEventListener('input', render);
 semesterFilter.addEventListener('change', render);
 
-const resourcesQuery = query(collection(db, 'resources'), orderBy('date', 'desc'));
-onSnapshot(resourcesQuery, snapshot => {
-  resources = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })).filter(item => courseKeys.some(key => normalize([item.category, item.title, item.type].join(' ')).includes(key)));
+const modulesQuery = query(collection(db, 'practicum_studio_modules'), orderBy('date', 'desc'));
+onSnapshot(modulesQuery, snapshot => {
+  modules = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })).filter(item => courseKeys.some(key => normalize([item.category, item.course, item.title, item.type].join(' ')).includes(key)));
   render();
 }, error => {
   console.error('Praktikum/studio resources failed:', error);
-  resources = [];
+  modules = [];
   render();
 });
 render();

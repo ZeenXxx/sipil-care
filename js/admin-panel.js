@@ -36,6 +36,20 @@ const softwareSearch = document.getElementById('softwareSearch');
 const softwareFilter = document.getElementById('softwareFilter');
 const softwareTable = document.getElementById('softwareTable');
 
+const practicumForm = document.getElementById('practicumForm');
+const practicumId = document.getElementById('practicumId');
+const practicumTitle = document.getElementById('practicumTitle');
+const practicumCategory = document.getElementById('practicumCategory');
+const practicumDescription = document.getElementById('practicumDescription');
+const practicumAuthor = document.getElementById('practicumAuthor');
+const practicumDate = document.getElementById('practicumDate');
+const practicumThumb = document.getElementById('practicumThumb');
+const practicumType = document.getElementById('practicumType');
+const practicumFile = document.getElementById('practicumFile');
+const practicumSearch = document.getElementById('practicumSearch');
+const practicumFilter = document.getElementById('practicumFilter');
+const practicumTable = document.getElementById('practicumTable');
+
 const videoForm = document.getElementById('videoForm');
 const videoTitle = document.getElementById('videoTitle');
 const videoThumb = document.getElementById('videoThumb');
@@ -73,6 +87,7 @@ const toastEl = document.getElementById('toast');
 const submitButton = resourceForm?.querySelector('button[type="submit"]');
 
 let resources = [];
+let practicumModules = [];
 let videos = [];
 let announcements = [];
 let contactMessages = [];
@@ -80,9 +95,36 @@ let liveChatMessages = [];
 let editingDocId = null;
 let editingVideoDocId = null;
 let editingSoftwareDocId = null;
+let editingPracticumDocId = null;
 let editingAnnouncementDocId = null;
 let supabaseClient = null;
 const ANNOUNCEMENT_BUCKET = 'sipilcare';
+const practicumCategories = [
+  'Computer Aided Design (CAD)-S',
+  'Praktik Kimia-P',
+  'Praktik Fisika-P',
+  'Praktik Pemetaan Lahan Terapan-P',
+  'Praktik Hidraulika-P',
+  'Praktik Rekayasa Lalu Lintas-P',
+  'Aplikasi Ketekniksipilan 1-S',
+  'Praktik Bahan Perkerasan Jalan Raya-P',
+  'Praktik Geoteknik-P',
+  'Aplikasi Ketekniksipilan 2-S',
+  'Pengantar Building Information Modeling (BIM)-S'
+];
+
+const isPracticumResource = item => practicumCategories.includes(item?.category);
+
+const selectedPracticumMeta = () => {
+  const option = practicumCategory?.selectedOptions?.[0];
+  const category = practicumCategory?.value || '';
+  return {
+    category,
+    semester: Number(option?.dataset?.semester || 0),
+    kind: option?.dataset?.kind || category.slice(-1),
+    course: category.replace(/-[PS]$/, '')
+  };
+};
 
 const escapeText = value => String(value || '').replace(/[&<>"']/g, char => ({
   '&': '&amp;',
@@ -169,6 +211,17 @@ function validateResourceForm() {
   return true;
 }
 
+function validatePracticumForm() {
+  if (!practicumTitle.value.trim() || !practicumDescription.value.trim() || !practicumAuthor.value.trim() || !practicumDate.value) {
+    toast('Lengkapi Judul, Deskripsi, Author, dan Tanggal modul praktikum/studio.');
+    return false;
+  }
+  if (!practicumFile.value.trim() || !isValidUrl(practicumFile.value)) {
+    toast('Masukkan link file modul praktikum/studio yang valid (http/https).');
+    return false;
+  }
+  return true;
+}
 function validateVideoForm() {
   if (!videoTitle.value.trim() || !videoDescription.value.trim() || !videoCategoryInput.value.trim() || !videoChannel.value.trim() || !videoYoutube.value.trim()) {
     toast('Lengkapi semua field video.');
@@ -190,11 +243,12 @@ function validateAnnouncementForm() {
 }
 
 function stats() {
-  const academicResources = resources.filter(r => r.category !== 'Software');
+  const academicResources = resources.filter(r => r.category !== 'Software' && !isPracticumResource(r));
   const softwareResources = resources.filter(r => r.category === 'Software');
   adminStats.innerHTML = `
     <div class="admin-stat"><b>${academicResources.length}</b><span>Resource</span></div>
     <div class="admin-stat"><b>${softwareResources.length}</b><span>Software</span></div>
+    <div class="admin-stat"><b>${practicumModules.length}</b><span>Praktikum/Studio</span></div>
     <div class="admin-stat"><b>${videos.length}</b><span>Video</span></div>
     <div class="admin-stat"><b>${contactMessages.length}</b><span>Pesan Mahasiswa</span></div>
   `;
@@ -202,7 +256,7 @@ function stats() {
 
 function filters() {
   adminFilter.innerHTML = '<option value="All">All</option>' +
-    [...new Set(resources.filter(r => r.category !== 'Software').map(r => r.category))].map(c => `<option>${escapeText(c)}</option>`).join('');
+    [...new Set(resources.filter(r => r.category !== 'Software' && !isPracticumResource(r)).map(r => r.category))].map(c => `<option>${escapeText(c)}</option>`).join('');
 }
 
 function softwareFilters() {
@@ -211,6 +265,32 @@ function softwareFilters() {
   softwareFilter.innerHTML = '<option value="All">All</option>' + softwareCats.map(c => `<option>${escapeText(c)}</option>`).join('');
 }
 
+
+function practicumFilters() {
+  if (!practicumFilter) return;
+  const cats = [...new Set(practicumModules.map(item => item.category))];
+  practicumFilter.innerHTML = '<option value="All">All</option>' + cats.map(c => `<option>${escapeText(c)}</option>`).join('');
+}
+
+function practicumTableRender() {
+  const q = (practicumSearch?.value || '').toLowerCase();
+  const cat = practicumFilter?.value || 'All';
+  const rows = practicumModules
+    .filter(item => (cat === 'All' || item.category === cat) &&
+      [item.title, item.category, item.course, item.description, item.author].join(' ').toLowerCase().includes(q))
+    .map(item => `
+      <tr>
+        <td>${escapeText(item.title)}</td>
+        <td>${escapeText(item.category)}</td>
+        <td>Semester ${escapeText(item.semester || '-')}</td>
+        <td>${escapeText(item.kind === 'P' ? 'Praktikum' : 'Studio')} / ${escapeText(item.type || 'PDF')}</td>
+        <td>${escapeText(item.date)}</td>
+        <td><button class="action-btn" data-edit="${item.docId}">Edit</button><button class="action-btn danger" data-del="${item.docId}">Delete</button></td>
+      </tr>
+    `)
+    .join('');
+  if (practicumTable) practicumTable.innerHTML = rows || '<tr><td colspan="6">Belum ada modul praktikum/studio.</td></tr>';
+}
 function videoFilters() {
   if (!videoFilter) return;
   videoFilter.innerHTML = '<option value="All">All</option>' +
@@ -227,7 +307,7 @@ function table() {
   const q = (adminSearch.value || '').toLowerCase();
   const cat = adminFilter.value || 'All';
   const rows = resources
-    .filter(r => r.category !== 'Software')
+    .filter(r => r.category !== 'Software' && !isPracticumResource(r))
     .filter(r => (cat === 'All' || r.category === cat) &&
       [r.title, r.category, r.description, r.author].join(' ').toLowerCase().includes(q))
     .map(r => `
@@ -377,6 +457,15 @@ const resetSoftwareForm = () => {
   if (btn) btn.textContent = 'Simpan Software';
 };
 
+
+const resetPracticumForm = () => {
+  if (!practicumForm) return;
+  practicumForm.reset();
+  if (practicumId) practicumId.value = '';
+  editingPracticumDocId = null;
+  const btn = practicumForm.querySelector('button[type="submit"]');
+  if (btn) btn.textContent = 'Simpan Modul Praktikum/Studio';
+};
 const resetVideoForm = () => {
   videoForm.reset();
   editingVideoDocId = null;
@@ -469,6 +558,44 @@ softwareForm.addEventListener('submit', async e => {
   }
 });
 
+
+practicumForm.addEventListener('submit', async e => {
+  e.preventDefault();
+  if (!validatePracticumForm()) return;
+
+  setLoading(true);
+  try {
+    const meta = selectedPracticumMeta();
+    const data = {
+      title: practicumTitle.value.trim(),
+      category: meta.category,
+      course: meta.course,
+      semester: meta.semester,
+      kind: meta.kind,
+      description: practicumDescription.value.trim(),
+      author: practicumAuthor.value.trim(),
+      date: practicumDate.value,
+      thumbnail: practicumThumb.value.trim() || meta.kind,
+      type: practicumType.value,
+      file: practicumFile.value.trim()
+    };
+
+    if (editingPracticumDocId) {
+      await updateDoc(doc(db, 'practicum_studio_modules', editingPracticumDocId), data);
+      toast('Modul praktikum/studio berhasil diperbarui.');
+    } else {
+      await addDoc(collection(db, 'practicum_studio_modules'), data);
+      toast('Modul praktikum/studio berhasil diupload.');
+    }
+
+    resetPracticumForm();
+  } catch (err) {
+    console.error('Save practicum/studio error:', err);
+    toast('Gagal menyimpan modul praktikum/studio. Coba ulang kembali.');
+  } finally {
+    setLoading(false);
+  }
+});
 videoForm.addEventListener('submit', async e => {
   e.preventDefault();
   if (!validateVideoForm()) return;
@@ -609,6 +736,42 @@ softwareTable.addEventListener('click', async e => {
   }
 });
 
+
+practicumTable.addEventListener('click', async e => {
+  const docId = e.target.dataset.del || e.target.dataset.edit;
+  if (!docId) return;
+
+  if (e.target.dataset.del) {
+    if (confirm('Yakin hapus modul praktikum/studio ini?')) {
+      try {
+        await deleteDoc(doc(db, 'practicum_studio_modules', docId));
+        toast('Modul praktikum/studio berhasil dihapus.');
+      } catch (err) {
+        console.error('Delete practicum/studio error:', err);
+        toast('Gagal menghapus modul praktikum/studio.');
+      }
+    }
+  }
+
+  if (e.target.dataset.edit) {
+    const item = practicumModules.find(module => module.docId === docId);
+    if (item) {
+      practicumId.value = docId;
+      practicumTitle.value = item.title || '';
+      practicumCategory.value = item.category || 'Computer Aided Design (CAD)-S';
+      practicumDescription.value = item.description || '';
+      practicumAuthor.value = item.author || '';
+      practicumDate.value = item.date || '';
+      practicumThumb.value = item.thumbnail || '';
+      practicumType.value = item.type || 'PDF';
+      practicumFile.value = item.file || '';
+      editingPracticumDocId = docId;
+      const btn = practicumForm.querySelector('button[type="submit"]');
+      if (btn) btn.textContent = 'Update Modul Praktikum/Studio';
+      practicumForm.scrollIntoView({ behavior: 'smooth' });
+    }
+  }
+});
 videoTable.addEventListener('click', async e => {
   const docId = e.target.dataset.del || e.target.dataset.edit;
   if (!docId) return;
@@ -746,6 +909,8 @@ adminSearch.addEventListener('input', () => render());
 adminFilter.addEventListener('change', () => render());
 softwareSearch.addEventListener('input', () => softwareTableRender());
 softwareFilter.addEventListener('change', () => softwareTableRender());
+practicumSearch.addEventListener('input', () => practicumTableRender());
+practicumFilter.addEventListener('change', () => practicumTableRender());
 videoSearch.addEventListener('input', () => videoTableRender());
 videoFilter.addEventListener('change', () => videoTableRender());
 announcementSearch.addEventListener('input', () => announcementTableRender());
@@ -766,6 +931,18 @@ onSnapshot(resourcesQuery, snapshot => {
   toast('Gagal memuat resource dari Firebase.');
 });
 
+
+const practicumQuery = query(collection(db, 'practicum_studio_modules'), orderBy('date', 'desc'));
+onSnapshot(practicumQuery, snapshot => {
+  practicumModules = snapshot.docs.map(documentSnapshot => ({
+    docId: documentSnapshot.id,
+    ...documentSnapshot.data()
+  }));
+  render();
+}, err => {
+  console.error('Firestore practicum/studio error:', err);
+  toast('Gagal memuat modul praktikum/studio dari Firebase.');
+});
 const videosQuery = query(collection(db, 'videos'), orderBy('title'));
 onSnapshot(videosQuery, snapshot => {
   videos = snapshot.docs.map(documentSnapshot => ({

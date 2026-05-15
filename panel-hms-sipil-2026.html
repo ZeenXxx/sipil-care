@@ -14,7 +14,7 @@
   </head>
   <body class="admin-page">
     <aside class="admin-sidebar">
-      <h1>SIPIL CARE</h1><a href="#dashboard">Dashboard</a><a href="#resources">Resources</a><a
+      <h1>SIPIL CARE</h1><a href="#dashboard">Dashboard</a><a href="#resources">Resources</a><a href="#practicum-studio">Praktikum &amp; Studio</a><a
       href="#software">Software</a><a href="#videos">Videos</a><a href="#announcements">Pemberitahuan</a><a href="#messages">Pesan Mahasiswa</a><a href="#live-chat-admin">Live Chat</a><a href="#upload">Upload</a><a href="#analytics">Analytics</a><a
       href="#settings">Settings</a><button id="logoutBtn">Logout</button>
     </aside>
@@ -34,17 +34,6 @@
         <option>Transportasi</option>
         <option>Manajemen Konstruksi</option>
         <option>SNI</option>
-        <option>Computer Aided Design (CAD)-S</option>
-        <option>Praktik Kimia-P</option>
-        <option>Praktik Fisika-P</option>
-        <option>Praktik Pemetaan Lahan Terapan-P</option>
-        <option>Praktik Hidraulika-P</option>
-        <option>Praktik Rekayasa Lalu Lintas-P</option>
-        <option>Aplikasi Ketekniksipilan 1-S</option>
-        <option>Praktik Bahan Perkerasan Jalan Raya-P</option>
-        <option>Praktik Geoteknik-P</option>
-        <option>Aplikasi Ketekniksipilan 2-S</option>
-        <option>Pengantar Building Information Modeling (BIM)-S</option>
       </select><textarea class="control textarea" id="resourceDescription" placeholder="Deskripsi"
       required></textarea><input class="control" id="resourceAuthor" placeholder="Author" required><input
       class="control" id="resourceDate" type="date" required><input class="control" id="resourceThumb"
@@ -56,6 +45,38 @@
       <option>ZIP</option>
     </select><input class="control" id="resourceFile" placeholder="Link file (Google Drive, GitHub, atau hosting lain)" required><label class="small-text">Masukkan URL file yang sudah di-host (PDF, DOCX, XLSX, PPT, ZIP)</label>
     <button id="submitResourceBtn" class="btn btn-primary" type="submit" onclick="console.log('Simpan Resource clicked')">Simpan Resource</button>
+  </form>
+  <form class="admin-card" id="practicumForm" novalidate>
+    <h3>Upload Praktikum &amp; Studio</h3>
+    <input type="hidden" id="practicumId">
+    <input class="control" id="practicumTitle" placeholder="Judul modul" required>
+    <select class="control" id="practicumCategory">
+      <option value="Computer Aided Design (CAD)-S" data-semester="1" data-kind="S">Semester 1 - Computer Aided Design (CAD)-S</option>
+      <option value="Praktik Kimia-P" data-semester="1" data-kind="P">Semester 1 - Praktik Kimia-P</option>
+      <option value="Praktik Fisika-P" data-semester="2" data-kind="P">Semester 2 - Praktik Fisika-P</option>
+      <option value="Praktik Pemetaan Lahan Terapan-P" data-semester="2" data-kind="P">Semester 2 - Praktik Pemetaan Lahan Terapan-P</option>
+      <option value="Praktik Hidraulika-P" data-semester="3" data-kind="P">Semester 3 - Praktik Hidraulika-P</option>
+      <option value="Praktik Rekayasa Lalu Lintas-P" data-semester="3" data-kind="P">Semester 3 - Praktik Rekayasa Lalu Lintas-P</option>
+      <option value="Aplikasi Ketekniksipilan 1-S" data-semester="4" data-kind="S">Semester 4 - Aplikasi Ketekniksipilan 1-S</option>
+      <option value="Praktik Bahan Perkerasan Jalan Raya-P" data-semester="4" data-kind="P">Semester 4 - Praktik Bahan Perkerasan Jalan Raya-P</option>
+      <option value="Praktik Geoteknik-P" data-semester="4" data-kind="P">Semester 4 - Praktik Geoteknik-P</option>
+      <option value="Aplikasi Ketekniksipilan 2-S" data-semester="5" data-kind="S">Semester 5 - Aplikasi Ketekniksipilan 2-S</option>
+      <option value="Pengantar Building Information Modeling (BIM)-S" data-semester="6" data-kind="S">Semester 6 - Pengantar Building Information Modeling (BIM)-S</option>
+    </select>
+    <textarea class="control textarea" id="practicumDescription" placeholder="Deskripsi modul" required></textarea>
+    <input class="control" id="practicumAuthor" placeholder="Author" required>
+    <input class="control" id="practicumDate" type="date" required>
+    <input class="control" id="practicumThumb" placeholder="Thumbnail label">
+    <select class="control" id="practicumType">
+      <option>PDF</option>
+      <option>DOCX</option>
+      <option>XLSX</option>
+      <option>PPT</option>
+      <option>ZIP</option>
+    </select>
+    <input class="control" id="practicumFile" placeholder="Link file modul praktikum/studio" required>
+    <label class="small-text">Data ini masuk ke Praktikum &amp; Studio Management, bukan Resource Management.</label>
+    <button id="submitPracticumBtn" class="btn btn-primary" type="submit">Simpan Modul Praktikum/Studio</button>
   </form>
   <form class="admin-card" id="softwareForm" novalidate>
     <h3>Upload Software</h3>
@@ -125,6 +146,29 @@
         </tr>
       </thead>
       <tbody id="resourceTable"></tbody>
+    </table>
+  </div>
+</section>
+<section id="practicum-studio" class="admin-card">
+  <div class="admin-table-head">
+    <h3>Praktikum &amp; Studio Management</h3>
+    <div><input class="control" id="practicumSearch" placeholder="Search"><select class="control" id="practicumFilter">
+      <option value="All">All</option>
+    </select></div>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Judul</th>
+          <th>Kategori</th>
+          <th>Semester</th>
+          <th>Tipe</th>
+          <th>Tanggal</th>
+          <th>Aksi</th>
+        </tr>
+      </thead>
+      <tbody id="practicumTable"></tbody>
     </table>
   </div>
 </section>
@@ -241,7 +285,7 @@
 <div class="toast" id="toast"></div>
 <script src="js/auth.js?v=15"></script>
 <script src="js/student-config.js?v=18"></script>
-<script type="module" src="js/admin-panel.js?v=23"></script>
+<script type="module" src="js/admin-panel.js?v=24"></script>
 </body>
 </html>
 
