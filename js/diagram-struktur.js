@@ -529,6 +529,45 @@ function chartDataset(label, data, color, unit, hidden = false, rawValues = null
   };
 }
 
+const diagramBands = {
+  afd: { center: 2, label: 'AFD' },
+  sfd: { center: 0, label: 'SFD' },
+  bmd: { center: -2, label: 'BMD' }
+};
+
+function toBandData(points, band, rawValues = null) {
+  const values = rawValues || points.map(point => point.y);
+  const maxAbs = Math.max(...values.map(value => Math.abs(value)), 1);
+  const amplitude = 0.62;
+  return points.map((point, index) => ({
+    x: point.x,
+    y: diagramBands[band].center + (point.y / maxAbs) * amplitude
+  }));
+}
+
+const bandGuidePlugin = {
+  id: 'bandGuidePlugin',
+  beforeDatasetsDraw(chart) {
+    const { ctx, chartArea, scales } = chart;
+    if (!chartArea || !scales?.y) return;
+    ctx.save();
+    ctx.setLineDash([6, 6]);
+    ctx.lineWidth = 1;
+    ctx.font = '800 12px Inter, sans-serif';
+    Object.entries(diagramBands).forEach(([key, band]) => {
+      const y = scales.y.getPixelForValue(band.center);
+      ctx.strokeStyle = key === 'bmd' ? 'rgba(212,0,0,.26)' : key === 'sfd' ? 'rgba(0,77,255,.24)' : 'rgba(107,79,216,.24)';
+      ctx.beginPath();
+      ctx.moveTo(chartArea.left, y);
+      ctx.lineTo(chartArea.right, y);
+      ctx.stroke();
+      ctx.fillStyle = '#0f4d3a';
+      ctx.fillText(band.label, chartArea.left + 6, y - 8);
+    });
+    ctx.restore();
+  }
+};
+
 function buildJumpAwareSeries(loads, reactions, key, valueFn) {
   const minX = Math.min(...state.nodes.map(node => node.x));
   const maxX = Math.max(...state.nodes.map(node => node.x));
@@ -551,18 +590,16 @@ function buildJumpAwareSeries(loads, reactions, key, valueFn) {
 }
 
 function renderCharts(samples, loads, reactions) {
-  const afdData = buildJumpAwareSeries(loads, reactions, 'axial', x => axialAt(x, loads, reactions));
-  const sfdData = buildJumpAwareSeries(loads, reactions, 'shear', x => shearAt(x, loads, reactions));
+  const afdRaw = buildJumpAwareSeries(loads, reactions, 'axial', x => axialAt(x, loads, reactions));
+  const sfdRaw = buildJumpAwareSeries(loads, reactions, 'shear', x => shearAt(x, loads, reactions));
   const bmdRaw = samples.map(item => ({ x: item.x, y: item.moment }));
-  const bmdData = bmdRaw.map(point => ({ x: point.x, y: -point.y }));
+  const bmdDisplay = bmdRaw.map(point => ({ x: point.x, y: -point.y }));
+  const afdData = toBandData(afdRaw, 'afd');
+  const sfdData = toBandData(sfdRaw, 'sfd');
+  const bmdData = toBandData(bmdDisplay, 'bmd', bmdRaw.map(point => point.y));
+  const afdRawValues = afdRaw.map(point => point.y);
+  const sfdRawValues = sfdRaw.map(point => point.y);
   const bmdRawValues = bmdRaw.map(point => point.y);
-  const allValues = [...afdData, ...sfdData, ...bmdData].map(point => point.y);
-  const paddedRange = values => {
-    const min = Math.min(...values, 0);
-    const max = Math.max(...values, 0);
-    const pad = Math.max((max - min) * 0.18, 1);
-    return { suggestedMin: min - pad, suggestedMax: max + pad };
-  };
   const mode = controls.diagramOutput.value;
   const shouldHide = name => mode !== 'all' && mode !== name;
   const minX = Math.min(...state.nodes.map(node => node.x));
@@ -595,9 +632,18 @@ function renderCharts(samples, loads, reactions) {
         ticks: { maxTicksLimit: 8, callback: value => fmt(value) }
       },
       y: {
-        ...paddedRange(allValues),
-        title: { display: true, text: 'N, V (kN) / M (kNm)' },
-        ticks: { maxTicksLimit: 7 }
+        min: -2.9,
+        max: 2.9,
+        title: { display: true, text: 'AFD / SFD / BMD' },
+        ticks: {
+          stepSize: 1,
+          callback(value) {
+            if (Math.abs(value - diagramBands.afd.center) < 0.01) return 'AFD';
+            if (Math.abs(value - diagramBands.sfd.center) < 0.01) return 'SFD';
+            if (Math.abs(value - diagramBands.bmd.center) < 0.01) return 'BMD';
+            return '';
+          }
+        }
       }
     }
   };
@@ -607,13 +653,13 @@ function renderCharts(samples, loads, reactions) {
     type: 'line',
     data: {
       datasets: [
-        chartDataset('AFD - N', afdData, '#6b4fd8', 'kN', shouldHide('afd')),
-        chartDataset('SFD - V', sfdData, '#004dff', 'kN', shouldHide('sfd')),
+        chartDataset('AFD - N', afdData, '#6b4fd8', 'kN', shouldHide('afd'), afdRawValues),
+        chartDataset('SFD - V', sfdData, '#004dff', 'kN', shouldHide('sfd'), sfdRawValues),
         chartDataset('BMD - M', bmdData, '#d40000', 'kNm', shouldHide('bmd'), bmdRawValues)
       ]
     },
     options,
-    plugins: [valueLabelPlugin]
+    plugins: [bandGuidePlugin, valueLabelPlugin]
   });
 }
 function updateChartVisibility() {
