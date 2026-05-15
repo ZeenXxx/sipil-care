@@ -9,6 +9,7 @@ function sha256(text) {
 
 const input = `
 12345678 Testing
+2350031020 Arief Tediansyah
 `;
 
 const rows = input
