@@ -82,6 +82,20 @@ add column if not exists recovery_code_hash text;
 
 Lalu isi `recovery_code_hash` untuk setiap NIM sebelum fitur lupa password digunakan.
 
+## 4B. Tambahkan Tracking Online dan Last Seen
+
+Panel HMS dapat menampilkan mahasiswa yang sedang online, last seen, halaman terakhir, dan login terakhir. Jalankan SQL ini sekali di Supabase SQL Editor:
+
+```sql
+alter table public.students
+add column if not exists last_seen_at timestamptz,
+add column if not exists last_login_at timestamptz,
+add column if not exists last_page text,
+add column if not exists last_user_agent text;
+```
+
+Status `Online` dihitung dari `last_seen_at` yang masih berada dalam rentang sekitar 2 menit terakhir. Website akan memperbarui aktivitas mahasiswa maksimal setiap 60 detik agar database tidak terlalu sering menerima update.
+
 ## 5. Aktifkan Mode Supabase
 
 Edit file:

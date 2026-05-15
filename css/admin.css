@@ -290,6 +290,120 @@
 
 }
 
+.student-activity-summary  {
+
+    display: grid;
+
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+
+    gap: 12px;
+
+    margin: 16px 0
+
+}
+
+.student-activity-summary article  {
+
+    padding: 16px;
+
+    border: 1px solid var(--line);
+
+    border-radius: 8px;
+
+    background: #f8fbfa
+
+}
+
+.student-activity-summary span  {
+
+    display: block;
+
+    color: var(--muted);
+
+    font-size: 12px;
+
+    font-weight: 800;
+
+    text-transform: uppercase;
+
+    letter-spacing: .04em
+
+}
+
+.student-activity-summary strong  {
+
+    display: block;
+
+    margin-top: 6px;
+
+    color: var(--primary);
+
+    font-size: 26px
+
+}
+
+.student-status  {
+
+    display: inline-flex;
+
+    align-items: center;
+
+    gap: 6px;
+
+    min-height: 30px;
+
+    padding: 0 10px;
+
+    border-radius: 999px;
+
+    background: #eef4f1;
+
+    color: var(--muted);
+
+    font-size: 12px;
+
+    font-weight: 900
+
+}
+
+.student-status::before  {
+
+    content: "";
+
+    width: 8px;
+
+    height: 8px;
+
+    border-radius: 50%;
+
+    background: currentColor
+
+}
+
+.student-status.online  {
+
+    background: #e7f8ee;
+
+    color: #0f7a39
+
+}
+
+.student-status.offline  {
+
+    background: #fff3dc;
+
+    color: #9a5b00
+
+}
+
+.student-status.never  {
+
+    background: #eef1f4;
+
+    color: #64706c
+
+}
+
 .upload-box  {
   
     position: relative;
@@ -502,7 +616,7 @@ th  {
 
 }
 
-    .admin-stats, .admin-panel-grid  {
+    .admin-stats, .admin-panel-grid, .student-activity-summary  {
   
         grid-template-columns: 1fr
     

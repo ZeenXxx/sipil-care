@@ -82,6 +82,13 @@ const liveChatSearch = document.getElementById('liveChatSearch');
 const liveChatNotifyBtn = document.getElementById('liveChatNotifyBtn');
 const liveChatNotifyStatus = document.getElementById('liveChatNotifyStatus');
 const liveChatThreads = document.getElementById('liveChatThreads');
+const studentActivitySearch = document.getElementById('studentActivitySearch');
+const studentActivityFilter = document.getElementById('studentActivityFilter');
+const studentActivityRefresh = document.getElementById('studentActivityRefresh');
+const studentActivityTable = document.getElementById('studentActivityTable');
+const studentTotalCount = document.getElementById('studentTotalCount');
+const studentOnlineCount = document.getElementById('studentOnlineCount');
+const studentLastSync = document.getElementById('studentLastSync');
 
 const resourceTable = document.getElementById('resourceTable');
 const adminSearch = document.getElementById('adminSearch');
@@ -96,6 +103,7 @@ let videos = [];
 let announcements = [];
 let contactMessages = [];
 let liveChatMessages = [];
+let students = [];
 let editingDocId = null;
 let editingVideoDocId = null;
 let editingSoftwareDocId = null;
@@ -107,6 +115,7 @@ const ADMIN_PUSH_TOKEN_COLLECTION = 'admin_push_tokens';
 const ADMIN_LIVE_CHAT_LAST_SEEN_KEY = 'sipilcare_admin_live_chat_last_seen';
 const ADMIN_PUSH_ENABLED_KEY = 'sipilcare_admin_push_enabled';
 const ADMIN_PUSH_TOKEN_ID_KEY = 'sipilcare_admin_push_token_id';
+const STUDENT_ONLINE_WINDOW = 2 * 60 * 1000;
 let liveChatSnapshotReady = false;
 const practicumCategories = [
   'Computer Aided Design (CAD)-S',
@@ -281,6 +290,32 @@ const toast = message => {
   toastEl.textContent = message;
   toastEl.classList.add('show');
   setTimeout(() => toastEl.classList.remove('show'), 2800);
+};
+
+const parseDateValue = value => {
+  if (!value) return null;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+};
+
+const formatDateTime = value => {
+  const date = parseDateValue(value);
+  return date ? date.toLocaleString('id-ID') : '-';
+};
+
+const formatRelativeTime = value => {
+  const date = parseDateValue(value);
+  if (!date) return 'Belum pernah login';
+  const diff = Date.now() - date.getTime();
+  if (diff < 60 * 1000) return 'Baru saja';
+  if (diff < 60 * 60 * 1000) return `${Math.floor(diff / 60000)} menit lalu`;
+  if (diff < 24 * 60 * 60 * 1000) return `${Math.floor(diff / 3600000)} jam lalu`;
+  return `${Math.floor(diff / 86400000)} hari lalu`;
+};
+
+const isStudentOnline = student => {
+  const lastSeen = parseDateValue(student.last_seen_at);
+  return Boolean(lastSeen && Date.now() - lastSeen.getTime() <= STUDENT_ONLINE_WINDOW);
 };
 
 const setLoading = active => {
@@ -570,6 +605,51 @@ function liveChatRender() {
   `).join('') || '<div class="empty">Belum ada live chat.</div>';
 }
 
+function studentActivityRender() {
+  if (!studentActivityTable) return;
+
+  const q = (studentActivitySearch?.value || '').toLowerCase();
+  const status = studentActivityFilter?.value || 'All';
+  const onlineCount = students.filter(isStudentOnline).length;
+
+  if (studentTotalCount) studentTotalCount.textContent = students.length;
+  if (studentOnlineCount) studentOnlineCount.textContent = onlineCount;
+
+  const rows = students
+    .filter(student => {
+      const online = isStudentOnline(student);
+      const never = !student.last_seen_at;
+      if (status === 'online' && !online) return false;
+      if (status === 'offline' && (online || never)) return false;
+      if (status === 'never' && !never) return false;
+      return [student.nim, student.name, student.last_page].join(' ').toLowerCase().includes(q);
+    })
+    .sort((a, b) => {
+      const aOnline = isStudentOnline(a);
+      const bOnline = isStudentOnline(b);
+      if (aOnline !== bOnline) return aOnline ? -1 : 1;
+      return String(b.last_seen_at || '').localeCompare(String(a.last_seen_at || ''));
+    })
+    .map(student => {
+      const online = isStudentOnline(student);
+      const statusLabel = online ? 'Online' : student.last_seen_at ? 'Offline' : 'Belum login';
+      const statusClass = online ? 'online' : student.last_seen_at ? 'offline' : 'never';
+      return `
+        <tr>
+          <td><span class="student-status ${statusClass}">${statusLabel}</span></td>
+          <td><b>${escapeText(student.nim)}</b></td>
+          <td>${escapeText(student.name || 'Mahasiswa SIPIL CARE')}</td>
+          <td>${escapeText(formatRelativeTime(student.last_seen_at))}<br><span class="small-text">${escapeText(formatDateTime(student.last_seen_at))}</span></td>
+          <td>${escapeText(student.last_page || '-')}</td>
+          <td>${escapeText(formatDateTime(student.last_login_at))}</td>
+        </tr>
+      `;
+    })
+    .join('');
+
+  studentActivityTable.innerHTML = rows || '<tr><td colspan="6">Tidak ada mahasiswa yang cocok dengan pencarian.</td></tr>';
+}
+
 const render = () => {
   stats();
   filters();
@@ -582,6 +662,7 @@ const render = () => {
   announcementTableRender();
   messageTableRender();
   liveChatRender();
+  studentActivityRender();
 };
 
 const resetForm = () => {
@@ -1061,7 +1142,41 @@ messageSearch.addEventListener('input', () => messageTableRender());
 messageFilter.addEventListener('change', () => messageTableRender());
 liveChatSearch.addEventListener('input', () => liveChatRender());
 liveChatNotifyBtn?.addEventListener('click', () => toggleAdminPushNotifications());
+studentActivitySearch?.addEventListener('input', () => studentActivityRender());
+studentActivityFilter?.addEventListener('change', () => studentActivityRender());
+studentActivityRefresh?.addEventListener('click', () => loadStudentActivity({ manual: true }));
 syncNotificationButton();
+
+async function loadStudentActivity(options = {}) {
+  if (!studentActivityTable) return;
+  try {
+    if (studentActivityRefresh) studentActivityRefresh.disabled = true;
+    const supabase = await loadSupabaseClient();
+    const table = window.SIPILCARE_AUTH_CONFIG?.tableName || 'students';
+    const { data, error } = await supabase
+      .from(table)
+      .select('nim,name,last_seen_at,last_login_at,last_page,updated_at')
+      .order('nim', { ascending: true });
+
+    if (error) throw error;
+    students = data || [];
+    if (studentLastSync) studentLastSync.textContent = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+    studentActivityRender();
+    if (options.manual) toast('Data mahasiswa berhasil diperbarui.');
+  } catch (error) {
+    console.error('Load student activity failed:', error);
+    if (/last_seen_at|last_login_at|last_page/i.test(error.message || '')) {
+      studentActivityTable.innerHTML = '<tr><td colspan="6">Kolom tracking mahasiswa belum ada di Supabase. Jalankan SQL alter table yang ada di dokumentasi.</td></tr>';
+    } else {
+      toast('Gagal memuat data mahasiswa dari Supabase.');
+    }
+  } finally {
+    if (studentActivityRefresh) studentActivityRefresh.disabled = false;
+  }
+}
+
+loadStudentActivity();
+setInterval(() => loadStudentActivity(), 30000);
 
 const resourcesQuery = query(collection(db, 'resources'), orderBy('date', 'desc'));
 onSnapshot(resourcesQuery, snapshot => {

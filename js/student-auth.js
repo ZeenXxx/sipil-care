@@ -3,6 +3,8 @@
   const STUDENTS_KEY = "sipilcare_students";
   const SESSION_KEY = "sipilcare_student_session";
   const SESSION_TTL = 7 * 24 * 60 * 60 * 1000;
+  const ACTIVITY_SYNC_INTERVAL = 60 * 1000;
+  const ACTIVITY_SYNC_KEY = "sipilcare_student_activity_sync";
   const currentPage = location.pathname.split("/").pop() || "index.html";
   const isStudentLogin = currentPage === "student-login.html";
   const isAdminLogin = currentPage === "login.html";
@@ -99,6 +101,7 @@
   };
 
   const tableName = () => CONFIG.tableName || "students";
+  const activityKey = (nim) => `${ACTIVITY_SYNC_KEY}_${nim}`;
 
   const remoteFindStudent = async (nim) => {
     const db = await getSupabase();
@@ -126,6 +129,36 @@
       throw new Error("NIM atau password salah. Pastikan akun sudah dibuat oleh admin HMS.");
     }
     return student;
+  };
+
+  const updateStudentActivity = async (session, options = {}) => {
+    if (!usingSupabase || !session?.nim) return;
+    const now = Date.now();
+    const key = activityKey(session.nim);
+    const lastSync = Number(localStorage.getItem(key) || 0);
+    if (!options.force && now - lastSync < ACTIVITY_SYNC_INTERVAL) return;
+
+    try {
+      const db = await getSupabase();
+      const page = location.pathname.split("/").pop() || "index.html";
+      const payload = {
+        last_seen_at: new Date(now).toISOString(),
+        last_page: page,
+        last_user_agent: navigator.userAgent.slice(0, 240),
+        updated_at: new Date(now).toISOString()
+      };
+      if (options.login) payload.last_login_at = payload.last_seen_at;
+
+      const { error } = await db
+        .from(tableName())
+        .update(payload)
+        .eq("nim", session.nim);
+      if (error) throw error;
+
+      localStorage.setItem(key, String(now));
+    } catch (error) {
+      console.warn("Student activity sync failed:", error.message || error);
+    }
   };
 
   const remoteChangePassword = async ({ nim, currentPassword, newPassword }) => {
@@ -258,6 +291,12 @@
     }
 
     window.addEventListener("DOMContentLoaded", addStudentNavActions);
+    const activeSession = readSession();
+    updateStudentActivity(activeSession);
+    window.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible") updateStudentActivity(readSession(), { force: true });
+    });
+    window.addEventListener("focus", () => updateStudentActivity(readSession()));
     return;
   }
 
@@ -327,6 +366,7 @@
             if (newPassword.length < 6) throw new Error("Password baru minimal 6 karakter.");
             const student = await remoteChangePassword({ nim, currentPassword: password, newPassword });
             saveSession(student);
+            await updateStudentActivity({ nim: student.nim, name: student.name, lastSeenAt: Date.now() }, { force: true, login: true });
             showToast("Password berhasil diubah. Mengalihkan ke halaman utama...");
             setTimeout(() => location.href = nextUrl(), 700);
             return;
@@ -335,12 +375,14 @@
             if (newPassword.length < 6) throw new Error("Password baru minimal 6 karakter.");
             const student = await remoteResetPassword({ nim, recoveryCode: password, newPassword });
             saveSession(student);
+            await updateStudentActivity({ nim: student.nim, name: student.name, lastSeenAt: Date.now() }, { force: true, login: true });
             showToast("Password berhasil direset. Mengalihkan ke halaman utama...");
             setTimeout(() => location.href = nextUrl(), 700);
             return;
           }
           const student = await remoteLogin({ nim, password });
           saveSession(student);
+          await updateStudentActivity({ nim: student.nim, name: student.name, lastSeenAt: Date.now() }, { force: true, login: true });
           location.href = nextUrl();
           return;
         }
