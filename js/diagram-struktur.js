@@ -153,16 +153,21 @@ function renderSvg() {
     <line x1="${left}" y1="${y + 92}" x2="${right}" y2="${y + 92}" stroke="#dce6e2" stroke-width="2"/>
     <text class="diagram-axis-label" x="${left - 2}" y="${y + 125}">x (m)</text>
   `;
+  let beamLayer = '';
+  let loadLayer = '';
+  let supportLayer = '';
 
   state.elements.forEach(element => {
     const a = getNode(element.startNode);
     const b = getNode(element.endNode);
-    content += `<line class="diagram-element" x1="${sx(a.x)}" y1="${y}" x2="${sx(b.x)}" y2="${y}"></line><text class="diagram-label diagram-element-label" x="${(sx(a.x) + sx(b.x)) / 2 - 16}" y="${y + 28}">E${element.id}</text>`;
+    const x1 = sx(a.x);
+    const x2 = sx(b.x);
+    beamLayer += `<line class="diagram-element-shadow" x1="${x1}" y1="${y + 4}" x2="${x2}" y2="${y + 4}"></line><line class="diagram-element" x1="${x1}" y1="${y}" x2="${x2}" y2="${y}"></line><line class="diagram-element-highlight" x1="${x1}" y1="${y - 4}" x2="${x2}" y2="${y - 4}"></line><text class="diagram-label diagram-element-label" x="${(x1 + x2) / 2 - 16}" y="${y + 30}">E${element.id}</text>`;
   });
 
   const loadLanes = [];
   const occupyLane = (x1, x2) => {
-    const padding = 34;
+    const padding = 42;
     let lane = 0;
     while (loadLanes[lane]?.some(range => !(x2 + padding < range.x1 || x1 - padding > range.x2))) lane += 1;
     if (!loadLanes[lane]) loadLanes[lane] = [];
@@ -181,33 +186,33 @@ function renderSvg() {
       const uy = fy / magnitude;
       const endX = x;
       const endY = y - 20;
-      const arrowLength = 58;
-      const laneLift = lane * 48;
+      const arrowLength = 62;
+      const laneLift = lane * 68;
       const startX = endX - ux * arrowLength;
       const startY = endY - uy * arrowLength - laneLift;
       const lineClass = Math.abs(fx) > Math.abs(fy) ? 'diagram-hload' : 'diagram-load';
       const labelX = Math.max(left + 4, Math.min(startX - 10, right - 145));
       const labelY = Math.min(startY, endY) - 26;
-      content += `<line class="${lineClass}" x1="${startX}" y1="${startY}" x2="${endX}" y2="${endY}"></line><rect class="diagram-label-bg" x="${labelX - 6}" y="${labelY - 16}" width="150" height="24" rx="6"></rect><text class="diagram-label diagram-load-label" x="${labelX}" y="${labelY}">${load.label} ${fmt(load.p)} kN @ ${fmt(load.angle ?? 90)}&deg;</text>`;
+      loadLayer += `<line class="${lineClass}" x1="${startX}" y1="${startY}" x2="${endX}" y2="${endY}"></line><rect class="diagram-label-bg" x="${labelX - 6}" y="${labelY - 16}" width="150" height="24" rx="6"></rect><text class="diagram-label diagram-load-label" x="${labelX}" y="${labelY}">${load.label} ${fmt(load.p)} kN @ ${fmt(load.angle ?? 90)}&deg;</text>`;
     } else {
       const range = udlRange(load);
       const x1 = sx(range.a);
       const x2 = sx(range.b);
       const lane = occupyLane(x1, x2);
-      const topY = y - 72 - lane * 48;
-      for (let x = x1 + 14; x < x2; x += 34) content += `<line class="diagram-udl" x1="${x}" y1="${topY}" x2="${x}" y2="${y - 18}"></line>`;
+      const topY = y - 80 - lane * 68;
+      for (let x = x1 + 14; x < x2; x += 34) loadLayer += `<line class="diagram-udl" x1="${x}" y1="${topY}" x2="${x}" y2="${y - 20}"></line>`;
       const labelX = Math.max(left + 4, Math.min(x1 + 8, right - 135));
-      content += `<line class="diagram-udl-top" x1="${x1}" y1="${topY}" x2="${x2}" y2="${topY}"/><rect class="diagram-label-bg orange" x="${labelX - 6}" y="${topY - 31}" width="138" height="24" rx="6"></rect><text class="diagram-label diagram-load-label" x="${labelX}" y="${topY - 14}">${load.label} ${fmt(load.w)} kN/m</text>`;
+      loadLayer += `<line class="diagram-udl-top" x1="${x1}" y1="${topY}" x2="${x2}" y2="${topY}"/><rect class="diagram-label-bg orange" x="${labelX - 6}" y="${topY - 31}" width="138" height="24" rx="6"></rect><text class="diagram-label diagram-load-label" x="${labelX}" y="${topY - 14}">${load.label} ${fmt(load.w)} kN/m</text>`;
     }
   });
 
   nodes.forEach(node => {
     const x = sx(node.x);
-    content += drawSupport(node, x, y);
-    content += `<circle class="diagram-node" cx="${x}" cy="${y}" r="8"></circle><text class="diagram-node-label" x="${x}" y="${y + 86}">${nodeLabel(node)}</text><text class="diagram-dim-label" x="${x - 22}" y="${y + 106}">${fmt(node.x)} m</text>`;
+    supportLayer += drawSupport(node, x, y);
+    supportLayer += `<circle class="diagram-node" cx="${x}" cy="${y}" r="8"></circle><text class="diagram-node-label" x="${x}" y="${y + 86}">${nodeLabel(node)}</text><text class="diagram-dim-label" x="${x - 22}" y="${y + 106}">${fmt(node.x)} m</text>`;
   });
 
-  svg.innerHTML = content;
+  svg.innerHTML = content + beamLayer + loadLayer + supportLayer;
 }
 
 function validateModel() {
