@@ -52,10 +52,13 @@ th { background: var(--soft); color: var(--primary); }
 .diagram-element { stroke: #0b4a38; stroke-width: 12; stroke-linecap: round; }
 .diagram-element-highlight { stroke: rgba(255,255,255,.58); stroke-width: 3; stroke-linecap: round; }
 .diagram-element-label { fill: #0f4d3a; font-size: 12px; }
-.diagram-load { stroke: #c93434; stroke-width: 3.2; marker-end: url(#arrowDown); }
-.diagram-hload { stroke: #6b4fd8; stroke-width: 3.2; marker-end: url(#arrowRight); }
+.diagram-load { stroke: #c93434; stroke-width: 3.2; stroke-linecap: round; }
+.diagram-hload { stroke: #6b4fd8; stroke-width: 3.2; stroke-linecap: round; }
 .diagram-udl { stroke: #d67a00; stroke-width: 2.8; marker-end: url(#arrowOrange); }
 .diagram-udl-top { stroke: #d67a00; stroke-width: 3; stroke-linecap: round; }
+.diagram-load-head { fill: #c93434; stroke: #c93434; stroke-width: 1; }
+.diagram-hload-head { fill: #6b4fd8; stroke: #6b4fd8; stroke-width: 1; }
+.diagram-load-seat { stroke: #c93434; stroke-width: 3.2; stroke-linecap: round; }
 .diagram-support { fill: #d9c529; stroke: #0f4d3a; stroke-width: 2; }
 .diagram-label { fill: #17231f; font-size: 14px; font-weight: 800; }
 .diagram-load-label { font-size: 12px; }

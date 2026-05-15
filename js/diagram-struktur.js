@@ -146,9 +146,7 @@ function renderSvg() {
   let content = `
     <defs>
       <filter id="beamShadow" x="-10%" y="-60%" width="120%" height="220%"><feDropShadow dx="0" dy="4" stdDeviation="4" flood-color="#0f4d3a" flood-opacity=".16"/></filter>
-      <marker id="arrowDown" markerWidth="10" markerHeight="10" refX="5" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 Z" fill="#c93434"/></marker>
-      <marker id="arrowRight" markerWidth="10" markerHeight="10" refX="5" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 Z" fill="#6b4fd8"/></marker>
-      <marker id="arrowOrange" markerWidth="10" markerHeight="10" refX="5" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 Z" fill="#d67a00"/></marker>
+      <marker id="arrowOrange" markerWidth="10" markerHeight="10" refX="10" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 Z" fill="#d67a00"/></marker>
     </defs>
     <line x1="${left}" y1="${y + 92}" x2="${right}" y2="${y + 92}" stroke="#dce6e2" stroke-width="2"/>
     <text class="diagram-axis-label" x="${left - 2}" y="${y + 125}">x (m)</text>
@@ -202,6 +200,7 @@ function renderSvg() {
       const uy = fy / magnitude;
       const endX = x;
       const endY = highestUdlTopY ?? y - 20;
+      const hasUdlAnchor = highestUdlTopY !== null;
       const arrowLength = 62;
       const laneLift = lane * 68;
       const startX = endX - ux * arrowLength;
@@ -209,7 +208,21 @@ function renderSvg() {
       const lineClass = Math.abs(fx) > Math.abs(fy) ? 'diagram-hload' : 'diagram-load';
       const labelX = Math.max(left + 4, Math.min(startX - 10, right - 145));
       const labelY = Math.min(startY, endY) - 26;
-      loadLayer += `<line class="${lineClass}" x1="${startX}" y1="${startY}" x2="${endX}" y2="${endY}"></line><rect class="diagram-label-bg" x="${labelX - 6}" y="${labelY - 16}" width="150" height="24" rx="6"></rect><text class="diagram-label diagram-load-label" x="${labelX}" y="${labelY}">${load.label} ${fmt(load.p)} kN @ ${fmt(load.angle ?? 90)}&deg;</text>`;
+      const headLength = 17;
+      const headWidth = 9;
+      const baseX = endX - ux * headLength;
+      const baseY = endY - uy * headLength;
+      const perpX = -uy;
+      const perpY = ux;
+      const headPoints = [
+        `${endX},${endY}`,
+        `${baseX + perpX * headWidth},${baseY + perpY * headWidth}`,
+        `${baseX - perpX * headWidth},${baseY - perpY * headWidth}`
+      ].join(' ');
+      const stemEndX = baseX;
+      const stemEndY = baseY;
+      const anchor = hasUdlAnchor ? `<line class="diagram-load-seat" x1="${endX - 12}" y1="${endY}" x2="${endX + 12}" y2="${endY}"></line>` : '';
+      loadLayer += `<line class="${lineClass}" x1="${startX}" y1="${startY}" x2="${stemEndX}" y2="${stemEndY}"></line><polygon class="${lineClass}-head" points="${headPoints}"></polygon>${anchor}<rect class="diagram-label-bg" x="${labelX - 6}" y="${labelY - 16}" width="150" height="24" rx="6"></rect><text class="diagram-label diagram-load-label" x="${labelX}" y="${labelY}">${load.label} ${fmt(load.p)} kN @ ${fmt(load.angle ?? 90)}&deg;</text>`;
   });
 
   nodes.forEach(node => {
