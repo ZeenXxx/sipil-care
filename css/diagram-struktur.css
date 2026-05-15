@@ -25,7 +25,7 @@ summary { cursor: pointer; color: var(--primary); font-weight: 900; }
 .model-message { margin-top: 12px; color: #8a4b00; font-weight: 800; }
 .model-message.ok { color: var(--primary); }
 .svg-wrap { width: 100%; max-width: 100%; overflow-x: auto; overflow-y: hidden; border: 1px solid var(--line); border-radius: 8px; background: linear-gradient(#f2f8f6 1px, transparent 1px), linear-gradient(90deg, #f2f8f6 1px, transparent 1px), radial-gradient(circle at 12% 12%, rgba(15,77,58,.06), transparent 28%), #fff; background-size: 32px 32px, 32px 32px, auto; }
-#beamCanvas { display: block; width: 100%; min-width: 620px; min-height: 340px; }
+#beamCanvas { display: block; width: 100%; min-width: 620px; min-height: 420px; }
 .model-list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 14px; }
 .model-list article { border: 1px solid var(--line); border-radius: 8px; padding: 12px; background: #fbfdfc; }
 .model-list h3 { margin: 0 0 8px; color: var(--primary); font-size: 15px; }

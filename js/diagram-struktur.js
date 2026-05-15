@@ -140,7 +140,7 @@ function renderSvg() {
   const span = Math.max(maxX - minX, 1);
   const left = 90;
   const right = 870;
-  const y = 205;
+  const y = 315;
   const sx = x => left + ((x - minX) / span) * (right - left);
 
   let content = `
@@ -165,20 +165,34 @@ function renderSvg() {
     beamLayer += `<line class="diagram-element-shadow" x1="${x1}" y1="${y + 4}" x2="${x2}" y2="${y + 4}"></line><line class="diagram-element" x1="${x1}" y1="${y}" x2="${x2}" y2="${y}"></line><line class="diagram-element-highlight" x1="${x1}" y1="${y - 4}" x2="${x2}" y2="${y - 4}"></line><text class="diagram-label diagram-element-label" x="${(x1 + x2) / 2 - 16}" y="${y + 30}">E${element.id}</text>`;
   });
 
-  const loadLanes = [];
-  const occupyLane = (x1, x2) => {
+  const occupyLane = (lanes, x1, x2) => {
     const padding = 42;
     let lane = 0;
-    while (loadLanes[lane]?.some(range => !(x2 + padding < range.x1 || x1 - padding > range.x2))) lane += 1;
-    if (!loadLanes[lane]) loadLanes[lane] = [];
-    loadLanes[lane].push({ x1, x2 });
+    while (lanes[lane]?.some(range => !(x2 + padding < range.x1 || x1 - padding > range.x2))) lane += 1;
+    if (!lanes[lane]) lanes[lane] = [];
+    lanes[lane].push({ x1, x2 });
     return lane;
   };
 
-  state.loads.forEach(load => {
-    if (load.type === 'point') {
+  const udlLanes = [];
+  const pointLanes = [];
+  const udlLoads = state.loads.filter(load => load.type === 'udl');
+  const pointLoads = state.loads.filter(load => load.type === 'point');
+
+  udlLoads.forEach(load => {
+    const range = udlRange(load);
+    const x1 = sx(range.a);
+    const x2 = sx(range.b);
+    const lane = occupyLane(udlLanes, x1, x2);
+    const topY = y - 80 - lane * 68;
+    for (let x = x1 + 14; x < x2; x += 34) loadLayer += `<line class="diagram-udl" x1="${x}" y1="${topY}" x2="${x}" y2="${y - 20}"></line>`;
+    const labelX = Math.max(left + 4, Math.min(x1 + 8, right - 135));
+    loadLayer += `<line class="diagram-udl-top" x1="${x1}" y1="${topY}" x2="${x2}" y2="${topY}"/><rect class="diagram-label-bg orange" x="${labelX - 6}" y="${topY - 31}" width="138" height="24" rx="6"></rect><text class="diagram-label diagram-load-label" x="${labelX}" y="${topY - 14}">${load.label} ${fmt(load.w)} kN/m</text>`;
+  });
+
+  pointLoads.forEach(load => {
       const x = sx(load.x);
-      const lane = occupyLane(x - 42, x + 92);
+      const lane = occupyLane(pointLanes, x - 42, x + 92);
       const fx = pointFx(load);
       const fy = pointFy(load);
       const magnitude = Math.hypot(fx, fy) || 1;
@@ -187,23 +201,13 @@ function renderSvg() {
       const endX = x;
       const endY = y - 20;
       const arrowLength = 62;
-      const laneLift = lane * 68;
+      const laneLift = Math.max(1, udlLanes.length) * 68 + lane * 68;
       const startX = endX - ux * arrowLength;
       const startY = endY - uy * arrowLength - laneLift;
       const lineClass = Math.abs(fx) > Math.abs(fy) ? 'diagram-hload' : 'diagram-load';
       const labelX = Math.max(left + 4, Math.min(startX - 10, right - 145));
       const labelY = Math.min(startY, endY) - 26;
       loadLayer += `<line class="${lineClass}" x1="${startX}" y1="${startY}" x2="${endX}" y2="${endY}"></line><rect class="diagram-label-bg" x="${labelX - 6}" y="${labelY - 16}" width="150" height="24" rx="6"></rect><text class="diagram-label diagram-load-label" x="${labelX}" y="${labelY}">${load.label} ${fmt(load.p)} kN @ ${fmt(load.angle ?? 90)}&deg;</text>`;
-    } else {
-      const range = udlRange(load);
-      const x1 = sx(range.a);
-      const x2 = sx(range.b);
-      const lane = occupyLane(x1, x2);
-      const topY = y - 80 - lane * 68;
-      for (let x = x1 + 14; x < x2; x += 34) loadLayer += `<line class="diagram-udl" x1="${x}" y1="${topY}" x2="${x}" y2="${y - 20}"></line>`;
-      const labelX = Math.max(left + 4, Math.min(x1 + 8, right - 135));
-      loadLayer += `<line class="diagram-udl-top" x1="${x1}" y1="${topY}" x2="${x2}" y2="${topY}"/><rect class="diagram-label-bg orange" x="${labelX - 6}" y="${topY - 31}" width="138" height="24" rx="6"></rect><text class="diagram-label diagram-load-label" x="${labelX}" y="${topY - 14}">${load.label} ${fmt(load.w)} kN/m</text>`;
-    }
   });
 
   nodes.forEach(node => {
