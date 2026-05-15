@@ -96,6 +96,7 @@ const adminFilter = document.getElementById('adminFilter');
 const adminStats = document.getElementById('adminStats');
 const toastEl = document.getElementById('toast');
 const submitButton = resourceForm?.querySelector('button[type="submit"]');
+const adminNavLinks = [...document.querySelectorAll('.admin-nav a[href^="#"]')];
 
 let resources = [];
 let practicumModules = [];
@@ -1146,6 +1147,30 @@ studentActivitySearch?.addEventListener('input', () => studentActivityRender());
 studentActivityFilter?.addEventListener('change', () => studentActivityRender());
 studentActivityRefresh?.addEventListener('click', () => loadStudentActivity({ manual: true }));
 syncNotificationButton();
+
+const setActiveAdminNav = id => {
+  adminNavLinks.forEach(link => {
+    const active = link.getAttribute('href') === `#${id}`;
+    link.classList.toggle('active', active);
+    if (active && window.matchMedia('(max-width: 900px)').matches) {
+      link.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+    }
+  });
+};
+
+if (adminNavLinks.length && 'IntersectionObserver' in window) {
+  const sectionObserver = new IntersectionObserver(entries => {
+    const visible = entries
+      .filter(entry => entry.isIntersecting)
+      .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+    if (visible?.target?.id) setActiveAdminNav(visible.target.id);
+  }, { rootMargin: '-20% 0px -55% 0px', threshold: [0.12, 0.28, 0.5] });
+
+  adminNavLinks.forEach(link => {
+    const target = document.querySelector(link.getAttribute('href'));
+    if (target) sectionObserver.observe(target);
+  });
+}
 
 async function loadStudentActivity(options = {}) {
   if (!studentActivityTable) return;

@@ -9,14 +9,33 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
     rel="stylesheet">
-    <link rel="stylesheet" href="css/admin.css?v=21">
+    <link rel="stylesheet" href="css/admin.css?v=22">
     <title>Admin Dashboard - SIPIL CARE</title>
   </head>
   <body class="admin-page">
     <aside class="admin-sidebar">
-      <h1>SIPIL CARE</h1><a href="#dashboard">Dashboard</a><a href="#student-activity">Mahasiswa Online</a><a href="#resources">Resources</a><a href="#practicum-studio">Praktikum &amp; Studio</a><a
-      href="#software">Software</a><a href="#videos">Videos</a><a href="#announcements">Pemberitahuan</a><a href="#messages">Pesan Mahasiswa</a><a href="#live-chat-admin">Live Chat</a><a href="#upload">Upload</a><a href="#analytics">Analytics</a><a
-      href="#settings">Settings</a><button id="logoutBtn">Logout</button>
+      <div class="admin-brand">
+        <span>SC</span>
+        <div>
+          <h1>SIPIL CARE</h1>
+          <small>HMS Admin Panel</small>
+        </div>
+      </div>
+      <nav class="admin-nav" aria-label="Admin navigation">
+        <a class="active" href="#dashboard"><span>DB</span>Dashboard</a>
+        <a href="#student-activity"><span>ON</span>Mahasiswa Online</a>
+        <a href="#resources"><span>RS</span>Resources</a>
+        <a href="#practicum-studio"><span>PS</span>Praktikum &amp; Studio</a>
+        <a href="#software"><span>SW</span>Software</a>
+        <a href="#videos"><span>VD</span>Videos</a>
+        <a href="#announcements"><span>IF</span>Pemberitahuan</a>
+        <a href="#messages"><span>PM</span>Pesan Mahasiswa</a>
+        <a href="#live-chat-admin"><span>LC</span>Live Chat</a>
+        <a href="#upload"><span>UP</span>Upload</a>
+        <a href="#analytics"><span>AN</span>Analytics</a>
+        <a href="#settings"><span>ST</span>Settings</a>
+      </nav>
+      <button class="admin-logout" id="logoutBtn" type="button"><span>LO</span>Logout</button>
     </aside>
     <main class="admin-main">
       <section id="dashboard"><span class="eyebrow">CMS Akademik</span>
@@ -327,7 +346,7 @@
 <script src="js/auth.js?v=15"></script>
 <script src="js/student-config.js?v=18"></script>
 <script src="js/push-config.js?v=1"></script>
-<script type="module" src="js/admin-panel.js?v=26"></script>
+<script type="module" src="js/admin-panel.js?v=27"></script>
 </body>
 </html>
 

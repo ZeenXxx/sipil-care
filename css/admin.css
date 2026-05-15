@@ -80,33 +80,137 @@
   
     height: 100vh;
   
-    padding: 24px;
+    display: grid;
+
+    grid-template-rows: auto minmax(0, 1fr) auto;
+
+    gap: 18px;
+
+    padding: 20px;
   
     background: #0c3328;
   
-    color: #fff
+    color: #fff;
+
+    box-shadow: 18px 0 50px rgba(12, 51, 40, .12)
 
 }
 
-.admin-sidebar h1  {
+.admin-brand  {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 12px;
+
+    min-width: 0;
+
+    padding: 12px;
+
+    border: 1px solid rgba(255, 255, 255, .12);
+
+    border-radius: 8px;
+
+    background: rgba(255, 255, 255, .08)
+
+}
+
+.admin-brand span  {
+
+    display: inline-flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    width: 42px;
+
+    height: 42px;
+
+    flex: 0 0 auto;
+
+    border-radius: 8px;
+
+    background: #f0dd43;
+
+    color: #0c3328;
+
+    font-size: 14px;
+
+    font-weight: 900
+
+}
+
+.admin-brand h1  {
+
+    margin: 0;
   
-    font-size: 22px
+    font-size: 20px;
+
+    line-height: 1.05
 
 }
 
-.admin-sidebar a, .admin-sidebar button  {
+.admin-brand small  {
+
+    display: block;
+
+    margin-top: 4px;
+
+    color: rgba(255, 255, 255, .72);
+
+    font-size: 12px;
+
+    font-weight: 700
+
+}
+
+.admin-nav  {
+
+    display: grid;
+
+    gap: 6px;
+
+    min-height: 0;
+
+    overflow-y: auto;
+
+    padding-right: 4px;
+
+    scrollbar-width: thin
+
+}
+
+.admin-nav::-webkit-scrollbar  {
+
+    width: 6px
+
+}
+
+.admin-nav::-webkit-scrollbar-thumb  {
+
+    background: rgba(255, 255, 255, .22);
+
+    border-radius: 999px
+
+}
+
+.admin-nav a, .admin-logout  {
   
     display: flex;
   
     width: 100%;
   
     align-items: center;
+
+    gap: 10px;
   
     min-height: 44px;
   
-    margin: 8px 0;
+    margin: 0;
   
-    padding: 0 12px;
+    padding: 0 10px;
   
     border: 0;
   
@@ -118,15 +222,75 @@
   
     text-align: left;
   
-    font-weight: 800
+    font-weight: 800;
+
+    transition: background .18s ease, color .18s ease, transform .18s ease
 
 }
 
-.admin-sidebar a:hover, .admin-sidebar button:hover  {
+.admin-nav a span, .admin-logout span  {
+
+    display: inline-flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    width: 30px;
+
+    height: 30px;
+
+    flex: 0 0 auto;
+
+    border-radius: 8px;
+
+    background: rgba(255, 255, 255, .1);
+
+    color: rgba(255, 255, 255, .88);
+
+    font-size: 11px;
+
+    font-weight: 900
+
+}
+
+.admin-nav a:hover, .admin-nav a.active, .admin-logout:hover  {
   
     background: rgba(255, 255, 255, .1);
   
-    color: #fff
+    color: #fff;
+
+    transform: translateX(2px)
+
+}
+
+.admin-nav a.active  {
+
+    background: #fff;
+
+    color: #0c3328;
+
+    box-shadow: 0 10px 24px rgba(0, 0, 0, .14)
+
+}
+
+.admin-nav a.active span  {
+
+    background: #f0dd43;
+
+    color: #0c3328
+
+}
+
+.admin-logout  {
+
+    cursor: pointer;
+
+    border: 1px solid rgba(255, 255, 255, .14);
+
+    background: rgba(255, 255, 255, .06);
+
+    color: #ffe6e2
 
 }
 
@@ -556,47 +720,79 @@ th  {
   
         height: auto;
 
-        max-height: 48vh;
+        max-height: 46vh;
 
-        display: flex;
+        display: grid;
 
-        flex-wrap: wrap;
+        grid-template-rows: auto auto;
 
-        gap: 8px;
+        gap: 10px;
 
         padding: 14px;
 
-        overflow-y: auto;
+        overflow: hidden;
 
         box-shadow: 0 16px 34px rgba(12, 51, 40, .18)
     
 }
 
-    .admin-sidebar h1  {
+    .admin-brand  {
 
-        flex: 1 0 100%;
+        padding: 10px;
 
-        margin: 0 0 6px;
+        padding-right: 106px
+
+}
+
+    .admin-brand h1  {
 
         font-size: 18px
 
 }
 
-    .admin-sidebar a, .admin-sidebar button  {
+    .admin-nav  {
+
+        display: flex;
+
+        gap: 8px;
+
+        overflow-x: auto;
+
+        overflow-y: hidden;
+
+        padding: 0 0 6px;
+
+        scroll-snap-type: x proximity
+
+}
+
+    .admin-nav a, .admin-logout  {
 
         width: auto;
 
+        min-width: max-content;
+
         min-height: 40px;
 
-        margin: 0;
-
-        padding: 0 12px;
+        padding: 0 10px;
 
         border: 1px solid rgba(255, 255, 255, .14);
 
         background: rgba(255, 255, 255, .08);
 
         font-size: 13px
+
+}
+
+    .admin-logout  {
+
+        position: absolute;
+
+        top: 14px;
+
+        right: 14px;
+
+        max-width: 96px
 
 }
 
@@ -659,6 +855,12 @@ th  {
     .admin-sidebar  {
 
         max-height: 42vh
+
+}
+
+    .admin-brand small  {
+
+        display: none
 
 }
 
