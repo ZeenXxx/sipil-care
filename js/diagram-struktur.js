@@ -190,6 +190,8 @@ function renderSvg() {
     loadLayer += `<line class="diagram-udl-top" x1="${x1}" y1="${topY}" x2="${x2}" y2="${topY}"/><rect class="diagram-label-bg orange" x="${labelX - 6}" y="${topY - 31}" width="138" height="24" rx="6"></rect><text class="diagram-label diagram-load-label" x="${labelX}" y="${topY - 14}">${load.label} ${fmt(load.w)} kN/m</text>`;
   });
 
+  const highestUdlTopY = udlLanes.length ? y - 80 - (udlLanes.length - 1) * 68 : null;
+
   pointLoads.forEach(load => {
       const x = sx(load.x);
       const lane = occupyLane(pointLanes, x - 42, x + 92);
@@ -199,9 +201,9 @@ function renderSvg() {
       const ux = fx / magnitude;
       const uy = fy / magnitude;
       const endX = x;
-      const endY = y - 20;
+      const endY = highestUdlTopY ?? y - 20;
       const arrowLength = 62;
-      const laneLift = Math.max(1, udlLanes.length) * 68 + lane * 68;
+      const laneLift = lane * 68;
       const startX = endX - ux * arrowLength;
       const startY = endY - uy * arrowLength - laneLift;
       const lineClass = Math.abs(fx) > Math.abs(fy) ? 'diagram-hload' : 'diagram-load';
