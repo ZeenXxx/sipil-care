@@ -8,13 +8,15 @@ const toast = m => {
 };
 
 const path = location.pathname;
+const inAdminPages = path.includes('/pages/admin/') || path.includes('\\pages\\admin\\');
 const inPagesFolder = path.includes('/pages/') || path.includes('\\pages\\');
-const panelHmsPath = inPagesFolder ? '../panel-hms-sipil-2026.html' : 'panel-hms-sipil-2026.html';
-const loginPagePath = inPagesFolder ? 'admin-panel.html' : 'pages/admin-panel.html';
+const rootPrefix = inAdminPages ? '../../' : inPagesFolder ? '../' : '';
+const panelHmsPath = `${rootPrefix}pages/admin/dashboard.html`;
+const loginPagePath = `${rootPrefix}pages/admin-panel.html`;
 const username = document.getElementById('username');
 const password = document.getElementById('password');
 
-if (path.includes('panel-hms-sipil-2026.html') && sessionStorage.getItem('sipilcare_admin') !== 'true') {
+if ((path.includes('panel-hms-sipil-2026.html') || inAdminPages) && sessionStorage.getItem('sipilcare_admin') !== 'true') {
   location.href = loginPagePath;
 }
 

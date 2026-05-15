@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="../../css/style.css?v=19">
+    <link rel="stylesheet" href="../../css/admin.css?v=24">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <title>Pemberitahuan Admin - SIPIL CARE</title>
+  </head>
+  <body class="admin-page">
+    <aside class="admin-sidebar">
+      <div class="admin-brand"><span>SC</span><div><h1>SIPIL CARE</h1><small>HMS Admin Panel</small></div></div>
+      <nav class="admin-nav" aria-label="Admin navigation">
+        <a href="dashboard.html"><span>DB</span>Dashboard</a>
+        <a href="resources.html"><span>RS</span>Resources</a>
+        <a class="active" href="announcements.html"><span>IF</span>Pemberitahuan</a>
+        <a href="messages.html"><span>PM</span>Pesan Mahasiswa</a>
+      </nav>
+      <button class="admin-logout" id="logoutBtn" type="button"><span>LO</span>Logout</button>
+    </aside>
+
+    <main class="admin-main">
+      <section class="admin-page-head">
+        <span class="eyebrow">Pemberitahuan</span>
+        <h2>Kelola Info HMS dan PENDPROF</h2>
+        <p>Upload agenda, pengumuman, dan dokumentasi kegiatan yang tampil di halaman awal mahasiswa.</p>
+      </section>
+
+      <section class="admin-panel-grid single-panel">
+        <form class="admin-card" id="announcementForm" novalidate>
+          <h3>Upload Pemberitahuan</h3>
+          <input type="hidden" id="announcementId">
+          <input type="hidden" id="announcementPhotoUrl">
+          <input type="hidden" id="announcementPhotoPath">
+          <input class="control" id="announcementTitle" placeholder="Judul pemberitahuan" required>
+          <select class="control" id="announcementType">
+            <option>Info HMS</option>
+            <option>Agenda</option>
+            <option>Dokumentasi</option>
+            <option>Akademik</option>
+            <option>PENDPROF HMS</option>
+          </select>
+          <input class="control" id="announcementDate" type="date" required>
+          <textarea class="control textarea" id="announcementDescription" placeholder="Isi pemberitahuan" required></textarea>
+          <input class="control" id="announcementImage" type="file" accept="image/*">
+          <label class="small-text">Opsional. Foto akan diupload ke Supabase Storage bucket <b>sipilcare</b>.</label>
+          <button class="btn btn-primary" type="submit">Simpan Pemberitahuan</button>
+        </form>
+      </section>
+
+      <section id="announcements" class="admin-card">
+        <div class="admin-table-head">
+          <h3>Pemberitahuan Management</h3>
+          <div>
+            <input class="control" id="announcementSearch" placeholder="Search">
+            <select class="control" id="announcementFilter"><option value="All">All</option></select>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Judul</th><th>Tipe</th><th>Tanggal</th><th>Foto</th><th>Aksi</th></tr></thead>
+            <tbody id="announcementTable"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <div class="toast" id="toast"></div>
+    <script src="../../js/auth.js?v=17"></script>
+    <script src="../../js/student-config.js?v=18"></script>
+    <script src="../../js/push-config.js?v=1"></script>
+    <script type="module" src="../../js/admin-panel.js?v=30"></script>
+  </body>
+</html>

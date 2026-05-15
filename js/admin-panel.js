@@ -14,6 +14,7 @@ import {
 import { getMessaging, getToken, deleteToken, onMessage } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-messaging.js";
 
 const db = getFirestore(app);
+const adminRootPrefix = location.pathname.includes('/pages/admin/') ? '../../' : '';
 
 const resourceForm = document.getElementById('resourceForm');
 const resourceId = document.getElementById('resourceId');
@@ -97,6 +98,7 @@ const adminStats = document.getElementById('adminStats');
 const toastEl = document.getElementById('toast');
 const submitButton = resourceForm?.querySelector('button[type="submit"]');
 const adminNavLinks = [...document.querySelectorAll('.admin-nav a[href^="#"]')];
+const on = (element, event, handler) => element?.addEventListener(event, handler);
 
 let resources = [];
 let practicumModules = [];
@@ -170,7 +172,7 @@ const showAdminLiveChatNotification = item => {
   if ('Notification' in window && Notification.permission === 'granted') {
     new Notification(title, {
       body,
-      icon: 'assets/images/logo-hms.png',
+      icon: `${adminRootPrefix}assets/images/logo-hms.png`,
       tag: `sipilcare-live-chat-${item.threadId || item.docId}`
     });
   }
@@ -200,7 +202,7 @@ async function enableAdminPushNotifications() {
 
   try {
     liveChatNotifyBtn.disabled = true;
-    const registration = await navigator.serviceWorker.register('firebase-messaging-sw.js');
+    const registration = await navigator.serviceWorker.register(`${adminRootPrefix}firebase-messaging-sw.js`);
     const messaging = getMessaging(app);
     const token = await getToken(messaging, {
       vapidKey,
@@ -350,8 +352,8 @@ async function loadSupabaseClient() {
 async function uploadAnnouncementPhoto(file) {
   if (!file) {
     return {
-      photoUrl: announcementPhotoUrl.value,
-      photoPath: announcementPhotoPath.value
+      photoUrl: announcementPhotoUrl?.value || '',
+      photoPath: announcementPhotoPath?.value || ''
     };
   }
 
@@ -421,6 +423,7 @@ function validateAnnouncementForm() {
 }
 
 function stats() {
+  if (!adminStats) return;
   const academicResources = resources.filter(r => r.category !== 'Software' && !isPracticumResource(r));
   const softwareResources = resources.filter(r => r.category === 'Software');
   adminStats.innerHTML = `
@@ -433,6 +436,7 @@ function stats() {
 }
 
 function filters() {
+  if (!adminFilter) return;
   adminFilter.innerHTML = '<option value="All">All</option>' +
     [...new Set(resources.filter(r => r.category !== 'Software' && !isPracticumResource(r)).map(r => r.category))].map(c => `<option>${escapeText(c)}</option>`).join('');
 }
@@ -482,8 +486,9 @@ function announcementFilters() {
 }
 
 function table() {
-  const q = (adminSearch.value || '').toLowerCase();
-  const cat = adminFilter.value || 'All';
+  if (!resourceTable) return;
+  const q = (adminSearch?.value || '').toLowerCase();
+  const cat = adminFilter?.value || 'All';
   const rows = resources
     .filter(r => r.category !== 'Software' && !isPracticumResource(r))
     .filter(r => (cat === 'All' || r.category === cat) &&
@@ -566,7 +571,7 @@ function messageTableRender() {
       [item.name, item.nim, item.email, item.category, item.subject, item.message, item.reply].join(' ').toLowerCase().includes(q))
     .map(item => `
       <tr>
-        <td><b>${escapeText(item.name)}</b><br><span class="small-text">${escapeText(item.nim)} Â· ${escapeText(item.email)}</span></td>
+        <td><b>${escapeText(item.name)}</b><br><span class="small-text">${escapeText(item.nim)} &middot; ${escapeText(item.email)}</span></td>
         <td>${escapeText(item.category)}</td>
         <td>${escapeText(item.subject)}</td>
         <td class="message-preview">${escapeText(item.message)}${item.reply ? `<div class="message-reply">Balasan: ${escapeText(item.reply)}</div>` : ''}</td>
@@ -599,7 +604,7 @@ function liveChatRender() {
     <article class="chat-thread">
       <h4>${escapeText(thread.latest.senderName || 'Mahasiswa')} ${thread.latest.nim ? `(${escapeText(thread.latest.nim)})` : ''}</h4>
       <p><b>Pesan terbaru:</b> ${escapeText(thread.latest.message)}</p>
-      <p><b>Jumlah chat:</b> ${thread.messages.length} Â· <b>Terakhir:</b> ${new Date(thread.latest.createdAt).toLocaleString('id-ID')}</p>
+      <p><b>Jumlah chat:</b> ${thread.messages.length} &middot; <b>Terakhir:</b> ${new Date(thread.latest.createdAt).toLocaleString('id-ID')}</p>
       <button class="action-btn" data-reply-chat="${escapeText(thread.threadId)}">Balas Chat</button>
       <button class="action-btn danger" data-close-chat="${escapeText(thread.threadId)}">Hapus Thread</button>
     </article>
@@ -657,6 +662,8 @@ const render = () => {
   table();
   softwareFilters();
   softwareTableRender();
+  practicumFilters();
+  practicumTableRender();
   videoFilters();
   videoTableRender();
   announcementFilters();
@@ -667,9 +674,10 @@ const render = () => {
 };
 
 const resetForm = () => {
+  if (!resourceForm) return;
   resourceForm.reset();
   editingDocId = null;
-  resourceId.value = '';
+  if (resourceId) resourceId.value = '';
   if (submitButton) submitButton.textContent = 'Simpan Resource';
 };
 
@@ -691,21 +699,23 @@ const resetPracticumForm = () => {
   if (btn) btn.textContent = 'Simpan Modul Praktikum/Studio';
 };
 const resetVideoForm = () => {
+  if (!videoForm) return;
   videoForm.reset();
   editingVideoDocId = null;
 };
 
 const resetAnnouncementForm = () => {
+  if (!announcementForm) return;
   announcementForm.reset();
-  announcementId.value = '';
-  announcementPhotoUrl.value = '';
-  announcementPhotoPath.value = '';
+  if (announcementId) announcementId.value = '';
+  if (announcementPhotoUrl) announcementPhotoUrl.value = '';
+  if (announcementPhotoPath) announcementPhotoPath.value = '';
   editingAnnouncementDocId = null;
   const btn = announcementForm.querySelector('button[type="submit"]');
   if (btn) btn.textContent = 'Simpan Pemberitahuan';
 };
 
-resourceForm.addEventListener('submit', async e => {
+on(resourceForm, 'submit', async e => {
   e.preventDefault();
   if (!validateResourceForm()) return;
 
@@ -740,7 +750,7 @@ resourceForm.addEventListener('submit', async e => {
   }
 });
 
-softwareForm.addEventListener('submit', async e => {
+on(softwareForm, 'submit', async e => {
   e.preventDefault();
   if (!softwareTitle.value.trim() || !softwareDescription.value.trim() || !softwareAuthor.value.trim() || !softwareDate.value) {
     toast('Lengkapi Judul, Deskripsi, Author, dan Tanggal.');
@@ -783,7 +793,7 @@ softwareForm.addEventListener('submit', async e => {
 });
 
 
-practicumForm.addEventListener('submit', async e => {
+on(practicumForm, 'submit', async e => {
   e.preventDefault();
   if (!validatePracticumForm()) return;
 
@@ -820,7 +830,7 @@ practicumForm.addEventListener('submit', async e => {
     setLoading(false);
   }
 });
-videoForm.addEventListener('submit', async e => {
+on(videoForm, 'submit', async e => {
   e.preventDefault();
   if (!validateVideoForm()) return;
 
@@ -854,7 +864,7 @@ videoForm.addEventListener('submit', async e => {
   }
 });
 
-announcementForm.addEventListener('submit', async e => {
+on(announcementForm, 'submit', async e => {
   e.preventDefault();
   if (!validateAnnouncementForm()) return;
 
@@ -893,7 +903,7 @@ announcementForm.addEventListener('submit', async e => {
   }
 });
 
-resourceTable.addEventListener('click', async e => {
+on(resourceTable, 'click', async e => {
   const docId = e.target.dataset.del || e.target.dataset.edit;
   if (!docId) return;
 
@@ -928,7 +938,7 @@ resourceTable.addEventListener('click', async e => {
   }
 });
 
-softwareTable.addEventListener('click', async e => {
+on(softwareTable, 'click', async e => {
   const docId = e.target.dataset.del || e.target.dataset.edit;
   if (!docId) return;
 
@@ -961,7 +971,7 @@ softwareTable.addEventListener('click', async e => {
 });
 
 
-practicumTable.addEventListener('click', async e => {
+on(practicumTable, 'click', async e => {
   const docId = e.target.dataset.del || e.target.dataset.edit;
   if (!docId) return;
 
@@ -996,7 +1006,7 @@ practicumTable.addEventListener('click', async e => {
     }
   }
 });
-videoTable.addEventListener('click', async e => {
+on(videoTable, 'click', async e => {
   const docId = e.target.dataset.del || e.target.dataset.edit;
   if (!docId) return;
 
@@ -1027,7 +1037,7 @@ videoTable.addEventListener('click', async e => {
   }
 });
 
-announcementTable.addEventListener('click', async e => {
+on(announcementTable, 'click', async e => {
   const docId = e.target.dataset.del || e.target.dataset.edit;
   if (!docId) return;
 
@@ -1061,7 +1071,7 @@ announcementTable.addEventListener('click', async e => {
   }
 });
 
-messageTable.addEventListener('click', async e => {
+on(messageTable, 'click', async e => {
   const replyId = e.target.dataset.replyMessage;
   const deleteId = e.target.dataset.delMessage;
 
@@ -1093,7 +1103,7 @@ messageTable.addEventListener('click', async e => {
   }
 });
 
-liveChatThreads.addEventListener('click', async e => {
+on(liveChatThreads, 'click', async e => {
   const replyThread = e.target.dataset.replyChat;
   const closeThread = e.target.dataset.closeChat;
 
@@ -1129,23 +1139,23 @@ liveChatThreads.addEventListener('click', async e => {
   }
 });
 
-adminSearch.addEventListener('input', () => render());
-adminFilter.addEventListener('change', () => render());
-softwareSearch.addEventListener('input', () => softwareTableRender());
-softwareFilter.addEventListener('change', () => softwareTableRender());
-practicumSearch.addEventListener('input', () => practicumTableRender());
-practicumFilter.addEventListener('change', () => practicumTableRender());
-videoSearch.addEventListener('input', () => videoTableRender());
-videoFilter.addEventListener('change', () => videoTableRender());
-announcementSearch.addEventListener('input', () => announcementTableRender());
-announcementFilter.addEventListener('change', () => announcementTableRender());
-messageSearch.addEventListener('input', () => messageTableRender());
-messageFilter.addEventListener('change', () => messageTableRender());
-liveChatSearch.addEventListener('input', () => liveChatRender());
-liveChatNotifyBtn?.addEventListener('click', () => toggleAdminPushNotifications());
-studentActivitySearch?.addEventListener('input', () => studentActivityRender());
-studentActivityFilter?.addEventListener('change', () => studentActivityRender());
-studentActivityRefresh?.addEventListener('click', () => loadStudentActivity({ manual: true }));
+on(adminSearch, 'input', () => render());
+on(adminFilter, 'change', () => render());
+on(softwareSearch, 'input', () => softwareTableRender());
+on(softwareFilter, 'change', () => softwareTableRender());
+on(practicumSearch, 'input', () => practicumTableRender());
+on(practicumFilter, 'change', () => practicumTableRender());
+on(videoSearch, 'input', () => videoTableRender());
+on(videoFilter, 'change', () => videoTableRender());
+on(announcementSearch, 'input', () => announcementTableRender());
+on(announcementFilter, 'change', () => announcementTableRender());
+on(messageSearch, 'input', () => messageTableRender());
+on(messageFilter, 'change', () => messageTableRender());
+on(liveChatSearch, 'input', () => liveChatRender());
+on(liveChatNotifyBtn, 'click', () => toggleAdminPushNotifications());
+on(studentActivitySearch, 'input', () => studentActivityRender());
+on(studentActivityFilter, 'change', () => studentActivityRender());
+on(studentActivityRefresh, 'click', () => loadStudentActivity({ manual: true }));
 syncNotificationButton();
 
 const setActiveAdminNav = id => {

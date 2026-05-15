@@ -362,6 +362,30 @@
 
 }
 
+.admin-panel-grid.single-panel  {
+
+    grid-template-columns: minmax(0, 720px)
+
+}
+
+.admin-page-head  {
+
+    min-width: 0
+
+}
+
+.admin-page-head p  {
+
+    max-width: 760px;
+
+    color: var(--muted);
+
+    font-size: 16px;
+
+    line-height: 1.65
+
+}
+
 .admin-card  {
   
     padding: 24px;

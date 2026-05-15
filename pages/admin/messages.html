@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="../../css/style.css?v=19">
+    <link rel="stylesheet" href="../../css/admin.css?v=24">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <title>Pesan Mahasiswa Admin - SIPIL CARE</title>
+  </head>
+  <body class="admin-page">
+    <aside class="admin-sidebar">
+      <div class="admin-brand"><span>SC</span><div><h1>SIPIL CARE</h1><small>HMS Admin Panel</small></div></div>
+      <nav class="admin-nav" aria-label="Admin navigation">
+        <a href="dashboard.html"><span>DB</span>Dashboard</a>
+        <a href="resources.html"><span>RS</span>Resources</a>
+        <a href="announcements.html"><span>IF</span>Pemberitahuan</a>
+        <a class="active" href="messages.html"><span>PM</span>Pesan Mahasiswa</a>
+      </nav>
+      <button class="admin-logout" id="logoutBtn" type="button"><span>LO</span>Logout</button>
+    </aside>
+
+    <main class="admin-main">
+      <section class="admin-page-head">
+        <span class="eyebrow">Pesan Mahasiswa</span>
+        <h2>Komunikasi Mahasiswa dan HMS</h2>
+        <p>Kelola pesan non-live dan live chat mahasiswa dalam satu ruang kerja.</p>
+      </section>
+
+      <section id="messages" class="admin-card">
+        <div class="admin-table-head">
+          <h3>Pesan Mahasiswa</h3>
+          <div>
+            <input class="control" id="messageSearch" placeholder="Search">
+            <select class="control" id="messageFilter">
+              <option value="All">All</option>
+              <option value="new">Belum dibalas</option>
+              <option value="answered">Sudah dibalas</option>
+            </select>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Mahasiswa</th>
+                <th>Kategori</th>
+                <th>Subjek</th>
+                <th>Pesan</th>
+                <th>Status</th>
+                <th>Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="messageTable"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="live-chat-admin" class="admin-card">
+        <div class="admin-table-head">
+          <div>
+            <h3>Live Chat Mahasiswa</h3>
+            <p class="small-text" id="liveChatNotifyStatus">Aktifkan notifikasi agar admin mendapat pemberitahuan chat baru.</p>
+          </div>
+          <div>
+            <button class="action-btn" id="liveChatNotifyBtn" type="button">Aktifkan Notifikasi</button>
+            <input class="control" id="liveChatSearch" placeholder="Search chat">
+          </div>
+        </div>
+        <div class="chat-thread-list" id="liveChatThreads"></div>
+      </section>
+    </main>
+
+    <div class="toast" id="toast"></div>
+    <script src="../../js/auth.js?v=17"></script>
+    <script src="../../js/student-config.js?v=18"></script>
+    <script src="../../js/push-config.js?v=1"></script>
+    <script type="module" src="../../js/admin-panel.js?v=30"></script>
+  </body>
+</html>

@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="../../css/style.css?v=19">
+    <link rel="stylesheet" href="../../css/admin.css?v=24">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <title>Resources Admin - SIPIL CARE</title>
+  </head>
+  <body class="admin-page">
+    <aside class="admin-sidebar">
+      <div class="admin-brand"><span>SC</span><div><h1>SIPIL CARE</h1><small>HMS Admin Panel</small></div></div>
+      <nav class="admin-nav" aria-label="Admin navigation">
+        <a href="dashboard.html"><span>DB</span>Dashboard</a>
+        <a class="active" href="resources.html"><span>RS</span>Resources</a>
+        <a href="announcements.html"><span>IF</span>Pemberitahuan</a>
+        <a href="messages.html"><span>PM</span>Pesan Mahasiswa</a>
+      </nav>
+      <button class="admin-logout" id="logoutBtn" type="button"><span>LO</span>Logout</button>
+    </aside>
+
+    <main class="admin-main">
+      <section class="admin-page-head">
+        <span class="eyebrow">Resources</span>
+        <h2>Kelola Materi Akademik</h2>
+        <p>Upload dan kelola Resources, Praktikum & Studio, Software, dan Video dalam satu halaman admin.</p>
+      </section>
+
+      <section id="resource-upload" class="admin-panel-grid">
+        <form class="admin-card" id="resourceForm" novalidate>
+          <h3>Upload Resource</h3>
+          <input type="hidden" id="resourceId">
+          <input class="control" id="resourceTitle" placeholder="Judul" required>
+          <select class="control" id="resourceCategory">
+            <option>Struktur</option>
+            <option>Geoteknik</option>
+            <option>Hidrologi</option>
+            <option>Transportasi</option>
+            <option>Manajemen Konstruksi</option>
+            <option>SNI</option>
+          </select>
+          <textarea class="control textarea" id="resourceDescription" placeholder="Deskripsi" required></textarea>
+          <input class="control" id="resourceAuthor" placeholder="Author" required>
+          <input class="control" id="resourceDate" type="date" required>
+          <input class="control" id="resourceThumb" placeholder="Thumbnail label">
+          <select class="control" id="resourceType">
+            <option>PDF</option>
+            <option>DOCX</option>
+            <option>XLSX</option>
+            <option>PPT</option>
+            <option>ZIP</option>
+          </select>
+          <input class="control" id="resourceFile" placeholder="Link file resource" required>
+          <label class="small-text">Masuk ke Resource Management.</label>
+          <button id="submitResourceBtn" class="btn btn-primary" type="submit">Simpan Resource</button>
+        </form>
+
+        <form class="admin-card" id="practicumForm" novalidate>
+          <h3>Upload Praktikum &amp; Studio</h3>
+          <input type="hidden" id="practicumId">
+          <input class="control" id="practicumTitle" placeholder="Judul modul" required>
+          <select class="control" id="practicumCategory">
+            <option value="Computer Aided Design (CAD)-S" data-semester="1" data-kind="S">Semester 1 - Computer Aided Design (CAD)-S</option>
+            <option value="Praktik Kimia-P" data-semester="1" data-kind="P">Semester 1 - Praktik Kimia-P</option>
+            <option value="Praktik Fisika-P" data-semester="2" data-kind="P">Semester 2 - Praktik Fisika-P</option>
+            <option value="Praktik Pemetaan Lahan Terapan-P" data-semester="2" data-kind="P">Semester 2 - Praktik Pemetaan Lahan Terapan-P</option>
+            <option value="Praktik Hidraulika-P" data-semester="3" data-kind="P">Semester 3 - Praktik Hidraulika-P</option>
+            <option value="Praktik Rekayasa Lalu Lintas-P" data-semester="3" data-kind="P">Semester 3 - Praktik Rekayasa Lalu Lintas-P</option>
+            <option value="Aplikasi Ketekniksipilan 1-S" data-semester="4" data-kind="S">Semester 4 - Aplikasi Ketekniksipilan 1-S</option>
+            <option value="Praktik Bahan Perkerasan Jalan Raya-P" data-semester="4" data-kind="P">Semester 4 - Praktik Bahan Perkerasan Jalan Raya-P</option>
+            <option value="Praktik Geoteknik-P" data-semester="4" data-kind="P">Semester 4 - Praktik Geoteknik-P</option>
+            <option value="Aplikasi Ketekniksipilan 2-S" data-semester="5" data-kind="S">Semester 5 - Aplikasi Ketekniksipilan 2-S</option>
+            <option value="Pengantar Building Information Modeling (BIM)-S" data-semester="6" data-kind="S">Semester 6 - Pengantar Building Information Modeling (BIM)-S</option>
+          </select>
+          <textarea class="control textarea" id="practicumDescription" placeholder="Deskripsi modul" required></textarea>
+          <input class="control" id="practicumAuthor" placeholder="Author" required>
+          <input class="control" id="practicumDate" type="date" required>
+          <input class="control" id="practicumThumb" placeholder="Thumbnail label">
+          <select class="control" id="practicumType">
+            <option>PDF</option>
+            <option>DOCX</option>
+            <option>XLSX</option>
+            <option>PPT</option>
+            <option>ZIP</option>
+          </select>
+          <input class="control" id="practicumFile" placeholder="Link file modul praktikum/studio" required>
+          <label class="small-text">Masuk ke Praktikum &amp; Studio Management.</label>
+          <button id="submitPracticumBtn" class="btn btn-primary" type="submit">Simpan Modul</button>
+        </form>
+
+        <form class="admin-card" id="softwareForm" novalidate>
+          <h3>Upload Software</h3>
+          <input type="hidden" id="softwareId">
+          <input class="control" id="softwareTitle" placeholder="Judul" required>
+          <select class="control" id="softwareCategory">
+            <option>Geoteknik</option>
+            <option>Transportasi</option>
+            <option>Struktur</option>
+            <option>Hidrologi</option>
+            <option>Manajemen Konstruksi</option>
+          </select>
+          <textarea class="control textarea" id="softwareDescription" placeholder="Deskripsi" required></textarea>
+          <input class="control" id="softwareAuthor" placeholder="Author" required>
+          <input class="control" id="softwareDate" type="date" required>
+          <input class="control" id="softwareThumb" placeholder="Thumbnail label">
+          <input class="control" id="softwareFile" placeholder="Link file software" required>
+          <label class="small-text">Masuk ke Software Management.</label>
+          <button id="submitSoftwareBtn" class="btn btn-primary" type="submit">Simpan Software</button>
+        </form>
+
+        <form class="admin-card" id="videoForm">
+          <h3>Upload Video</h3>
+          <input class="control" id="videoTitle" placeholder="Judul video" required>
+          <input class="control" id="videoThumb" placeholder="Thumbnail label" required>
+          <textarea class="control textarea" id="videoDescription" placeholder="Deskripsi" required></textarea>
+          <input class="control" id="videoCategoryInput" placeholder="Kategori" required>
+          <input class="control" id="videoChannel" placeholder="Channel YouTube" required>
+          <input class="control" id="videoYoutube" placeholder="Link YouTube" required>
+          <label class="small-text">Masuk ke Video Management.</label>
+          <button class="btn btn-primary" type="submit">Simpan Video</button>
+        </form>
+      </section>
+
+      <section id="resources" class="admin-card">
+        <div class="admin-table-head"><h3>Resource Management</h3><div><input class="control" id="adminSearch" placeholder="Search"><select class="control" id="adminFilter"><option value="All">All</option></select></div></div>
+        <div class="table-wrap"><table><thead><tr><th>Judul</th><th>Kategori</th><th>Tipe</th><th>Tanggal</th><th>Aksi</th></tr></thead><tbody id="resourceTable"></tbody></table></div>
+      </section>
+
+      <section id="practicum-studio" class="admin-card">
+        <div class="admin-table-head"><h3>Praktikum &amp; Studio Management</h3><div><input class="control" id="practicumSearch" placeholder="Search"><select class="control" id="practicumFilter"><option value="All">All</option></select></div></div>
+        <div class="table-wrap"><table><thead><tr><th>Judul</th><th>Kategori</th><th>Semester</th><th>Tipe</th><th>Tanggal</th><th>Aksi</th></tr></thead><tbody id="practicumTable"></tbody></table></div>
+      </section>
+
+      <section id="software" class="admin-card">
+        <div class="admin-table-head"><h3>Software Management</h3><div><input class="control" id="softwareSearch" placeholder="Search"><select class="control" id="softwareFilter"><option value="All">All</option></select></div></div>
+        <div class="table-wrap"><table><thead><tr><th>Judul</th><th>Kategori</th><th>Tipe</th><th>Tanggal</th><th>Aksi</th></tr></thead><tbody id="softwareTable"></tbody></table></div>
+      </section>
+
+      <section id="videos" class="admin-card">
+        <div class="admin-table-head"><h3>Video Management</h3><div><input class="control" id="videoSearch" placeholder="Search"><select class="control" id="videoFilter"><option value="All">All</option></select></div></div>
+        <div class="table-wrap"><table><thead><tr><th>Judul</th><th>Kategori</th><th>Channel</th><th>Aksi</th></tr></thead><tbody id="videoTable"></tbody></table></div>
+      </section>
+    </main>
+
+    <div class="toast" id="toast"></div>
+    <script src="../../js/auth.js?v=17"></script>
+    <script src="../../js/student-config.js?v=18"></script>
+    <script src="../../js/push-config.js?v=1"></script>
+    <script type="module" src="../../js/admin-panel.js?v=30"></script>
+  </body>
+</html>

@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="../../css/style.css?v=19">
+    <link rel="stylesheet" href="../../css/admin.css?v=24">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <title>Dashboard Admin - SIPIL CARE</title>
+  </head>
+  <body class="admin-page">
+    <aside class="admin-sidebar">
+      <div class="admin-brand"><span>SC</span><div><h1>SIPIL CARE</h1><small>HMS Admin Panel</small></div></div>
+      <nav class="admin-nav" aria-label="Admin navigation">
+        <a class="active" href="dashboard.html"><span>DB</span>Dashboard</a>
+        <a href="resources.html"><span>RS</span>Resources</a>
+        <a href="announcements.html"><span>IF</span>Pemberitahuan</a>
+        <a href="messages.html"><span>PM</span>Pesan Mahasiswa</a>
+      </nav>
+      <button class="admin-logout" id="logoutBtn" type="button"><span>LO</span>Logout</button>
+    </aside>
+
+    <main class="admin-main">
+      <section class="admin-page-head">
+        <span class="eyebrow">Dashboard</span>
+        <h2>Dashboard Admin</h2>
+        <p>Pantau mahasiswa yang sedang aktif dan ringkasan data platform SIPIL CARE.</p>
+        <div class="admin-stats" id="adminStats"></div>
+      </section>
+
+      <section id="student-activity" class="admin-card">
+        <div class="admin-table-head">
+          <div>
+            <h3>Mahasiswa Online</h3>
+            <p class="small-text">Cari NIM mahasiswa yang sudah terdaftar, lihat status online, dan last seen terakhir.</p>
+          </div>
+          <div>
+            <input class="control" id="studentActivitySearch" placeholder="Cari NIM atau nama">
+            <select class="control" id="studentActivityFilter">
+              <option value="All">Semua status</option>
+              <option value="online">Online</option>
+              <option value="offline">Offline</option>
+              <option value="never">Belum pernah login</option>
+            </select>
+            <button class="action-btn" id="studentActivityRefresh" type="button">Refresh</button>
+          </div>
+        </div>
+        <div class="student-activity-summary">
+          <article><span>Total akun</span><strong id="studentTotalCount">0</strong></article>
+          <article><span>Sedang online</span><strong id="studentOnlineCount">0</strong></article>
+          <article><span>Sinkron terakhir</span><strong id="studentLastSync">-</strong></article>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Status</th>
+                <th>NIM</th>
+                <th>Nama</th>
+                <th>Last Seen</th>
+                <th>Halaman Terakhir</th>
+                <th>Login Terakhir</th>
+              </tr>
+            </thead>
+            <tbody id="studentActivityTable"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <div class="toast" id="toast"></div>
+    <script src="../../js/auth.js?v=17"></script>
+    <script src="../../js/student-config.js?v=18"></script>
+    <script src="../../js/push-config.js?v=1"></script>
+    <script type="module" src="../../js/admin-panel.js?v=30"></script>
+  </body>
+</html>
