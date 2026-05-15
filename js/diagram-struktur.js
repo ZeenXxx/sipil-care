@@ -42,6 +42,18 @@ const getElement = id => state.elements.find(element => element.id === Number(id
 const pointFx = load => Number.isFinite(load.fx) ? load.fx : (load.direction === 'horizontal' ? load.p : 0);
 const pointFy = load => Number.isFinite(load.fy) ? load.fy : (load.direction === 'horizontal' ? 0 : load.p);
 const sortedNodes = () => [...state.nodes].sort((a, b) => a.x - b.x || a.id - b.id);
+const nodeLabel = nodeOrId => {
+  const id = typeof nodeOrId === 'object' ? nodeOrId.id : Number(nodeOrId);
+  const index = sortedNodes().findIndex(node => node.id === id);
+  const safeIndex = index >= 0 ? index : id - 1;
+  let value = safeIndex;
+  let label = '';
+  do {
+    label = String.fromCharCode(65 + (value % 26)) + label;
+    value = Math.floor(value / 26) - 1;
+  } while (value >= 0);
+  return label;
+};
 
 const elementEnds = element => {
   const a = getNode(element.startNode);
@@ -82,10 +94,10 @@ function isUdlRangeCovered(startNode, endNode) {
 const option = (value, label) => `<option value="${value}">${label}</option>`;
 
 function refreshSelects() {
-  const nodeOptions = sortedNodes().map(node => option(node.id, `N${node.id} - x=${fmt(node.x)} m`)).join('');
+  const nodeOptions = sortedNodes().map(node => option(node.id, `${nodeLabel(node)} - x=${fmt(node.x)} m`)).join('');
   const elementOptions = state.elements.map(element => {
     const ends = elementEnds(element);
-    return option(element.id, `E${element.id} - N${element.startNode} ke N${element.endNode} (${fmt(ends.length)} m)`);
+    return option(element.id, `E${element.id} - ${nodeLabel(element.startNode)} ke ${nodeLabel(element.endNode)} (${fmt(ends.length)} m)`);
   }).join('');
 
   [controls.elementStart, controls.elementEnd, controls.supportNode, controls.pointLoadNode, controls.udlStartNode, controls.udlEndNode].forEach(select => { select.innerHTML = nodeOptions; });
@@ -97,15 +109,15 @@ function refreshSelects() {
 }
 
 function renderModelList() {
-  const nodes = sortedNodes().map(node => `<p>N${node.id}: x=${fmt(node.x)} m, support=${node.support}</p>`).join('') || '<p>Belum ada node.</p>';
+  const nodes = sortedNodes().map(node => `<p>${nodeLabel(node)}: x=${fmt(node.x)} m, support=${node.support}</p>`).join('') || '<p>Belum ada node.</p>';
   const elements = state.elements.map(element => {
     const ends = elementEnds(element);
-    return `<p>E${element.id}: N${element.startNode}-N${element.endNode}, L=${fmt(ends.length)} m</p>`;
+    return `<p>E${element.id}: ${nodeLabel(element.startNode)}-${nodeLabel(element.endNode)}, L=${fmt(ends.length)} m</p>`;
   }).join('') || '<p>Belum ada element.</p>';
   const loads = state.loads.map(load => {
     if (load.type === 'point') return `<p>${load.label}: P=${fmt(load.p)} kN, sudut=${fmt(load.angle ?? 90)}&deg;, Fx=${fmt(pointFx(load))} kN, Fy=${fmt(pointFy(load))} kN di x=${fmt(load.x)} m</p>`;
     const range = udlRange(load);
-    return `<p>${load.label}: w=${fmt(load.w)} kN/m dari N${load.startNode} ke N${load.endNode} (${fmt(range.a)}-${fmt(range.b)} m)</p>`;
+    return `<p>${load.label}: w=${fmt(load.w)} kN/m dari ${nodeLabel(load.startNode)} ke ${nodeLabel(load.endNode)} (${fmt(range.a)}-${fmt(range.b)} m)</p>`;
   }).join('') || '<p>Belum ada beban.</p>';
   $('#modelList').innerHTML = `<article><h3>Node</h3>${nodes}</article><article><h3>Element</h3>${elements}</article><article><h3>Beban</h3>${loads}</article>`;
 }
@@ -128,23 +140,40 @@ function renderSvg() {
   const span = Math.max(maxX - minX, 1);
   const left = 90;
   const right = 870;
-  const y = 175;
+  const y = 205;
   const sx = x => left + ((x - minX) / span) * (right - left);
 
   let content = `
-    <defs><marker id="arrowDown" markerWidth="10" markerHeight="10" refX="5" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 Z" fill="#c93434"/></marker><marker id="arrowRight" markerWidth="10" markerHeight="10" refX="5" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 Z" fill="#6b4fd8"/></marker><marker id="arrowOrange" markerWidth="10" markerHeight="10" refX="5" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 Z" fill="#d67a00"/></marker></defs>
+    <defs>
+      <filter id="beamShadow" x="-10%" y="-60%" width="120%" height="220%"><feDropShadow dx="0" dy="4" stdDeviation="4" flood-color="#0f4d3a" flood-opacity=".16"/></filter>
+      <marker id="arrowDown" markerWidth="10" markerHeight="10" refX="5" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 Z" fill="#c93434"/></marker>
+      <marker id="arrowRight" markerWidth="10" markerHeight="10" refX="5" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 Z" fill="#6b4fd8"/></marker>
+      <marker id="arrowOrange" markerWidth="10" markerHeight="10" refX="5" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 Z" fill="#d67a00"/></marker>
+    </defs>
     <line x1="${left}" y1="${y + 92}" x2="${right}" y2="${y + 92}" stroke="#dce6e2" stroke-width="2"/>
+    <text class="diagram-axis-label" x="${left - 2}" y="${y + 125}">x (m)</text>
   `;
 
   state.elements.forEach(element => {
     const a = getNode(element.startNode);
     const b = getNode(element.endNode);
-    content += `<line class="diagram-element" x1="${sx(a.x)}" y1="${y}" x2="${sx(b.x)}" y2="${y}"></line><text class="diagram-label" x="${(sx(a.x) + sx(b.x)) / 2 - 16}" y="${y - 18}">E${element.id}</text>`;
+    content += `<line class="diagram-element" x1="${sx(a.x)}" y1="${y}" x2="${sx(b.x)}" y2="${y}"></line><text class="diagram-label diagram-element-label" x="${(sx(a.x) + sx(b.x)) / 2 - 16}" y="${y + 28}">E${element.id}</text>`;
   });
+
+  const loadLanes = [];
+  const occupyLane = (x1, x2) => {
+    const padding = 34;
+    let lane = 0;
+    while (loadLanes[lane]?.some(range => !(x2 + padding < range.x1 || x1 - padding > range.x2))) lane += 1;
+    if (!loadLanes[lane]) loadLanes[lane] = [];
+    loadLanes[lane].push({ x1, x2 });
+    return lane;
+  };
 
   state.loads.forEach(load => {
     if (load.type === 'point') {
       const x = sx(load.x);
+      const lane = occupyLane(x - 42, x + 92);
       const fx = pointFx(load);
       const fy = pointFy(load);
       const magnitude = Math.hypot(fx, fy) || 1;
@@ -152,23 +181,30 @@ function renderSvg() {
       const uy = fy / magnitude;
       const endX = x;
       const endY = y - 20;
-      const startX = endX - ux * 66;
-      const startY = endY - uy * 66;
+      const arrowLength = 58;
+      const laneLift = lane * 48;
+      const startX = endX - ux * arrowLength;
+      const startY = endY - uy * arrowLength - laneLift;
       const lineClass = Math.abs(fx) > Math.abs(fy) ? 'diagram-hload' : 'diagram-load';
-      content += `<line class="${lineClass}" x1="${startX}" y1="${startY}" x2="${endX}" y2="${endY}"></line><text class="diagram-label" x="${Math.min(startX, endX) - 8}" y="${Math.min(startY, endY) - 12}">${load.label} ${fmt(load.p)} kN @ ${fmt(load.angle ?? 90)}&deg;</text>`;
+      const labelX = Math.max(left + 4, Math.min(startX - 10, right - 145));
+      const labelY = Math.min(startY, endY) - 26;
+      content += `<line class="${lineClass}" x1="${startX}" y1="${startY}" x2="${endX}" y2="${endY}"></line><rect class="diagram-label-bg" x="${labelX - 6}" y="${labelY - 16}" width="150" height="24" rx="6"></rect><text class="diagram-label diagram-load-label" x="${labelX}" y="${labelY}">${load.label} ${fmt(load.p)} kN @ ${fmt(load.angle ?? 90)}&deg;</text>`;
     } else {
       const range = udlRange(load);
       const x1 = sx(range.a);
       const x2 = sx(range.b);
-      for (let x = x1 + 14; x < x2; x += 34) content += `<line class="diagram-udl" x1="${x}" y1="${y - 72}" x2="${x}" y2="${y - 18}"></line>`;
-      content += `<line x1="${x1}" y1="${y - 72}" x2="${x2}" y2="${y - 72}" stroke="#d67a00" stroke-width="2"/><text class="diagram-label" x="${x1 + 8}" y="${y - 88}">${load.label} ${fmt(load.w)} kN/m</text>`;
+      const lane = occupyLane(x1, x2);
+      const topY = y - 72 - lane * 48;
+      for (let x = x1 + 14; x < x2; x += 34) content += `<line class="diagram-udl" x1="${x}" y1="${topY}" x2="${x}" y2="${y - 18}"></line>`;
+      const labelX = Math.max(left + 4, Math.min(x1 + 8, right - 135));
+      content += `<line class="diagram-udl-top" x1="${x1}" y1="${topY}" x2="${x2}" y2="${topY}"/><rect class="diagram-label-bg orange" x="${labelX - 6}" y="${topY - 31}" width="138" height="24" rx="6"></rect><text class="diagram-label diagram-load-label" x="${labelX}" y="${topY - 14}">${load.label} ${fmt(load.w)} kN/m</text>`;
     }
   });
 
   nodes.forEach(node => {
     const x = sx(node.x);
     content += drawSupport(node, x, y);
-    content += `<circle class="diagram-node" cx="${x}" cy="${y}" r="8"></circle><text class="diagram-label" x="${x - 16}" y="${y + 86}">N${node.id}</text><text class="diagram-label" x="${x - 26}" y="${y + 106}">${fmt(node.x)} m</text>`;
+    content += `<circle class="diagram-node" cx="${x}" cy="${y}" r="8"></circle><text class="diagram-node-label" x="${x}" y="${y + 86}">${nodeLabel(node)}</text><text class="diagram-dim-label" x="${x - 22}" y="${y + 106}">${fmt(node.x)} m</text>`;
   });
 
   svg.innerHTML = content;
@@ -206,7 +242,7 @@ function validateModel() {
     activeNodeIds.add(element.endNode);
   });
   const invalidSupport = state.nodes.find(node => node.support !== 'free' && !activeNodeIds.has(node.id));
-  if (invalidSupport) throw new Error(`Support N${invalidSupport.id} harus berada pada node ujung element. Split element pada node tersebut terlebih dahulu.`);
+  if (invalidSupport) throw new Error(`Support ${nodeLabel(invalidSupport)} harus berada pada node ujung element. Split element pada node tersebut terlebih dahulu.`);
 
   const fixed = state.nodes.filter(node => node.support === 'fixed');
   const verticalSupports = state.nodes.filter(node => ['pin', 'roller', 'fixed'].includes(node.support));
