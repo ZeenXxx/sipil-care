@@ -1,0 +1,16 @@
+{
+  "name": "sipil-care",
+  "version": "1.0.0",
+  "description": "SIPIL CARE - Center for Academic, Resource & Education",
+  "private": true,
+  "scripts": {
+    "dev": "serve .",
+    "build": "echo 'Static HTML site - no build required'"
+  },
+  "dependencies": {
+    "@vercel/analytics": "^1.4.1"
+  },
+  "devDependencies": {
+    "serve": "^14.2.4"
+  }
+}
