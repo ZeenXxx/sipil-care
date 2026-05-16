@@ -26,6 +26,7 @@ const els = {
   meta: document.getElementById('accessMeta'),
   student: document.getElementById('accessStudent'),
   open: document.getElementById('openResourceBtn'),
+  download: document.getElementById('downloadResourceBtn'),
   copy: document.getElementById('copyAccessBtn')
 };
 
@@ -87,6 +88,12 @@ const getContentType = resource => {
   return resource?.category === 'Software' ? 'software' : 'resource';
 };
 
+const fileNameFromResource = resource => {
+  const title = slugify(resource?.title || 'sipil-care-file');
+  const type = String(resource?.type || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+  return type ? `${title}.${type}` : title;
+};
+
 const loadFromJson = async id => {
   if (source !== 'resources') return null;
   const response = await fetch('../data/resources.json');
@@ -128,6 +135,7 @@ const renderResource = resource => {
   els.meta.innerHTML = meta.map(item => `<span class="badge">${escapeText(item)}</span>`).join('');
   els.student.textContent = session ? `${session.name || 'Mahasiswa'} - NIM ${session.nim}` : 'Belum login.';
   els.open.disabled = !resource.file;
+  if (els.download) els.download.disabled = !resource.file;
 };
 
 const logAccess = async (action = 'download') => {
@@ -174,6 +182,35 @@ els.open?.addEventListener('click', async () => {
   } finally {
     els.open.disabled = false;
     els.open.textContent = 'Buka File';
+  }
+});
+
+els.download?.addEventListener('click', async () => {
+  if (!activeResource?.file) return;
+  els.download.disabled = true;
+  els.download.textContent = 'Menyiapkan download...';
+  try {
+    await logAccess('download');
+    const link = document.createElement('a');
+    link.href = activeResource.file;
+    link.download = fileNameFromResource(activeResource);
+    link.rel = 'noopener';
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    showToast('Download file dimulai.');
+  } catch (error) {
+    console.error('Download log failed:', error);
+    showToast('Catatan download gagal, file tetap dicoba diunduh.');
+    const link = document.createElement('a');
+    link.href = activeResource.file;
+    link.download = fileNameFromResource(activeResource);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  } finally {
+    els.download.disabled = false;
+    els.download.textContent = 'Download File';
   }
 });
 
