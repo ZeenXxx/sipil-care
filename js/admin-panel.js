@@ -90,6 +90,13 @@ const studentActivityTable = document.getElementById('studentActivityTable');
 const studentTotalCount = document.getElementById('studentTotalCount');
 const studentOnlineCount = document.getElementById('studentOnlineCount');
 const studentLastSync = document.getElementById('studentLastSync');
+const adminActivitySearch = document.getElementById('adminActivitySearch');
+const adminActivityFilter = document.getElementById('adminActivityFilter');
+const adminActivityRefresh = document.getElementById('adminActivityRefresh');
+const adminActivityTable = document.getElementById('adminActivityTable');
+const adminTotalCount = document.getElementById('adminTotalCount');
+const adminOnlineCount = document.getElementById('adminOnlineCount');
+const adminLastSync = document.getElementById('adminLastSync');
 const auditSearch = document.getElementById('auditSearch');
 const auditFilter = document.getElementById('auditFilter');
 const auditTable = document.getElementById('auditTable');
@@ -111,6 +118,7 @@ let announcements = [];
 let contactMessages = [];
 let liveChatMessages = [];
 let students = [];
+let adminActivities = [];
 let auditLogs = [];
 let editingDocId = null;
 let editingVideoDocId = null;
@@ -118,13 +126,17 @@ let editingSoftwareDocId = null;
 let editingPracticumDocId = null;
 let editingAnnouncementDocId = null;
 let supabaseClient = null;
+let adminActivityListening = false;
 const ANNOUNCEMENT_BUCKET = 'sipilcare';
 const ADMIN_PUSH_TOKEN_COLLECTION = 'admin_push_tokens';
 const ADMIN_LIVE_CHAT_LAST_SEEN_KEY = 'sipilcare_admin_live_chat_last_seen';
 const ADMIN_PUSH_ENABLED_KEY = 'sipilcare_admin_push_enabled';
 const ADMIN_PUSH_TOKEN_ID_KEY = 'sipilcare_admin_push_token_id';
 const ADMIN_AUDIT_COLLECTION = 'admin_audit_logs';
+const ADMIN_ACTIVITY_COLLECTION = 'admin_activity';
 const STUDENT_ONLINE_WINDOW = 2 * 60 * 1000;
+const ADMIN_ONLINE_WINDOW = 2 * 60 * 1000;
+const ADMIN_LOGIN_TRACKED_KEY = 'sipilcare_admin_login_tracked';
 let liveChatSnapshotReady = false;
 const practicumCategories = [
   'Computer Aided Design (CAD)-S',
@@ -417,6 +429,11 @@ const isStudentOnline = student => {
   return Boolean(lastSeen && Date.now() - lastSeen.getTime() <= STUDENT_ONLINE_WINDOW);
 };
 
+const isAdminOnline = admin => {
+  const lastSeen = parseDateValue(admin.last_seen_at);
+  return Boolean(lastSeen && Date.now() - lastSeen.getTime() <= ADMIN_ONLINE_WINDOW);
+};
+
 const setLoading = active => {
   if (submitButton) submitButton.disabled = active;
 };
@@ -528,6 +545,7 @@ function stats() {
     <div class="admin-stat"><b>${practicumModules.length}</b><span>Praktikum/Studio</span></div>
     <div class="admin-stat"><b>${videos.length}</b><span>Video</span></div>
     <div class="admin-stat"><b>${contactMessages.length}</b><span>Pesan Mahasiswa</span></div>
+    <div class="admin-stat"><b>${adminActivities.filter(isAdminOnline).length}</b><span>Admin Online</span></div>
     <div class="admin-stat"><b>${auditLogs.length}</b><span>Audit Log</span></div>
   `;
 }
@@ -753,6 +771,57 @@ function studentActivityRender() {
   studentActivityTable.innerHTML = rows || '<tr><td colspan="6">Tidak ada mahasiswa yang cocok dengan pencarian.</td></tr>';
 }
 
+function adminActivityRender() {
+  if (!adminActivityTable) return;
+
+  const q = (adminActivitySearch?.value || '').toLowerCase();
+  const status = adminActivityFilter?.value || 'All';
+  const onlineCount = adminActivities.filter(isAdminOnline).length;
+
+  if (adminTotalCount) adminTotalCount.textContent = adminActivities.length;
+  if (adminOnlineCount) adminOnlineCount.textContent = onlineCount;
+
+  const rows = adminActivities
+    .filter(admin => {
+      const online = isAdminOnline(admin);
+      const never = !admin.last_seen_at;
+      if (status === 'online' && !online) return false;
+      if (status === 'offline' && (online || never)) return false;
+      if (status === 'never' && !never) return false;
+      return [
+        admin.username,
+        admin.name,
+        admin.roleLabel,
+        admin.role,
+        admin.last_page
+      ].join(' ').toLowerCase().includes(q);
+    })
+    .sort((a, b) => {
+      const aOnline = isAdminOnline(a);
+      const bOnline = isAdminOnline(b);
+      if (aOnline !== bOnline) return aOnline ? -1 : 1;
+      return String(b.last_seen_at || '').localeCompare(String(a.last_seen_at || ''));
+    })
+    .map(admin => {
+      const online = isAdminOnline(admin);
+      const statusLabel = online ? 'Online' : admin.last_seen_at ? 'Offline' : 'Belum login';
+      const statusClass = online ? 'online' : admin.last_seen_at ? 'offline' : 'never';
+      return `
+        <tr>
+          <td><span class="student-status ${statusClass}">${statusLabel}</span></td>
+          <td><b>${escapeText(admin.name || admin.username)}</b><br><span class="small-text">${escapeText(admin.username || '-')}</span></td>
+          <td>${escapeText(admin.roleLabel || admin.role || '-')}</td>
+          <td>${escapeText(formatRelativeTime(admin.last_seen_at))}<br><span class="small-text">${escapeText(formatDateTime(admin.last_seen_at))}</span></td>
+          <td>${escapeText(admin.last_page || '-')}</td>
+          <td>${escapeText(formatDateTime(admin.last_login_at))}</td>
+        </tr>
+      `;
+    })
+    .join('');
+
+  adminActivityTable.innerHTML = rows || '<tr><td colspan="6">Tidak ada admin yang cocok dengan pencarian.</td></tr>';
+}
+
 function auditFilters() {
   if (!auditFilter) return;
   const actions = [...new Set(auditLogs.map(item => item.actionLabel || item.action).filter(Boolean))];
@@ -806,6 +875,7 @@ const render = () => {
   messageTableRender();
   liveChatRender();
   studentActivityRender();
+  adminActivityRender();
   auditFilters();
   auditTableRender();
 };
@@ -1446,6 +1516,9 @@ on(liveChatNotifyBtn, 'click', () => toggleAdminPushNotifications());
 on(studentActivitySearch, 'input', () => studentActivityRender());
 on(studentActivityFilter, 'change', () => studentActivityRender());
 on(studentActivityRefresh, 'click', () => loadStudentActivity({ manual: true }));
+on(adminActivitySearch, 'input', () => adminActivityRender());
+on(adminActivityFilter, 'change', () => adminActivityRender());
+on(adminActivityRefresh, 'click', () => loadAdminActivity({ manual: true }));
 on(auditSearch, 'input', () => auditTableRender());
 on(auditFilter, 'change', () => auditTableRender());
 syncNotificationButton();
@@ -1505,6 +1578,64 @@ async function loadStudentActivity(options = {}) {
 
 loadStudentActivity();
 setInterval(() => loadStudentActivity(), 30000);
+
+async function updateAdminPresence() {
+  const admin = currentAdmin();
+  const now = new Date().toISOString();
+  const loginTrackedFor = sessionStorage.getItem(ADMIN_LOGIN_TRACKED_KEY);
+  const data = {
+    username: admin.username,
+    name: admin.name,
+    role: admin.role,
+    roleLabel: admin.roleLabel,
+    allowedPages: admin.allowedPages,
+    permissions: admin.permissions,
+    last_seen_at: now,
+    last_page: location.pathname,
+    userAgent: navigator.userAgent,
+    updatedAt: now
+  };
+
+  if (loginTrackedFor !== admin.username) {
+    data.last_login_at = now;
+    sessionStorage.setItem(ADMIN_LOGIN_TRACKED_KEY, admin.username);
+  }
+
+  try {
+    await setDoc(doc(db, ADMIN_ACTIVITY_COLLECTION, admin.username), data, { merge: true });
+  } catch (error) {
+    console.error('Update admin presence failed:', error);
+  }
+}
+
+async function loadAdminActivity(options = {}) {
+  if (!adminActivityTable) return;
+  if (options.manual) {
+    await updateAdminPresence();
+    adminActivityRender();
+    toast('Data admin berhasil diperbarui.');
+    return;
+  }
+  if (adminActivityListening) return;
+  adminActivityListening = true;
+  const adminActivityQuery = query(collection(db, ADMIN_ACTIVITY_COLLECTION), orderBy('last_seen_at', 'desc'));
+  onSnapshot(adminActivityQuery, snapshot => {
+    adminActivities = snapshot.docs.map(documentSnapshot => ({
+      docId: documentSnapshot.id,
+      ...documentSnapshot.data()
+    }));
+    if (adminLastSync) adminLastSync.textContent = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+    adminActivityRender();
+    stats();
+  }, err => {
+    console.error('Firestore admin activity error:', err);
+    adminActivityTable.innerHTML = '<tr><td colspan="6">Gagal memuat aktivitas admin.</td></tr>';
+  });
+}
+
+updateAdminPresence();
+setInterval(() => updateAdminPresence(), 30000);
+loadAdminActivity();
 
 const resourcesQuery = query(collection(db, 'resources'), orderBy('date', 'desc'));
 onSnapshot(resourcesQuery, snapshot => {

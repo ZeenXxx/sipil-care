@@ -15,6 +15,7 @@
       <div class="admin-brand"><span>SC</span><div><h1>SIPIL CARE</h1><small>HMS Admin Panel</small></div></div>
       <nav class="admin-nav" aria-label="Admin navigation">
         <a class="active" href="dashboard.html"><span>DB</span>Dashboard</a>
+        <a href="#admin-activity"><span>AO</span>Admin Online</a>
         <a href="#audit-log"><span>AL</span>Audit Log</a>
         <a href="resources.html"><span>RS</span>Resources</a>
         <a href="announcements.html"><span>IF</span>Pemberitahuan</a>
@@ -70,6 +71,45 @@
         </div>
       </section>
 
+      <section id="admin-activity" class="admin-card">
+        <div class="admin-table-head">
+          <div>
+            <h3>Admin Online</h3>
+            <p class="small-text">Lihat admin yang sedang aktif, role yang digunakan, halaman terakhir, dan last seen terakhir.</p>
+          </div>
+          <div>
+            <input class="control" id="adminActivitySearch" placeholder="Cari username, nama, atau role">
+            <select class="control" id="adminActivityFilter">
+              <option value="All">Semua status</option>
+              <option value="online">Online</option>
+              <option value="offline">Offline</option>
+              <option value="never">Belum pernah login</option>
+            </select>
+            <button class="action-btn" id="adminActivityRefresh" type="button">Refresh</button>
+          </div>
+        </div>
+        <div class="student-activity-summary">
+          <article><span>Total admin</span><strong id="adminTotalCount">0</strong></article>
+          <article><span>Sedang online</span><strong id="adminOnlineCount">0</strong></article>
+          <article><span>Sinkron terakhir</span><strong id="adminLastSync">-</strong></article>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Status</th>
+                <th>Admin</th>
+                <th>Role</th>
+                <th>Last Seen</th>
+                <th>Halaman Terakhir</th>
+                <th>Login Terakhir</th>
+              </tr>
+            </thead>
+            <tbody id="adminActivityTable"></tbody>
+          </table>
+        </div>
+      </section>
+
       <section id="audit-log" class="admin-card">
         <div class="admin-table-head">
           <div>
@@ -110,6 +150,6 @@
     <script src="../../js/auth.js?v=19"></script>
     <script src="../../js/student-config.js?v=18"></script>
     <script src="../../js/push-config.js?v=1"></script>
-    <script type="module" src="../../js/admin-panel.js?v=32"></script>
+    <script type="module" src="../../js/admin-panel.js?v=33"></script>
   </body>
 </html>
