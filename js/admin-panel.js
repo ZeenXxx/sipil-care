@@ -15,8 +15,6 @@ import { getMessaging, getToken, deleteToken, onMessage } from "https://www.gsta
 
 const db = getFirestore(app);
 const adminRootPrefix = location.pathname.includes('/pages/admin/') ? '../../' : '';
-const deleteAdminLogEndpoint = `${adminRootPrefix}api/admin-log/delete`;
-const ADMIN_TOKEN_KEY = 'sipilcare_admin_token';
 
 const resourceForm = document.getElementById('resourceForm');
 const resourceId = document.getElementById('resourceId');
@@ -253,24 +251,6 @@ async function writeAuditLog({ action, targetType, targetId = '', targetTitle = 
     });
   } catch (error) {
     console.error('Audit log error:', error);
-  }
-}
-
-async function deleteServerLog(logType, docId) {
-  const token = sessionStorage.getItem(ADMIN_TOKEN_KEY) || '';
-  if (!token) throw new Error('Sesi admin tidak ditemukan. Login ulang terlebih dahulu.');
-
-  const response = await fetch(deleteAdminLogEndpoint, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`
-    },
-    body: JSON.stringify({ logType, docId })
-  });
-  const result = await response.json().catch(() => ({}));
-  if (!response.ok || !result.ok) {
-    throw new Error(result.message || 'Server menolak penghapusan log.');
   }
 }
 
@@ -1614,7 +1594,7 @@ on(accessLogTable, 'click', async e => {
 
   try {
     e.target.disabled = true;
-    await deleteServerLog('access', docId);
+    await deleteDoc(doc(db, RESOURCE_ACCESS_LOG_COLLECTION, docId));
     toast('History akses berhasil dihapus dari server.');
   } catch (error) {
     console.error('Delete access log error:', error);
@@ -1635,7 +1615,7 @@ on(auditTable, 'click', async e => {
 
   try {
     e.target.disabled = true;
-    await deleteServerLog('audit', docId);
+    await deleteDoc(doc(db, ADMIN_AUDIT_COLLECTION, docId));
     toast('Audit log berhasil dihapus dari server.');
   } catch (error) {
     console.error('Delete audit log error:', error);

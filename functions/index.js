@@ -50,12 +50,6 @@ const hashesMatch = (actual, expected) => {
   const expectedBuffer = Buffer.from(String(expected || ''), 'hex');
   return actualBuffer.length === expectedBuffer.length && crypto.timingSafeEqual(actualBuffer, expectedBuffer);
 };
-const SESSION_TTL_MS = 12 * 60 * 60 * 1000;
-const ADMIN_SESSION_COLLECTION = 'admin_sessions';
-const DELETABLE_LOG_COLLECTIONS = {
-  access: 'resource_access_logs',
-  audit: 'admin_audit_logs'
-};
 
 const publicAdminProfile = user => ({
   username: user.username,
@@ -82,73 +76,15 @@ exports.adminLogin = onRequest({ cors: true }, async (req, res) => {
     return;
   }
 
-  const now = Date.now();
-  const token = crypto.randomBytes(32).toString('hex');
-  const tokenHash = hashPassword(token);
-  const expiresAt = new Date(now + SESSION_TTL_MS).toISOString();
-
-  await admin.firestore().collection(ADMIN_SESSION_COLLECTION).doc(tokenHash).set({
-    username: user.username,
-    role: user.role,
-    permissions: user.permissions,
-    createdAt: new Date(now).toISOString(),
-    expiresAt,
-    userAgent: req.get('user-agent') || '',
-    ip: req.ip || ''
-  });
-
   await admin.firestore().collection('admin_login_logs').add({
     username: user.username,
     role: user.role,
     userAgent: req.get('user-agent') || '',
     ip: req.ip || '',
-    createdAt: new Date(now).toISOString()
+    createdAt: new Date().toISOString()
   });
 
-  res.json({ ok: true, profile: publicAdminProfile(user), token, expiresAt });
-});
-
-const readAdminSession = async req => {
-  const header = req.get('authorization') || '';
-  const token = header.startsWith('Bearer ') ? header.slice(7).trim() : '';
-  if (!token) return null;
-
-  const tokenHash = hashPassword(token);
-  const snapshot = await admin.firestore().collection(ADMIN_SESSION_COLLECTION).doc(tokenHash).get();
-  if (!snapshot.exists) return null;
-
-  const session = snapshot.data();
-  if (!session?.expiresAt || new Date(session.expiresAt).getTime() <= Date.now()) {
-    await snapshot.ref.delete().catch(() => {});
-    return null;
-  }
-  return session;
-};
-
-exports.deleteAdminLog = onRequest({ cors: true }, async (req, res) => {
-  if (req.method !== 'POST') {
-    res.set('Allow', 'POST');
-    res.status(405).json({ ok: false, message: 'Method not allowed.' });
-    return;
-  }
-
-  const session = await readAdminSession(req);
-  if (!session?.permissions?.includes('audit')) {
-    res.status(403).json({ ok: false, message: 'Sesi admin tidak valid atau tidak punya akses audit.' });
-    return;
-  }
-
-  const { logType = '', docId = '' } = req.body || {};
-  const collectionName = DELETABLE_LOG_COLLECTIONS[logType];
-  const safeDocId = String(docId || '').trim();
-
-  if (!collectionName || !safeDocId || safeDocId.includes('/')) {
-    res.status(400).json({ ok: false, message: 'Target log tidak valid.' });
-    return;
-  }
-
-  await admin.firestore().collection(collectionName).doc(safeDocId).delete();
-  res.json({ ok: true });
+  res.json({ ok: true, profile: publicAdminProfile(user) });
 });
 
 exports.notifyAdminOnLiveChat = onDocumentCreated('live_chat_messages/{messageId}', async event => {

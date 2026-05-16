@@ -22,12 +22,14 @@ service cloud.firestore {
 
     match /resource_access_logs/{logId} {
       allow read, create: if true;
-      allow update, delete: if false;
+      allow update: if false;
+      allow delete: if true;
     }
 
     match /admin_audit_logs/{logId} {
       allow read, create: if true;
-      allow update, delete: if false;
+      allow update: if false;
+      allow delete: if true;
     }
 
     match /admin_push_tokens/{tokenId} {
