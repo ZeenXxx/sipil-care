@@ -147,6 +147,7 @@ const RESOURCE_ACCESS_LOG_COLLECTION = 'resource_access_logs';
 const STUDENT_ONLINE_WINDOW = 2 * 60 * 1000;
 const ADMIN_ONLINE_WINDOW = 2 * 60 * 1000;
 const ADMIN_LOGIN_TRACKED_KEY = 'sipilcare_admin_login_tracked';
+const ADMIN_PROFILE_KEY = 'sipilcare_admin_profile';
 let liveChatSnapshotReady = false;
 const practicumCategories = [
   'Computer Aided Design (CAD)-S',
@@ -166,7 +167,7 @@ const isPracticumResource = item => practicumCategories.includes(item?.category)
 
 const getAdminProfile = () => {
   try {
-    return JSON.parse(sessionStorage.getItem('sipilcare_admin_profile') || '{}');
+    return JSON.parse(localStorage.getItem(ADMIN_PROFILE_KEY) || '{}');
   } catch {
     return {};
   }
@@ -1712,7 +1713,7 @@ setInterval(() => loadStudentActivity(), 30000);
 async function updateAdminPresence() {
   const admin = currentAdmin();
   const now = new Date().toISOString();
-  const loginTrackedFor = sessionStorage.getItem(ADMIN_LOGIN_TRACKED_KEY);
+  const loginTrackedFor = localStorage.getItem(ADMIN_LOGIN_TRACKED_KEY);
   const data = {
     username: admin.username,
     name: admin.name,
@@ -1728,7 +1729,7 @@ async function updateAdminPresence() {
 
   if (loginTrackedFor !== admin.username) {
     data.last_login_at = now;
-    sessionStorage.setItem(ADMIN_LOGIN_TRACKED_KEY, admin.username);
+    localStorage.setItem(ADMIN_LOGIN_TRACKED_KEY, admin.username);
   }
 
   try {

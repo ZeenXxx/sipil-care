@@ -28,6 +28,47 @@ on public.admins
 for select
 to anon
 using (is_active = true);
+
+create table if not exists public.admin_sessions (
+  token_hash text primary key,
+  username text not null references public.admins(username) on delete cascade,
+  created_at timestamptz default now(),
+  last_seen_at timestamptz not null default now(),
+  expires_at timestamptz not null,
+  user_agent text,
+  is_active boolean not null default true
+);
+
+alter table public.admin_sessions enable row level security;
+
+drop policy if exists "admin sessions can be read" on public.admin_sessions;
+create policy "admin sessions can be read"
+on public.admin_sessions
+for select
+to anon
+using (true);
+
+drop policy if exists "admin sessions can be created" on public.admin_sessions;
+create policy "admin sessions can be created"
+on public.admin_sessions
+for insert
+to anon
+with check (true);
+
+drop policy if exists "admin sessions can be refreshed" on public.admin_sessions;
+create policy "admin sessions can be refreshed"
+on public.admin_sessions
+for update
+to anon
+using (true)
+with check (true);
+
+drop policy if exists "admin sessions can be deleted" on public.admin_sessions;
+create policy "admin sessions can be deleted"
+on public.admin_sessions
+for delete
+to anon
+using (true);
 ```
 
 ## 2. Seed Akun Admin Saat Ini
@@ -107,10 +148,18 @@ window.SIPILCARE_AUTH_CONFIG = {
   supabaseUrl: "https://PROJECT_ID.supabase.co",
   supabaseAnonKey: "ISI_ANON_KEY",
   tableName: "students",
-  adminTableName: "admins"
+  adminTableName: "admins",
+  adminSessionTableName: "admin_sessions"
 };
 ```
 
 ## Catatan
 
-Sesi login admin tetap tersimpan di `sessionStorage` per browser untuk menjaga halaman admin tetap terbuka setelah pindah halaman. Namun akun, role, dan permissions sumbernya sudah dari database Supabase, sehingga admin bisa login dari device mana pun memakai username/password yang sama.
+Sesi admin memakai tabel `admin_sessions`. Browser hanya menyimpan token acak untuk mengecek sesi tersebut ke Supabase. Jika admin tidak membuka halaman admin selama 30 menit, `last_seen_at`/`expires_at` di database dianggap kedaluwarsa dan admin harus login ulang.
+
+Untuk membersihkan sesi lama secara manual:
+
+```sql
+delete from public.admin_sessions
+where expires_at < now() or last_seen_at < now() - interval '30 minutes';
+```
