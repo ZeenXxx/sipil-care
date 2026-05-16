@@ -13,6 +13,8 @@ import {
 } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
 import { getMessaging, getToken, deleteToken, onMessage } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-messaging.js";
 
+if (window.SIPILCARE_ADMIN_READY) await window.SIPILCARE_ADMIN_READY;
+
 const db = getFirestore(app);
 const adminRootPrefix = location.pathname.includes('/pages/admin/') ? '../../' : '';
 
