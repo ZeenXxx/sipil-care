@@ -636,6 +636,64 @@ button, input, select, textarea  {
 
 }
 
+.access-card  {
+
+    max-width: 820px;
+
+    margin: 0 auto;
+
+    display: grid;
+
+    gap: 18px
+
+}
+
+.access-card h2  {
+
+    margin: 0;
+
+    color: var(--primary);
+
+    font-size: clamp(28px, 4vw, 44px);
+
+    line-height: 1.08
+
+}
+
+.access-card p  {
+
+    margin: 0;
+
+    color: #52605b;
+
+    font-size: 17px;
+
+    line-height: 1.8
+
+}
+
+.notice-card  {
+
+    padding: 18px;
+
+    border: 1px solid var(--line);
+
+    border-radius: 8px;
+
+    background: var(--soft)
+
+}
+
+.notice-card strong  {
+
+    display: block;
+
+    margin-bottom: 6px;
+
+    color: var(--primary)
+
+}
+
 .pagination  {
   
     display: flex;

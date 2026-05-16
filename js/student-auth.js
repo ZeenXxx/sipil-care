@@ -199,9 +199,10 @@
     if (!nav || nav.querySelector("[data-student-nav-action]")) return;
     const session = readSession();
     const currentFile = location.pathname.split("/").pop() || "index.html";
+    const currentPath = currentFile + location.search + location.hash;
     const inPages = location.pathname.includes("/pages/");
     const inTools = location.pathname.includes("/tools/");
-    const nextTarget = inPages ? "pages/" + currentFile : inTools ? "tools/" + currentFile : currentFile;
+    const nextTarget = inPages ? "pages/" + currentPath : inTools ? "tools/" + currentPath : currentPath;
     const prefix = inPages || inTools ? "../" : "";
 
     if (!session) {
@@ -281,9 +282,10 @@
   if (!isStudentLogin && !isAdminLogin && !isAdminPanel) {
     if (!readSession() && !isHomePage) {
       const currentFile = location.pathname.split("/").pop() || "index.html";
+      const currentPath = currentFile + location.search + location.hash;
       const inPages = location.pathname.includes("/pages/");
       const inTools = location.pathname.includes("/tools/");
-      const nextTarget = inPages ? "pages/" + currentFile : inTools ? "tools/" + currentFile : currentFile;
+      const nextTarget = inPages ? "pages/" + currentPath : inTools ? "tools/" + currentPath : currentPath;
       const next = encodeURIComponent(nextTarget);
       const prefix = inPages || inTools ? "../" : "";
       location.replace(prefix + "student-login.html?next=" + next);

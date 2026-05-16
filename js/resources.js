@@ -19,45 +19,16 @@ let page = 1;
 const softwareElements = ['Struktur', 'Geoteknik', 'Hidrologi', 'Transportasi', 'Manajemen Konstruksi'];
 const cats = ['All', 'Struktur', 'Geoteknik', 'Hidrologi', 'Transportasi', 'Manajemen Konstruksi', 'Software', 'SNI'];
 const per = 9;
-const extractGoogleDriveId = (url) => {
-  const match = url.match(/\/d\/([a-zA-Z0-9-_]+)/);
-  return match ? match[1] : null;
-};
-
-const getFileExtensionFromUrl = (url) => {
-  const cleanUrl = url.split('?')[0];
-  const match = cleanUrl.match(/\.([0-9a-zA-Z]+)$/);
-  return match ? match[1] : null;
-};
-
-const downloadFile = async (url, filename) => {
-  const gdId = extractGoogleDriveId(url);
-  
-  if (gdId) {
-    // For Google Drive: open download link directly
-    const dlUrl = `https://drive.google.com/uc?id=${gdId}&export=download`;
-    window.location.href = dlUrl;
-    return;
-  }
-  
-  // For other URLs: try fetch download
-  try {
-    const response = await fetch(url);
-    if (!response.ok) throw new Error('Download gagal');
-    const blob = await response.blob();
-    
-    const objUrl = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = objUrl;
-    link.download = filename || 'file';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(objUrl);
-  } catch (err) {
-    console.error('Download error:', err);
-    window.open(url, '_blank');
-  }
+const escapeText = value => String(value || '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
+const slugify = value => String(value || '').toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'resource';
+const accessId = item => encodeURIComponent(item.id || item.slug || slugify(item.title));
+const accessUrl = item => `access.html?id=${accessId(item)}`;
+const showToast = message => {
+  const toast = document.getElementById('toast');
+  if (!toast) return;
+  toast.textContent = message;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 3000);
 };
 
 const truncateText = (text, len = 80) => {
@@ -73,7 +44,10 @@ const getThumbnailDisplay = (thumb) => {
   return thumb.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 3) || 'RES';
 };
 
-const card = i => `<article class="card resource-card"><div class="icon">${getThumbnailDisplay(i.thumbnail)}</div><div class="meta"><span class="badge">${i.category}</span><span class="badge">${i.type}</span><span class="badge">${i.date}</span></div><h3>${i.title}</h3><p>${truncateText(i.description, 120)}</p><small>Author: ${i.author}</small><div class="actions"><a class="btn btn-primary" href="${i.file}" target="_blank" rel="noopener">View</a><button class="btn btn-ghost" data-url="${i.file}" data-name="${i.title}" data-type="${i.type}">Download</button></div></article>`;
+const card = i => {
+  const url = accessUrl(i);
+  return `<article class="card resource-card"><div class="icon">${escapeText(getThumbnailDisplay(i.thumbnail))}</div><div class="meta"><span class="badge">${escapeText(i.category)}</span><span class="badge">${escapeText(i.type)}</span><span class="badge">${escapeText(i.date)}</span></div><h3>${escapeText(i.title)}</h3><p>${escapeText(truncateText(i.description, 120))}</p><small>Author: ${escapeText(i.author)}</small><div class="actions"><a class="btn btn-primary" href="${url}">Akses File</a><button class="btn btn-ghost" data-access-url="${url}">Salin Link</button></div></article>`;
+};
 const filtered = () => {
   const q = (resourceSearch?.value || '').toLowerCase();
   const type = typeFilter?.value || 'All';
@@ -101,18 +75,7 @@ function render() {
 
   resourceGrid.innerHTML = d.slice(start, start + per).map(card).join('') || '<div class="card empty">Resource tidak ditemukan.</div>';
   
-  // Add download listeners
-  resourceGrid.querySelectorAll('button.btn-ghost').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const url = btn.dataset.url;
-      const name = btn.dataset.name;
-      const type = btn.dataset.type;
-      const ext = ['pdf', 'docx', 'xlsx', 'ppt', 'zip'].includes((type || '').toLowerCase())
-        ? type.toLowerCase()
-        : getFileExtensionFromUrl(url) || 'file';
-      downloadFile(url, `${name}.${ext}`);
-    });
-  });
+  bindCopyButtons(resourceGrid);
 
   pagination.innerHTML = Array.from({ length: pages }, (_, i) => `<button class="${i + 1 === page ? 'active' : ''}" data-p="${i + 1}">${i + 1}</button>`).join('');
   pagination.querySelectorAll('button').forEach(b => b.onclick = () => {
@@ -123,19 +86,22 @@ function render() {
   const f = document.getElementById('featuredResources');
   if (f) {
     f.innerHTML = resources.filter(i => ['SNI', 'Software', 'Struktur'].includes(i.category)).slice(0, 3).map(card).join('');
-    // Add download listeners for featured too
-    f.querySelectorAll('button.btn-ghost').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const url = btn.dataset.url;
-        const name = btn.dataset.name;
-        const type = btn.dataset.type;
-        const ext = ['pdf', 'docx', 'xlsx', 'ppt', 'zip'].includes((type || '').toLowerCase())
-          ? type.toLowerCase()
-          : getFileExtensionFromUrl(url) || 'file';
-        downloadFile(url, `${name}.${ext}`);
-      });
-    });
+    bindCopyButtons(f);
   }
+}
+
+function bindCopyButtons(root) {
+  root.querySelectorAll('[data-access-url]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const fullUrl = new URL(btn.dataset.accessUrl, location.href).href;
+      try {
+        await navigator.clipboard.writeText(fullUrl);
+        showToast('Link SIPIL CARE berhasil disalin.');
+      } catch {
+        showToast('Tidak bisa menyalin otomatis. Salin link dari tombol Akses File.');
+      }
+    });
+  });
 }
 
 const params = new URLSearchParams(location.search);
@@ -174,9 +140,6 @@ function loadResourcesFromFirestore() {
 }
 
 loadResourcesFromFirestore();
-
-// Expose downloadFile globally for inline onclick
-window.downloadFile = downloadFile;
 
 resourceSearch?.addEventListener('input', () => {
   page = 1;

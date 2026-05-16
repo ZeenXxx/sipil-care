@@ -27,6 +27,16 @@ const escapeText = value => String(value || '').replace(/[&<>"']/g, char => ({ '
 const normalize = value => String(value || '').toLowerCase().replace(/\s+/g, ' ').trim();
 const courseCategory = course => `${course.title}-${course.type}`;
 const courseKind = type => type === 'P' ? 'Praktikum' : 'Studio';
+const slugify = value => String(value || '').toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'module';
+const accessId = item => encodeURIComponent(item.id || item.slug || slugify(item.title));
+const accessUrl = item => `access.html?source=practicum&id=${accessId(item)}`;
+const showToast = message => {
+  const toast = document.getElementById('toast');
+  if (!toast) return;
+  toast.textContent = message;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 3000);
+};
 
 function matchesCourse(resource, course) {
   const category = normalize(resource.category);
@@ -38,7 +48,22 @@ function matchesCourse(resource, course) {
 }
 
 function resourceCard(item) {
-  return `<article class="module-item"><strong>${escapeText(item.title)}</strong><p>${escapeText(item.description || 'Modul pembelajaran dari admin HMS/PENDPROF.')}</p><div class="meta"><span class="badge">${escapeText(item.type || 'PDF')}</span><span class="badge">${escapeText(item.date || 'Update')}</span></div><div class="actions"><a class="btn btn-primary" href="${escapeText(item.file || '#')}" target="_blank" rel="noopener">Buka Modul</a></div></article>`;
+  const url = accessUrl(item);
+  return `<article class="module-item"><strong>${escapeText(item.title)}</strong><p>${escapeText(item.description || 'Modul pembelajaran dari admin HMS/PENDPROF.')}</p><div class="meta"><span class="badge">${escapeText(item.type || 'PDF')}</span><span class="badge">${escapeText(item.date || 'Update')}</span></div><div class="actions"><a class="btn btn-primary" href="${url}">Akses Modul</a><button class="btn btn-ghost" data-access-url="${url}" type="button">Salin Link</button></div></article>`;
+}
+
+function bindCopyButtons() {
+  semesterGrid.querySelectorAll('[data-access-url]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const fullUrl = new URL(btn.dataset.accessUrl, location.href).href;
+      try {
+        await navigator.clipboard.writeText(fullUrl);
+        showToast('Link SIPIL CARE berhasil disalin.');
+      } catch {
+        showToast('Tidak bisa menyalin otomatis. Salin link dari tombol Akses Modul.');
+      }
+    });
+  });
 }
 
 function render() {
@@ -56,6 +81,7 @@ function render() {
       }).join('');
       return `<section class="semester-block" id="semester-${semester}"><div class="semester-head"><h2>Semester ${semester}</h2><span>${semesterCourses.length} kategori praktikum/studio</span></div><div class="course-grid">${cards}</div></section>`;
     }).join('');
+  bindCopyButtons();
 }
 
 semesterFilter.innerHTML += [...new Set(courses.map(item => item.semester))].map(semester => `<option value="${semester}">Semester ${semester}</option>`).join('');

@@ -1,0 +1,196 @@
+import { app } from './firebase-config.js';
+import {
+  getFirestore,
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  query,
+  where,
+  addDoc,
+  serverTimestamp
+} from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
+
+const db = getFirestore(app);
+const SESSION_KEY = 'sipilcare_student_session';
+const SESSION_TTL = 7 * 24 * 60 * 60 * 1000;
+const params = new URLSearchParams(location.search);
+const source = params.get('source') === 'practicum' ? 'practicum' : 'resources';
+const collectionName = source === 'practicum' ? 'practicum_studio_modules' : 'resources';
+const resourceId = params.get('id') || '';
+
+const els = {
+  status: document.getElementById('accessStatus'),
+  title: document.getElementById('accessTitle'),
+  description: document.getElementById('accessDescription'),
+  meta: document.getElementById('accessMeta'),
+  student: document.getElementById('accessStudent'),
+  open: document.getElementById('openResourceBtn'),
+  copy: document.getElementById('copyAccessBtn')
+};
+
+let activeResource = null;
+
+const escapeText = value => String(value || '').replace(/[&<>"']/g, char => ({
+  '&': '&amp;',
+  '<': '&lt;',
+  '>': '&gt;',
+  '"': '&quot;',
+  "'": '&#39;'
+}[char]));
+
+const slugify = value => String(value || '')
+  .toLowerCase()
+  .normalize('NFKD')
+  .replace(/[\u0300-\u036f]/g, '')
+  .replace(/[^a-z0-9]+/g, '-')
+  .replace(/^-+|-+$/g, '') || 'resource';
+
+const showToast = message => {
+  const toast = document.getElementById('toast');
+  if (!toast) return;
+  toast.textContent = message;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 3000);
+};
+
+const setState = (status, title, description) => {
+  els.status.textContent = status;
+  els.title.textContent = title;
+  els.description.textContent = description;
+};
+
+const readStudentSession = () => {
+  try {
+    const raw = localStorage.getItem(SESSION_KEY) || sessionStorage.getItem(SESSION_KEY);
+    if (!raw) return null;
+    const session = JSON.parse(raw);
+    if (!session?.nim || !session?.lastSeenAt) return null;
+    if (Date.now() - session.lastSeenAt > SESSION_TTL) return null;
+    return session;
+  } catch {
+    return null;
+  }
+};
+
+const getHost = url => {
+  try {
+    return new URL(url).host;
+  } catch {
+    return '';
+  }
+};
+
+const loadFromJson = async id => {
+  if (source !== 'resources') return null;
+  const response = await fetch('../data/resources.json');
+  if (!response.ok) return null;
+  const data = await response.json();
+  return data.find(item => slugify(item.title) === id || item.id === id) || null;
+};
+
+const loadResource = async id => {
+  if (!id) return null;
+
+  const direct = await getDoc(doc(db, collectionName, id));
+  if (direct.exists()) return { id: direct.id, ...direct.data() };
+
+  const bySlug = query(collection(db, collectionName), where('slug', '==', id));
+  const slugSnapshot = await getDocs(bySlug);
+  if (!slugSnapshot.empty) {
+    const found = slugSnapshot.docs[0];
+    return { id: found.id, ...found.data() };
+  }
+
+  return loadFromJson(id);
+};
+
+const renderResource = resource => {
+  activeResource = resource;
+  const session = readStudentSession();
+  const title = resource.title || 'Resource SIPIL CARE';
+  const meta = [
+    resource.category,
+    resource.type,
+    resource.date,
+    source === 'practicum' ? 'Praktikum & Studio' : 'Resources'
+  ].filter(Boolean);
+
+  els.status.textContent = 'Siap dibuka';
+  els.title.textContent = title;
+  els.description.textContent = resource.description || 'File tersedia untuk mahasiswa yang sudah login.';
+  els.meta.innerHTML = meta.map(item => `<span class="badge">${escapeText(item)}</span>`).join('');
+  els.student.textContent = session ? `${session.name || 'Mahasiswa'} - NIM ${session.nim}` : 'Belum login.';
+  els.open.disabled = !resource.file;
+};
+
+const logAccess = async () => {
+  const session = readStudentSession();
+  if (!activeResource || !session) return;
+
+  await addDoc(collection(db, 'resource_access_logs'), {
+    nim: session.nim,
+    name: session.name || '',
+    resourceId: activeResource.id || resourceId || slugify(activeResource.title),
+    resourceTitle: activeResource.title || '',
+    category: activeResource.category || '',
+    type: activeResource.type || '',
+    source,
+    fileHost: getHost(activeResource.file),
+    userAgent: navigator.userAgent.slice(0, 240),
+    accessedAt: serverTimestamp()
+  });
+};
+
+els.open?.addEventListener('click', async () => {
+  if (!activeResource?.file) return;
+  els.open.disabled = true;
+  els.open.textContent = 'Mencatat akses...';
+  try {
+    await logAccess();
+    window.open(activeResource.file, '_blank', 'noopener');
+    showToast('File dibuka di tab baru.');
+  } catch (error) {
+    console.error('Access log failed:', error);
+    showToast('Catatan akses gagal, file tetap dibuka.');
+    window.open(activeResource.file, '_blank', 'noopener');
+  } finally {
+    els.open.disabled = false;
+    els.open.textContent = 'Buka File';
+  }
+});
+
+els.copy?.addEventListener('click', async () => {
+  try {
+    await navigator.clipboard.writeText(location.href);
+    showToast('Link SIPIL CARE berhasil disalin.');
+  } catch {
+    showToast('Tidak bisa menyalin otomatis. Salin URL dari address bar.');
+  }
+});
+
+(async () => {
+  const session = readStudentSession();
+  if (!session) {
+    setState('Login diperlukan', 'Silakan login ulang', 'Akses file hanya tersedia untuk mahasiswa yang sudah login.');
+    return;
+  }
+  els.student.textContent = `${session.name || 'Mahasiswa'} - NIM ${session.nim}`;
+
+  if (!resourceId) {
+    setState('Resource tidak valid', 'ID resource tidak ditemukan', 'Gunakan link dari tombol Salin Link SIPIL CARE pada halaman resource.');
+    return;
+  }
+
+  try {
+    const resource = await loadResource(resourceId);
+    if (!resource) {
+      setState('Resource tidak ditemukan', 'File belum tersedia', 'Resource mungkin sudah dihapus atau link tidak lengkap.');
+      return;
+    }
+    renderResource(resource);
+  } catch (error) {
+    console.error('Resource access load failed:', error);
+    setState('Gagal memuat resource', 'Terjadi kesalahan akses', 'Coba refresh halaman atau hubungi admin HMS.');
+  }
+})();

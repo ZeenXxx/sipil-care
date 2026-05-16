@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="../css/style.css?v=15">
+    <link rel="stylesheet" href="../css/navbar.css?v=23">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <title>Akses Resource - SIPIL CARE</title>
+    <script src="../js/student-config.js?v=18"></script>
+    <script src="../js/student-auth.js?v=28"></script>
+  </head>
+  <body>
+    <header class="navbar">
+      <a class="brand" href="../index.html"><img src="../assets/images/logo-hms.png" alt="Logo HMS"><span><strong>SIPIL CARE</strong><small>Center for Academic, Resource &amp; Education</small></span></a>
+      <button class="menu-toggle" type="button" aria-label="Toggle navigation" aria-expanded="false"><span></span></button>
+      <nav class="nav-links"><a href="../index.html">Home</a><a href="resources.html">Resources</a><a href="praktikum-studio.html">Praktikum &amp; Studio</a><a href="videos.html">Videos</a><a href="tools.html">Tools</a><a href="about.html">About</a><a href="developer.html">Developer</a><a href="contact.html">Contact</a></nav>
+    </header>
+    <main>
+      <section class="page-head">
+        <div class="container">
+          <span class="eyebrow">Protected access</span>
+          <h1>Akses file melalui SIPIL CARE</h1>
+          <p class="lead">Halaman ini memastikan file hanya dibuka oleh mahasiswa yang sudah login. Aktivitas akses tercatat untuk keamanan platform.</p>
+        </div>
+      </section>
+      <section class="section">
+        <div class="container">
+          <article class="card access-card" id="accessCard">
+            <span class="eyebrow" id="accessStatus">Memuat resource</span>
+            <h2 id="accessTitle">Menyiapkan akses file...</h2>
+            <p id="accessDescription">Mohon tunggu sebentar.</p>
+            <div class="meta" id="accessMeta"></div>
+            <div class="notice-card">
+              <strong>Akses mahasiswa</strong>
+              <p id="accessStudent">Data login sedang diperiksa.</p>
+            </div>
+            <div class="actions">
+              <button class="btn btn-primary" id="openResourceBtn" type="button" disabled>Buka File</button>
+              <button class="btn btn-ghost" id="copyAccessBtn" type="button">Salin Link SIPIL CARE</button>
+              <a class="btn btn-ghost" href="resources.html">Kembali</a>
+            </div>
+          </article>
+        </div>
+      </section>
+    </main>
+    <footer class="site-footer">
+      <div class="footer-grid">
+        <div><a class="footer-brand" href="../index.html"><img src="../assets/images/logo-hms.png" alt="Logo HMS"><span>SIPIL CARE</span></a><p>Platform digital akademik Teknik Sipil untuk akses referensi, standar, modul, video, dan perangkat belajar mahasiswa.</p></div>
+        <div><h3>Navigasi</h3><a href="resources.html">Resources</a><a href="praktikum-studio.html">Praktikum &amp; Studio</a><a href="videos.html">Videos</a><a href="tools.html">Tools</a><a href="about.html">About</a></div>
+        <div><h3>Keamanan</h3><p>Gunakan link SIPIL CARE untuk hyperlink dokumen agar akses tetap melewati login mahasiswa.</p></div>
+        <div><h3>HMS Unjani</h3><p>Kampus UNJANI<br>Academic Resource Platform<br>2026</p></div>
+      </div>
+      <div class="footer-bottom"><span>&copy; 2026 PENDPROF HMS - HMS UNJANI</span><span>Built for civil engineering students.</span></div>
+    </footer>
+    <div class="toast" id="toast"></div>
+    <script src="../js/navbar.js?v=20"></script>
+    <script type="module" src="../js/access.js?v=1"></script>
+  </body>
+</html>
