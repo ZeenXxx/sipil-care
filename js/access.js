@@ -94,6 +94,53 @@ const fileNameFromResource = resource => {
   return type ? `${title}.${type}` : title;
 };
 
+const directDownloadUrl = url => {
+  const absolute = new URL(url, location.href);
+  if (absolute.hostname === 'drive.google.com') {
+    const fileMatch = absolute.pathname.match(/\/file\/d\/([^/]+)/);
+    const id = fileMatch?.[1] || absolute.searchParams.get('id');
+    if (id) return `https://drive.google.com/uc?export=download&id=${encodeURIComponent(id)}`;
+  }
+  if (absolute.hostname === 'github.com' && absolute.pathname.includes('/blob/')) {
+    absolute.hostname = 'raw.githubusercontent.com';
+    absolute.pathname = absolute.pathname.replace('/blob/', '/');
+  }
+  return absolute.href;
+};
+
+const triggerDownload = (url, filename) => {
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  link.rel = 'noopener';
+  link.style.display = 'none';
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+};
+
+const forceDownloadFile = async resource => {
+  if (!resource?.file || resource.file === '#') throw new Error('File belum tersedia.');
+
+  const filename = fileNameFromResource(resource);
+  const url = directDownloadUrl(resource.file);
+  const target = new URL(url, location.href);
+  const sameOrigin = target.origin === location.origin;
+
+  const response = await fetch(target.href, {
+    credentials: sameOrigin ? 'same-origin' : 'omit',
+    cache: 'no-store'
+  });
+  if (!response.ok) throw new Error(`Download gagal (${response.status}).`);
+
+  const blob = await response.blob();
+  if (!blob.size) throw new Error('File kosong atau tidak bisa dibaca.');
+
+  const objectUrl = URL.createObjectURL(blob);
+  triggerDownload(objectUrl, filename);
+  setTimeout(() => URL.revokeObjectURL(objectUrl), 30000);
+};
+
 const loadFromJson = async id => {
   if (source !== 'resources') return null;
   const response = await fetch('../data/resources.json');
@@ -191,23 +238,11 @@ els.download?.addEventListener('click', async () => {
   els.download.textContent = 'Menyiapkan download...';
   try {
     await logAccess('download');
-    const link = document.createElement('a');
-    link.href = activeResource.file;
-    link.download = fileNameFromResource(activeResource);
-    link.rel = 'noopener';
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
+    await forceDownloadFile(activeResource);
     showToast('Download file dimulai.');
   } catch (error) {
     console.error('Download log failed:', error);
-    showToast('Catatan download gagal, file tetap dicoba diunduh.');
-    const link = document.createElement('a');
-    link.href = activeResource.file;
-    link.download = fileNameFromResource(activeResource);
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
+    showToast('File ini tidak mengizinkan download langsung dari browser. Coba simpan dari tab file.');
   } finally {
     els.download.disabled = false;
     els.download.textContent = 'Download File';
