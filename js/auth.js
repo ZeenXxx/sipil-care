@@ -21,6 +21,7 @@ const rootPrefix = inAdminPages ? '../../' : inPagesFolder ? '../' : '';
 const panelHmsPath = `${rootPrefix}pages/admin/dashboard.html`;
 const loginPagePath = `${rootPrefix}pages/admin-panel.html`;
 const adminLoginEndpoint = `${rootPrefix}api/admin-login`;
+const ADMIN_TOKEN_KEY = 'sipilcare_admin_token';
 const username = document.getElementById('username');
 const password = document.getElementById('password');
 
@@ -83,6 +84,7 @@ document.getElementById('loginForm')?.addEventListener('submit', async e => {
     const admin = normalizeAdminProfile(result.profile);
     sessionStorage.setItem('sipilcare_admin', 'true');
     sessionStorage.setItem('sipilcare_admin_profile', JSON.stringify(admin));
+    sessionStorage.setItem(ADMIN_TOKEN_KEY, result.token || '');
     location.href = firstAllowedPath(admin);
   } catch (error) {
     toast(error.message || 'Login admin gagal.');
@@ -94,5 +96,6 @@ document.getElementById('loginForm')?.addEventListener('submit', async e => {
 document.getElementById('logoutBtn')?.addEventListener('click', () => {
   sessionStorage.removeItem('sipilcare_admin');
   sessionStorage.removeItem('sipilcare_admin_profile');
+  sessionStorage.removeItem(ADMIN_TOKEN_KEY);
   location.href = loginPagePath;
 });

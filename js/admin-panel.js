@@ -15,6 +15,8 @@ import { getMessaging, getToken, deleteToken, onMessage } from "https://www.gsta
 
 const db = getFirestore(app);
 const adminRootPrefix = location.pathname.includes('/pages/admin/') ? '../../' : '';
+const deleteAdminLogEndpoint = `${adminRootPrefix}api/admin-log/delete`;
+const ADMIN_TOKEN_KEY = 'sipilcare_admin_token';
 
 const resourceForm = document.getElementById('resourceForm');
 const resourceId = document.getElementById('resourceId');
@@ -251,6 +253,24 @@ async function writeAuditLog({ action, targetType, targetId = '', targetTitle = 
     });
   } catch (error) {
     console.error('Audit log error:', error);
+  }
+}
+
+async function deleteServerLog(logType, docId) {
+  const token = sessionStorage.getItem(ADMIN_TOKEN_KEY) || '';
+  if (!token) throw new Error('Sesi admin tidak ditemukan. Login ulang terlebih dahulu.');
+
+  const response = await fetch(deleteAdminLogEndpoint, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify({ logType, docId })
+  });
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok || !result.ok) {
+    throw new Error(result.message || 'Server menolak penghapusan log.');
   }
 }
 
@@ -897,9 +917,10 @@ function accessLogRender() {
         <td><span class="badge">${escapeText(accessActionLabels[itemAction] || item.actionLabel || itemAction)}</span></td>
         <td>${escapeText(item.resourceTitle || item.resourceId || '-')}<br><span class="small-text">${escapeText([item.category, item.type].filter(Boolean).join(' / ') || '-')}</span></td>
         <td>${escapeText(item.fileHost || '-')}</td>
+        <td><button class="action-btn danger" data-del-access-log="${escapeText(item.docId)}" type="button">Hapus</button></td>
       </tr>
     `;
-  }).join('') || '<tr><td colspan="6">Belum ada history akses yang cocok.</td></tr>';
+  }).join('') || '<tr><td colspan="7">Belum ada history akses yang cocok.</td></tr>';
 }
 
 function auditFilters() {
@@ -936,8 +957,9 @@ function auditTableRender() {
       <td>${escapeText(item.targetType || '-')}</td>
       <td>${escapeText(item.targetTitle || item.targetId || '-')}</td>
       <td class="message-preview">${escapeText(item.detail || '-')}</td>
+      <td><button class="action-btn danger" data-del-audit-log="${escapeText(item.docId)}" type="button">Hapus</button></td>
     </tr>
-  `).join('') || '<tr><td colspan="6">Belum ada aktivitas admin yang cocok.</td></tr>';
+  `).join('') || '<tr><td colspan="7">Belum ada aktivitas admin yang cocok.</td></tr>';
 }
 
 const render = () => {
@@ -1578,6 +1600,48 @@ on(liveChatThreads, 'click', async e => {
       console.error('Delete chat thread error:', err);
       toast('Gagal menghapus thread live chat.');
     }
+  }
+});
+
+on(accessLogTable, 'click', async e => {
+  const docId = e.target.dataset.delAccessLog;
+  if (!docId) return;
+  if (!requirePermission('audit', 'Hapus history akses')) return;
+
+  const item = accessLogs.find(log => log.docId === docId);
+  const label = item?.resourceTitle || item?.resourceId || docId;
+  if (!confirm(`Yakin hapus history akses "${label}" dari server?`)) return;
+
+  try {
+    e.target.disabled = true;
+    await deleteServerLog('access', docId);
+    toast('History akses berhasil dihapus dari server.');
+  } catch (error) {
+    console.error('Delete access log error:', error);
+    toast('Gagal menghapus history akses.');
+  } finally {
+    e.target.disabled = false;
+  }
+});
+
+on(auditTable, 'click', async e => {
+  const docId = e.target.dataset.delAuditLog;
+  if (!docId) return;
+  if (!requirePermission('audit', 'Hapus audit log')) return;
+
+  const item = auditLogs.find(log => log.docId === docId);
+  const label = item?.actionLabel || item?.action || docId;
+  if (!confirm(`Yakin hapus audit log "${label}" dari server?`)) return;
+
+  try {
+    e.target.disabled = true;
+    await deleteServerLog('audit', docId);
+    toast('Audit log berhasil dihapus dari server.');
+  } catch (error) {
+    console.error('Delete audit log error:', error);
+    toast('Gagal menghapus audit log.');
+  } finally {
+    e.target.disabled = false;
   }
 });
 
