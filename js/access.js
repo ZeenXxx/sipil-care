@@ -94,7 +94,9 @@ const fileNameFromResource = resource => {
   return type ? `${title}.${type}` : title;
 };
 
-const directDownloadUrl = url => {
+const isAvailableFile = file => Boolean(file && file !== '#');
+
+const directDownloadUrl = (url, filename = '') => {
   const absolute = new URL(url, location.href);
   if (absolute.hostname === 'drive.google.com') {
     const fileMatch = absolute.pathname.match(/\/file\/d\/([^/]+)/);
@@ -104,6 +106,13 @@ const directDownloadUrl = url => {
   if (absolute.hostname === 'github.com' && absolute.pathname.includes('/blob/')) {
     absolute.hostname = 'raw.githubusercontent.com';
     absolute.pathname = absolute.pathname.replace('/blob/', '/');
+  }
+  if (absolute.hostname.endsWith('firebasestorage.app') || absolute.hostname === 'firebasestorage.googleapis.com') {
+    absolute.searchParams.set('alt', 'media');
+    if (filename) absolute.searchParams.set('response-content-disposition', `attachment; filename="${filename}"`);
+  }
+  if (absolute.hostname.includes('supabase.co') && absolute.pathname.includes('/storage/v1/object/public/')) {
+    if (filename) absolute.searchParams.set('download', filename);
   }
   return absolute.href;
 };
@@ -120,25 +129,35 @@ const triggerDownload = (url, filename) => {
 };
 
 const forceDownloadFile = async resource => {
-  if (!resource?.file || resource.file === '#') throw new Error('File belum tersedia.');
+  if (!isAvailableFile(resource?.file)) throw new Error('File belum tersedia.');
 
   const filename = fileNameFromResource(resource);
-  const url = directDownloadUrl(resource.file);
+  const url = directDownloadUrl(resource.file, filename);
   const target = new URL(url, location.href);
   const sameOrigin = target.origin === location.origin;
 
-  const response = await fetch(target.href, {
-    credentials: sameOrigin ? 'same-origin' : 'omit',
-    cache: 'no-store'
-  });
-  if (!response.ok) throw new Error(`Download gagal (${response.status}).`);
+  if (!sameOrigin) {
+    triggerDownload(target.href, filename);
+    return;
+  }
 
-  const blob = await response.blob();
-  if (!blob.size) throw new Error('File kosong atau tidak bisa dibaca.');
+  try {
+    const response = await fetch(target.href, {
+      credentials: 'same-origin',
+      cache: 'no-store'
+    });
+    if (!response.ok) throw new Error(`Download gagal (${response.status}).`);
 
-  const objectUrl = URL.createObjectURL(blob);
-  triggerDownload(objectUrl, filename);
-  setTimeout(() => URL.revokeObjectURL(objectUrl), 30000);
+    const blob = await response.blob();
+    if (!blob.size) throw new Error('File kosong atau tidak bisa dibaca.');
+
+    const objectUrl = URL.createObjectURL(blob);
+    triggerDownload(objectUrl, filename);
+    setTimeout(() => URL.revokeObjectURL(objectUrl), 30000);
+  } catch (error) {
+    console.warn('Blob download failed, falling back to direct link:', error);
+    triggerDownload(target.href, filename);
+  }
 };
 
 const loadFromJson = async id => {
@@ -146,7 +165,7 @@ const loadFromJson = async id => {
   const response = await fetch('../data/resources.json');
   if (!response.ok) return null;
   const data = await response.json();
-  return data.find(item => slugify(item.title) === id || item.id === id) || null;
+  return data.find(item => slugify(item.title) === id || String(item.id) === String(id)) || null;
 };
 
 const loadResource = async id => {
@@ -181,8 +200,8 @@ const renderResource = resource => {
   els.description.textContent = resource.description || 'File tersedia untuk mahasiswa yang sudah login.';
   els.meta.innerHTML = meta.map(item => `<span class="badge">${escapeText(item)}</span>`).join('');
   els.student.textContent = session ? `${session.name || 'Mahasiswa'} - NIM ${session.nim}` : 'Belum login.';
-  els.open.disabled = !resource.file;
-  if (els.download) els.download.disabled = !resource.file;
+  els.open.disabled = !isAvailableFile(resource.file);
+  if (els.download) els.download.disabled = !isAvailableFile(resource.file);
 };
 
 const logAccess = async (action = 'download') => {
@@ -215,7 +234,7 @@ const logViewOnce = () => {
 };
 
 els.open?.addEventListener('click', async () => {
-  if (!activeResource?.file) return;
+  if (!isAvailableFile(activeResource?.file)) return;
   els.open.disabled = true;
   els.open.textContent = 'Mencatat akses...';
   try {
@@ -233,7 +252,7 @@ els.open?.addEventListener('click', async () => {
 });
 
 els.download?.addEventListener('click', async () => {
-  if (!activeResource?.file) return;
+  if (!isAvailableFile(activeResource?.file)) return;
   els.download.disabled = true;
   els.download.textContent = 'Menyiapkan download...';
   try {
@@ -242,7 +261,7 @@ els.download?.addEventListener('click', async () => {
     showToast('Download file dimulai.');
   } catch (error) {
     console.error('Download log failed:', error);
-    showToast('File ini tidak mengizinkan download langsung dari browser. Coba simpan dari tab file.');
+    showToast(error.message || 'Download belum bisa dimulai.');
   } finally {
     els.download.disabled = false;
     els.download.textContent = 'Download File';
