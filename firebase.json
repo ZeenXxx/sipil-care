@@ -15,11 +15,6 @@
       "**/.*",
       "**/node_modules/**"
     ],
-    "rewrites": [
-      {
-        "source": "/api/admin-login",
-        "function": "adminLogin"
-      }
-    ]
+    "rewrites": []
   }
 }
