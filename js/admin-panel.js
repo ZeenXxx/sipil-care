@@ -9,7 +9,8 @@ import {
   setDoc,
   updateDoc,
   deleteDoc,
-  doc
+  doc,
+  writeBatch
 } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
 import { getMessaging, getToken, deleteToken, onMessage } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-messaging.js";
 
@@ -107,10 +108,25 @@ const accessLogSearch = document.getElementById('accessLogSearch');
 const accessLogFilter = document.getElementById('accessLogFilter');
 const accessLogActionFilter = document.getElementById('accessLogActionFilter');
 const accessLogRefresh = document.getElementById('accessLogRefresh');
+const accessLogDeleteAll = document.getElementById('accessLogDeleteAll');
 const accessLogTable = document.getElementById('accessLogTable');
 const accessTotalCount = document.getElementById('accessTotalCount');
 const accessDownloadCount = document.getElementById('accessDownloadCount');
 const accessVideoCount = document.getElementById('accessVideoCount');
+const auditDeleteAll = document.getElementById('auditDeleteAll');
+const adminAccountSection = document.getElementById('admin-accounts');
+const adminAccountForm = document.getElementById('adminAccountForm');
+const adminAccountOriginalUsername = document.getElementById('adminAccountOriginalUsername');
+const adminAccountUsername = document.getElementById('adminAccountUsername');
+const adminAccountName = document.getElementById('adminAccountName');
+const adminAccountPassword = document.getElementById('adminAccountPassword');
+const adminAccountRole = document.getElementById('adminAccountRole');
+const adminAccountActive = document.getElementById('adminAccountActive');
+const adminAccountSubmit = document.getElementById('adminAccountSubmit');
+const adminAccountCancel = document.getElementById('adminAccountCancel');
+const adminAccountRefresh = document.getElementById('adminAccountRefresh');
+const adminAccountSearch = document.getElementById('adminAccountSearch');
+const adminAccountTable = document.getElementById('adminAccountTable');
 
 const resourceTable = document.getElementById('resourceTable');
 const adminSearch = document.getElementById('adminSearch');
@@ -131,6 +147,7 @@ let students = [];
 let adminActivities = [];
 let auditLogs = [];
 let accessLogs = [];
+let adminAccounts = [];
 let editingDocId = null;
 let editingVideoDocId = null;
 let editingSoftwareDocId = null;
@@ -188,6 +205,7 @@ const currentAdmin = () => {
 };
 
 const hasPermission = permission => currentAdmin().permissions.includes(permission);
+const canManageAdminAccounts = () => currentAdmin().role === 'developer' || hasPermission('admin_accounts');
 
 const requirePermission = (permission, label) => {
   if (hasPermission(permission)) return true;
@@ -209,6 +227,36 @@ const applyAdminRoleUI = () => {
     const hashAllowed = hash === 'audit-log' ? hasPermission('audit') : true;
     if (!pageAllowed || !hashAllowed) link.hidden = true;
   });
+  document.querySelectorAll('[data-developer-only="true"]').forEach(item => {
+    item.hidden = !canManageAdminAccounts();
+  });
+};
+
+const adminRoleTemplates = {
+  developer: {
+    role: 'developer',
+    roleLabel: 'Developer',
+    allowedPages: ['dashboard.html', 'resources.html', 'announcements.html', 'messages.html'],
+    permissions: ['dashboard', 'resources', 'announcements', 'messages', 'audit', 'admin_accounts']
+  },
+  admin_sipil: {
+    role: 'admin_sipil',
+    roleLabel: 'Admin SIPIL CARE',
+    allowedPages: ['resources.html', 'announcements.html', 'messages.html'],
+    permissions: ['resources', 'announcements', 'messages']
+  },
+  pendprof_hms: {
+    role: 'pendprof_hms',
+    roleLabel: 'PENDPROF HMS',
+    allowedPages: ['resources.html', 'messages.html'],
+    permissions: ['resources', 'messages']
+  },
+  eksternal_hms: {
+    role: 'eksternal_hms',
+    roleLabel: 'Eksternal HMS',
+    allowedPages: ['announcements.html', 'messages.html'],
+    permissions: ['announcements', 'messages']
+  }
 };
 
 const auditActionLabels = {
@@ -230,7 +278,11 @@ const auditActionLabels = {
   REPLY_MESSAGE: 'Balas pesan',
   DELETE_MESSAGE: 'Hapus pesan',
   REPLY_LIVE_CHAT: 'Balas live chat',
-  DELETE_LIVE_CHAT_THREAD: 'Hapus thread live chat'
+  DELETE_LIVE_CHAT_THREAD: 'Hapus thread live chat',
+  DELETE_ACCESS_LOGS: 'Hapus semua history akses',
+  CREATE_ADMIN_ACCOUNT: 'Tambah akun admin',
+  UPDATE_ADMIN_ACCOUNT: 'Update akun admin',
+  DELETE_ADMIN_ACCOUNT: 'Hapus akun admin'
 };
 
 async function writeAuditLog({ action, targetType, targetId = '', targetTitle = '', detail = '', metadata = {} }) {
@@ -437,6 +489,44 @@ const formatRelativeTime = value => {
   if (diff < 60 * 60 * 1000) return `${Math.floor(diff / 60000)} menit lalu`;
   if (diff < 24 * 60 * 60 * 1000) return `${Math.floor(diff / 3600000)} jam lalu`;
   return `${Math.floor(diff / 86400000)} hari lalu`;
+};
+
+const sha256 = async value => {
+  const data = new TextEncoder().encode(value);
+  const hash = await crypto.subtle.digest('SHA-256', data);
+  return Array.from(new Uint8Array(hash)).map(byte => byte.toString(16).padStart(2, '0')).join('');
+};
+
+const adminTableName = () => window.SIPILCARE_AUTH_CONFIG?.adminTableName || 'admins';
+const adminSessionTableName = () => window.SIPILCARE_AUTH_CONFIG?.adminSessionTableName || 'admin_sessions';
+
+const normalizeAdminAccount = account => {
+  const template = adminRoleTemplates[account.role] || adminRoleTemplates.admin_sipil;
+  return {
+    ...account,
+    roleLabel: account.role_label || account.roleLabel || template.roleLabel,
+    allowedPages: Array.isArray(account.allowed_pages) ? account.allowed_pages : template.allowedPages,
+    permissions: Array.isArray(account.permissions) ? account.permissions : template.permissions,
+    isActive: account.is_active !== false
+  };
+};
+
+const resetAdminAccountForm = () => {
+  if (!adminAccountForm) return;
+  adminAccountForm.reset();
+  if (adminAccountOriginalUsername) adminAccountOriginalUsername.value = '';
+  if (adminAccountActive) adminAccountActive.checked = true;
+  if (adminAccountPassword) adminAccountPassword.required = true;
+  if (adminAccountSubmit) adminAccountSubmit.textContent = 'Simpan Akun';
+};
+
+const deleteFirestoreDocs = async (collectionName, docIds) => {
+  const ids = docIds.filter(Boolean);
+  for (let start = 0; start < ids.length; start += 450) {
+    const batch = writeBatch(db);
+    ids.slice(start, start + 450).forEach(id => batch.delete(doc(db, collectionName, id)));
+    await batch.commit();
+  }
 };
 
 const isStudentOnline = student => {
@@ -945,6 +1035,43 @@ function auditTableRender() {
   `).join('') || '<tr><td colspan="7">Belum ada aktivitas admin yang cocok.</td></tr>';
 }
 
+function adminAccountTableRender() {
+  if (!adminAccountTable) return;
+  if (!canManageAdminAccounts()) {
+    adminAccountTable.innerHTML = '<tr><td colspan="6">Menu ini hanya tersedia untuk Developer.</td></tr>';
+    return;
+  }
+
+  const q = (adminAccountSearch?.value || '').toLowerCase();
+  const rows = adminAccounts
+    .map(normalizeAdminAccount)
+    .filter(account => [
+      account.username,
+      account.name,
+      account.roleLabel,
+      account.role
+    ].join(' ').toLowerCase().includes(q))
+    .map(account => {
+      const isSelf = account.username === currentAdmin().username;
+      return `
+        <tr>
+          <td><b>${escapeText(account.name || account.username)}</b><br><span class="small-text">${escapeText(account.username)}</span></td>
+          <td>${escapeText(account.roleLabel)}</td>
+          <td>${account.isActive ? '<span class="badge">Aktif</span>' : '<span class="badge">Nonaktif</span>'}</td>
+          <td>${escapeText(account.allowedPages.join(', '))}</td>
+          <td>${escapeText(account.permissions.join(', '))}</td>
+          <td>
+            <button class="action-btn" data-edit-admin-account="${escapeText(account.username)}" type="button">Edit</button>
+            <button class="action-btn danger" data-del-admin-account="${escapeText(account.username)}" type="button" ${isSelf ? 'disabled' : ''}>Hapus</button>
+          </td>
+        </tr>
+      `;
+    })
+    .join('');
+
+  adminAccountTable.innerHTML = rows || '<tr><td colspan="6">Belum ada akun admin yang cocok.</td></tr>';
+}
+
 const render = () => {
   stats();
   filters();
@@ -965,6 +1092,7 @@ const render = () => {
   accessLogRender();
   auditFilters();
   auditTableRender();
+  adminAccountTableRender();
 };
 
 const resetForm = () => {
@@ -1607,6 +1735,31 @@ on(accessLogTable, 'click', async e => {
   }
 });
 
+on(accessLogDeleteAll, 'click', async () => {
+  if (!accessLogs.length) {
+    toast('Belum ada history akses untuk dihapus.');
+    return;
+  }
+  if (!confirm(`Yakin hapus semua ${accessLogs.length} history akses dari server?`)) return;
+
+  try {
+    accessLogDeleteAll.disabled = true;
+    await deleteFirestoreDocs(RESOURCE_ACCESS_LOG_COLLECTION, accessLogs.map(item => item.docId));
+    await writeAuditLog({
+      action: 'DELETE_ACCESS_LOGS',
+      targetType: 'resource_access_logs',
+      targetTitle: 'Semua history akses',
+      detail: `${accessLogs.length} history akses dihapus dari server.`
+    });
+    toast('Semua history akses berhasil dihapus dari server.');
+  } catch (error) {
+    console.error('Delete all access logs error:', error);
+    toast('Gagal menghapus semua history akses.');
+  } finally {
+    accessLogDeleteAll.disabled = false;
+  }
+});
+
 on(auditTable, 'click', async e => {
   const button = e.target.closest('[data-del-audit-log]');
   const docId = button?.dataset.delAuditLog;
@@ -1627,6 +1780,165 @@ on(auditTable, 'click', async e => {
     button.disabled = false;
   }
 });
+
+on(auditDeleteAll, 'click', async () => {
+  if (!auditLogs.length) {
+    toast('Belum ada audit log untuk dihapus.');
+    return;
+  }
+  if (!confirm(`Yakin hapus semua ${auditLogs.length} audit log dari server?`)) return;
+
+  try {
+    auditDeleteAll.disabled = true;
+    await deleteFirestoreDocs(ADMIN_AUDIT_COLLECTION, auditLogs.map(item => item.docId));
+    toast('Semua audit log berhasil dihapus dari server.');
+  } catch (error) {
+    console.error('Delete all audit logs error:', error);
+    toast('Gagal menghapus semua audit log.');
+  } finally {
+    auditDeleteAll.disabled = false;
+  }
+});
+
+on(adminAccountTable, 'click', async e => {
+  if (!canManageAdminAccounts()) {
+    toast('Menu akun admin hanya tersedia untuk Developer.');
+    return;
+  }
+
+  const editButton = e.target.closest('[data-edit-admin-account]');
+  const deleteButton = e.target.closest('[data-del-admin-account]');
+  const usernameValue = editButton?.dataset.editAdminAccount || deleteButton?.dataset.delAdminAccount;
+  if (!usernameValue) return;
+
+  const account = adminAccounts.find(item => item.username === usernameValue);
+  if (!account) return;
+
+  if (editButton) {
+    const normalized = normalizeAdminAccount(account);
+    adminAccountOriginalUsername.value = normalized.username;
+    adminAccountUsername.value = normalized.username;
+    adminAccountName.value = normalized.name || '';
+    adminAccountRole.value = normalized.role || 'admin_sipil';
+    adminAccountActive.checked = normalized.isActive;
+    adminAccountPassword.value = '';
+    adminAccountPassword.required = false;
+    adminAccountSubmit.textContent = 'Update Akun';
+    adminAccountUsername.focus();
+    return;
+  }
+
+  if (deleteButton) {
+    if (usernameValue === currentAdmin().username) {
+      toast('Akun yang sedang dipakai tidak bisa dihapus.');
+      return;
+    }
+    if (!confirm(`Yakin hapus akun admin "${usernameValue}" dan semua sesi loginnya?`)) return;
+    try {
+      deleteButton.disabled = true;
+      const supabase = await loadSupabaseClient();
+      await supabase.from(adminSessionTableName()).delete().eq('username', usernameValue);
+      const { error } = await supabase.from(adminTableName()).delete().eq('username', usernameValue);
+      if (error) throw error;
+      await writeAuditLog({
+        action: 'DELETE_ADMIN_ACCOUNT',
+        targetType: 'admin_account',
+        targetId: usernameValue,
+        targetTitle: account.name || usernameValue,
+        detail: `Akun admin ${usernameValue} dihapus oleh developer.`
+      });
+      toast('Akun admin berhasil dihapus.');
+      await loadAdminAccounts();
+    } catch (error) {
+      console.error('Delete admin account error:', error);
+      toast('Gagal menghapus akun admin.');
+    } finally {
+      deleteButton.disabled = false;
+    }
+  }
+});
+
+on(adminAccountForm, 'submit', async e => {
+  e.preventDefault();
+  if (!canManageAdminAccounts()) {
+    toast('Menu akun admin hanya tersedia untuk Developer.');
+    return;
+  }
+
+  const originalUsername = adminAccountOriginalUsername.value.trim().toLowerCase();
+  const usernameValue = adminAccountUsername.value.trim().toLowerCase();
+  const passwordValue = adminAccountPassword.value;
+  const roleTemplate = adminRoleTemplates[adminAccountRole.value] || adminRoleTemplates.admin_sipil;
+
+  if (!usernameValue || !adminAccountName.value.trim()) {
+    toast('Lengkapi username dan nama admin.');
+    return;
+  }
+  if (!originalUsername && !passwordValue) {
+    toast('Password wajib diisi untuk akun baru.');
+    return;
+  }
+  if (originalUsername === currentAdmin().username && usernameValue !== originalUsername) {
+    toast('Username akun yang sedang dipakai tidak bisa diganti dari sesi aktif.');
+    return;
+  }
+
+  try {
+    adminAccountSubmit.disabled = true;
+    const supabase = await loadSupabaseClient();
+    const payload = {
+      username: usernameValue,
+      name: adminAccountName.value.trim(),
+      role: roleTemplate.role,
+      role_label: roleTemplate.roleLabel,
+      allowed_pages: roleTemplate.allowedPages,
+      permissions: roleTemplate.permissions,
+      is_active: adminAccountActive.checked,
+      updated_at: new Date().toISOString()
+    };
+    if (passwordValue) payload.password_hash = await sha256(passwordValue);
+
+    if (originalUsername && originalUsername !== usernameValue) {
+      const existing = adminAccounts.find(item => item.username === originalUsername);
+      if (!payload.password_hash) payload.password_hash = existing?.password_hash;
+      const { error: insertError } = await supabase.from(adminTableName()).insert({
+        ...payload,
+        created_at: new Date().toISOString()
+      });
+      if (insertError) throw insertError;
+      await supabase.from(adminSessionTableName()).delete().eq('username', originalUsername);
+      const { error: deleteError } = await supabase.from(adminTableName()).delete().eq('username', originalUsername);
+      if (deleteError) throw deleteError;
+    } else {
+      const query = originalUsername
+        ? supabase.from(adminTableName()).update(payload).eq('username', originalUsername)
+        : supabase.from(adminTableName()).insert({ ...payload, created_at: new Date().toISOString() });
+      const { error } = await query;
+      if (error) throw error;
+    }
+
+    await supabase.from(adminSessionTableName()).delete().eq('username', usernameValue);
+    await writeAuditLog({
+      action: originalUsername ? 'UPDATE_ADMIN_ACCOUNT' : 'CREATE_ADMIN_ACCOUNT',
+      targetType: 'admin_account',
+      targetId: usernameValue,
+      targetTitle: payload.name,
+      detail: `Akun admin ${usernameValue} disimpan dengan role ${roleTemplate.roleLabel}.`
+    });
+    toast(originalUsername ? 'Akun admin berhasil diperbarui.' : 'Akun admin berhasil ditambahkan.');
+    resetAdminAccountForm();
+    await loadAdminAccounts();
+  } catch (error) {
+    console.error('Save admin account error:', error);
+    toast(error.message || 'Gagal menyimpan akun admin.');
+  } finally {
+    adminAccountSubmit.disabled = false;
+  }
+});
+
+on(adminAccountCancel, 'click', () => resetAdminAccountForm());
+on(adminAccountRefresh, 'click', () => loadAdminAccounts({ manual: true }));
+on(adminAccountSearch, 'input', () => adminAccountTableRender());
 
 on(adminSearch, 'input', () => render());
 on(adminFilter, 'change', () => render());
@@ -1709,8 +2021,32 @@ async function loadStudentActivity(options = {}) {
   }
 }
 
+async function loadAdminAccounts(options = {}) {
+  if (!adminAccountTable || !canManageAdminAccounts()) return;
+  try {
+    if (adminAccountRefresh) adminAccountRefresh.disabled = true;
+    const supabase = await loadSupabaseClient();
+    const { data, error } = await supabase
+      .from(adminTableName())
+      .select('username,name,password_hash,role,role_label,allowed_pages,permissions,is_active,created_at,updated_at')
+      .order('username', { ascending: true });
+
+    if (error) throw error;
+    adminAccounts = data || [];
+    adminAccountTableRender();
+    if (options.manual) toast('Data akun admin berhasil diperbarui.');
+  } catch (error) {
+    console.error('Load admin accounts failed:', error);
+    adminAccountTable.innerHTML = '<tr><td colspan="6">Gagal memuat akun admin dari Supabase. Cek policy tabel admins.</td></tr>';
+    if (options.manual) toast('Gagal memuat akun admin dari Supabase.');
+  } finally {
+    if (adminAccountRefresh) adminAccountRefresh.disabled = false;
+  }
+}
+
 loadStudentActivity();
 setInterval(() => loadStudentActivity(), 30000);
+loadAdminAccounts();
 
 async function updateAdminPresence() {
   const admin = currentAdmin();

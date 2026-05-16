@@ -27,7 +27,29 @@ create policy "admins can login"
 on public.admins
 for select
 to anon
-using (is_active = true);
+using (true);
+
+drop policy if exists "admins can be created from panel" on public.admins;
+create policy "admins can be created from panel"
+on public.admins
+for insert
+to anon
+with check (true);
+
+drop policy if exists "admins can be updated from panel" on public.admins;
+create policy "admins can be updated from panel"
+on public.admins
+for update
+to anon
+using (true)
+with check (true);
+
+drop policy if exists "admins can be deleted from panel" on public.admins;
+create policy "admins can be deleted from panel"
+on public.admins
+for delete
+to anon
+using (true);
 
 create table if not exists public.admin_sessions (
   token_hash text primary key,
@@ -94,7 +116,7 @@ values
   'developer',
   'Developer',
   '["dashboard.html","resources.html","announcements.html","messages.html"]'::jsonb,
-  '["dashboard","resources","announcements","messages","audit"]'::jsonb,
+  '["dashboard","resources","announcements","messages","audit","admin_accounts"]'::jsonb,
   true
 ),
 (
