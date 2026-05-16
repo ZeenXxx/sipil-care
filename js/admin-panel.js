@@ -101,6 +101,14 @@ const auditSearch = document.getElementById('auditSearch');
 const auditFilter = document.getElementById('auditFilter');
 const auditTable = document.getElementById('auditTable');
 const auditTotalCount = document.getElementById('auditTotalCount');
+const accessLogSearch = document.getElementById('accessLogSearch');
+const accessLogFilter = document.getElementById('accessLogFilter');
+const accessLogActionFilter = document.getElementById('accessLogActionFilter');
+const accessLogRefresh = document.getElementById('accessLogRefresh');
+const accessLogTable = document.getElementById('accessLogTable');
+const accessTotalCount = document.getElementById('accessTotalCount');
+const accessDownloadCount = document.getElementById('accessDownloadCount');
+const accessVideoCount = document.getElementById('accessVideoCount');
 
 const resourceTable = document.getElementById('resourceTable');
 const adminSearch = document.getElementById('adminSearch');
@@ -120,6 +128,7 @@ let liveChatMessages = [];
 let students = [];
 let adminActivities = [];
 let auditLogs = [];
+let accessLogs = [];
 let editingDocId = null;
 let editingVideoDocId = null;
 let editingSoftwareDocId = null;
@@ -134,6 +143,7 @@ const ADMIN_PUSH_ENABLED_KEY = 'sipilcare_admin_push_enabled';
 const ADMIN_PUSH_TOKEN_ID_KEY = 'sipilcare_admin_push_token_id';
 const ADMIN_AUDIT_COLLECTION = 'admin_audit_logs';
 const ADMIN_ACTIVITY_COLLECTION = 'admin_activity';
+const RESOURCE_ACCESS_LOG_COLLECTION = 'resource_access_logs';
 const STUDENT_ONLINE_WINDOW = 2 * 60 * 1000;
 const ADMIN_ONLINE_WINDOW = 2 * 60 * 1000;
 const ADMIN_LOGIN_TRACKED_KEY = 'sipilcare_admin_login_tracked';
@@ -405,6 +415,8 @@ const toast = message => {
 
 const parseDateValue = value => {
   if (!value) return null;
+  if (typeof value.toDate === 'function') return value.toDate();
+  if (typeof value.seconds === 'number') return new Date(value.seconds * 1000);
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? null : date;
 };
@@ -544,6 +556,7 @@ function stats() {
     <div class="admin-stat"><b>${softwareResources.length}</b><span>Software</span></div>
     <div class="admin-stat"><b>${practicumModules.length}</b><span>Praktikum/Studio</span></div>
     <div class="admin-stat"><b>${videos.length}</b><span>Video</span></div>
+    <div class="admin-stat"><b>${accessLogs.length}</b><span>History Akses</span></div>
     <div class="admin-stat"><b>${contactMessages.length}</b><span>Pesan Mahasiswa</span></div>
     <div class="admin-stat"><b>${adminActivities.filter(isAdminOnline).length}</b><span>Admin Online</span></div>
     <div class="admin-stat"><b>${auditLogs.length}</b><span>Audit Log</span></div>
@@ -822,6 +835,73 @@ function adminActivityRender() {
   adminActivityTable.innerHTML = rows || '<tr><td colspan="6">Tidak ada admin yang cocok dengan pencarian.</td></tr>';
 }
 
+const accessTypeLabels = {
+  resource: 'Resources',
+  software: 'Software',
+  practicum: 'Praktikum/Studio',
+  video: 'Videos'
+};
+
+const accessActionLabels = {
+  view: 'View',
+  download: 'Download'
+};
+
+function accessLogFilters() {
+  if (accessLogFilter) {
+    accessLogFilter.innerHTML = '<option value="All">Semua konten</option>' +
+      Object.entries(accessTypeLabels).map(([value, label]) => `<option value="${value}">${escapeText(label)}</option>`).join('');
+  }
+  if (accessLogActionFilter) {
+    accessLogActionFilter.innerHTML = '<option value="All">Semua aksi</option>' +
+      Object.entries(accessActionLabels).map(([value, label]) => `<option value="${value}">${escapeText(label)}</option>`).join('');
+  }
+}
+
+function accessLogRender() {
+  if (!accessLogTable) return;
+
+  const q = (accessLogSearch?.value || '').toLowerCase();
+  const type = accessLogFilter?.value || 'All';
+  const action = accessLogActionFilter?.value || 'All';
+  const filtered = accessLogs.filter(item => {
+    const contentType = item.contentType || (item.source === 'videos' ? 'video' : item.category === 'Software' ? 'software' : item.source || 'resource');
+    const itemAction = item.action || 'download';
+    if (type !== 'All' && contentType !== type) return false;
+    if (action !== 'All' && itemAction !== action) return false;
+    return [
+      item.nim,
+      item.name,
+      item.resourceTitle,
+      item.category,
+      item.type,
+      item.fileHost,
+      accessTypeLabels[contentType],
+      accessActionLabels[itemAction]
+    ].join(' ').toLowerCase().includes(q);
+  });
+
+  if (accessTotalCount) accessTotalCount.textContent = filtered.length;
+  if (accessDownloadCount) accessDownloadCount.textContent = accessLogs.filter(item => (item.action || 'download') === 'download').length;
+  if (accessVideoCount) accessVideoCount.textContent = accessLogs.filter(item => (item.contentType || item.source) === 'video').length;
+
+  accessLogTable.innerHTML = filtered.map(item => {
+    const contentType = item.contentType || (item.source === 'videos' ? 'video' : item.category === 'Software' ? 'software' : item.source || 'resource');
+    const itemAction = item.action || 'download';
+    const createdAt = item.createdAt || item.accessedAt;
+    return `
+      <tr>
+        <td>${escapeText(formatDateTime(createdAt))}<br><span class="small-text">${escapeText(formatRelativeTime(createdAt))}</span></td>
+        <td><b>${escapeText(item.name || 'Mahasiswa')}</b><br><span class="small-text">NIM ${escapeText(item.nim || '-')}</span></td>
+        <td><span class="badge">${escapeText(accessTypeLabels[contentType] || contentType)}</span></td>
+        <td><span class="badge">${escapeText(accessActionLabels[itemAction] || item.actionLabel || itemAction)}</span></td>
+        <td>${escapeText(item.resourceTitle || item.resourceId || '-')}<br><span class="small-text">${escapeText([item.category, item.type].filter(Boolean).join(' / ') || '-')}</span></td>
+        <td>${escapeText(item.fileHost || '-')}</td>
+      </tr>
+    `;
+  }).join('') || '<tr><td colspan="6">Belum ada history akses yang cocok.</td></tr>';
+}
+
 function auditFilters() {
   if (!auditFilter) return;
   const actions = [...new Set(auditLogs.map(item => item.actionLabel || item.action).filter(Boolean))];
@@ -876,6 +956,8 @@ const render = () => {
   liveChatRender();
   studentActivityRender();
   adminActivityRender();
+  accessLogFilters();
+  accessLogRender();
   auditFilters();
   auditTableRender();
 };
@@ -1519,6 +1601,10 @@ on(studentActivityRefresh, 'click', () => loadStudentActivity({ manual: true }))
 on(adminActivitySearch, 'input', () => adminActivityRender());
 on(adminActivityFilter, 'change', () => adminActivityRender());
 on(adminActivityRefresh, 'click', () => loadAdminActivity({ manual: true }));
+on(accessLogSearch, 'input', () => accessLogRender());
+on(accessLogFilter, 'change', () => accessLogRender());
+on(accessLogActionFilter, 'change', () => accessLogRender());
+on(accessLogRefresh, 'click', () => accessLogRender());
 on(auditSearch, 'input', () => auditTableRender());
 on(auditFilter, 'change', () => auditTableRender());
 syncNotificationButton();
@@ -1721,6 +1807,19 @@ onSnapshot(liveChatQuery, snapshot => {
 }, err => {
   console.error('Firestore live chat error:', err);
   toast('Gagal memuat live chat.');
+});
+
+const accessLogQuery = query(collection(db, RESOURCE_ACCESS_LOG_COLLECTION), orderBy('accessedAt', 'desc'));
+onSnapshot(accessLogQuery, snapshot => {
+  accessLogs = snapshot.docs.map(documentSnapshot => ({
+    docId: documentSnapshot.id,
+    ...documentSnapshot.data()
+  }));
+  accessLogRender();
+  stats();
+}, err => {
+  console.error('Firestore access log error:', err);
+  if (accessLogTable) accessLogTable.innerHTML = '<tr><td colspan="6">Gagal memuat history akses.</td></tr>';
 });
 
 const auditQuery = query(collection(db, ADMIN_AUDIT_COLLECTION), orderBy('createdAt', 'desc'));

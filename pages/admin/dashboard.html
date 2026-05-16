@@ -16,6 +16,7 @@
       <nav class="admin-nav" aria-label="Admin navigation">
         <a class="active" href="dashboard.html"><span>DB</span>Dashboard</a>
         <a href="#admin-activity"><span>AO</span>Admin Online</a>
+        <a href="#access-history"><span>HA</span>History Akses</a>
         <a href="#audit-log"><span>AL</span>Audit Log</a>
         <a href="resources.html"><span>RS</span>Resources</a>
         <a href="announcements.html"><span>IF</span>Pemberitahuan</a>
@@ -110,6 +111,45 @@
         </div>
       </section>
 
+      <section id="access-history" class="admin-card">
+        <div class="admin-table-head">
+          <div>
+            <h3>History Akses Materi</h3>
+            <p class="small-text">Lihat mahasiswa yang membuka halaman resource, download file, dan menonton video.</p>
+          </div>
+          <div>
+            <input class="control" id="accessLogSearch" placeholder="Cari NIM, nama, judul, kategori">
+            <select class="control" id="accessLogFilter">
+              <option value="All">Semua konten</option>
+            </select>
+            <select class="control" id="accessLogActionFilter">
+              <option value="All">Semua aksi</option>
+            </select>
+            <button class="action-btn" id="accessLogRefresh" type="button">Refresh</button>
+          </div>
+        </div>
+        <div class="student-activity-summary">
+          <article><span>Total tampil</span><strong id="accessTotalCount">0</strong></article>
+          <article><span>Total download</span><strong id="accessDownloadCount">0</strong></article>
+          <article><span>View video</span><strong id="accessVideoCount">0</strong></article>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Waktu</th>
+                <th>Mahasiswa</th>
+                <th>Konten</th>
+                <th>Aksi</th>
+                <th>Judul</th>
+                <th>Host</th>
+              </tr>
+            </thead>
+            <tbody id="accessLogTable"></tbody>
+          </table>
+        </div>
+      </section>
+
       <section id="audit-log" class="admin-card">
         <div class="admin-table-head">
           <div>
@@ -150,6 +190,6 @@
     <script src="../../js/auth.js?v=20"></script>
     <script src="../../js/student-config.js?v=18"></script>
     <script src="../../js/push-config.js?v=1"></script>
-    <script type="module" src="../../js/admin-panel.js?v=33"></script>
+    <script type="module" src="../../js/admin-panel.js?v=34"></script>
   </body>
 </html>

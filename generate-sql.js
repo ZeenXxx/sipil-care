@@ -8,7 +8,7 @@ function sha256(text) {
 }
 
 const input = `
-12345678 Testing
+2350031009 Resti Sofiatul Badriyah
 `;
 
 const rows = input

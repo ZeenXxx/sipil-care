@@ -30,6 +30,7 @@ const els = {
 };
 
 let activeResource = null;
+let viewLogged = false;
 
 const escapeText = value => String(value || '').replace(/[&<>"']/g, char => ({
   '&': '&amp;',
@@ -81,6 +82,11 @@ const getHost = url => {
   }
 };
 
+const getContentType = resource => {
+  if (source === 'practicum') return 'practicum';
+  return resource?.category === 'Software' ? 'software' : 'resource';
+};
+
 const loadFromJson = async id => {
   if (source !== 'resources') return null;
   const response = await fetch('../data/resources.json');
@@ -124,22 +130,33 @@ const renderResource = resource => {
   els.open.disabled = !resource.file;
 };
 
-const logAccess = async () => {
+const logAccess = async (action = 'download') => {
   const session = readStudentSession();
   if (!activeResource || !session) return;
 
   await addDoc(collection(db, 'resource_access_logs'), {
+    action,
+    actionLabel: action === 'view' ? 'View halaman akses' : 'Download / buka file',
     nim: session.nim,
     name: session.name || '',
     resourceId: activeResource.id || resourceId || slugify(activeResource.title),
     resourceTitle: activeResource.title || '',
     category: activeResource.category || '',
     type: activeResource.type || '',
+    contentType: getContentType(activeResource),
     source,
     fileHost: getHost(activeResource.file),
+    page: location.pathname + location.search,
     userAgent: navigator.userAgent.slice(0, 240),
+    createdAt: new Date().toISOString(),
     accessedAt: serverTimestamp()
   });
+};
+
+const logViewOnce = () => {
+  if (viewLogged) return;
+  viewLogged = true;
+  logAccess('view').catch(error => console.warn('Access view log failed:', error));
 };
 
 els.open?.addEventListener('click', async () => {
@@ -147,7 +164,7 @@ els.open?.addEventListener('click', async () => {
   els.open.disabled = true;
   els.open.textContent = 'Mencatat akses...';
   try {
-    await logAccess();
+    await logAccess('download');
     window.open(activeResource.file, '_blank', 'noopener');
     showToast('File dibuka di tab baru.');
   } catch (error) {
@@ -189,6 +206,7 @@ els.copy?.addEventListener('click', async () => {
       return;
     }
     renderResource(resource);
+    logViewOnce();
   } catch (error) {
     console.error('Resource access load failed:', error);
     setState('Gagal memuat resource', 'Terjadi kesalahan akses', 'Coba refresh halaman atau hubungi admin HMS.');

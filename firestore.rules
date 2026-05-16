@@ -16,7 +16,16 @@ service cloud.firestore {
       allow read, create, update, delete: if true;
     }
 
+    match /videos/{videoId} {
+      allow read, create, update, delete: if true;
+    }
+
     match /resource_access_logs/{logId} {
+      allow read, create: if true;
+      allow update, delete: if false;
+    }
+
+    match /admin_audit_logs/{logId} {
       allow read, create: if true;
       allow update, delete: if false;
     }
