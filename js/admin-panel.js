@@ -1584,44 +1584,44 @@ on(liveChatThreads, 'click', async e => {
 });
 
 on(accessLogTable, 'click', async e => {
-  const docId = e.target.dataset.delAccessLog;
+  const button = e.target.closest('[data-del-access-log]');
+  const docId = button?.dataset.delAccessLog;
   if (!docId) return;
-  if (!requirePermission('audit', 'Hapus history akses')) return;
 
   const item = accessLogs.find(log => log.docId === docId);
   const label = item?.resourceTitle || item?.resourceId || docId;
   if (!confirm(`Yakin hapus history akses "${label}" dari server?`)) return;
 
   try {
-    e.target.disabled = true;
+    button.disabled = true;
     await deleteDoc(doc(db, RESOURCE_ACCESS_LOG_COLLECTION, docId));
     toast('History akses berhasil dihapus dari server.');
   } catch (error) {
     console.error('Delete access log error:', error);
     toast('Gagal menghapus history akses.');
   } finally {
-    e.target.disabled = false;
+    button.disabled = false;
   }
 });
 
 on(auditTable, 'click', async e => {
-  const docId = e.target.dataset.delAuditLog;
+  const button = e.target.closest('[data-del-audit-log]');
+  const docId = button?.dataset.delAuditLog;
   if (!docId) return;
-  if (!requirePermission('audit', 'Hapus audit log')) return;
 
   const item = auditLogs.find(log => log.docId === docId);
   const label = item?.actionLabel || item?.action || docId;
   if (!confirm(`Yakin hapus audit log "${label}" dari server?`)) return;
 
   try {
-    e.target.disabled = true;
+    button.disabled = true;
     await deleteDoc(doc(db, ADMIN_AUDIT_COLLECTION, docId));
     toast('Audit log berhasil dihapus dari server.');
   } catch (error) {
     console.error('Delete audit log error:', error);
     toast('Gagal menghapus audit log.');
   } finally {
-    e.target.disabled = false;
+    button.disabled = false;
   }
 });
 
