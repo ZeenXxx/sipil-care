@@ -1,36 +1,5 @@
-const ADMINS = {
-  developer: {
-    username: 'developer',
-    password: 'sipilcare123',
-    name: 'Developer SIPIL CARE',
-    role: 'developer',
-    roleLabel: 'Developer',
-    allowedPages: ['dashboard.html', 'resources.html', 'announcements.html', 'messages.html'],
-    permissions: ['dashboard', 'resources', 'announcements', 'messages', 'audit']
-  },
-  pendprof: {
-    username: 'pendprof',
-    password: 'pendprof123',
-    name: 'PENDPROF HMS',
-    role: 'pendprof_hms',
-    roleLabel: 'PENDPROF HMS',
-    allowedPages: ['resources.html', 'messages.html'],
-    permissions: ['resources', 'messages']
-  },
-  externalhms: {
-    username: 'externalhms',
-    password: 'external123',
-    name: 'External HMS',
-    role: 'external_hms',
-    roleLabel: 'External HMS',
-    allowedPages: ['announcements.html', 'messages.html'],
-    permissions: ['announcements', 'messages']
-  }
-};
-
 const LEGACY_ADMIN = {
   username: 'adminsipil',
-  password: 'sipilcare123',
   name: 'Developer SIPIL CARE',
   role: 'developer',
   roleLabel: 'Developer',
@@ -51,6 +20,7 @@ const inPagesFolder = path.includes('/pages/') || path.includes('\\pages\\');
 const rootPrefix = inAdminPages ? '../../' : inPagesFolder ? '../' : '';
 const panelHmsPath = `${rootPrefix}pages/admin/dashboard.html`;
 const loginPagePath = `${rootPrefix}pages/admin-panel.html`;
+const adminLoginEndpoint = `${rootPrefix}api/admin-login`;
 const username = document.getElementById('username');
 const password = document.getElementById('password');
 
@@ -91,23 +61,33 @@ if ((path.includes('admin-panel.html') || path.includes('login.html')) && sessio
   location.href = firstAllowedPath(parseAdminProfile());
 }
 
-document.getElementById('loginForm')?.addEventListener('submit', e => {
+document.getElementById('loginForm')?.addEventListener('submit', async e => {
   e.preventDefault();
+  const submit = e.currentTarget.querySelector('button[type="submit"]');
+  if (submit) submit.disabled = true;
 
-  const admin = ADMINS[username?.value.trim()] || (username?.value.trim() === LEGACY_ADMIN.username ? LEGACY_ADMIN : null);
-  if (admin && password?.value === admin.password) {
+  try {
+    const response = await fetch(adminLoginEndpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        username: username?.value.trim(),
+        password: password?.value
+      })
+    });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok || !result.ok || !result.profile) {
+      throw new Error(result.message || 'Username atau password salah.');
+    }
+
+    const admin = normalizeAdminProfile(result.profile);
     sessionStorage.setItem('sipilcare_admin', 'true');
-    sessionStorage.setItem('sipilcare_admin_profile', JSON.stringify({
-      username: admin.username,
-      name: admin.name,
-      role: admin.role,
-      roleLabel: admin.roleLabel,
-      allowedPages: admin.allowedPages,
-      permissions: admin.permissions
-    }));
+    sessionStorage.setItem('sipilcare_admin_profile', JSON.stringify(admin));
     location.href = firstAllowedPath(admin);
-  } else {
-    toast('Username atau password salah.');
+  } catch (error) {
+    toast(error.message || 'Login admin gagal.');
+  } finally {
+    if (submit) submit.disabled = false;
   }
 });
 

@@ -874,6 +874,51 @@ button, input, select, textarea  {
     color: var(--muted)
 }
 
+.admin-chat-status  {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    column-gap: 10px;
+    row-gap: 2px;
+    align-items: center;
+    padding: 10px 12px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #fff
+}
+
+.admin-chat-status span  {
+    width: 10px;
+    height: 10px;
+    border-radius: 999px;
+    background: #9ca3af;
+    grid-row: 1 / span 2
+}
+
+.admin-chat-status strong  {
+    color: var(--ink);
+    font-size: 14px
+}
+
+.admin-chat-status small  {
+    color: var(--muted);
+    font-size: 12px
+}
+
+.admin-chat-status.online  {
+    background: #edf4f1;
+    border-color: rgba(15, 77, 58, .18)
+}
+
+.admin-chat-status.online span  {
+    background: #16a34a;
+    box-shadow: 0 0 0 4px rgba(22, 163, 74, .14)
+}
+
+.admin-chat-status.offline span  {
+    background: #f59e0b;
+    box-shadow: 0 0 0 4px rgba(245, 158, 11, .14)
+}
+
 .chat-panel  {
     padding: 24px;
     display: grid;

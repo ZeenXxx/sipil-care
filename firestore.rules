@@ -20,6 +20,11 @@ service cloud.firestore {
       allow read, create, update, delete: if true;
     }
 
+    match /admin_activity/{adminId} {
+      allow read, create, update: if true;
+      allow delete: if false;
+    }
+
     match /contact_messages/{messageId} {
       allow read, create, update, delete: if true;
     }

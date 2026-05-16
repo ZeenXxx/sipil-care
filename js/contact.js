@@ -15,7 +15,9 @@ const chatForm = document.getElementById('liveChatForm');
 const chatInput = document.getElementById('chatMessage');
 const chatFeed = document.getElementById('chatFeed');
 const chatIdentity = document.getElementById('chatIdentity');
+const adminChatStatus = document.getElementById('adminChatStatus');
 const toastEl = document.getElementById('toast');
+const ADMIN_ONLINE_WINDOW = 2 * 60 * 1000;
 
 const escapeText = value => String(value || '').replace(/[&<>"']/g, char => ({
   '&': '&amp;',
@@ -53,6 +55,43 @@ const getThreadId = () => {
 
 const session = getSession();
 const threadId = getThreadId();
+
+const parseDateValue = value => {
+  const date = value ? new Date(value) : null;
+  return date && !Number.isNaN(date.getTime()) ? date : null;
+};
+
+const formatRelativeTime = value => {
+  const date = parseDateValue(value);
+  if (!date) return 'Belum ada admin aktif';
+  const diff = Date.now() - date.getTime();
+  if (diff < 60 * 1000) return 'baru saja aktif';
+  if (diff < 60 * 60 * 1000) return `${Math.floor(diff / 60000)} menit lalu`;
+  if (diff < 24 * 60 * 60 * 1000) return `${Math.floor(diff / 3600000)} jam lalu`;
+  return `${Math.floor(diff / 86400000)} hari lalu`;
+};
+
+const renderAdminStatus = admins => {
+  if (!adminChatStatus) return;
+  const sortedAdmins = admins
+    .filter(item => item.last_seen_at)
+    .sort((a, b) => String(b.last_seen_at).localeCompare(String(a.last_seen_at)));
+  const onlineAdmins = sortedAdmins.filter(item => {
+    const lastSeen = parseDateValue(item.last_seen_at);
+    return lastSeen && Date.now() - lastSeen.getTime() <= ADMIN_ONLINE_WINDOW;
+  });
+  const latest = onlineAdmins[0] || sortedAdmins[0];
+  const online = Boolean(onlineAdmins.length);
+
+  adminChatStatus.classList.toggle('online', online);
+  adminChatStatus.classList.toggle('offline', !online);
+  adminChatStatus.querySelector('strong').textContent = online
+    ? `${onlineAdmins.length} admin online`
+    : 'Admin offline';
+  adminChatStatus.querySelector('small').textContent = latest
+    ? `Terakhir aktif ${formatRelativeTime(latest.last_seen_at)}`
+    : 'Belum ada aktivitas admin tercatat';
+};
 
 if (chatIdentity) {
   chatIdentity.textContent = session.nim
@@ -143,4 +182,20 @@ onSnapshot(liveQuery, snapshot => {
 }, error => {
   console.error('Live chat load failed:', error);
   if (chatFeed) chatFeed.innerHTML = '<div class="chat-empty">Live chat belum bisa dimuat.</div>';
+});
+
+const adminStatusQuery = query(collection(db, 'admin_activity'), orderBy('last_seen_at', 'desc'));
+onSnapshot(adminStatusQuery, snapshot => {
+  renderAdminStatus(snapshot.docs.map(documentSnapshot => ({
+    id: documentSnapshot.id,
+    ...documentSnapshot.data()
+  })));
+}, error => {
+  console.error('Admin status load failed:', error);
+  if (adminChatStatus) {
+    adminChatStatus.classList.remove('online');
+    adminChatStatus.classList.add('offline');
+    adminChatStatus.querySelector('strong').textContent = 'Status admin belum tersedia';
+    adminChatStatus.querySelector('small').textContent = 'Coba refresh halaman beberapa saat lagi';
+  }
 });

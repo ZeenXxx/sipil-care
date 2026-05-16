@@ -9,7 +9,6 @@ function sha256(text) {
 
 const input = `
 12345678 Testing
-2350031020 Arief Tediansyah
 `;
 
 const rows = input
@@ -28,11 +27,20 @@ const values = rows.map(row => {
     .join(" ")
     .replace(/'/g, "''");
 
+  // Password default
   const defaultPassword = `${nim}@Sipil`;
 
   const passwordHash = sha256(defaultPassword);
 
-  const recoveryHash = sha256(nim);
+  // Recovery code format:
+  // 2 digit pertama nim + "_" + 3 digit terakhir nim
+  // contoh: 2550031001 -> 25_001
+  const angkatan = nim.slice(0, 2);
+  const lastThree = nim.slice(-3);
+
+  const recoveryCode = `${angkatan}_${lastThree}`;
+
+  const recoveryHash = sha256(recoveryCode);
 
   return `('${nim}', '${name}', '${passwordHash}', '${recoveryHash}', true)`;
 
