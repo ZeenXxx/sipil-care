@@ -153,11 +153,37 @@ const getAdminProfile = () => {
 const currentAdmin = () => {
   const profile = getAdminProfile();
   return {
-    username: profile.username || 'adminsipil',
-    name: profile.name || 'Admin SIPIL CARE',
-    role: profile.role || 'super_admin',
-    roleLabel: profile.roleLabel || 'Super Admin'
+    username: profile.username || 'developer',
+    name: profile.name || 'Developer SIPIL CARE',
+    role: profile.role || 'developer',
+    roleLabel: profile.roleLabel || 'Developer',
+    allowedPages: profile.allowedPages || ['dashboard.html', 'resources.html', 'announcements.html', 'messages.html'],
+    permissions: profile.permissions || ['dashboard', 'resources', 'announcements', 'messages', 'audit']
   };
+};
+
+const hasPermission = permission => currentAdmin().permissions.includes(permission);
+
+const requirePermission = (permission, label) => {
+  if (hasPermission(permission)) return true;
+  toast(`Akses ${label} tidak tersedia untuk role ${currentAdmin().roleLabel}.`);
+  return false;
+};
+
+const applyAdminRoleUI = () => {
+  const admin = currentAdmin();
+  document.documentElement.dataset.adminRole = admin.role;
+  document.querySelectorAll('.admin-brand small').forEach(item => {
+    item.textContent = `${admin.roleLabel} Panel`;
+  });
+  document.querySelectorAll('.admin-nav a').forEach(link => {
+    const href = link.getAttribute('href') || '';
+    const page = href.split('#')[0] || location.pathname.split('/').pop();
+    const hash = href.includes('#') ? href.split('#')[1] : '';
+    const pageAllowed = page ? admin.allowedPages.includes(page) : true;
+    const hashAllowed = hash === 'audit-log' ? hasPermission('audit') : true;
+    if (!pageAllowed || !hashAllowed) link.hidden = true;
+  });
 };
 
 const auditActionLabels = {
@@ -828,6 +854,7 @@ const resetAnnouncementForm = () => {
 
 on(resourceForm, 'submit', async e => {
   e.preventDefault();
+  if (!requirePermission('resources', 'Resources')) return;
   if (!validateResourceForm()) return;
 
   setLoading(true);
@@ -877,6 +904,7 @@ on(resourceForm, 'submit', async e => {
 
 on(softwareForm, 'submit', async e => {
   e.preventDefault();
+  if (!requirePermission('resources', 'Software')) return;
   if (!softwareTitle.value.trim() || !softwareDescription.value.trim() || !softwareAuthor.value.trim() || !softwareDate.value) {
     toast('Lengkapi Judul, Deskripsi, Author, dan Tanggal.');
     return;
@@ -934,6 +962,7 @@ on(softwareForm, 'submit', async e => {
 
 on(practicumForm, 'submit', async e => {
   e.preventDefault();
+  if (!requirePermission('resources', 'Praktikum & Studio')) return;
   if (!validatePracticumForm()) return;
 
   setLoading(true);
@@ -985,6 +1014,7 @@ on(practicumForm, 'submit', async e => {
 });
 on(videoForm, 'submit', async e => {
   e.preventDefault();
+  if (!requirePermission('resources', 'Video')) return;
   if (!validateVideoForm()) return;
 
   setLoading(true);
@@ -1033,6 +1063,7 @@ on(videoForm, 'submit', async e => {
 
 on(announcementForm, 'submit', async e => {
   e.preventDefault();
+  if (!requirePermission('announcements', 'Pemberitahuan')) return;
   if (!validateAnnouncementForm()) return;
 
   const button = announcementForm.querySelector('button[type="submit"]');
@@ -1087,6 +1118,7 @@ on(announcementForm, 'submit', async e => {
 on(resourceTable, 'click', async e => {
   const docId = e.target.dataset.del || e.target.dataset.edit;
   if (!docId) return;
+  if (!requirePermission('resources', 'Resources')) return;
 
   if (e.target.dataset.del) {
     if (confirm('Yakin hapus resource ini?')) {
@@ -1130,6 +1162,7 @@ on(resourceTable, 'click', async e => {
 on(softwareTable, 'click', async e => {
   const docId = e.target.dataset.del || e.target.dataset.edit;
   if (!docId) return;
+  if (!requirePermission('resources', 'Software')) return;
 
   if (e.target.dataset.del) {
     if (confirm('Yakin hapus software ini?')) {
@@ -1171,6 +1204,7 @@ on(softwareTable, 'click', async e => {
 on(practicumTable, 'click', async e => {
   const docId = e.target.dataset.del || e.target.dataset.edit;
   if (!docId) return;
+  if (!requirePermission('resources', 'Praktikum & Studio')) return;
 
   if (e.target.dataset.del) {
     if (confirm('Yakin hapus modul praktikum/studio ini?')) {
@@ -1214,6 +1248,7 @@ on(practicumTable, 'click', async e => {
 on(videoTable, 'click', async e => {
   const docId = e.target.dataset.del || e.target.dataset.edit;
   if (!docId) return;
+  if (!requirePermission('resources', 'Video')) return;
 
   if (e.target.dataset.del) {
     if (confirm('Yakin hapus video ini?')) {
@@ -1253,6 +1288,7 @@ on(videoTable, 'click', async e => {
 on(announcementTable, 'click', async e => {
   const docId = e.target.dataset.del || e.target.dataset.edit;
   if (!docId) return;
+  if (!requirePermission('announcements', 'Pemberitahuan')) return;
 
   if (e.target.dataset.del) {
     if (confirm('Yakin hapus pemberitahuan ini?')) {
@@ -1295,6 +1331,8 @@ on(announcementTable, 'click', async e => {
 on(messageTable, 'click', async e => {
   const replyId = e.target.dataset.replyMessage;
   const deleteId = e.target.dataset.delMessage;
+  if (!replyId && !deleteId) return;
+  if (!requirePermission('messages', 'Pesan Mahasiswa')) return;
 
   if (replyId) {
     const item = contactMessages.find(message => message.docId === replyId);
@@ -1342,6 +1380,8 @@ on(messageTable, 'click', async e => {
 on(liveChatThreads, 'click', async e => {
   const replyThread = e.target.dataset.replyChat;
   const closeThread = e.target.dataset.closeChat;
+  if (!replyThread && !closeThread) return;
+  if (!requirePermission('messages', 'Live Chat')) return;
 
   if (replyThread) {
     const reply = prompt('Balasan live chat dari HMS UNJANI / PENDPROF HMS:');
@@ -1409,6 +1449,7 @@ on(studentActivityRefresh, 'click', () => loadStudentActivity({ manual: true }))
 on(auditSearch, 'input', () => auditTableRender());
 on(auditFilter, 'change', () => auditTableRender());
 syncNotificationButton();
+applyAdminRoleUI();
 
 const setActiveAdminNav = id => {
   adminNavLinks.forEach(link => {
