@@ -166,6 +166,7 @@ const RESOURCE_ACCESS_LOG_COLLECTION = 'resource_access_logs';
 const STUDENT_ONLINE_WINDOW = 2 * 60 * 1000;
 const ADMIN_ONLINE_WINDOW = 2 * 60 * 1000;
 const ADMIN_LOGIN_TRACKED_KEY = 'sipilcare_admin_login_tracked';
+const ADMIN_SESSION_KEY = 'sipilcare_admin_session';
 const ADMIN_PROFILE_KEY = 'sipilcare_admin_profile';
 let liveChatSnapshotReady = false;
 const practicumCategories = [
@@ -499,6 +500,17 @@ const sha256 = async value => {
 
 const adminTableName = () => window.SIPILCARE_AUTH_CONFIG?.adminTableName || 'admins';
 const adminSessionTableName = () => window.SIPILCARE_AUTH_CONFIG?.adminSessionTableName || 'admin_sessions';
+
+const adminSessionTokenHash = async () => {
+  let session = {};
+  try {
+    session = JSON.parse(localStorage.getItem(ADMIN_SESSION_KEY) || '{}');
+  } catch {
+    session = {};
+  }
+  if (!session.token) throw new Error('Sesi admin tidak ditemukan. Silakan login ulang.');
+  return sha256(session.token);
+};
 
 const normalizeAdminAccount = account => {
   const template = adminRoleTemplates[account.role] || adminRoleTemplates.admin_sipil;
@@ -1837,9 +1849,12 @@ on(adminAccountTable, 'click', async e => {
     try {
       deleteButton.disabled = true;
       const supabase = await loadSupabaseClient();
-      await supabase.from(adminSessionTableName()).delete().eq('username', usernameValue);
-      const { error } = await supabase.from(adminTableName()).delete().eq('username', usernameValue);
+      const { data, error } = await supabase.rpc('sipilcare_delete_admin_account', {
+        p_session_token_hash: await adminSessionTokenHash(),
+        p_username: usernameValue
+      });
       if (error) throw error;
+      if (data !== true) throw new Error('Akun admin tidak terhapus di database.');
       await writeAuditLog({
         action: 'DELETE_ADMIN_ACCOUNT',
         targetType: 'admin_account',
@@ -1886,43 +1901,24 @@ on(adminAccountForm, 'submit', async e => {
   try {
     adminAccountSubmit.disabled = true;
     const supabase = await loadSupabaseClient();
-    const payload = {
-      username: usernameValue,
-      name: adminAccountName.value.trim(),
-      role: roleTemplate.role,
-      role_label: roleTemplate.roleLabel,
-      allowed_pages: roleTemplate.allowedPages,
-      permissions: roleTemplate.permissions,
-      is_active: adminAccountActive.checked,
-      updated_at: new Date().toISOString()
-    };
-    if (passwordValue) payload.password_hash = await sha256(passwordValue);
+    const { data, error } = await supabase.rpc('sipilcare_save_admin_account', {
+      p_session_token_hash: await adminSessionTokenHash(),
+      p_original_username: originalUsername || null,
+      p_username: usernameValue,
+      p_name: adminAccountName.value.trim(),
+      p_password_hash: passwordValue ? await sha256(passwordValue) : null,
+      p_role: roleTemplate.role,
+      p_is_active: adminAccountActive.checked
+    });
+    if (error) throw error;
+    const savedAccount = Array.isArray(data) ? data[0] : data;
+    if (!savedAccount?.username) throw new Error('Akun admin tidak tersimpan di database.');
 
-    if (originalUsername && originalUsername !== usernameValue) {
-      const existing = adminAccounts.find(item => item.username === originalUsername);
-      if (!payload.password_hash) payload.password_hash = existing?.password_hash;
-      const { error: insertError } = await supabase.from(adminTableName()).insert({
-        ...payload,
-        created_at: new Date().toISOString()
-      });
-      if (insertError) throw insertError;
-      await supabase.from(adminSessionTableName()).delete().eq('username', originalUsername);
-      const { error: deleteError } = await supabase.from(adminTableName()).delete().eq('username', originalUsername);
-      if (deleteError) throw deleteError;
-    } else {
-      const query = originalUsername
-        ? supabase.from(adminTableName()).update(payload).eq('username', originalUsername)
-        : supabase.from(adminTableName()).insert({ ...payload, created_at: new Date().toISOString() });
-      const { error } = await query;
-      if (error) throw error;
-    }
-
-    await supabase.from(adminSessionTableName()).delete().eq('username', usernameValue);
     await writeAuditLog({
       action: originalUsername ? 'UPDATE_ADMIN_ACCOUNT' : 'CREATE_ADMIN_ACCOUNT',
       targetType: 'admin_account',
       targetId: usernameValue,
-      targetTitle: payload.name,
+      targetTitle: savedAccount.name || adminAccountName.value.trim(),
       detail: `Akun admin ${usernameValue} disimpan dengan role ${roleTemplate.roleLabel}.`
     });
     toast(originalUsername ? 'Akun admin berhasil diperbarui.' : 'Akun admin berhasil ditambahkan.');
@@ -2026,10 +2022,9 @@ async function loadAdminAccounts(options = {}) {
   try {
     if (adminAccountRefresh) adminAccountRefresh.disabled = true;
     const supabase = await loadSupabaseClient();
-    const { data, error } = await supabase
-      .from(adminTableName())
-      .select('username,name,password_hash,role,role_label,allowed_pages,permissions,is_active,created_at,updated_at')
-      .order('username', { ascending: true });
+    const { data, error } = await supabase.rpc('sipilcare_list_admin_accounts', {
+      p_session_token_hash: await adminSessionTokenHash()
+    });
 
     if (error) throw error;
     adminAccounts = data || [];

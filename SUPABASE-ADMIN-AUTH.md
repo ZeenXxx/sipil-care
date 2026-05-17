@@ -27,29 +27,7 @@ create policy "admins can login"
 on public.admins
 for select
 to anon
-using (true);
-
-drop policy if exists "admins can be created from panel" on public.admins;
-create policy "admins can be created from panel"
-on public.admins
-for insert
-to anon
-with check (true);
-
-drop policy if exists "admins can be updated from panel" on public.admins;
-create policy "admins can be updated from panel"
-on public.admins
-for update
-to anon
-using (true)
-with check (true);
-
-drop policy if exists "admins can be deleted from panel" on public.admins;
-create policy "admins can be deleted from panel"
-on public.admins
-for delete
-to anon
-using (true);
+using (is_active = true);
 
 create table if not exists public.admin_sessions (
   token_hash text primary key,
@@ -178,6 +156,14 @@ window.SIPILCARE_AUTH_CONFIG = {
 ## Catatan
 
 Sesi admin memakai tabel `admin_sessions`. Browser hanya menyimpan token acak untuk mengecek sesi tersebut ke Supabase. Jika admin tidak membuka halaman admin selama 30 menit, `last_seen_at`/`expires_at` di database dianggap kedaluwarsa dan admin harus login ulang.
+
+Manajemen akun admin di dashboard tidak lagi menulis langsung ke tabel `admins`. Panel memakai RPC Supabase berikut agar database memvalidasi sesi developer dari tabel `admin_sessions`:
+
+- `sipilcare_list_admin_accounts`
+- `sipilcare_save_admin_account`
+- `sipilcare_delete_admin_account`
+
+RPC tersebut sudah diterapkan ke project Supabase `sipil-care`. Jika project Supabase dibuat ulang, jalankan ulang migration RPC admin account management dari riwayat migration Supabase.
 
 Untuk membersihkan sesi lama secara manual:
 
