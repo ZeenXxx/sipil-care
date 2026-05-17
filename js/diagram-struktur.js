@@ -124,9 +124,58 @@ function renderModelList() {
 
 function drawSupport(node, x, y) {
   if (node.support === 'free') return '';
-  if (node.support === 'fixed') return `<rect class="diagram-support" x="${x - 8}" y="${y - 56}" width="16" height="112" rx="2"></rect><line x1="${x - 18}" y1="${y - 48}" x2="${x - 8}" y2="${y - 58}" stroke="#0f4d3a"/><line x1="${x - 18}" y1="${y - 24}" x2="${x - 8}" y2="${y - 34}" stroke="#0f4d3a"/><line x1="${x - 18}" y1="${y}" x2="${x - 8}" y2="${y - 10}" stroke="#0f4d3a"/><line x1="${x - 18}" y1="${y + 24}" x2="${x - 8}" y2="${y + 14}" stroke="#0f4d3a"/>`;
-  const roller = node.support === 'roller' ? `<circle cx="${x - 10}" cy="${y + 44}" r="5" fill="#fff" stroke="#0f4d3a"/><circle cx="${x + 10}" cy="${y + 44}" r="5" fill="#fff" stroke="#0f4d3a"/>` : '';
-  return `<polygon class="diagram-support" points="${x},${y + 18} ${x - 26},${y + 48} ${x + 26},${y + 48}"></polygon>${roller}<line x1="${x - 34}" y1="${y + 56}" x2="${x + 34}" y2="${y + 56}" stroke="#0f4d3a" stroke-width="3"/>`;
+  const groundY = y + 58;
+  const hatch = Array.from({ length: 6 }, (_, i) => {
+    const hx = x - 34 + i * 13;
+    return `<line class="diagram-ground-hatch" x1="${hx}" y1="${groundY + 7}" x2="${hx + 10}" y2="${groundY - 3}"></line>`;
+  }).join('');
+
+  if (node.support === 'fixed') {
+    const connected = state.elements
+      .filter(element => element.startNode === node.id || element.endNode === node.id)
+      .map(element => getNode(element.startNode === node.id ? element.endNode : element.startNode))
+      .filter(Boolean);
+    const hasLeftElement = connected.some(other => other.x < node.x - eps);
+    const hasRightElement = connected.some(other => other.x > node.x + eps);
+    const wallSide = hasRightElement && !hasLeftElement ? 'left' : hasLeftElement && !hasRightElement ? 'right' : 'center';
+    const faceX = wallSide === 'center' ? x + 10 : x;
+    const wallX = wallSide === 'left' ? x - 24 : wallSide === 'right' ? x + 2 : x - 12;
+    const wallWidth = 22;
+    const hatches = Array.from({ length: 6 }, (_, i) => {
+      const hy = y - 52 + i * 20;
+      if (wallSide === 'right') {
+        return `<line class="diagram-fixed-hatch" x1="${wallX + wallWidth + 18}" y1="${hy + 12}" x2="${wallX + wallWidth - 2}" y2="${hy - 8}"></line>`;
+      }
+      return `<line class="diagram-fixed-hatch" x1="${wallX - 18}" y1="${hy + 12}" x2="${wallX + 2}" y2="${hy - 8}"></line>`;
+    }).join('');
+    return `
+      <g class="diagram-support-group">
+        <rect class="diagram-fixed-wall" x="${wallX}" y="${y - 64}" width="${wallWidth}" height="128" rx="3"></rect>
+        <line class="diagram-fixed-face" x1="${faceX}" y1="${y - 58}" x2="${faceX}" y2="${y + 58}"></line>
+        ${hatches}
+      </g>
+    `;
+  }
+
+  const typeText = node.support === 'roller' ? 'ROLLER' : 'PIN';
+  const rollers = node.support === 'roller'
+    ? `<g class="diagram-roller-set">
+        <circle class="diagram-roller" cx="${x - 16}" cy="${groundY - 9}" r="6"></circle>
+        <circle class="diagram-roller" cx="${x}" cy="${groundY - 9}" r="6"></circle>
+        <circle class="diagram-roller" cx="${x + 16}" cy="${groundY - 9}" r="6"></circle>
+      </g>`
+    : '';
+
+  return `
+    <g class="diagram-support-group">
+      <line class="diagram-support-cap" x1="${x - 23}" y1="${y + 18}" x2="${x + 23}" y2="${y + 18}"></line>
+      <polygon class="diagram-support" points="${x},${y + 20} ${x - 30},${y + 50} ${x + 30},${y + 50}"></polygon>
+      ${rollers}
+      <line class="diagram-ground-line" x1="${x - 38}" y1="${groundY}" x2="${x + 38}" y2="${groundY}"></line>
+      ${hatch}
+      <text class="diagram-support-type" x="${x}" y="${groundY + 22}">${typeText}</text>
+    </g>
+  `;
 }
 
 function renderSvg() {
@@ -146,9 +195,20 @@ function renderSvg() {
   let content = `
     <defs>
       <linearGradient id="beamGrad" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stop-color="#1d7a58"/>
-        <stop offset="40%" stop-color="#0b4a38"/>
-        <stop offset="100%" stop-color="#062e22"/>
+        <stop offset="0%" stop-color="#d7ece5"/>
+        <stop offset="28%" stop-color="#87afa4"/>
+        <stop offset="58%" stop-color="#2e6a59"/>
+        <stop offset="100%" stop-color="#0b4032"/>
+      </linearGradient>
+      <linearGradient id="beamEdgeGrad" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0%" stop-color="#0f4d3a" stop-opacity=".1"/>
+        <stop offset="16%" stop-color="#0f4d3a" stop-opacity=".75"/>
+        <stop offset="84%" stop-color="#0f4d3a" stop-opacity=".75"/>
+        <stop offset="100%" stop-color="#0f4d3a" stop-opacity=".1"/>
+      </linearGradient>
+      <linearGradient id="udlBandGrad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#d67a00" stop-opacity=".16"/>
+        <stop offset="100%" stop-color="#d67a00" stop-opacity=".03"/>
       </linearGradient>
       <radialGradient id="nodeGrad" cx="38%" cy="32%" r="62%">
         <stop offset="0%" stop-color="#ffffff"/>
@@ -181,7 +241,20 @@ function renderSvg() {
     const b = getNode(element.endNode);
     const x1 = sx(a.x);
     const x2 = sx(b.x);
-    beamLayer += `<line class="diagram-element-glow" x1="${x1}" y1="${y}" x2="${x2}" y2="${y}"></line><line class="diagram-element-shadow" x1="${x1}" y1="${y + 4}" x2="${x2}" y2="${y + 4}"></line><line class="diagram-element" x1="${x1}" y1="${y}" x2="${x2}" y2="${y}"></line><line class="diagram-element-highlight" x1="${x1}" y1="${y - 4}" x2="${x2}" y2="${y - 4}"></line><text class="diagram-label diagram-element-label" x="${(x1 + x2) / 2}" y="${y + 30}" text-anchor="middle">E${element.id}</text>`;
+    const mid = (x1 + x2) / 2;
+    beamLayer += `
+      <g class="diagram-element-group">
+        <line class="diagram-element-glow" x1="${x1}" y1="${y}" x2="${x2}" y2="${y}"></line>
+        <line class="diagram-element-shadow" x1="${x1}" y1="${y + 8}" x2="${x2}" y2="${y + 8}"></line>
+        <line class="diagram-element-edge" x1="${x1}" y1="${y}" x2="${x2}" y2="${y}"></line>
+        <line class="diagram-element" x1="${x1}" y1="${y}" x2="${x2}" y2="${y}"></line>
+        <line class="diagram-element-highlight" x1="${x1 + 6}" y1="${y - 6}" x2="${x2 - 6}" y2="${y - 6}"></line>
+        <circle class="diagram-element-cap" cx="${x1}" cy="${y}" r="8"></circle>
+        <circle class="diagram-element-cap" cx="${x2}" cy="${y}" r="8"></circle>
+        <rect class="diagram-element-label-bg" x="${mid - 18}" y="${y + 16}" width="36" height="22" rx="7"></rect>
+        <text class="diagram-label diagram-element-label" x="${mid}" y="${y + 32}" text-anchor="middle">E${element.id}</text>
+      </g>
+    `;
   });
 
   const occupyLane = (lanes, x1, x2) => {
@@ -193,7 +266,9 @@ function renderSvg() {
     return lane;
   };
 
-  const udlLanes = [];
+  const udlTopLanes = [];
+  const udlBottomLanes = [];
+  const udlAnchorZones = [];
   const pointLanes = [];
   const udlLoads = state.loads.filter(load => load.type === 'udl');
   const pointLoads = state.loads.filter(load => load.type === 'point');
@@ -202,14 +277,24 @@ function renderSvg() {
     const range = udlRange(load);
     const x1 = sx(range.a);
     const x2 = sx(range.b);
-    const lane = occupyLane(udlLanes, x1, x2);
-    const topY = y - 80 - lane * 68;
-    for (let x = x1 + 14; x < x2; x += 34) loadLayer += `<line class="diagram-udl" x1="${x}" y1="${topY}" x2="${x}" y2="${y - 20}"></line>`;
+    const isDownward = load.w >= 0;
+    const lane = occupyLane(isDownward ? udlTopLanes : udlBottomLanes, x1, x2);
+    const railY = isDownward ? y - 88 - lane * 68 : y + 92 + lane * 58;
+    const beamY = isDownward ? y - 22 : y + 23;
+    const bandY = Math.min(railY, beamY);
+    const bandHeight = Math.abs(beamY - railY);
+    const spacing = Math.max(28, Math.min(42, (x2 - x1) / Math.max(3, Math.ceil((x2 - x1) / 34))));
+    loadLayer += `<rect class="diagram-udl-band" x="${x1}" y="${bandY}" width="${Math.max(x2 - x1, 1)}" height="${bandHeight}" rx="3"></rect>`;
+    for (let x = x1 + spacing / 2; x < x2; x += spacing) {
+      const arrowStartY = isDownward ? railY + 4 : railY - 4;
+      loadLayer += `<line class="diagram-udl" x1="${x}" y1="${arrowStartY}" x2="${x}" y2="${beamY}"></line>`;
+    }
     const labelX = Math.max(left + 4, Math.min(x1 + 8, right - 135));
-    loadLayer += `<line class="diagram-udl-top" x1="${x1}" y1="${topY}" x2="${x2}" y2="${topY}"/><rect class="diagram-label-bg orange" x="${labelX - 6}" y="${topY - 31}" width="138" height="24" rx="6"></rect><text class="diagram-label diagram-load-label" x="${labelX}" y="${topY - 14}">${load.label} ${fmt(load.w)} kN/m</text>`;
+    const labelTop = isDownward ? railY - 31 : railY + 9;
+    const labelTextY = isDownward ? railY - 14 : railY + 26;
+    loadLayer += `<line class="diagram-udl-top" x1="${x1}" y1="${railY}" x2="${x2}" y2="${railY}"/><line class="diagram-udl-base" x1="${x1}" y1="${beamY}" x2="${x2}" y2="${beamY}"/><rect class="diagram-label-bg orange" x="${labelX - 6}" y="${labelTop}" width="148" height="24" rx="6"></rect><text class="diagram-label diagram-load-label" x="${labelX}" y="${labelTextY}">${load.label} ${fmt(load.w)} kN/m</text>`;
+    udlAnchorZones.push({ x1, x2, y: railY, isDownward });
   });
-
-  const highestUdlTopY = udlLanes.length ? y - 80 - (udlLanes.length - 1) * 68 : null;
 
   pointLoads.forEach(load => {
       const x = sx(load.x);
@@ -220,8 +305,11 @@ function renderSvg() {
       const ux = fx / magnitude;
       const uy = fy / magnitude;
       const endX = x;
-      const endY = highestUdlTopY ?? y - 20;
-      const hasUdlAnchor = highestUdlTopY !== null;
+      const matchingUdl = udlAnchorZones
+        .filter(zone => x >= zone.x1 - eps && x <= zone.x2 + eps && zone.isDownward === (fy >= 0))
+        .sort((a, b) => fy >= 0 ? a.y - b.y : b.y - a.y)[0];
+      const endY = matchingUdl?.y ?? (fy >= 0 ? y - 22 : y + 23);
+      const hasUdlAnchor = Boolean(matchingUdl);
       const arrowLength = 62;
       const laneLift = lane * 68;
       const startX = endX - ux * arrowLength;
@@ -242,8 +330,8 @@ function renderSvg() {
       ].join(' ');
       const stemEndX = baseX;
       const stemEndY = baseY;
-      const anchor = hasUdlAnchor ? `<line class="diagram-load-seat" x1="${endX - 12}" y1="${endY}" x2="${endX + 12}" y2="${endY}"></line>` : '';
-      loadLayer += `<line class="${lineClass}" x1="${startX}" y1="${startY}" x2="${stemEndX}" y2="${stemEndY}"></line><polygon class="${lineClass}-head" points="${headPoints}"></polygon>${anchor}<rect class="diagram-label-bg" x="${labelX - 6}" y="${labelY - 16}" width="150" height="24" rx="6"></rect><text class="diagram-label diagram-load-label" x="${labelX}" y="${labelY}">${load.label} ${fmt(load.p)} kN @ ${fmt(load.angle ?? 90)}&deg;</text>`;
+      const anchor = hasUdlAnchor ? `<line class="diagram-load-seat" x1="${endX - 14}" y1="${endY}" x2="${endX + 14}" y2="${endY}"></line>` : `<circle class="diagram-load-anchor" cx="${endX}" cy="${endY}" r="4"></circle>`;
+      loadLayer += `<g class="diagram-point-load"><line class="${lineClass}" x1="${startX}" y1="${startY}" x2="${stemEndX}" y2="${stemEndY}"></line><polygon class="${lineClass}-head" points="${headPoints}"></polygon>${anchor}<rect class="diagram-label-bg" x="${labelX - 6}" y="${labelY - 16}" width="158" height="24" rx="6"></rect><text class="diagram-label diagram-load-label" x="${labelX}" y="${labelY}">${load.label} ${fmt(load.p)} kN @ ${fmt(load.angle ?? 90)}&deg;</text></g>`;
   });
 
   nodes.forEach(node => {
@@ -252,7 +340,7 @@ function renderSvg() {
     // vertical dimension line
     supportLayer += `<line class="diagram-dim-line" x1="${x}" y1="${y + 8}" x2="${x}" y2="${y + 88}"/>`;
     // node circle with gradient
-    supportLayer += `<circle class="diagram-node" cx="${x}" cy="${y}" r="9" fill="url(#nodeGrad)" filter="url(#nodeShadow)"/>`;
+    supportLayer += `<circle class="diagram-node-ring" cx="${x}" cy="${y}" r="13"/><circle class="diagram-node" cx="${x}" cy="${y}" r="9" fill="url(#nodeGrad)" filter="url(#nodeShadow)"/>`;
     // node label (letter)
     supportLayer += `<text class="diagram-node-label" x="${x}" y="${y + 78}">${nodeLabel(node)}</text>`;
     // dimension label (position in m)
