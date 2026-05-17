@@ -3,8 +3,8 @@ const FALLBACK_ADMIN = {
   name: 'Developer SIPIL CARE',
   role: 'admin_sipil',
   roleLabel: 'Admin SIPIL CARE',
-  allowedPages: ['resources.html', 'announcements.html', 'messages.html'],
-  permissions: ['resources', 'announcements', 'messages']
+  allowedPages: ['dashboard.html', 'resources.html', 'announcements.html', 'messages.html'],
+  permissions: ['dashboard', 'resources', 'announcements', 'messages', 'audit']
 };
 
 const ADMIN_SESSION_KEY = 'sipilcare_admin_session';

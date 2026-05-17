@@ -702,6 +702,72 @@
 
 }
 
+.student-bulk-form  {
+
+    display: grid;
+
+    grid-template-columns: minmax(180px, 260px) 1fr auto;
+
+    gap: 10px;
+
+    align-items: start;
+
+    margin: 16px 0 20px
+
+}
+
+.student-bulk-form .textarea  {
+
+    min-height: 150px
+
+}
+
+.cohort-list  {
+
+    display: grid;
+
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+
+    gap: 12px
+
+}
+
+.cohort-list article  {
+
+    padding: 16px;
+
+    border: 1px solid var(--line);
+
+    border-radius: 8px;
+
+    background: #f8fbfa
+
+}
+
+.cohort-list span, .cohort-list small  {
+
+    display: block;
+
+    color: var(--muted);
+
+    font-size: 12px;
+
+    font-weight: 800
+
+}
+
+.cohort-list strong  {
+
+    display: block;
+
+    margin: 6px 0;
+
+    color: var(--primary);
+
+    font-size: 26px
+
+}
+
 .table-wrap  {
   
     overflow-x: auto;
@@ -884,13 +950,13 @@ th  {
 
 }
 
-    .admin-stats, .admin-panel-grid, .student-activity-summary  {
+    .admin-stats, .admin-panel-grid, .student-activity-summary, .cohort-list  {
   
         grid-template-columns: 1fr
     
 }
 
-    .admin-table-head  {
+    .admin-table-head, .student-bulk-form  {
   
         display: grid
     

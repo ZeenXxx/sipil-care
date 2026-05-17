@@ -93,8 +93,8 @@ values
   'ee41ac44a8b7a0b29a49ec758a6cb252ba5f0855e76165c13a42cecbef8a13a4',
   'developer',
   'Developer',
-  '["dashboard.html","resources.html","announcements.html","messages.html"]'::jsonb,
-  '["dashboard","resources","announcements","messages","audit","admin_accounts"]'::jsonb,
+  '["dashboard.html","resources.html","announcements.html","messages.html","admin-accounts.html","student-accounts.html"]'::jsonb,
+  '["dashboard","resources","announcements","messages","audit","admin_accounts","student_accounts","log_delete"]'::jsonb,
   true
 ),
 (
@@ -103,8 +103,8 @@ values
   'ee41ac44a8b7a0b29a49ec758a6cb252ba5f0855e76165c13a42cecbef8a13a4',
   'admin_sipil',
   'Admin SIPIL CARE',
-  '["resources.html","announcements.html","messages.html"]'::jsonb,
-  '["resources","announcements","messages"]'::jsonb,
+  '["dashboard.html","resources.html","announcements.html","messages.html"]'::jsonb,
+  '["dashboard","resources","announcements","messages","audit"]'::jsonb,
   true
 ),
 (
@@ -153,6 +153,41 @@ window.SIPILCARE_AUTH_CONFIG = {
 };
 ```
 
+## 4. Akun Mahasiswa
+
+Manajemen akun mahasiswa memakai tabel `students` yang sudah ditambah kolom `angkatan` dan `is_active`, plus tabel `student_cohorts`.
+
+```sql
+alter table public.students
+  add column if not exists angkatan text,
+  add column if not exists is_active boolean not null default true;
+
+create table if not exists public.student_cohorts (
+  angkatan text primary key,
+  label text not null,
+  is_active boolean not null default true,
+  created_at timestamptz default now(),
+  updated_at timestamptz
+);
+
+alter table public.student_cohorts enable row level security;
+```
+
+Panel developer memakai RPC berikut:
+
+- `sipilcare_list_student_cohorts`
+- `sipilcare_list_student_accounts`
+- `sipilcare_save_student_cohort`
+- `sipilcare_delete_student_cohort`
+- `sipilcare_import_student_accounts`
+- `sipilcare_save_student_account`
+- `sipilcare_delete_student_account`
+
+Default akun mahasiswa:
+
+- Password awal: `NIM@Sipil`
+- Recovery: `angkatan_3-angka-terakhir-NIM`
+
 ## Catatan
 
 Sesi admin memakai tabel `admin_sessions`. Browser hanya menyimpan token acak untuk mengecek sesi tersebut ke Supabase. Jika admin tidak membuka halaman admin selama 30 menit, `last_seen_at`/`expires_at` di database dianggap kedaluwarsa dan admin harus login ulang.
@@ -163,7 +198,7 @@ Manajemen akun admin di dashboard tidak lagi menulis langsung ke tabel `admins`.
 - `sipilcare_save_admin_account`
 - `sipilcare_delete_admin_account`
 
-RPC tersebut sudah diterapkan ke project Supabase `sipil-care`. Jika project Supabase dibuat ulang, jalankan ulang migration RPC admin account management dari riwayat migration Supabase.
+RPC admin dan mahasiswa sudah diterapkan ke project Supabase `sipil-care`. Jika project Supabase dibuat ulang, jalankan ulang migration RPC dari riwayat migration Supabase.
 
 Untuk membersihkan sesi lama secara manual:
 

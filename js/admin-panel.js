@@ -88,6 +88,7 @@ const liveChatNotifyStatus = document.getElementById('liveChatNotifyStatus');
 const liveChatThreads = document.getElementById('liveChatThreads');
 const studentActivitySearch = document.getElementById('studentActivitySearch');
 const studentActivityFilter = document.getElementById('studentActivityFilter');
+const studentActivityCohortFilter = document.getElementById('studentActivityCohortFilter');
 const studentActivityRefresh = document.getElementById('studentActivityRefresh');
 const studentActivityTable = document.getElementById('studentActivityTable');
 const studentTotalCount = document.getElementById('studentTotalCount');
@@ -127,6 +128,32 @@ const adminAccountCancel = document.getElementById('adminAccountCancel');
 const adminAccountRefresh = document.getElementById('adminAccountRefresh');
 const adminAccountSearch = document.getElementById('adminAccountSearch');
 const adminAccountTable = document.getElementById('adminAccountTable');
+const studentCohortForm = document.getElementById('studentCohortForm');
+const studentCohortInput = document.getElementById('studentCohortInput');
+const studentCohortLabel = document.getElementById('studentCohortLabel');
+const studentCohortDeleteSelect = document.getElementById('studentCohortDeleteSelect');
+const studentCohortDelete = document.getElementById('studentCohortDelete');
+const studentCohortList = document.getElementById('studentCohortList');
+const studentBulkForm = document.getElementById('studentBulkForm');
+const studentBulkCohort = document.getElementById('studentBulkCohort');
+const studentBulkRows = document.getElementById('studentBulkRows');
+const studentBulkPreviewBtn = document.getElementById('studentBulkPreviewBtn');
+const studentBulkSubmit = document.getElementById('studentBulkSubmit');
+const studentBulkPreviewTable = document.getElementById('studentBulkPreviewTable');
+const studentAccountSearch = document.getElementById('studentAccountSearch');
+const studentAccountCohortFilter = document.getElementById('studentAccountCohortFilter');
+const studentAccountStatusFilter = document.getElementById('studentAccountStatusFilter');
+const studentAccountRefresh = document.getElementById('studentAccountRefresh');
+const studentAccountTable = document.getElementById('studentAccountTable');
+const studentEditForm = document.getElementById('studentEditForm');
+const studentEditOriginalNim = document.getElementById('studentEditOriginalNim');
+const studentEditNim = document.getElementById('studentEditNim');
+const studentEditName = document.getElementById('studentEditName');
+const studentEditCohort = document.getElementById('studentEditCohort');
+const studentEditActive = document.getElementById('studentEditActive');
+const studentEditResetDefault = document.getElementById('studentEditResetDefault');
+const studentEditSubmit = document.getElementById('studentEditSubmit');
+const studentEditCancel = document.getElementById('studentEditCancel');
 
 const resourceTable = document.getElementById('resourceTable');
 const adminSearch = document.getElementById('adminSearch');
@@ -148,6 +175,9 @@ let adminActivities = [];
 let auditLogs = [];
 let accessLogs = [];
 let adminAccounts = [];
+let studentAccounts = [];
+let studentCohorts = [];
+let studentBulkPreviewRows = [];
 let editingDocId = null;
 let editingVideoDocId = null;
 let editingSoftwareDocId = null;
@@ -207,6 +237,8 @@ const currentAdmin = () => {
 
 const hasPermission = permission => currentAdmin().permissions.includes(permission);
 const canManageAdminAccounts = () => currentAdmin().role === 'developer' || hasPermission('admin_accounts');
+const canManageStudentAccounts = () => currentAdmin().role === 'developer' || hasPermission('student_accounts');
+const canDeleteDashboardLogs = () => currentAdmin().role === 'developer' || hasPermission('log_delete');
 
 const requirePermission = (permission, label) => {
   if (hasPermission(permission)) return true;
@@ -231,20 +263,26 @@ const applyAdminRoleUI = () => {
   document.querySelectorAll('[data-developer-only="true"]').forEach(item => {
     item.hidden = !canManageAdminAccounts();
   });
+  document.querySelectorAll('[data-student-account-only="true"]').forEach(item => {
+    item.hidden = !canManageStudentAccounts();
+  });
+  document.querySelectorAll('[data-log-delete-only="true"]').forEach(item => {
+    item.hidden = !canDeleteDashboardLogs();
+  });
 };
 
 const adminRoleTemplates = {
   developer: {
     role: 'developer',
     roleLabel: 'Developer',
-    allowedPages: ['dashboard.html', 'resources.html', 'announcements.html', 'messages.html'],
-    permissions: ['dashboard', 'resources', 'announcements', 'messages', 'audit', 'admin_accounts']
+    allowedPages: ['dashboard.html', 'resources.html', 'announcements.html', 'messages.html', 'admin-accounts.html', 'student-accounts.html'],
+    permissions: ['dashboard', 'resources', 'announcements', 'messages', 'audit', 'admin_accounts', 'student_accounts', 'log_delete']
   },
   admin_sipil: {
     role: 'admin_sipil',
     roleLabel: 'Admin SIPIL CARE',
-    allowedPages: ['resources.html', 'announcements.html', 'messages.html'],
-    permissions: ['resources', 'announcements', 'messages']
+    allowedPages: ['dashboard.html', 'resources.html', 'announcements.html', 'messages.html'],
+    permissions: ['dashboard', 'resources', 'announcements', 'messages', 'audit']
   },
   pendprof_hms: {
     role: 'pendprof_hms',
@@ -283,7 +321,13 @@ const auditActionLabels = {
   DELETE_ACCESS_LOGS: 'Hapus semua history akses',
   CREATE_ADMIN_ACCOUNT: 'Tambah akun admin',
   UPDATE_ADMIN_ACCOUNT: 'Update akun admin',
-  DELETE_ADMIN_ACCOUNT: 'Hapus akun admin'
+  DELETE_ADMIN_ACCOUNT: 'Hapus akun admin',
+  CREATE_STUDENT_COHORT: 'Tambah angkatan mahasiswa',
+  DELETE_STUDENT_COHORT: 'Hapus angkatan mahasiswa',
+  IMPORT_STUDENT_ACCOUNTS: 'Import akun mahasiswa',
+  UPDATE_STUDENT_ACCOUNT: 'Update akun mahasiswa',
+  DELETE_STUDENT_ACCOUNT: 'Hapus akun mahasiswa',
+  RESET_STUDENT_ACCOUNT: 'Reset akun mahasiswa'
 };
 
 async function writeAuditLog({ action, targetType, targetId = '', targetTitle = '', detail = '', metadata = {} }) {
@@ -512,6 +556,70 @@ const adminSessionTokenHash = async () => {
   return sha256(session.token);
 };
 
+const defaultStudentPassword = nim => `${nim}@Sipil`;
+const defaultStudentRecovery = (angkatan, nim) => `${angkatan}_${String(nim || '').slice(-3)}`;
+const isValidStudentNim = nim => /^[0-9]{8,14}$/.test(String(nim || '').trim());
+const normalizeCohort = value => String(value || '').trim().replace(/[^0-9A-Za-z_-]/g, '');
+
+const parseStudentRows = text => {
+  const rows = [];
+  const errors = [];
+  String(text || '').split(/\r?\n/).forEach((line, index) => {
+    const cleaned = line.trim();
+    if (!cleaned) return;
+
+    let nim = '';
+    let name = '';
+    if (cleaned.includes('\t')) {
+      const parts = cleaned.split('\t').map(item => item.trim()).filter(Boolean);
+      nim = parts.shift() || '';
+      name = parts.join(' ');
+    } else if (cleaned.includes(',')) {
+      const parts = cleaned.split(',').map(item => item.trim()).filter(Boolean);
+      nim = parts.shift() || '';
+      name = parts.join(' ');
+    } else if (cleaned.includes(';')) {
+      const parts = cleaned.split(';').map(item => item.trim()).filter(Boolean);
+      nim = parts.shift() || '';
+      name = parts.join(' ');
+    } else {
+      const match = cleaned.match(/^(\d{8,14})\s+(.+)$/);
+      nim = match?.[1] || '';
+      name = match?.[2] || '';
+    }
+
+    if (!isValidStudentNim(nim) || !name) {
+      errors.push(`Baris ${index + 1} tidak valid.`);
+      return;
+    }
+    rows.push({ nim, name });
+  });
+
+  const seen = new Set();
+  const uniqueRows = rows.filter(row => {
+    if (seen.has(row.nim)) return false;
+    seen.add(row.nim);
+    return true;
+  });
+
+  return { rows: uniqueRows, errors };
+};
+
+const buildStudentPayload = async (rows, angkatan) => {
+  const normalizedCohort = normalizeCohort(angkatan);
+  const payload = [];
+  for (const row of rows) {
+    payload.push({
+      nim: row.nim,
+      name: row.name,
+      angkatan: normalizedCohort,
+      password_hash: await sha256(defaultStudentPassword(row.nim)),
+      recovery_code_hash: await sha256(defaultStudentRecovery(normalizedCohort, row.nim))
+    });
+  }
+  return payload;
+};
+
 const normalizeAdminAccount = account => {
   const template = adminRoleTemplates[account.role] || adminRoleTemplates.admin_sipil;
   return {
@@ -530,6 +638,15 @@ const resetAdminAccountForm = () => {
   if (adminAccountActive) adminAccountActive.checked = true;
   if (adminAccountPassword) adminAccountPassword.required = true;
   if (adminAccountSubmit) adminAccountSubmit.textContent = 'Simpan Akun';
+};
+
+const resetStudentEditForm = () => {
+  if (!studentEditForm) return;
+  studentEditForm.reset();
+  if (studentEditOriginalNim) studentEditOriginalNim.value = '';
+  if (studentEditActive) studentEditActive.checked = true;
+  if (studentEditResetDefault) studentEditResetDefault.checked = false;
+  if (studentEditSubmit) studentEditSubmit.textContent = 'Simpan Mahasiswa';
 };
 
 const deleteFirestoreDocs = async (collectionName, docIds) => {
@@ -849,8 +966,16 @@ function studentActivityRender() {
 
   const q = (studentActivitySearch?.value || '').toLowerCase();
   const status = studentActivityFilter?.value || 'All';
+  const cohort = studentActivityCohortFilter?.value || 'All';
   const onlineCount = students.filter(isStudentOnline).length;
 
+  if (studentActivityCohortFilter) {
+    const current = studentActivityCohortFilter.value || 'All';
+    const cohorts = [...new Set(students.map(student => student.angkatan).filter(Boolean))].sort().reverse();
+    studentActivityCohortFilter.innerHTML = '<option value="All">Semua angkatan</option>' +
+      cohorts.map(item => `<option value="${escapeText(item)}">${escapeText(item)}</option>`).join('');
+    studentActivityCohortFilter.value = cohorts.includes(current) ? current : 'All';
+  }
   if (studentTotalCount) studentTotalCount.textContent = students.length;
   if (studentOnlineCount) studentOnlineCount.textContent = onlineCount;
 
@@ -861,7 +986,8 @@ function studentActivityRender() {
       if (status === 'online' && !online) return false;
       if (status === 'offline' && (online || never)) return false;
       if (status === 'never' && !never) return false;
-      return [student.nim, student.name, student.last_page].join(' ').toLowerCase().includes(q);
+      if (cohort !== 'All' && student.angkatan !== cohort) return false;
+      return [student.nim, student.name, student.angkatan, student.last_page].join(' ').toLowerCase().includes(q);
     })
     .sort((a, b) => {
       const aOnline = isStudentOnline(a);
@@ -878,6 +1004,7 @@ function studentActivityRender() {
           <td><span class="student-status ${statusClass}">${statusLabel}</span></td>
           <td><b>${escapeText(student.nim)}</b></td>
           <td>${escapeText(student.name || 'Mahasiswa SIPIL CARE')}</td>
+          <td>${escapeText(student.angkatan || '-')}</td>
           <td>${escapeText(formatRelativeTime(student.last_seen_at))}<br><span class="small-text">${escapeText(formatDateTime(student.last_seen_at))}</span></td>
           <td>${escapeText(student.last_page || '-')}</td>
           <td>${escapeText(formatDateTime(student.last_login_at))}</td>
@@ -886,7 +1013,7 @@ function studentActivityRender() {
     })
     .join('');
 
-  studentActivityTable.innerHTML = rows || '<tr><td colspan="6">Tidak ada mahasiswa yang cocok dengan pencarian.</td></tr>';
+  studentActivityTable.innerHTML = rows || '<tr><td colspan="7">Tidak ada mahasiswa yang cocok dengan pencarian.</td></tr>';
 }
 
 function adminActivityRender() {
@@ -969,6 +1096,7 @@ function accessLogRender() {
   const q = (accessLogSearch?.value || '').toLowerCase();
   const type = accessLogFilter?.value || 'All';
   const action = accessLogActionFilter?.value || 'All';
+  const showDelete = canDeleteDashboardLogs();
   const filtered = accessLogs.filter(item => {
     const contentType = item.contentType || (item.source === 'videos' ? 'video' : item.category === 'Software' ? 'software' : item.source || 'resource');
     const itemAction = item.action || 'download';
@@ -1002,10 +1130,10 @@ function accessLogRender() {
         <td><span class="badge">${escapeText(accessActionLabels[itemAction] || item.actionLabel || itemAction)}</span></td>
         <td>${escapeText(item.resourceTitle || item.resourceId || '-')}<br><span class="small-text">${escapeText([item.category, item.type].filter(Boolean).join(' / ') || '-')}</span></td>
         <td>${escapeText(item.fileHost || '-')}</td>
-        <td><button class="action-btn danger" data-del-access-log="${escapeText(item.docId)}" type="button">Hapus</button></td>
+        ${showDelete ? `<td><button class="action-btn danger" data-del-access-log="${escapeText(item.docId)}" type="button">Hapus</button></td>` : ''}
       </tr>
     `;
-  }).join('') || '<tr><td colspan="7">Belum ada history akses yang cocok.</td></tr>';
+  }).join('') || `<tr><td colspan="${showDelete ? 7 : 6}">Belum ada history akses yang cocok.</td></tr>`;
 }
 
 function auditFilters() {
@@ -1019,6 +1147,7 @@ function auditTableRender() {
   if (!auditTable) return;
   const q = (auditSearch?.value || '').toLowerCase();
   const action = auditFilter?.value || 'All';
+  const showDelete = canDeleteDashboardLogs();
   const filtered = auditLogs.filter(item => {
     const label = item.actionLabel || item.action || '';
     if (action !== 'All' && label !== action) return false;
@@ -1042,9 +1171,9 @@ function auditTableRender() {
       <td>${escapeText(item.targetType || '-')}</td>
       <td>${escapeText(item.targetTitle || item.targetId || '-')}</td>
       <td class="message-preview">${escapeText(item.detail || '-')}</td>
-      <td><button class="action-btn danger" data-del-audit-log="${escapeText(item.docId)}" type="button">Hapus</button></td>
+      ${showDelete ? `<td><button class="action-btn danger" data-del-audit-log="${escapeText(item.docId)}" type="button">Hapus</button></td>` : ''}
     </tr>
-  `).join('') || '<tr><td colspan="7">Belum ada aktivitas admin yang cocok.</td></tr>';
+  `).join('') || `<tr><td colspan="${showDelete ? 7 : 6}">Belum ada aktivitas admin yang cocok.</td></tr>`;
 }
 
 function adminAccountTableRender() {
@@ -1084,6 +1213,104 @@ function adminAccountTableRender() {
   adminAccountTable.innerHTML = rows || '<tr><td colspan="6">Belum ada akun admin yang cocok.</td></tr>';
 }
 
+function studentCohortOptions() {
+  const options = studentCohorts
+    .map(item => item.angkatan)
+    .filter(Boolean)
+    .sort()
+    .reverse();
+  const html = '<option value="">Pilih angkatan</option>' +
+    options.map(item => `<option value="${escapeText(item)}">${escapeText(item)}</option>`).join('');
+
+  [studentBulkCohort, studentEditCohort].forEach(select => {
+    if (!select) return;
+    const current = select.value;
+    select.innerHTML = html;
+    if (options.includes(current)) select.value = current;
+  });
+
+  if (studentCohortDeleteSelect) {
+    const current = studentCohortDeleteSelect.value;
+    studentCohortDeleteSelect.innerHTML = html;
+    if (options.includes(current)) studentCohortDeleteSelect.value = current;
+  }
+
+  if (studentAccountCohortFilter) {
+    const current = studentAccountCohortFilter.value || 'All';
+    studentAccountCohortFilter.innerHTML = '<option value="All">Semua angkatan</option>' +
+      options.map(item => `<option value="${escapeText(item)}">${escapeText(item)}</option>`).join('');
+    studentAccountCohortFilter.value = options.includes(current) ? current : 'All';
+  }
+}
+
+function studentCohortRender() {
+  if (!studentCohortList) return;
+  studentCohortOptions();
+  studentCohortList.innerHTML = studentCohorts.map(item => `
+    <article>
+      <span>${escapeText(item.label || item.angkatan)}</span>
+      <strong>${escapeText(item.angkatan)}</strong>
+      <small>${Number(item.student_count || 0)} akun &middot; ${Number(item.online_count || 0)} online</small>
+    </article>
+  `).join('') || '<div class="empty">Belum ada angkatan.</div>';
+}
+
+function studentBulkPreviewRender() {
+  if (!studentBulkPreviewTable) return;
+  const cohort = normalizeCohort(studentBulkCohort?.value);
+  studentBulkPreviewTable.innerHTML = studentBulkPreviewRows.map(item => `
+    <tr>
+      <td><b>${escapeText(item.nim)}</b></td>
+      <td>${escapeText(item.name)}</td>
+      <td>${escapeText(cohort || '-')}</td>
+      <td>${escapeText(defaultStudentPassword(item.nim))}</td>
+      <td>${escapeText(cohort ? defaultStudentRecovery(cohort, item.nim) : '-')}</td>
+    </tr>
+  `).join('') || '<tr><td colspan="5">Belum ada preview mahasiswa.</td></tr>';
+}
+
+function studentAccountTableRender() {
+  if (!studentAccountTable) return;
+  if (!canManageStudentAccounts()) {
+    studentAccountTable.innerHTML = '<tr><td colspan="7">Menu ini hanya tersedia untuk Developer.</td></tr>';
+    return;
+  }
+
+  const q = (studentAccountSearch?.value || '').toLowerCase();
+  const cohort = studentAccountCohortFilter?.value || 'All';
+  const status = studentAccountStatusFilter?.value || 'All';
+  const rows = studentAccounts
+    .filter(student => {
+      if (cohort !== 'All' && student.angkatan !== cohort) return false;
+      if (status === 'active' && student.is_active === false) return false;
+      if (status === 'inactive' && student.is_active !== false) return false;
+      return [student.nim, student.name, student.angkatan].join(' ').toLowerCase().includes(q);
+    })
+    .sort((a, b) => String(b.angkatan || '').localeCompare(String(a.angkatan || '')) || String(a.nim).localeCompare(String(b.nim)))
+    .map(student => {
+      const online = isStudentOnline(student);
+      const statusLabel = student.is_active === false ? 'Nonaktif' : online ? 'Online' : student.last_seen_at ? 'Offline' : 'Belum login';
+      const statusClass = student.is_active === false ? 'never' : online ? 'online' : student.last_seen_at ? 'offline' : 'never';
+      return `
+        <tr>
+          <td><span class="student-status ${statusClass}">${statusLabel}</span></td>
+          <td><b>${escapeText(student.nim)}</b></td>
+          <td>${escapeText(student.name || '-')}</td>
+          <td>${escapeText(student.angkatan || '-')}</td>
+          <td>${escapeText(formatDateTime(student.last_login_at))}</td>
+          <td>${escapeText(student.must_change_password ? 'Belum diganti' : 'Sudah diganti')}</td>
+          <td>
+            <button class="action-btn" data-edit-student-account="${escapeText(student.nim)}" type="button">Edit</button>
+            <button class="action-btn" data-reset-student-account="${escapeText(student.nim)}" type="button">Reset PW</button>
+            <button class="action-btn danger" data-del-student-account="${escapeText(student.nim)}" type="button">Hapus</button>
+          </td>
+        </tr>
+      `;
+    }).join('');
+
+  studentAccountTable.innerHTML = rows || '<tr><td colspan="7">Belum ada akun mahasiswa yang cocok.</td></tr>';
+}
+
 const render = () => {
   stats();
   filters();
@@ -1105,6 +1332,9 @@ const render = () => {
   auditFilters();
   auditTableRender();
   adminAccountTableRender();
+  studentCohortRender();
+  studentBulkPreviewRender();
+  studentAccountTableRender();
 };
 
 const resetForm = () => {
@@ -1727,6 +1957,7 @@ on(liveChatThreads, 'click', async e => {
 });
 
 on(accessLogTable, 'click', async e => {
+  if (!canDeleteDashboardLogs()) return;
   const button = e.target.closest('[data-del-access-log]');
   const docId = button?.dataset.delAccessLog;
   if (!docId) return;
@@ -1748,6 +1979,10 @@ on(accessLogTable, 'click', async e => {
 });
 
 on(accessLogDeleteAll, 'click', async () => {
+  if (!canDeleteDashboardLogs()) {
+    toast('Akses hapus log hanya tersedia untuk Developer.');
+    return;
+  }
   if (!accessLogs.length) {
     toast('Belum ada history akses untuk dihapus.');
     return;
@@ -1773,6 +2008,7 @@ on(accessLogDeleteAll, 'click', async () => {
 });
 
 on(auditTable, 'click', async e => {
+  if (!canDeleteDashboardLogs()) return;
   const button = e.target.closest('[data-del-audit-log]');
   const docId = button?.dataset.delAuditLog;
   if (!docId) return;
@@ -1794,6 +2030,10 @@ on(auditTable, 'click', async e => {
 });
 
 on(auditDeleteAll, 'click', async () => {
+  if (!canDeleteDashboardLogs()) {
+    toast('Akses hapus log hanya tersedia untuk Developer.');
+    return;
+  }
   if (!auditLogs.length) {
     toast('Belum ada audit log untuk dihapus.');
     return;
@@ -1936,6 +2176,288 @@ on(adminAccountCancel, 'click', () => resetAdminAccountForm());
 on(adminAccountRefresh, 'click', () => loadAdminAccounts({ manual: true }));
 on(adminAccountSearch, 'input', () => adminAccountTableRender());
 
+on(studentCohortForm, 'submit', async e => {
+  e.preventDefault();
+  if (!canManageStudentAccounts()) {
+    toast('Menu akun mahasiswa hanya tersedia untuk Developer.');
+    return;
+  }
+
+  const angkatan = normalizeCohort(studentCohortInput.value);
+  if (!angkatan) {
+    toast('Isi angkatan terlebih dahulu.');
+    return;
+  }
+
+  try {
+    const supabase = await loadSupabaseClient();
+    const { error } = await supabase.rpc('sipilcare_save_student_cohort', {
+      p_session_token_hash: await adminSessionTokenHash(),
+      p_angkatan: angkatan,
+      p_label: studentCohortLabel.value.trim() || angkatan
+    });
+    if (error) throw error;
+    await writeAuditLog({
+      action: 'CREATE_STUDENT_COHORT',
+      targetType: 'student_cohort',
+      targetId: angkatan,
+      targetTitle: studentCohortLabel.value.trim() || angkatan,
+      detail: `Angkatan ${angkatan} disimpan.`
+    });
+    studentCohortForm.reset();
+    toast('Angkatan berhasil disimpan.');
+    await loadStudentAccountData();
+  } catch (error) {
+    console.error('Save student cohort error:', error);
+    toast(error.message || 'Gagal menyimpan angkatan.');
+  }
+});
+
+on(studentCohortDelete, 'click', async () => {
+  if (!canManageStudentAccounts()) {
+    toast('Menu akun mahasiswa hanya tersedia untuk Developer.');
+    return;
+  }
+
+  const angkatan = studentCohortDeleteSelect?.value;
+  if (!angkatan) {
+    toast('Pilih angkatan yang akan dihapus.');
+    return;
+  }
+  const cohort = studentCohorts.find(item => item.angkatan === angkatan);
+  const count = Number(cohort?.student_count || 0);
+  if (!confirm(`Yakin hapus angkatan ${angkatan} beserta ${count} akun mahasiswa di dalamnya?`)) return;
+
+  try {
+    studentCohortDelete.disabled = true;
+    const supabase = await loadSupabaseClient();
+    const { data, error } = await supabase.rpc('sipilcare_delete_student_cohort', {
+      p_session_token_hash: await adminSessionTokenHash(),
+      p_angkatan: angkatan
+    });
+    if (error) throw error;
+    await writeAuditLog({
+      action: 'DELETE_STUDENT_COHORT',
+      targetType: 'student_cohort',
+      targetId: angkatan,
+      targetTitle: angkatan,
+      detail: `Angkatan ${angkatan} dan ${data || count} akun mahasiswa dihapus.`
+    });
+    toast('Angkatan berhasil dihapus.');
+    await loadStudentAccountData();
+  } catch (error) {
+    console.error('Delete student cohort error:', error);
+    toast(error.message || 'Gagal menghapus angkatan.');
+  } finally {
+    studentCohortDelete.disabled = false;
+  }
+});
+
+on(studentBulkPreviewBtn, 'click', () => {
+  const parsed = parseStudentRows(studentBulkRows?.value);
+  studentBulkPreviewRows = parsed.rows;
+  studentBulkPreviewRender();
+  if (parsed.errors.length) toast(`${parsed.errors.length} baris dilewati karena format tidak valid.`);
+});
+
+on(studentBulkForm, 'submit', async e => {
+  e.preventDefault();
+  if (!canManageStudentAccounts()) {
+    toast('Menu akun mahasiswa hanya tersedia untuk Developer.');
+    return;
+  }
+
+  const angkatan = normalizeCohort(studentBulkCohort?.value);
+  if (!angkatan) {
+    toast('Pilih angkatan terlebih dahulu.');
+    return;
+  }
+  const parsed = parseStudentRows(studentBulkRows?.value);
+  studentBulkPreviewRows = parsed.rows;
+  studentBulkPreviewRender();
+  if (!studentBulkPreviewRows.length) {
+    toast('Belum ada data mahasiswa yang valid.');
+    return;
+  }
+
+  try {
+    studentBulkSubmit.disabled = true;
+    const payload = await buildStudentPayload(studentBulkPreviewRows, angkatan);
+    const supabase = await loadSupabaseClient();
+    const { data, error } = await supabase.rpc('sipilcare_import_student_accounts', {
+      p_session_token_hash: await adminSessionTokenHash(),
+      p_angkatan: angkatan,
+      p_students: payload
+    });
+    if (error) throw error;
+    await writeAuditLog({
+      action: 'IMPORT_STUDENT_ACCOUNTS',
+      targetType: 'student_account',
+      targetId: angkatan,
+      targetTitle: `Angkatan ${angkatan}`,
+      detail: `${data || payload.length} akun mahasiswa diimport untuk angkatan ${angkatan}.`
+    });
+    toast(`${data || payload.length} akun mahasiswa berhasil disimpan.`);
+    studentBulkForm.reset();
+    studentBulkPreviewRows = [];
+    studentBulkPreviewRender();
+    await loadStudentAccountData();
+    await loadStudentActivity({ manual: false });
+  } catch (error) {
+    console.error('Import student accounts error:', error);
+    toast(error.message || 'Gagal import akun mahasiswa.');
+  } finally {
+    studentBulkSubmit.disabled = false;
+  }
+});
+
+on(studentAccountTable, 'click', async e => {
+  if (!canManageStudentAccounts()) {
+    toast('Menu akun mahasiswa hanya tersedia untuk Developer.');
+    return;
+  }
+
+  const editButton = e.target.closest('[data-edit-student-account]');
+  const resetButton = e.target.closest('[data-reset-student-account]');
+  const deleteButton = e.target.closest('[data-del-student-account]');
+  const nim = editButton?.dataset.editStudentAccount || resetButton?.dataset.resetStudentAccount || deleteButton?.dataset.delStudentAccount;
+  if (!nim) return;
+
+  const student = studentAccounts.find(item => item.nim === nim);
+  if (!student) return;
+
+  if (editButton) {
+    studentEditOriginalNim.value = student.nim;
+    studentEditNim.value = student.nim;
+    studentEditName.value = student.name || '';
+    studentEditCohort.value = student.angkatan || '';
+    studentEditActive.checked = student.is_active !== false;
+    studentEditResetDefault.checked = false;
+    studentEditSubmit.textContent = 'Update Mahasiswa';
+    studentEditNim.focus();
+    return;
+  }
+
+  if (resetButton) {
+    if (!confirm(`Reset password mahasiswa ${nim} ke ${defaultStudentPassword(nim)}?`)) return;
+    try {
+      resetButton.disabled = true;
+      const angkatan = student.angkatan || studentEditCohort?.value || '';
+      const supabase = await loadSupabaseClient();
+      const { error } = await supabase.rpc('sipilcare_save_student_account', {
+        p_session_token_hash: await adminSessionTokenHash(),
+        p_original_nim: nim,
+        p_nim: nim,
+        p_name: student.name || 'Mahasiswa SIPIL CARE',
+        p_angkatan: angkatan,
+        p_is_active: student.is_active !== false,
+        p_password_hash: await sha256(defaultStudentPassword(nim)),
+        p_recovery_code_hash: await sha256(defaultStudentRecovery(angkatan, nim))
+      });
+      if (error) throw error;
+      await writeAuditLog({
+        action: 'RESET_STUDENT_ACCOUNT',
+        targetType: 'student_account',
+        targetId: nim,
+        targetTitle: student.name || nim,
+        detail: `Password mahasiswa ${nim} direset ke default.`
+      });
+      toast('Password mahasiswa berhasil direset.');
+      await loadStudentAccountData();
+    } catch (error) {
+      console.error('Reset student password error:', error);
+      toast(error.message || 'Gagal reset password mahasiswa.');
+    } finally {
+      resetButton.disabled = false;
+    }
+    return;
+  }
+
+  if (deleteButton) {
+    if (!confirm(`Yakin hapus akun mahasiswa ${nim}?`)) return;
+    try {
+      deleteButton.disabled = true;
+      const supabase = await loadSupabaseClient();
+      const { error } = await supabase.rpc('sipilcare_delete_student_account', {
+        p_session_token_hash: await adminSessionTokenHash(),
+        p_nim: nim
+      });
+      if (error) throw error;
+      await writeAuditLog({
+        action: 'DELETE_STUDENT_ACCOUNT',
+        targetType: 'student_account',
+        targetId: nim,
+        targetTitle: student.name || nim,
+        detail: `Akun mahasiswa ${nim} dihapus.`
+      });
+      toast('Akun mahasiswa berhasil dihapus.');
+      await loadStudentAccountData();
+      await loadStudentActivity({ manual: false });
+    } catch (error) {
+      console.error('Delete student account error:', error);
+      toast(error.message || 'Gagal menghapus akun mahasiswa.');
+    } finally {
+      deleteButton.disabled = false;
+    }
+  }
+});
+
+on(studentEditForm, 'submit', async e => {
+  e.preventDefault();
+  if (!canManageStudentAccounts()) {
+    toast('Menu akun mahasiswa hanya tersedia untuk Developer.');
+    return;
+  }
+
+  const originalNim = studentEditOriginalNim.value.trim();
+  const nim = studentEditNim.value.trim();
+  const name = studentEditName.value.trim();
+  const angkatan = normalizeCohort(studentEditCohort.value);
+  if (!isValidStudentNim(nim) || !name || !angkatan) {
+    toast('Lengkapi NIM, nama, dan angkatan mahasiswa.');
+    return;
+  }
+
+  try {
+    studentEditSubmit.disabled = true;
+    const resetDefault = studentEditResetDefault.checked || !originalNim;
+    const supabase = await loadSupabaseClient();
+    const { error } = await supabase.rpc('sipilcare_save_student_account', {
+      p_session_token_hash: await adminSessionTokenHash(),
+      p_original_nim: originalNim || null,
+      p_nim: nim,
+      p_name: name,
+      p_angkatan: angkatan,
+      p_is_active: studentEditActive.checked,
+      p_password_hash: resetDefault ? await sha256(defaultStudentPassword(nim)) : null,
+      p_recovery_code_hash: await sha256(defaultStudentRecovery(angkatan, nim))
+    });
+    if (error) throw error;
+    await writeAuditLog({
+      action: 'UPDATE_STUDENT_ACCOUNT',
+      targetType: 'student_account',
+      targetId: nim,
+      targetTitle: name,
+      detail: `Akun mahasiswa ${nim} diperbarui.`
+    });
+    toast(originalNim ? 'Akun mahasiswa berhasil diperbarui.' : 'Akun mahasiswa berhasil ditambahkan.');
+    resetStudentEditForm();
+    await loadStudentAccountData();
+    await loadStudentActivity({ manual: false });
+  } catch (error) {
+    console.error('Save student account error:', error);
+    toast(error.message || 'Gagal menyimpan akun mahasiswa.');
+  } finally {
+    studentEditSubmit.disabled = false;
+  }
+});
+
+on(studentEditCancel, 'click', () => resetStudentEditForm());
+on(studentAccountSearch, 'input', () => studentAccountTableRender());
+on(studentAccountCohortFilter, 'change', () => studentAccountTableRender());
+on(studentAccountStatusFilter, 'change', () => studentAccountTableRender());
+on(studentAccountRefresh, 'click', () => loadStudentAccountData({ manual: true }));
+
 on(adminSearch, 'input', () => render());
 on(adminFilter, 'change', () => render());
 on(softwareSearch, 'input', () => softwareTableRender());
@@ -1952,6 +2474,7 @@ on(liveChatSearch, 'input', () => liveChatRender());
 on(liveChatNotifyBtn, 'click', () => toggleAdminPushNotifications());
 on(studentActivitySearch, 'input', () => studentActivityRender());
 on(studentActivityFilter, 'change', () => studentActivityRender());
+on(studentActivityCohortFilter, 'change', () => studentActivityRender());
 on(studentActivityRefresh, 'click', () => loadStudentActivity({ manual: true }));
 on(adminActivitySearch, 'input', () => adminActivityRender());
 on(adminActivityFilter, 'change', () => adminActivityRender());
@@ -1997,7 +2520,7 @@ async function loadStudentActivity(options = {}) {
     const table = window.SIPILCARE_AUTH_CONFIG?.tableName || 'students';
     const { data, error } = await supabase
       .from(table)
-      .select('nim,name,last_seen_at,last_login_at,last_page,updated_at')
+      .select('nim,name,angkatan,is_active,last_seen_at,last_login_at,last_page,updated_at')
       .order('nim', { ascending: true });
 
     if (error) throw error;
@@ -2039,9 +2562,40 @@ async function loadAdminAccounts(options = {}) {
   }
 }
 
+async function loadStudentAccountData(options = {}) {
+  if (!studentAccountTable && !studentCohortList && !studentBulkCohort) return;
+  if (!canManageStudentAccounts()) return;
+
+  try {
+    if (studentAccountRefresh) studentAccountRefresh.disabled = true;
+    const supabase = await loadSupabaseClient();
+    const sessionHash = await adminSessionTokenHash();
+    const [cohortResult, accountResult] = await Promise.all([
+      supabase.rpc('sipilcare_list_student_cohorts', { p_session_token_hash: sessionHash }),
+      supabase.rpc('sipilcare_list_student_accounts', { p_session_token_hash: sessionHash })
+    ]);
+
+    if (cohortResult.error) throw cohortResult.error;
+    if (accountResult.error) throw accountResult.error;
+    studentCohorts = cohortResult.data || [];
+    studentAccounts = accountResult.data || [];
+    studentCohortRender();
+    studentAccountTableRender();
+    if (options.manual) toast('Data akun mahasiswa berhasil diperbarui.');
+  } catch (error) {
+    console.error('Load student account data failed:', error);
+    if (studentAccountTable) studentAccountTable.innerHTML = '<tr><td colspan="7">Gagal memuat akun mahasiswa dari Supabase.</td></tr>';
+    if (studentCohortList) studentCohortList.innerHTML = '<div class="empty">Gagal memuat angkatan.</div>';
+    if (options.manual) toast(error.message || 'Gagal memuat akun mahasiswa.');
+  } finally {
+    if (studentAccountRefresh) studentAccountRefresh.disabled = false;
+  }
+}
+
 loadStudentActivity();
 setInterval(() => loadStudentActivity(), 30000);
 loadAdminAccounts();
+loadStudentAccountData();
 
 async function updateAdminPresence() {
   const admin = currentAdmin();

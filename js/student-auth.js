@@ -107,17 +107,17 @@
     const db = await getSupabase();
     const { data, error } = await db
       .from(tableName())
-      .select("nim,name,password_hash,recovery_code_hash,must_change_password")
+      .select("nim,name,angkatan,is_active,password_hash,recovery_code_hash,must_change_password")
       .eq("nim", nim)
       .maybeSingle();
-    if (error && /recovery_code_hash/i.test(error.message || "")) {
+    if (error && /recovery_code_hash|angkatan|is_active/i.test(error.message || "")) {
       const fallback = await db
         .from(tableName())
         .select("nim,name,password_hash,must_change_password")
         .eq("nim", nim)
         .maybeSingle();
       if (fallback.error) throw fallback.error;
-      return { ...fallback.data, recovery_code_hash: "" };
+      return { ...fallback.data, angkatan: "", is_active: true, recovery_code_hash: "" };
     }
     if (error) throw error;
     return data;
@@ -125,6 +125,9 @@
 
   const remoteLogin = async ({ nim, password }) => {
     const student = await remoteFindStudent(nim);
+    if (student?.is_active === false) {
+      throw new Error("Akun mahasiswa belum aktif. Hubungi admin HMS.");
+    }
     if (!student || student.password_hash !== await sha256(password)) {
       throw new Error("NIM atau password salah. Pastikan akun sudah dibuat oleh admin HMS.");
     }
@@ -158,6 +161,26 @@
       localStorage.setItem(key, String(now));
     } catch (error) {
       console.warn("Student activity sync failed:", error.message || error);
+    }
+  };
+
+  const remoteSessionGuard = async (session) => {
+    if (!usingSupabase || !session?.nim) return;
+    try {
+      const student = await remoteFindStudent(session.nim);
+      if (!student || student.is_active === false) {
+        clearSession();
+        if (!isHomePage) {
+          const inPages = location.pathname.includes("/pages/");
+          const inTools = location.pathname.includes("/tools/");
+          const prefix = inPages || inTools ? "../" : "";
+          location.replace(prefix + "student-login.html");
+        }
+        return;
+      }
+      if (student.name && student.name !== session.name) saveSession(student);
+    } catch (error) {
+      console.warn("Student session guard failed:", error.message || error);
     }
   };
 
@@ -294,11 +317,20 @@
 
     window.addEventListener("DOMContentLoaded", addStudentNavActions);
     const activeSession = readSession();
+    remoteSessionGuard(activeSession);
     updateStudentActivity(activeSession);
     window.addEventListener("visibilitychange", () => {
-      if (document.visibilityState === "visible") updateStudentActivity(readSession(), { force: true });
+      if (document.visibilityState === "visible") {
+        const visibleSession = readSession();
+        remoteSessionGuard(visibleSession);
+        updateStudentActivity(visibleSession, { force: true });
+      }
     });
-    window.addEventListener("focus", () => updateStudentActivity(readSession()));
+    window.addEventListener("focus", () => {
+      const focusSession = readSession();
+      remoteSessionGuard(focusSession);
+      updateStudentActivity(focusSession);
+    });
     return;
   }
 

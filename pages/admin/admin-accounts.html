@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="../../css/style.css?v=19">
+    <link rel="stylesheet" href="../../css/admin.css?v=26">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <title>Akun Admin - SIPIL CARE</title>
+  </head>
+  <body class="admin-page">
+    <aside class="admin-sidebar">
+      <div class="admin-brand"><span>SC</span><div><h1>SIPIL CARE</h1><small>HMS Admin Panel</small></div></div>
+      <nav class="admin-nav" aria-label="Admin navigation">
+        <a href="dashboard.html"><span>DB</span>Dashboard</a>
+        <a class="active" href="admin-accounts.html" data-developer-only="true"><span>AA</span>Akun Admin</a>
+        <a href="student-accounts.html" data-student-account-only="true"><span>AM</span>Akun Mahasiswa</a>
+        <a href="resources.html"><span>RS</span>Resources</a>
+        <a href="announcements.html"><span>IF</span>Pemberitahuan</a>
+        <a href="messages.html"><span>PM</span>Pesan Mahasiswa</a>
+      </nav>
+      <button class="admin-logout" id="logoutBtn" type="button"><span>LO</span>Logout</button>
+    </aside>
+
+    <main class="admin-main">
+      <section class="admin-page-head">
+        <span class="eyebrow">Developer</span>
+        <h2>Pengaturan Akun Admin</h2>
+        <p>Kelola username, password, status, dan role admin SIPIL CARE.</p>
+      </section>
+
+      <section id="admin-accounts" class="admin-card" data-developer-only="true">
+        <div class="admin-table-head">
+          <div>
+            <h3>Akun Admin</h3>
+            <p class="small-text">Perubahan akun akan menghapus sesi lama agar role dan password baru langsung dipakai saat login berikutnya.</p>
+          </div>
+          <div>
+            <input class="control" id="adminAccountSearch" placeholder="Cari username, nama, atau role">
+            <button class="action-btn" id="adminAccountRefresh" type="button">Refresh</button>
+          </div>
+        </div>
+
+        <form id="adminAccountForm" class="admin-account-form">
+          <input type="hidden" id="adminAccountOriginalUsername">
+          <input class="control" id="adminAccountUsername" placeholder="Username admin" autocomplete="off" required>
+          <input class="control" id="adminAccountName" placeholder="Nama admin" autocomplete="off" required>
+          <input class="control" id="adminAccountPassword" type="password" placeholder="Password baru" autocomplete="new-password" required>
+          <select class="control" id="adminAccountRole" required>
+            <option value="developer">Developer</option>
+            <option value="admin_sipil">Admin SIPIL CARE</option>
+            <option value="pendprof_hms">PENDPROF HMS</option>
+            <option value="eksternal_hms">Eksternal HMS</option>
+          </select>
+          <label class="admin-check"><input id="adminAccountActive" type="checkbox" checked> Aktif</label>
+          <div class="admin-account-actions">
+            <button class="action-btn" id="adminAccountSubmit" type="submit">Simpan Akun</button>
+            <button class="action-btn" id="adminAccountCancel" type="button">Batal</button>
+          </div>
+        </form>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Admin</th>
+                <th>Role</th>
+                <th>Status</th>
+                <th>Halaman</th>
+                <th>Permissions</th>
+                <th>Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="adminAccountTable"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <div class="toast" id="toast"></div>
+    <script src="../../js/student-config.js?v=20"></script>
+    <script src="../../js/auth.js?v=26"></script>
+    <script src="../../js/push-config.js?v=1"></script>
+    <script type="module" src="../../js/admin-panel.js?v=43"></script>
+  </body>
+</html>
