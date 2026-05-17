@@ -4,7 +4,10 @@ import {
   collection,
   query,
   orderBy,
-  onSnapshot
+  onSnapshot,
+  getDocs,
+  where,
+  limit
 } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
 
 const db = getFirestore(app);
@@ -85,7 +88,83 @@ function render() {
 
   const f = document.getElementById('featuredResources');
   if (f) {
-    f.innerHTML = resources.filter(i => ['SNI', 'Software', 'Struktur'].includes(i.category)).slice(0, 3).map(card).join('');
+    renderFeatured(f);
+  }
+}
+
+// Hitung resource paling sering diakses dari resource_access_logs,
+// lalu tampilkan 3 teratas berdasarkan jumlah view + download
+async function renderFeatured(container) {
+  try {
+    // Ambil max 300 log terbaru — cukup untuk hitung popularitas tanpa overload
+    const logsQuery = query(
+      collection(db, 'resource_access_logs'),
+      where('contentType', '!=', 'practicum'),
+      orderBy('contentType'),
+      orderBy('accessedAt', 'desc'),
+      limit(300)
+    );
+    const snapshot = await getDocs(logsQuery);
+
+    // Hitung frekuensi per resourceId
+    const counts = {};
+    snapshot.docs.forEach(doc => {
+      const { resourceId, resourceTitle } = doc.data();
+      if (!resourceId) return;
+      if (!counts[resourceId]) counts[resourceId] = { count: 0, title: resourceTitle || '' };
+      counts[resourceId].count++;
+    });
+
+    // Urutkan dari terbanyak, ambil 3 teratas
+    const topIds = Object.entries(counts)
+      .sort((a, b) => b[1].count - a[1].count)
+      .slice(0, 3)
+      .map(([id]) => id);
+
+    // Cocokkan dengan data resource yang sudah ada di state
+    const featured = topIds
+      .map(id => resources.find(r =>
+        String(r.id) === String(id) ||
+        (r.slug && r.slug === id) ||
+        slugify(r.title) === id
+      ))
+      .filter(Boolean);
+
+    // Fallback: kalau log belum ada atau tidak cocok, pakai resource terbaru
+    const toShow = featured.length >= 2
+      ? featured
+      : resources.slice(0, 3);
+
+    container.innerHTML = toShow.map(card).join('');
+    bindCopyButtons(container);
+
+    // Tampilkan badge jumlah akses jika tersedia
+    toShow.forEach(r => {
+      const id = String(r.id);
+      const entry = counts[id] ||
+        counts[r.slug] ||
+        counts[slugify(r.title)];
+      if (!entry) return;
+      const cards = container.querySelectorAll('.resource-card');
+      const idx = toShow.indexOf(r);
+      const targetCard = cards[idx];
+      if (!targetCard) return;
+      const badge = document.createElement('span');
+      badge.className = 'badge badge-popular';
+      badge.textContent = `${entry.count} akses`;
+      const meta = targetCard.querySelector('.meta');
+      if (meta) meta.prepend(badge);
+    });
+
+  } catch (err) {
+    // Firestore gagal (misal: belum ada log sama sekali) → fallback diam-diam
+    console.warn('Featured load from logs failed, using fallback:', err.message);
+    const f = document.getElementById('featuredResources');
+    if (!f) return;
+    const fallback = resources
+      .filter(i => ['SNI', 'Software', 'Struktur'].includes(i.category))
+      .slice(0, 3);
+    f.innerHTML = fallback.map(card).join('');
     bindCopyButtons(f);
   }
 }
@@ -127,6 +206,8 @@ function loadResourcesFromFirestore() {
     resources = normalizeResources(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     renderFilters();
     render();
+    const f = document.getElementById('featuredResources');
+    if (f) renderFeatured(f);
     const legend = document.getElementById('resourceLegend');
     if (legend && resources.length > 0) legend.style.display = 'flex';
   }, err => {
@@ -137,6 +218,13 @@ function loadResourcesFromFirestore() {
         resources = normalizeResources(d);
         renderFilters();
         render();
+        // Fallback: tidak bisa query logs tanpa Firestore, langsung pakai data statis
+        const f = document.getElementById('featuredResources');
+        if (f) {
+          const fallback = resources.filter(i => ['SNI', 'Software', 'Struktur'].includes(i.category)).slice(0, 3);
+          f.innerHTML = fallback.map(card).join('');
+          bindCopyButtons(f);
+        }
         const legend = document.getElementById('resourceLegend');
         if (legend && resources.length > 0) legend.style.display = 'flex';
       });

@@ -1,4 +1,21 @@
-/* Shared layout lives in style.css for consistency. *//* Shared layout lives in style.css for consistency. */
+/* Shared layout lives in style.css for consistency. */
+
+/* ── Badge popular (jumlah akses) ────────────────────────────── */
+.badge-popular {
+  background: #fff4e5;
+  color: #a05c00;
+  border: 1px solid #f5c97a;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 20px;
+}
+
+html.dark .badge-popular {
+  background: rgba(245, 180, 50, 0.12);
+  color: #f5c97a;
+  border-color: rgba(245, 180, 50, 0.25);
+}
 
 /* ── Legend bar ──────────────────────────────────────────────── */
 .legend-bar {
