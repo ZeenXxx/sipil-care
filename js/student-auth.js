@@ -36,6 +36,25 @@
   const isValidNim = (nim) => /^[0-9]{8,14}$/.test(nim);
   const nextUrl = () => new URLSearchParams(location.search).get("next") || "index.html";
   const queryMode = () => new URLSearchParams(location.search).get("mode") || "login";
+  const getGreetingHour = () => {
+    try {
+      const parts = new Intl.DateTimeFormat("id-ID", {
+        timeZone: "Asia/Jakarta",
+        hour: "2-digit",
+        hourCycle: "h23"
+      }).formatToParts(new Date());
+      return Number(parts.find((part) => part.type === "hour")?.value);
+    } catch {
+      return new Date().getHours();
+    }
+  };
+  const getTimeGreeting = () => {
+    const hour = getGreetingHour();
+    if (hour >= 4 && hour < 11) return "Selamat pagi";
+    if (hour >= 11 && hour < 15) return "Selamat siang";
+    if (hour >= 15 && hour < 18) return "Selamat sore";
+    return "Selamat malam";
+  };
 
   const readSession = () => {
     try {
@@ -286,22 +305,30 @@
 
     // ── Greeting bar (desktop only, injected above main if exists) ────────
     const main = document.querySelector("main");
+    const updateGreetingText = () => {
+      const greetingLabel = document.querySelector("[data-student-greeting-text]");
+      if (greetingLabel) {
+        greetingLabel.textContent = `${getTimeGreeting()}, ${(session.name || "Mahasiswa").split(" ")[0] || "Mahasiswa"}!`;
+      }
+    };
     if (main && !document.querySelector(".student-greeting-bar")) {
-      const hour = new Date().getHours();
-      const greeting = hour < 11 ? "Selamat pagi" : hour < 15 ? "Selamat siang" : hour < 18 ? "Selamat sore" : "Selamat malam";
       const bar = document.createElement("div");
       bar.className = "student-greeting-bar";
       bar.innerHTML = `
         <div class="student-greeting-inner">
           <span class="student-greeting-avatar">${escapeInitial(session.name || session.nim)}</span>
           <span class="student-greeting-text">
-            <strong>${greeting}, ${escapeHtml((session.name || "Mahasiswa").split(" ")[0])}!</strong>
+            <strong data-student-greeting-text>${escapeHtml(getTimeGreeting())}, ${escapeHtml((session.name || "Mahasiswa").split(" ")[0])}!</strong>
             <small>NIM ${escapeHtml(session.nim)}${session.angkatan ? " · Angkatan " + escapeHtml(session.angkatan) : ""}</small>
           </span>
           <span class="student-greeting-tag">✓ Sudah login</span>
         </div>
       `;
       main.insertBefore(bar, main.firstChild);
+    }
+    updateGreetingText();
+    if (!window.SIPILCARE_GREETING_TIMER) {
+      window.SIPILCARE_GREETING_TIMER = setInterval(updateGreetingText, 60 * 1000);
     }
 
     // ── Account button with badge ─────────────────────────────────────────
