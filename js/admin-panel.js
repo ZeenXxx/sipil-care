@@ -526,6 +526,14 @@ const formatDateTime = value => {
   return date ? date.toLocaleString('id-ID') : '-';
 };
 
+const formatDateTimeShort = value => {
+  const date = parseDateValue(value);
+  if (!date) return '-';
+  const d = date.toLocaleDateString('id-ID', { day: '2-digit', month: '2-digit', year: '2-digit' });
+  const t = date.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+  return `${d} ${t}`;
+};
+
 const formatRelativeTime = value => {
   const date = parseDateValue(value);
   if (!date) return 'Belum pernah login';
@@ -1005,9 +1013,9 @@ function studentActivityRender() {
           <td><b>${escapeText(student.nim)}</b></td>
           <td>${escapeText(student.name || 'Mahasiswa SIPIL CARE')}</td>
           <td>${escapeText(student.angkatan || '-')}</td>
-          <td>${escapeText(formatRelativeTime(student.last_seen_at))}<br><span class="small-text">${escapeText(formatDateTime(student.last_seen_at))}</span></td>
+          <td style="white-space:nowrap">${escapeText(formatRelativeTime(student.last_seen_at))}<br><span class="small-text">${escapeText(formatDateTimeShort(student.last_seen_at))}</span></td>
           <td>${escapeText(student.last_page || '-')}</td>
-          <td>${escapeText(formatDateTime(student.last_login_at))}</td>
+          <td style="white-space:nowrap">${escapeText(formatDateTimeShort(student.last_login_at))}</td>
         </tr>
       `;
     })
@@ -1056,9 +1064,9 @@ function adminActivityRender() {
           <td><span class="student-status ${statusClass}">${statusLabel}</span></td>
           <td><b>${escapeText(admin.name || admin.username)}</b><br><span class="small-text">${escapeText(admin.username || '-')}</span></td>
           <td>${escapeText(admin.roleLabel || admin.role || '-')}</td>
-          <td>${escapeText(formatRelativeTime(admin.last_seen_at))}<br><span class="small-text">${escapeText(formatDateTime(admin.last_seen_at))}</span></td>
+          <td style="white-space:nowrap">${escapeText(formatRelativeTime(admin.last_seen_at))}<br><span class="small-text">${escapeText(formatDateTimeShort(admin.last_seen_at))}</span></td>
           <td>${escapeText(admin.last_page || '-')}</td>
-          <td>${escapeText(formatDateTime(admin.last_login_at))}</td>
+          <td style="white-space:nowrap">${escapeText(formatDateTimeShort(admin.last_login_at))}</td>
         </tr>
       `;
     })
