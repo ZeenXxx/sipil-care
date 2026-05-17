@@ -63,6 +63,7 @@
     const session = {
       nim: student.nim,
       name: student.name,
+      angkatan: student.angkatan || "",
       lastSeenAt: Date.now()
     };
     localStorage.setItem(SESSION_KEY, JSON.stringify(session));
@@ -217,6 +218,51 @@
     return student;
   };
 
+  // ── Notification badge ──────────────────────────────────────────────────
+  const NOTIF_SEEN_KEY = "sipilcare_notif_seen";
+  const NOTIF_COUNT_KEY = "sipilcare_notif_count";
+
+  const getSeenCount = () => Number(localStorage.getItem(NOTIF_SEEN_KEY) || 0);
+  const saveSeenCount = (n) => localStorage.setItem(NOTIF_SEEN_KEY, String(n));
+
+  const fetchAnnouncementCount = async () => {
+    try {
+      // Use Supabase (already available from student-auth config)
+      if (usingSupabase) {
+        const db = await getSupabase();
+        const { count, error } = await db
+          .from("announcements")
+          .select("id", { count: "exact", head: true });
+        if (!error && typeof count === "number") return count;
+      }
+    } catch (e) { /* ignore */ }
+    // Fallback: try Firebase via global if available
+    try {
+      if (window.SIPILCARE_FB_APP) {
+        const { getFirestore, collection, getDocs } = await import(
+          "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js"
+        );
+        const firestoreDb = getFirestore(window.SIPILCARE_FB_APP);
+        const snapshot = await getDocs(collection(firestoreDb, "announcements"));
+        return snapshot.size || 0;
+      }
+    } catch (e) { /* ignore */ }
+    return Number(localStorage.getItem(NOTIF_COUNT_KEY) || 0);
+  };
+
+  const updateNotifBadge = async (badgeEl) => {
+    const total = await fetchAnnouncementCount();
+    localStorage.setItem(NOTIF_COUNT_KEY, String(total));
+    const seen = getSeenCount();
+    const unread = Math.max(0, total - seen);
+    if (badgeEl) {
+      badgeEl.textContent = unread > 9 ? "9+" : String(unread);
+      badgeEl.hidden = unread === 0;
+    }
+    return { total, unread };
+  };
+
+  // ── Main nav actions ────────────────────────────────────────────────────
   const addStudentNavActions = () => {
     const nav = document.querySelector(".nav-links");
     if (!nav || nav.querySelector("[data-student-nav-action]")) return;
@@ -238,9 +284,35 @@
       return;
     }
 
+    // ── Greeting bar (desktop only, injected above main if exists) ────────
+    const main = document.querySelector("main");
+    if (main && !document.querySelector(".student-greeting-bar")) {
+      const hour = new Date().getHours();
+      const greeting = hour < 11 ? "Selamat pagi" : hour < 15 ? "Selamat siang" : hour < 18 ? "Selamat sore" : "Selamat malam";
+      const bar = document.createElement("div");
+      bar.className = "student-greeting-bar";
+      bar.innerHTML = `
+        <div class="student-greeting-inner">
+          <span class="student-greeting-avatar">${escapeInitial(session.name || session.nim)}</span>
+          <span class="student-greeting-text">
+            <strong>${greeting}, ${escapeHtml((session.name || "Mahasiswa").split(" ")[0])}!</strong>
+            <small>NIM ${escapeHtml(session.nim)}${session.angkatan ? " · Angkatan " + escapeHtml(session.angkatan) : ""}</small>
+          </span>
+          <span class="student-greeting-tag">✓ Sudah login</span>
+        </div>
+      `;
+      main.insertBefore(bar, main.firstChild);
+    }
+
+    // ── Account button with badge ─────────────────────────────────────────
     const account = document.createElement("div");
     account.className = "student-account";
     account.dataset.studentNavAction = "true";
+
+    const badge = document.createElement("span");
+    badge.className = "student-notif-badge";
+    badge.hidden = true;
+    badge.textContent = "0";
 
     const accountButton = document.createElement("button");
     accountButton.className = "student-account-toggle";
@@ -248,20 +320,51 @@
     accountButton.setAttribute("aria-label", "Buka menu akun mahasiswa");
     accountButton.setAttribute("aria-expanded", "false");
     accountButton.innerHTML = `<span>${escapeInitial(session.name || session.nim)}</span>`;
+    accountButton.appendChild(badge);
 
+    // ── Dropdown menu ─────────────────────────────────────────────────────
     const menu = document.createElement("div");
     menu.className = "student-account-menu";
     menu.innerHTML = `
       <div class="student-account-info">
-        <strong>${escapeHtml(session.name || "Mahasiswa SIPIL CARE")}</strong>
-        <span>NIM ${escapeHtml(session.nim)}</span>
+        <div class="student-account-avatar-row">
+          <div class="student-account-avatar-big">${escapeInitial(session.name || session.nim)}</div>
+          <div>
+            <strong>${escapeHtml(session.name || "Mahasiswa SIPIL CARE")}</strong>
+            <span>NIM ${escapeHtml(session.nim)}${session.angkatan ? " · Angkatan " + escapeHtml(session.angkatan) : ""}</span>
+          </div>
+        </div>
+        <div class="student-account-status">
+          <span class="student-status-dot"></span> Aktif di SIPIL CARE
+        </div>
       </div>
+      <div class="student-account-divider"></div>
+      <div class="student-notif-row" id="studentNotifRow">
+        <span class="student-notif-icon">🔔</span>
+        <span class="student-notif-label">Pemberitahuan HMS</span>
+        <span class="student-notif-badge-menu" id="studentNotifBadgeMenu" hidden>0</span>
+      </div>
+      <div class="student-account-divider"></div>
     `;
+
+    // Click pemberitahuan row → go to home#pemberitahuan and mark seen
+    const notifRow = menu.querySelector("#studentNotifRow");
+    notifRow.style.cursor = "pointer";
+    notifRow.addEventListener("click", async () => {
+      const total = Number(localStorage.getItem(NOTIF_COUNT_KEY) || 0);
+      saveSeenCount(total);
+      badge.hidden = true;
+      const menuBadge = menu.querySelector("#studentNotifBadgeMenu");
+      if (menuBadge) menuBadge.hidden = true;
+      closeAccountMenu();
+      const homeUrl = `${prefix}index.html#pemberitahuan`;
+      location.href = homeUrl;
+    });
 
     const passwordButton = document.createElement("button");
     passwordButton.className = "student-account-action";
     passwordButton.type = "button";
-    passwordButton.textContent = "Change Password";
+    passwordButton.textContent = "Ubah Password";
     passwordButton.addEventListener("click", () => {
       location.href = `${prefix}student-login.html?mode=change&next=${encodeURIComponent(nextTarget)}`;
     });
@@ -286,6 +389,13 @@
       const open = !account.classList.contains("open");
       account.classList.toggle("open", open);
       accountButton.setAttribute("aria-expanded", String(open));
+      // Mark notifications seen when opening menu
+      if (open) {
+        const menuBadge = menu.querySelector("#studentNotifBadgeMenu");
+        if (menuBadge && !menuBadge.hidden) {
+          // Don't auto-mark here, let user click the row
+        }
+      }
     });
 
     document.addEventListener("click", (event) => {
@@ -300,6 +410,15 @@
     account.appendChild(accountButton);
     account.appendChild(menu);
     nav.appendChild(account);
+
+    // Load notification count async
+    updateNotifBadge(badge).then(({ unread }) => {
+      const menuBadge = menu.querySelector("#studentNotifBadgeMenu");
+      if (menuBadge) {
+        menuBadge.textContent = unread > 9 ? "9+" : String(unread);
+        menuBadge.hidden = unread === 0;
+      }
+    });
   };
 
   if (!isStudentLogin && !isAdminLogin && !isAdminPanel) {
