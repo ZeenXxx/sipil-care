@@ -121,59 +121,245 @@ function drawSupport(node, x, y) {
 
 function renderSvg() {
   const nodes = sortedNodes();
+
+  // Pastikan SVG punya viewBox yang konsisten
+  svg.setAttribute('viewBox', '0 0 960 300');
+  svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+
   if (!nodes.length) {
-    svg.innerHTML = '<text class="diagram-label" x="300" y="170">Tambahkan node untuk mulai menggambar balok.</text><line x1="90" y1="220" x2="870" y2="220" stroke="#dce6e2" stroke-width="2"/>';
+    svg.innerHTML = `
+      <rect x="0" y="0" width="960" height="300" fill="#f9fcfb" rx="8"/>
+      <text font-family="Inter,sans-serif" font-size="14" fill="#7aab97" text-anchor="middle" x="480" y="155">Tambahkan node untuk mulai menggambar balok.</text>
+      <line x1="80" y1="170" x2="880" y2="170" stroke="#dce6e2" stroke-width="1" stroke-dasharray="6,4"/>
+    `;
     return;
   }
-  const minX = Math.min(...nodes.map(node => node.x), 0);
-  const maxX = Math.max(...nodes.map(node => node.x), 1);
+
+  const minX = Math.min(...nodes.map(n => n.x));
+  const maxX = Math.max(...nodes.map(n => n.x));
   const span = Math.max(maxX - minX, 1);
-  const left = 90;
-  const right = 870;
-  const y = 175;
+  const left = 80;
+  const right = 880;
+  const beamY = 150;         // garis tengah balok
+  const beamH = 18;          // setengah tinggi balok (balok tampak 3D)
   const sx = x => left + ((x - minX) / span) * (right - left);
 
-  let content = `
-    <defs><marker id="arrowDown" markerWidth="10" markerHeight="10" refX="5" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 Z" fill="#c93434"/></marker><marker id="arrowRight" markerWidth="10" markerHeight="10" refX="5" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 Z" fill="#6b4fd8"/></marker><marker id="arrowOrange" markerWidth="10" markerHeight="10" refX="5" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 Z" fill="#d67a00"/></marker></defs>
-    <line x1="${left}" y1="${y + 92}" x2="${right}" y2="${y + 92}" stroke="#dce6e2" stroke-width="2"/>
+  // Hitung apakah ada beban UDL (untuk beri ruang atas)
+  const hasUdl = state.loads.some(l => l.type === 'udl');
+  const topClearance = hasUdl ? 90 : 55;
+
+  let defs = `
+    <defs>
+      <!-- Shadow balok -->
+      <filter id="beamShadow" x="-5%" y="-20%" width="110%" height="160%">
+        <feDropShadow dx="0" dy="3" stdDeviation="4" flood-color="#0f4d3a22"/>
+      </filter>
+      <!-- Shadow node -->
+      <filter id="nodeShadow" x="-30%" y="-30%" width="160%" height="160%">
+        <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#0f4d3a33"/>
+      </filter>
+      <!-- Gradient balok -->
+      <linearGradient id="beamGrad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%"   stop-color="#2e8c67"/>
+        <stop offset="40%"  stop-color="#17664e"/>
+        <stop offset="100%" stop-color="#0d3d2e"/>
+      </linearGradient>
+      <!-- Gradient sisi bawah balok (bayangan) -->
+      <linearGradient id="beamBottom" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#0d3d2e"/>
+        <stop offset="100%" stop-color="#06201a"/>
+      </linearGradient>
+      <!-- Highlight atas balok -->
+      <linearGradient id="beamHighlight" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%"   stop-color="#ffffff" stop-opacity="0.22"/>
+        <stop offset="100%" stop-color="#ffffff" stop-opacity="0.00"/>
+      </linearGradient>
+      <!-- Gradien node -->
+      <radialGradient id="nodeGrad" cx="35%" cy="30%" r="60%">
+        <stop offset="0%"   stop-color="#4fc49a"/>
+        <stop offset="100%" stop-color="#0f5e42"/>
+      </radialGradient>
+      <!-- Marker panah beban vertikal -->
+      <marker id="arrowV" markerWidth="8" markerHeight="8" refX="4" refY="7" orient="auto">
+        <path d="M1,1 L4,7 L7,1" fill="none" stroke="#c93434" stroke-width="1.5" stroke-linejoin="round"/>
+      </marker>
+      <!-- Marker panah beban horizontal -->
+      <marker id="arrowH" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+        <path d="M1,1 L7,4 L1,7" fill="none" stroke="#6b4fd8" stroke-width="1.5" stroke-linejoin="round"/>
+      </marker>
+      <!-- Marker panah UDL -->
+      <marker id="arrowUDL" markerWidth="7" markerHeight="7" refX="3.5" refY="6.5" orient="auto">
+        <path d="M1,1 L3.5,6.5 L6,1" fill="none" stroke="#d67a00" stroke-width="1.5" stroke-linejoin="round"/>
+      </marker>
+    </defs>
   `;
 
+  // Background
+  let content = `<rect x="0" y="0" width="960" height="300" fill="#f5faf8" rx="0"/>`;
+
+  // Grid referensi horizontal tipis
+  content += `<line x1="${left}" y1="${beamY}" x2="${right}" y2="${beamY}" stroke="#dce6e2" stroke-width="1" stroke-dasharray="4,6"/>`;
+
+  // ---- Render elemen balok (tampak 3D) ----
   state.elements.forEach(element => {
     const a = getNode(element.startNode);
     const b = getNode(element.endNode);
-    content += `<line class="diagram-element" x1="${sx(a.x)}" y1="${y}" x2="${sx(b.x)}" y2="${y}"></line><text class="diagram-label" x="${(sx(a.x) + sx(b.x)) / 2 - 16}" y="${y - 18}">E${element.id}</text>`;
+    const x1 = sx(a.x);
+    const x2 = sx(b.x);
+    const xLeft  = Math.min(x1, x2);
+    const xRight = Math.max(x1, x2);
+    const bTop   = beamY - beamH;
+    const bBot   = beamY + beamH;
+    const depth  = 6;   // kedalaman efek 3D sisi bawah
+
+    // Badan balok utama
+    content += `<rect x="${xLeft}" y="${bTop}" width="${xRight - xLeft}" height="${beamH * 2}"
+      fill="url(#beamGrad)" rx="2" filter="url(#beamShadow)"/>`;
+    // Sisi bawah 3D
+    content += `<polygon points="${xLeft},${bBot} ${xRight},${bBot} ${xRight + depth},${bBot + depth} ${xLeft + depth},${bBot + depth}"
+      fill="url(#beamBottom)" opacity="0.85"/>`;
+    // Sisi kanan 3D
+    content += `<polygon points="${xRight},${bTop} ${xRight + depth},${bTop + depth} ${xRight + depth},${bBot + depth} ${xRight},${bBot}"
+      fill="#0a2e22" opacity="0.6"/>`;
+    // Highlight atas
+    content += `<rect x="${xLeft}" y="${bTop}" width="${xRight - xLeft}" height="${beamH}"
+      fill="url(#beamHighlight)" rx="2"/>`;
+    // Label E pada tengah balok
+    const mx = (xLeft + xRight) / 2;
+    content += `
+      <rect x="${mx - 18}" y="${bTop - 26}" width="36" height="20" rx="4" fill="#0f4d3a" opacity="0.88"/>
+      <text font-family="Inter,sans-serif" font-size="11" font-weight="700" fill="#a8f0d0"
+        text-anchor="middle" x="${mx}" y="${bTop - 11}">E${element.id}</text>
+    `;
   });
 
+  // ---- Render beban ----
   state.loads.forEach(load => {
     if (load.type === 'point') {
-      const x = sx(load.x);
+      const px = sx(load.x);
       const fx = pointFx(load);
       const fy = pointFy(load);
-      const magnitude = Math.hypot(fx, fy) || 1;
-      const ux = fx / magnitude;
-      const uy = fy / magnitude;
-      const endX = x;
-      const endY = y - 20;
-      const startX = endX - ux * 66;
-      const startY = endY - uy * 66;
-      const lineClass = Math.abs(fx) > Math.abs(fy) ? 'diagram-hload' : 'diagram-load';
-      content += `<line class="${lineClass}" x1="${startX}" y1="${startY}" x2="${endX}" y2="${endY}"></line><text class="diagram-label" x="${Math.min(startX, endX) - 8}" y="${Math.min(startY, endY) - 12}">${load.label} ${fmt(load.p)} kN @ ${fmt(load.angle ?? 90)}&deg;</text>`;
+      const isHorizontal = Math.abs(fx) > Math.abs(fy);
+      const arrowLen = 52;
+
+      if (isHorizontal) {
+        // Beban horizontal
+        const dir = fx >= 0 ? 1 : -1;
+        const x1 = px - dir * arrowLen;
+        const x2 = px - dir * 2;
+        content += `
+          <line x1="${x1}" y1="${beamY}" x2="${x2}" y2="${beamY}"
+            stroke="#6b4fd8" stroke-width="2.5" marker-end="url(#arrowH)"/>
+          <rect x="${Math.min(x1, x2) - 2}" y="${beamY - 22}" width="${Math.abs(x2-x1)+4}" height="18" rx="3" fill="#6b4fd820"/>
+          <text font-family="Inter,sans-serif" font-size="10" font-weight="700" fill="#6b4fd8"
+            text-anchor="middle" x="${(x1+x2)/2}" y="${beamY - 9}">${load.label} ${fmt(load.p)}kN</text>
+        `;
+      } else {
+        // Beban vertikal (ke bawah)
+        const tipY = beamY - beamH - 4;
+        const tailY = tipY - arrowLen;
+        content += `
+          <line x1="${px}" y1="${tailY}" x2="${px}" y2="${tipY}"
+            stroke="#c93434" stroke-width="2.5" marker-end="url(#arrowV)"/>
+          <rect x="${px - 32}" y="${tailY - 20}" width="64" height="18" rx="3" fill="#c9343415"/>
+          <text font-family="Inter,sans-serif" font-size="10" font-weight="700" fill="#c93434"
+            text-anchor="middle" x="${px}" y="${tailY - 7}">${load.label} ${fmt(load.p)}kN</text>
+        `;
+      }
     } else {
+      // Beban merata (UDL)
       const range = udlRange(load);
       const x1 = sx(range.a);
       const x2 = sx(range.b);
-      for (let x = x1 + 14; x < x2; x += 34) content += `<line class="diagram-udl" x1="${x}" y1="${y - 72}" x2="${x}" y2="${y - 18}"></line>`;
-      content += `<line x1="${x1}" y1="${y - 72}" x2="${x2}" y2="${y - 72}" stroke="#d67a00" stroke-width="2"/><text class="diagram-label" x="${x1 + 8}" y="${y - 88}">${load.label} ${fmt(load.w)} kN/m</text>`;
+      const udlTop = beamY - beamH - 48;
+      const udlBot = beamY - beamH - 4;
+      const step = Math.max((x2 - x1) / Math.round((x2 - x1) / 28), 20);
+
+      // Area UDL
+      content += `<rect x="${x1}" y="${udlTop}" width="${x2 - x1}" height="${udlBot - udlTop}"
+        fill="#d67a0018" rx="2"/>`;
+      // Garis atas UDL
+      content += `<line x1="${x1}" y1="${udlTop}" x2="${x2}" y2="${udlTop}"
+        stroke="#d67a00" stroke-width="2"/>`;
+      // Anak panah UDL
+      for (let ax = x1 + step / 2; ax <= x2 - step / 2 + 1; ax += step) {
+        content += `<line x1="${ax}" y1="${udlTop}" x2="${ax}" y2="${udlBot}"
+          stroke="#d67a00" stroke-width="1.8" marker-end="url(#arrowUDL)"/>`;
+      }
+      // Label UDL
+      content += `
+        <rect x="${(x1+x2)/2 - 38}" y="${udlTop - 22}" width="76" height="18" rx="3" fill="#d67a0020"/>
+        <text font-family="Inter,sans-serif" font-size="10" font-weight="700" fill="#a35a00"
+          text-anchor="middle" x="${(x1+x2)/2}" y="${udlTop - 9}">${load.label} ${fmt(load.w)} kN/m</text>
+      `;
     }
   });
 
+  // ---- Render support & node ----
   nodes.forEach(node => {
-    const x = sx(node.x);
-    content += drawSupport(node, x, y);
-    content += `<circle class="diagram-node" cx="${x}" cy="${y}" r="8"></circle><text class="diagram-label" x="${x - 16}" y="${y + 86}">N${node.id}</text><text class="diagram-label" x="${x - 26}" y="${y + 106}">${fmt(node.x)} m</text>`;
+    const nx = sx(node.x);
+    const bBot = beamY + beamH;
+
+    // Gambar support
+    if (node.support === 'fixed') {
+      // Dinding jepit
+      const wallX = nx - 10;
+      const wallH = 60;
+      content += `
+        <rect x="${wallX - 16}" y="${beamY - wallH/2}" width="16" height="${wallH}"
+          fill="#17664e" rx="2"/>
+        <rect x="${wallX - 20}" y="${beamY - wallH/2}" width="4" height="${wallH}"
+          fill="#0a2e22"/>
+      `;
+      // Garis arsir jepit
+      for (let hy = beamY - wallH/2 + 6; hy < beamY + wallH/2; hy += 10) {
+        content += `<line x1="${wallX - 20}" y1="${hy}" x2="${wallX - 32}" y2="${hy + 8}"
+          stroke="#0a2e22" stroke-width="1.5" opacity="0.6"/>`;
+      }
+    } else if (node.support === 'pin') {
+      // Segitiga pin
+      const triH = 24;
+      content += `
+        <polygon points="${nx},${bBot} ${nx - 16},${bBot + triH} ${nx + 16},${bBot + triH}"
+          fill="#17664e" stroke="#0a2e22" stroke-width="1"/>
+        <line x1="${nx - 22}" y1="${bBot + triH + 6}" x2="${nx + 22}" y2="${bBot + triH + 6}"
+          stroke="#17664e" stroke-width="3"/>
+        <line x1="${nx - 22}" y1="${bBot + triH + 11}" x2="${nx + 22}" y2="${bBot + triH + 11}"
+          stroke="#c8e6dc" stroke-width="1.5"/>
+      `;
+    } else if (node.support === 'roller') {
+      // Segitiga + roda
+      const triH = 22;
+      content += `
+        <polygon points="${nx},${bBot} ${nx - 14},${bBot + triH} ${nx + 14},${bBot + triH}"
+          fill="#2e8c67" stroke="#0a2e22" stroke-width="1"/>
+        <circle cx="${nx - 8}" cy="${bBot + triH + 7}" r="5"
+          fill="#f5faf8" stroke="#17664e" stroke-width="1.5"/>
+        <circle cx="${nx + 8}" cy="${bBot + triH + 7}" r="5"
+          fill="#f5faf8" stroke="#17664e" stroke-width="1.5"/>
+        <line x1="${nx - 22}" y1="${bBot + triH + 14}" x2="${nx + 22}" y2="${bBot + triH + 14}"
+          stroke="#17664e" stroke-width="2.5"/>
+      `;
+    }
+
+    // Node circle (di atas balok, di tepi balok)
+    content += `
+      <circle cx="${nx}" cy="${beamY}" r="9"
+        fill="url(#nodeGrad)" stroke="#fff" stroke-width="2" filter="url(#nodeShadow)"/>
+      <circle cx="${nx}" cy="${beamY}" r="3.5" fill="#fff" opacity="0.85"/>
+    `;
+
+    // Label node di bawah
+    const labelY = bBot + 58;
+    content += `
+      <text font-family="Inter,sans-serif" font-size="12" font-weight="800" fill="#0f4d3a"
+        text-anchor="middle" x="${nx}" y="${labelY}">N${node.id}</text>
+      <text font-family="Inter,sans-serif" font-size="11" fill="#5c8f7a"
+        text-anchor="middle" x="${nx}" y="${labelY + 15}">${fmt(node.x)} m</text>
+    `;
   });
 
-  svg.innerHTML = content;
+  svg.innerHTML = defs + content;
 }
 
 function validateModel() {
