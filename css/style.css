@@ -1438,3 +1438,141 @@ button, input, select, textarea  {
     color:#fff;
 
 }
+
+/* ===== DARK MODE ===== */
+html.dark {
+  --primary: #4ade9a;
+  --primary2: #38c785;
+  --gold: #f0d93a;
+  --ink: #e8f1ee;
+  --muted: #93b0a7;
+  --soft: #1a2e27;
+  --line: #2a4038;
+  --white: #111e1a;
+  --shadow: 0 18px 44px rgba(0,0,0,.4);
+}
+
+html.dark body {
+  background: #0e1a16;
+  color: var(--ink);
+}
+
+html.dark .card,
+html.dark .control,
+html.dark .filter,
+html.dark .pagination button,
+html.dark .visual-panel,
+html.dark .admin-chat-status,
+html.dark .chat-bubble,
+html.dark .timeline div,
+html.dark .map-card,
+html.dark .map-info,
+html.dark .announcement-body,
+html.dark .notice-card {
+  background: #162520;
+  border-color: var(--line);
+  color: var(--ink);
+}
+
+html.dark .chat-bubble.admin {
+  background: #1e3530;
+  border-color: #2a4d42;
+}
+
+html.dark .chat-bubble.student {
+  background: #0f4d3a;
+  color: #fff;
+}
+
+html.dark .chat-feed {
+  background: #0e1a16;
+  border-color: var(--line);
+}
+
+html.dark .page-head {
+  background: linear-gradient(90deg, #0e1a16, #132219);
+  border-bottom-color: var(--line);
+}
+
+html.dark .hero {
+  background: linear-gradient(90deg, rgba(14,26,22,.98), rgba(14,26,22,.9)), url('../assets/images/engineering-bg.png') center/cover;
+}
+
+html.dark .hero p {
+  color: var(--muted);
+}
+
+html.dark .visual {
+  background: linear-gradient(135deg, #162520, #1a2e27);
+  border-color: var(--line);
+}
+
+html.dark .visual:before {
+  background-image: linear-gradient(rgba(74,222,154,.07) 1px, transparent 1px), linear-gradient(90deg, rgba(74,222,154,.07) 1px, transparent 1px);
+}
+
+html.dark .btn-secondary,
+html.dark .btn-ghost {
+  background: #162520;
+  color: var(--primary);
+  border-color: var(--primary);
+}
+
+html.dark .btn-secondary:hover,
+html.dark .btn-ghost:hover {
+  background: var(--primary);
+  color: #0e1a16;
+}
+
+html.dark .soft {
+  background: #132219;
+}
+
+html.dark .mini span {
+  background: #1a2e27;
+  color: var(--muted);
+}
+
+html.dark .icon {
+  background: #1a2e27;
+}
+
+html.dark .badge {
+  background: #1a2e27;
+  color: var(--primary);
+}
+
+html.dark .filter {
+  background: #162520;
+  color: var(--primary);
+}
+
+html.dark .filter.active,
+html.dark .filter:hover {
+  background: var(--primary);
+  color: #0e1a16;
+}
+
+html.dark .btn-primary,
+html.dark .primary-btn {
+  background: var(--primary);
+  color: #0e1a16;
+}
+
+html.dark .btn-primary:hover,
+html.dark .primary-btn:hover {
+  background: #38c785;
+}
+
+html.dark .stats {
+  background: #0a1510;
+}
+
+html.dark .announcement-media.has-image {
+  background: #132219;
+}
+
+html.dark .admin-chat-status.online {
+  background: #162520;
+  border-color: rgba(74,222,154,.2);
+}

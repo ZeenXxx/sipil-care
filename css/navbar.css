@@ -738,3 +738,136 @@ body.nav-open:before  {
     right: 0;
   }
 }
+
+/* ===== DARK MODE TOGGLE BUTTON ===== */
+.dark-toggle {
+  width: 44px;
+  height: 44px;
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid rgba(15, 77, 58, .18);
+  border-radius: 999px;
+  background: var(--soft, #edf4f1);
+  color: var(--primary);
+  cursor: pointer;
+  transition: background .2s, color .2s, border-color .2s, transform .2s;
+  flex-shrink: 0;
+}
+
+.dark-toggle:hover {
+  background: var(--primary);
+  color: #fff;
+  transform: scale(1.08);
+}
+
+.dark-toggle svg {
+  width: 20px;
+  height: 20px;
+  transition: opacity .15s;
+}
+
+/* hide/show icons based on mode */
+.dark-toggle .icon-moon { display: block; }
+.dark-toggle .icon-sun  { display: none; }
+html.dark .dark-toggle .icon-moon { display: none; }
+html.dark .dark-toggle .icon-sun  { display: block; }
+
+/* dark mode navbar */
+html.dark .navbar {
+  background: rgba(14, 26, 22, .95);
+  border-bottom-color: rgba(74, 222, 154, .1);
+  box-shadow: 0 12px 28px rgba(0,0,0,.3);
+}
+
+html.dark .brand strong { color: var(--primary); }
+html.dark .brand small  { color: #6b9e8d; }
+
+html.dark .nav-links a {
+  color: #b0cfc5;
+}
+
+html.dark .nav-links a:hover,
+html.dark .nav-links a.active {
+  color: var(--primary);
+  background: rgba(74, 222, 154, .1);
+}
+
+html.dark .menu-toggle {
+  background: #162520;
+  border-color: rgba(74, 222, 154, .18);
+}
+
+html.dark .menu-toggle span,
+html.dark .menu-toggle span:before,
+html.dark .menu-toggle span:after {
+  background: var(--primary);
+}
+
+html.dark .menu-toggle.active {
+  background: var(--primary);
+}
+
+html.dark .menu-toggle.active span { background: transparent; }
+html.dark .menu-toggle.active span:before,
+html.dark .menu-toggle.active span:after { background: #0e1a16; }
+
+html.dark .nav-links {
+  background: linear-gradient(180deg, #162520 0%, #132219 100%);
+  border-color: rgba(74, 222, 154, .12);
+}
+
+html.dark .nav-links a {
+  background: #1a2e27;
+  border-color: rgba(74, 222, 154, .1);
+  border-left-color: var(--primary);
+}
+
+html.dark .dark-toggle {
+  background: #1a2e27;
+  border-color: rgba(74, 222, 154, .2);
+  color: var(--primary);
+}
+
+html.dark .student-account-menu {
+  background: #162520;
+  border-color: rgba(74, 222, 154, .14);
+}
+
+html.dark .student-account-info {
+  background: #1a2e27;
+}
+
+html.dark .student-account-action {
+  color: var(--primary);
+}
+
+html.dark .student-account-action:hover {
+  background: rgba(74, 222, 154, .1);
+}
+
+html.dark .student-account-action.danger { color: #f87171; }
+html.dark .student-account-action.danger:hover { background: rgba(248, 113, 113, .1); }
+
+html.dark .student-logout,
+html.dark .student-password,
+html.dark .student-social,
+html.dark .student-login-link {
+  background: #1a2e27;
+  color: var(--primary);
+  border-color: rgba(74, 222, 154, .18);
+}
+
+html.dark .student-logout:hover,
+html.dark .student-password:hover,
+html.dark .student-social:hover,
+html.dark .student-login-link:hover {
+  background: var(--primary);
+  color: #0e1a16;
+}
+
+@media(max-width:820px) {
+  .dark-toggle {
+    width: 52px;
+    height: 52px;
+  }
+}
