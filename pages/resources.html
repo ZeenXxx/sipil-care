@@ -10,7 +10,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
     rel="stylesheet">
-    <title>Resources - SIPIL CARE</title>
+    <link rel="stylesheet" href="../css/resources.css?v=2">
     <script src="../js/student-config.js?v=18"></script>
     <script src="../js/student-auth.js?v=30"></script>
   </head>
@@ -41,6 +41,41 @@
           <option>ZIP</option>
         </select></div>
         <div class="filters" id="categoryFilters"></div>
+
+        <div class="legend-bar" id="resourceLegend" style="display:none">
+          <span class="legend-label">Keterangan kode:</span>
+          <div class="legend-items">
+            <span class="legend-item">
+              <span class="icon icon-sm">SFW</span>
+              <span class="legend-text">
+                <strong>Software</strong>
+                <em>Aplikasi atau perangkat lunak teknik sipil</em>
+              </span>
+            </span>
+            <span class="legend-item">
+              <span class="icon icon-sm">STK</span>
+              <span class="legend-text">
+                <strong>Standar &amp; Ketentuan</strong>
+                <em>Dokumen standar dan ketentuan teknis</em>
+              </span>
+            </span>
+            <span class="legend-item">
+              <span class="icon icon-sm">SNI</span>
+              <span class="legend-text">
+                <strong>Standar Nasional Indonesia</strong>
+                <em>Dokumen SNI resmi bidang teknik sipil</em>
+              </span>
+            </span>
+            <span class="legend-item">
+              <span class="icon icon-sm">BUK</span>
+              <span class="legend-text">
+                <strong>Buku</strong>
+                <em>Buku referensi dan literatur teknik sipil</em>
+              </span>
+            </span>
+          </div>
+        </div>
+
         <div class="grid g3" id="resourceGrid"></div>
         <div class="pagination" id="pagination"></div>
       </div>
@@ -81,4 +116,3 @@
   <script type="module" src="../js/resources.js?v=15"></script>
 </body>
 </html>
-

@@ -127,6 +127,8 @@ function loadResourcesFromFirestore() {
     resources = normalizeResources(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     renderFilters();
     render();
+    const legend = document.getElementById('resourceLegend');
+    if (legend && resources.length > 0) legend.style.display = 'flex';
   }, err => {
     console.error('Firestore load failed:', err);
     fetch('../data/resources.json')
@@ -135,6 +137,8 @@ function loadResourcesFromFirestore() {
         resources = normalizeResources(d);
         renderFilters();
         render();
+        const legend = document.getElementById('resourceLegend');
+        if (legend && resources.length > 0) legend.style.display = 'flex';
       });
   });
 }
