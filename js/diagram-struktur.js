@@ -5,7 +5,9 @@ const state = {
   nextNodeId: 1,
   nextElementId: 1,
   nextLoadId: 1,
-  forceChart: null
+  afdChart: null,
+  sfdChart: null,
+  bmdChart: null
 };
 
 const $ = selector => document.querySelector(selector);
@@ -42,18 +44,6 @@ const getElement = id => state.elements.find(element => element.id === Number(id
 const pointFx = load => Number.isFinite(load.fx) ? load.fx : (load.direction === 'horizontal' ? load.p : 0);
 const pointFy = load => Number.isFinite(load.fy) ? load.fy : (load.direction === 'horizontal' ? 0 : load.p);
 const sortedNodes = () => [...state.nodes].sort((a, b) => a.x - b.x || a.id - b.id);
-const nodeLabel = nodeOrId => {
-  const id = typeof nodeOrId === 'object' ? nodeOrId.id : Number(nodeOrId);
-  const index = sortedNodes().findIndex(node => node.id === id);
-  const safeIndex = index >= 0 ? index : id - 1;
-  let value = safeIndex;
-  let label = '';
-  do {
-    label = String.fromCharCode(65 + (value % 26)) + label;
-    value = Math.floor(value / 26) - 1;
-  } while (value >= 0);
-  return label;
-};
 
 const elementEnds = element => {
   const a = getNode(element.startNode);
@@ -94,10 +84,10 @@ function isUdlRangeCovered(startNode, endNode) {
 const option = (value, label) => `<option value="${value}">${label}</option>`;
 
 function refreshSelects() {
-  const nodeOptions = sortedNodes().map(node => option(node.id, `${nodeLabel(node)} - x=${fmt(node.x)} m`)).join('');
+  const nodeOptions = sortedNodes().map(node => option(node.id, `N${node.id} - x=${fmt(node.x)} m`)).join('');
   const elementOptions = state.elements.map(element => {
     const ends = elementEnds(element);
-    return option(element.id, `E${element.id} - ${nodeLabel(element.startNode)} ke ${nodeLabel(element.endNode)} (${fmt(ends.length)} m)`);
+    return option(element.id, `E${element.id} - N${element.startNode} ke N${element.endNode} (${fmt(ends.length)} m)`);
   }).join('');
 
   [controls.elementStart, controls.elementEnd, controls.supportNode, controls.pointLoadNode, controls.udlStartNode, controls.udlEndNode].forEach(select => { select.innerHTML = nodeOptions; });
@@ -109,15 +99,15 @@ function refreshSelects() {
 }
 
 function renderModelList() {
-  const nodes = sortedNodes().map(node => `<p>${nodeLabel(node)}: x=${fmt(node.x)} m, support=${node.support}</p>`).join('') || '<p>Belum ada node.</p>';
+  const nodes = sortedNodes().map(node => `<p>N${node.id}: x=${fmt(node.x)} m, support=${node.support}</p>`).join('') || '<p>Belum ada node.</p>';
   const elements = state.elements.map(element => {
     const ends = elementEnds(element);
-    return `<p>E${element.id}: ${nodeLabel(element.startNode)}-${nodeLabel(element.endNode)}, L=${fmt(ends.length)} m</p>`;
+    return `<p>E${element.id}: N${element.startNode}-N${element.endNode}, L=${fmt(ends.length)} m</p>`;
   }).join('') || '<p>Belum ada element.</p>';
   const loads = state.loads.map(load => {
     if (load.type === 'point') return `<p>${load.label}: P=${fmt(load.p)} kN, sudut=${fmt(load.angle ?? 90)}&deg;, Fx=${fmt(pointFx(load))} kN, Fy=${fmt(pointFy(load))} kN di x=${fmt(load.x)} m</p>`;
     const range = udlRange(load);
-    return `<p>${load.label}: w=${fmt(load.w)} kN/m dari ${nodeLabel(load.startNode)} ke ${nodeLabel(load.endNode)} (${fmt(range.a)}-${fmt(range.b)} m)</p>`;
+    return `<p>${load.label}: w=${fmt(load.w)} kN/m dari N${load.startNode} ke N${load.endNode} (${fmt(range.a)}-${fmt(range.b)} m)</p>`;
   }).join('') || '<p>Belum ada beban.</p>';
   $('#modelList').innerHTML = `<article><h3>Node</h3>${nodes}</article><article><h3>Element</h3>${elements}</article><article><h3>Beban</h3>${loads}</article>`;
 }
@@ -140,127 +130,50 @@ function renderSvg() {
   const span = Math.max(maxX - minX, 1);
   const left = 90;
   const right = 870;
-  const y = 315;
+  const y = 175;
   const sx = x => left + ((x - minX) / span) * (right - left);
 
   let content = `
-    <defs>
-      <linearGradient id="beamGrad" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stop-color="#1d7a58"/>
-        <stop offset="40%" stop-color="#0b4a38"/>
-        <stop offset="100%" stop-color="#062e22"/>
-      </linearGradient>
-      <radialGradient id="nodeGrad" cx="38%" cy="32%" r="62%">
-        <stop offset="0%" stop-color="#ffffff"/>
-        <stop offset="100%" stop-color="#d4ede5"/>
-      </radialGradient>
-      <filter id="beamShadow" x="-10%" y="-60%" width="120%" height="220%">
-        <feDropShadow dx="0" dy="5" stdDeviation="5" flood-color="#0f4d3a" flood-opacity=".22"/>
-      </filter>
-      <filter id="nodeShadow" x="-40%" y="-40%" width="180%" height="180%">
-        <feDropShadow dx="0" dy="3" stdDeviation="3.5" flood-color="#0f4d3a" flood-opacity=".3"/>
-      </filter>
-      <filter id="supportGlow" x="-20%" y="-20%" width="140%" height="140%">
-        <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#0f4d3a" flood-opacity=".25"/>
-      </filter>
-      <marker id="arrowOrange" markerWidth="10" markerHeight="10" refX="10" refY="5" orient="auto">
-        <path d="M0,0 L10,5 L0,10 Z" fill="#d67a00"/>
-      </marker>
-    </defs>
-    <line x1="${left}" y1="${y + 92}" x2="${right}" y2="${y + 92}" stroke="#c8ddd7" stroke-width="1.5"/>
-    <line x1="${left}" y1="${y + 88}" x2="${left}" y2="${y + 96}" stroke="#0f4d3a" stroke-width="2"/>
-    <line x1="${right}" y1="${y + 88}" x2="${right}" y2="${y + 96}" stroke="#0f4d3a" stroke-width="2"/>
-    <text class="diagram-axis-label" x="${left - 2}" y="${y + 125}">x (m)</text>
+    <defs><marker id="arrowDown" markerWidth="10" markerHeight="10" refX="5" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 Z" fill="#c93434"/></marker><marker id="arrowRight" markerWidth="10" markerHeight="10" refX="5" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 Z" fill="#6b4fd8"/></marker><marker id="arrowOrange" markerWidth="10" markerHeight="10" refX="5" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 Z" fill="#d67a00"/></marker></defs>
+    <line x1="${left}" y1="${y + 92}" x2="${right}" y2="${y + 92}" stroke="#dce6e2" stroke-width="2"/>
   `;
-  let beamLayer = '';
-  let loadLayer = '';
-  let supportLayer = '';
 
   state.elements.forEach(element => {
     const a = getNode(element.startNode);
     const b = getNode(element.endNode);
-    const x1 = sx(a.x);
-    const x2 = sx(b.x);
-    beamLayer += `<line class="diagram-element-glow" x1="${x1}" y1="${y}" x2="${x2}" y2="${y}"></line><line class="diagram-element-shadow" x1="${x1}" y1="${y + 4}" x2="${x2}" y2="${y + 4}"></line><line class="diagram-element" x1="${x1}" y1="${y}" x2="${x2}" y2="${y}"></line><line class="diagram-element-highlight" x1="${x1}" y1="${y - 4}" x2="${x2}" y2="${y - 4}"></line><text class="diagram-label diagram-element-label" x="${(x1 + x2) / 2}" y="${y + 30}" text-anchor="middle">E${element.id}</text>`;
+    content += `<line class="diagram-element" x1="${sx(a.x)}" y1="${y}" x2="${sx(b.x)}" y2="${y}"></line><text class="diagram-label" x="${(sx(a.x) + sx(b.x)) / 2 - 16}" y="${y - 18}">E${element.id}</text>`;
   });
 
-  const occupyLane = (lanes, x1, x2) => {
-    const padding = 42;
-    let lane = 0;
-    while (lanes[lane]?.some(range => !(x2 + padding < range.x1 || x1 - padding > range.x2))) lane += 1;
-    if (!lanes[lane]) lanes[lane] = [];
-    lanes[lane].push({ x1, x2 });
-    return lane;
-  };
-
-  const udlLanes = [];
-  const pointLanes = [];
-  const udlLoads = state.loads.filter(load => load.type === 'udl');
-  const pointLoads = state.loads.filter(load => load.type === 'point');
-
-  udlLoads.forEach(load => {
-    const range = udlRange(load);
-    const x1 = sx(range.a);
-    const x2 = sx(range.b);
-    const lane = occupyLane(udlLanes, x1, x2);
-    const topY = y - 80 - lane * 68;
-    for (let x = x1 + 14; x < x2; x += 34) loadLayer += `<line class="diagram-udl" x1="${x}" y1="${topY}" x2="${x}" y2="${y - 20}"></line>`;
-    const labelX = Math.max(left + 4, Math.min(x1 + 8, right - 135));
-    loadLayer += `<line class="diagram-udl-top" x1="${x1}" y1="${topY}" x2="${x2}" y2="${topY}"/><rect class="diagram-label-bg orange" x="${labelX - 6}" y="${topY - 31}" width="138" height="24" rx="6"></rect><text class="diagram-label diagram-load-label" x="${labelX}" y="${topY - 14}">${load.label} ${fmt(load.w)} kN/m</text>`;
-  });
-
-  const highestUdlTopY = udlLanes.length ? y - 80 - (udlLanes.length - 1) * 68 : null;
-
-  pointLoads.forEach(load => {
+  state.loads.forEach(load => {
+    if (load.type === 'point') {
       const x = sx(load.x);
-      const lane = occupyLane(pointLanes, x - 42, x + 92);
       const fx = pointFx(load);
       const fy = pointFy(load);
       const magnitude = Math.hypot(fx, fy) || 1;
       const ux = fx / magnitude;
       const uy = fy / magnitude;
       const endX = x;
-      const endY = highestUdlTopY ?? y - 20;
-      const hasUdlAnchor = highestUdlTopY !== null;
-      const arrowLength = 62;
-      const laneLift = lane * 68;
-      const startX = endX - ux * arrowLength;
-      const startY = endY - uy * arrowLength - laneLift;
+      const endY = y - 20;
+      const startX = endX - ux * 66;
+      const startY = endY - uy * 66;
       const lineClass = Math.abs(fx) > Math.abs(fy) ? 'diagram-hload' : 'diagram-load';
-      const labelX = Math.max(left + 4, Math.min(startX - 10, right - 145));
-      const labelY = Math.min(startY, endY) - 26;
-      const headLength = 17;
-      const headWidth = 9;
-      const baseX = endX - ux * headLength;
-      const baseY = endY - uy * headLength;
-      const perpX = -uy;
-      const perpY = ux;
-      const headPoints = [
-        `${endX},${endY}`,
-        `${baseX + perpX * headWidth},${baseY + perpY * headWidth}`,
-        `${baseX - perpX * headWidth},${baseY - perpY * headWidth}`
-      ].join(' ');
-      const stemEndX = baseX;
-      const stemEndY = baseY;
-      const anchor = hasUdlAnchor ? `<line class="diagram-load-seat" x1="${endX - 12}" y1="${endY}" x2="${endX + 12}" y2="${endY}"></line>` : '';
-      loadLayer += `<line class="${lineClass}" x1="${startX}" y1="${startY}" x2="${stemEndX}" y2="${stemEndY}"></line><polygon class="${lineClass}-head" points="${headPoints}"></polygon>${anchor}<rect class="diagram-label-bg" x="${labelX - 6}" y="${labelY - 16}" width="150" height="24" rx="6"></rect><text class="diagram-label diagram-load-label" x="${labelX}" y="${labelY}">${load.label} ${fmt(load.p)} kN @ ${fmt(load.angle ?? 90)}&deg;</text>`;
+      content += `<line class="${lineClass}" x1="${startX}" y1="${startY}" x2="${endX}" y2="${endY}"></line><text class="diagram-label" x="${Math.min(startX, endX) - 8}" y="${Math.min(startY, endY) - 12}">${load.label} ${fmt(load.p)} kN @ ${fmt(load.angle ?? 90)}&deg;</text>`;
+    } else {
+      const range = udlRange(load);
+      const x1 = sx(range.a);
+      const x2 = sx(range.b);
+      for (let x = x1 + 14; x < x2; x += 34) content += `<line class="diagram-udl" x1="${x}" y1="${y - 72}" x2="${x}" y2="${y - 18}"></line>`;
+      content += `<line x1="${x1}" y1="${y - 72}" x2="${x2}" y2="${y - 72}" stroke="#d67a00" stroke-width="2"/><text class="diagram-label" x="${x1 + 8}" y="${y - 88}">${load.label} ${fmt(load.w)} kN/m</text>`;
+    }
   });
 
   nodes.forEach(node => {
     const x = sx(node.x);
-    supportLayer += drawSupport(node, x, y);
-    // vertical dimension line
-    supportLayer += `<line class="diagram-dim-line" x1="${x}" y1="${y + 8}" x2="${x}" y2="${y + 88}"/>`;
-    // node circle with gradient
-    supportLayer += `<circle class="diagram-node" cx="${x}" cy="${y}" r="9" fill="url(#nodeGrad)" filter="url(#nodeShadow)"/>`;
-    // node label (letter)
-    supportLayer += `<text class="diagram-node-label" x="${x}" y="${y + 78}">${nodeLabel(node)}</text>`;
-    // dimension label (position in m)
-    supportLayer += `<rect fill="rgba(255,255,255,.88)" x="${x - 26}" y="${y + 93}" width="52" height="18" rx="4"/>`;
-    supportLayer += `<text class="diagram-dim-label" x="${x}" y="${y + 106}">${fmt(node.x)} m</text>`;
+    content += drawSupport(node, x, y);
+    content += `<circle class="diagram-node" cx="${x}" cy="${y}" r="8"></circle><text class="diagram-label" x="${x - 16}" y="${y + 86}">N${node.id}</text><text class="diagram-label" x="${x - 26}" y="${y + 106}">${fmt(node.x)} m</text>`;
   });
 
-  svg.innerHTML = content + beamLayer + loadLayer + supportLayer;
+  svg.innerHTML = content;
 }
 
 function validateModel() {
@@ -289,14 +202,6 @@ function validateModel() {
     }
   }
 
-  const activeNodeIds = new Set();
-  state.elements.forEach(element => {
-    activeNodeIds.add(element.startNode);
-    activeNodeIds.add(element.endNode);
-  });
-  const invalidSupport = state.nodes.find(node => node.support !== 'free' && !activeNodeIds.has(node.id));
-  if (invalidSupport) throw new Error(`Support ${nodeLabel(invalidSupport)} harus berada pada node ujung element. Split element pada node tersebut terlebih dahulu.`);
-
   const fixed = state.nodes.filter(node => node.support === 'fixed');
   const verticalSupports = state.nodes.filter(node => ['pin', 'roller', 'fixed'].includes(node.support));
   const simpleSupports = state.nodes.filter(node => ['pin', 'roller'].includes(node.support));
@@ -306,10 +211,14 @@ function validateModel() {
   if (horizontalLoads.length && horizontalSupports.length < 1) throw new Error('Beban horizontal membutuhkan support pin atau fixed.');
   if (horizontalLoads.length && horizontalSupports.length > 1) throw new Error('Model dengan lebih dari satu restraint horizontal belum didukung pada versi awal.');
 
-  if (verticalSupports.length < 1) throw new Error('Struktur harus punya support yang cukup.');
-  if (fixed.length === 0 && simpleSupports.length < 2) throw new Error('Balok tanpa fixed membutuhkan minimal dua support vertikal.');
+  if (fixed.length === 1 && verticalSupports.length === 1) return { type: 'cantilever', supports: fixed };
+  if (fixed.length === 0 && simpleSupports.length === 2) {
+    if (Math.abs(simpleSupports[0].x - simpleSupports[1].x) < eps) throw new Error('Dua support tidak boleh berada pada posisi X yang sama.');
+    return { type: 'simple', supports: [...simpleSupports].sort((a, b) => a.x - b.x) };
+  }
 
-  return { type: 'stiffness', supports: verticalSupports };
+  if (verticalSupports.length < 1) throw new Error('Struktur harus punya support yang cukup.');
+  throw new Error('Model ini belum didukung pada versi awal.');
 }
 
 function normalizeLoads() {
@@ -320,159 +229,42 @@ function normalizeLoads() {
   });
 }
 
-
-function addEquivalentPointLoad(force, element, x, p, nodeIndex) {
-  const ends = elementEnds(element);
-  const leftIndex = nodeIndex.get(ends.left.id);
-  const rightIndex = nodeIndex.get(ends.right.id);
-  const localX = x - ends.left.x;
-  const r = localX / ends.length;
-  const n1 = 1 - 3 * r * r + 2 * r * r * r;
-  const n2 = ends.length * (r - 2 * r * r + r * r * r);
-  const n3 = 3 * r * r - 2 * r * r * r;
-  const n4 = ends.length * (-r * r + r * r * r);
-  force[leftIndex * 2] -= p * n1;
-  force[leftIndex * 2 + 1] -= p * n2;
-  force[rightIndex * 2] -= p * n3;
-  force[rightIndex * 2 + 1] -= p * n4;
-}
-
-function addEquivalentUdl(force, element, a, b, w, nodeIndex) {
-  const ends = elementEnds(element);
-  const leftIndex = nodeIndex.get(ends.left.id);
-  const rightIndex = nodeIndex.get(ends.right.id);
-  const from = Math.max(a, ends.left.x);
-  const to = Math.min(b, ends.right.x);
-  if (to <= from + eps) return;
-  const mid = (from + to) / 2;
-  const half = (to - from) / 2;
-  const gauss = [
-    { x: -0.8611363116, weight: 0.3478548451 },
-    { x: -0.3399810436, weight: 0.6521451549 },
-    { x: 0.3399810436, weight: 0.6521451549 },
-    { x: 0.8611363116, weight: 0.3478548451 }
-  ];
-  gauss.forEach(point => {
-    const globalX = mid + half * point.x;
-    const r = (globalX - ends.left.x) / ends.length;
-    const n1 = 1 - 3 * r * r + 2 * r * r * r;
-    const n2 = ends.length * (r - 2 * r * r + r * r * r);
-    const n3 = 3 * r * r - 2 * r * r * r;
-    const n4 = ends.length * (-r * r + r * r * r);
-    const scale = w * half * point.weight;
-    force[leftIndex * 2] -= scale * n1;
-    force[leftIndex * 2 + 1] -= scale * n2;
-    force[rightIndex * 2] -= scale * n3;
-    force[rightIndex * 2 + 1] -= scale * n4;
-  });
-}
-
-function solveLinearSystem(matrix, vector) {
-  const n = vector.length;
-  const a = matrix.map((row, i) => [...row, vector[i]]);
-  for (let col = 0; col < n; col += 1) {
-    let pivot = col;
-    for (let row = col + 1; row < n; row += 1) {
-      if (Math.abs(a[row][col]) > Math.abs(a[pivot][col])) pivot = row;
-    }
-    if (Math.abs(a[pivot][col]) < 1e-10) throw new Error('Struktur tidak stabil atau support belum cukup. Periksa lagi tipe support dan posisi tumpuan.');
-    [a[col], a[pivot]] = [a[pivot], a[col]];
-    const divisor = a[col][col];
-    for (let j = col; j <= n; j += 1) a[col][j] /= divisor;
-    for (let row = 0; row < n; row += 1) {
-      if (row === col) continue;
-      const factor = a[row][col];
-      for (let j = col; j <= n; j += 1) a[row][j] -= factor * a[col][j];
-    }
-  }
-  return a.map(row => row[n]);
-}
-
 function solveReactions(model, loads) {
-  const activeNodeIds = new Set();
-  state.elements.forEach(element => {
-    activeNodeIds.add(element.startNode);
-    activeNodeIds.add(element.endNode);
-  });
-  const nodes = sortedNodes().filter(node => activeNodeIds.has(node.id));
-  const nodeIndex = new Map(nodes.map((node, index) => [node.id, index]));
-  const dofCount = nodes.length * 2;
-  const stiffness = Array.from({ length: dofCount }, () => Array(dofCount).fill(0));
-  const force = Array(dofCount).fill(0);
-  const ei = 1;
+  const reactions = [];
+  const verticalLoads = loads
+    .filter(load => load.type === 'udl' || Math.abs(pointFy(load)) > eps)
+    .map(load => load.type === 'point' ? { total: pointFy(load), x: load.x } : { total: load.total, x: load.centroid });
+  const horizontalLoads = loads.filter(load => load.type === 'point' && Math.abs(pointFx(load)) > eps);
+  const totalLoad = verticalLoads.reduce((sum, load) => sum + load.total, 0);
+  const totalHorizontal = horizontalLoads.reduce((sum, load) => sum + pointFx(load), 0);
+  const horizontalSupport = state.nodes.find(node => ['pin', 'fixed'].includes(node.support));
 
-  state.elements.forEach(element => {
-    const ends = elementEnds(element);
-    const leftIndex = nodeIndex.get(ends.left.id);
-    const rightIndex = nodeIndex.get(ends.right.id);
-    const l = ends.length;
-    const local = [
-      [12 * ei / l ** 3, 6 * ei / l ** 2, -12 * ei / l ** 3, 6 * ei / l ** 2],
-      [6 * ei / l ** 2, 4 * ei / l, -6 * ei / l ** 2, 2 * ei / l],
-      [-12 * ei / l ** 3, -6 * ei / l ** 2, 12 * ei / l ** 3, -6 * ei / l ** 2],
-      [6 * ei / l ** 2, 2 * ei / l, -6 * ei / l ** 2, 4 * ei / l]
-    ];
-    const map = [leftIndex * 2, leftIndex * 2 + 1, rightIndex * 2, rightIndex * 2 + 1];
-    for (let i = 0; i < 4; i += 1) {
-      for (let j = 0; j < 4; j += 1) stiffness[map[i]][map[j]] += local[i][j];
-    }
-  });
+  const applyHorizontalReaction = reaction => {
+    reaction.horizontal = horizontalSupport && reaction.nodeId === horizontalSupport.id ? -totalHorizontal : 0;
+    return reaction;
+  };
 
-  loads.forEach(load => {
-    if (load.type === 'point' && Math.abs(pointFy(load)) > eps) {
-      const nodeAtLoad = nodes.find(node => Math.abs(node.x - load.x) < eps);
-      if (nodeAtLoad) {
-        force[nodeIndex.get(nodeAtLoad.id) * 2] -= pointFy(load);
-      } else {
-        const element = state.elements.find(item => {
-          const ends = elementEnds(item);
-          return load.x > ends.left.x + eps && load.x < ends.right.x - eps;
-        });
-        if (!element) throw new Error(`${load.label} berada di luar element.`);
-        addEquivalentPointLoad(force, element, load.x, pointFy(load), nodeIndex);
-      }
-    }
-    if (load.type === 'udl') {
-      state.elements.forEach(element => addEquivalentUdl(force, element, load.a, load.b, load.w, nodeIndex));
-    }
-  });
-
-  const constrained = new Set();
-  nodes.forEach((node, index) => {
-    if (['pin', 'roller', 'fixed'].includes(node.support)) constrained.add(index * 2);
-    if (node.support === 'fixed') constrained.add(index * 2 + 1);
-  });
-  const free = Array.from({ length: dofCount }, (_, index) => index).filter(index => !constrained.has(index));
-  if (!constrained.size) throw new Error('Struktur harus punya support yang cukup.');
-
-  const displacements = Array(dofCount).fill(0);
-  if (free.length) {
-    const reducedK = free.map(row => free.map(col => stiffness[row][col]));
-    const reducedF = free.map(row => force[row]);
-    const solved = solveLinearSystem(reducedK, reducedF);
-    free.forEach((dof, index) => { displacements[dof] = solved[index]; });
+  if (model.type === 'simple') {
+    const [a, b] = model.supports;
+    const span = b.x - a.x;
+    const momentAboutA = verticalLoads.reduce((sum, load) => sum + load.total * (load.x - a.x), 0);
+    const rb = momentAboutA / span;
+    const ra = totalLoad - rb;
+    reactions.push(applyHorizontalReaction({ nodeId: a.id, x: a.x, vertical: ra, moment: 0 }));
+    reactions.push(applyHorizontalReaction({ nodeId: b.id, x: b.x, vertical: rb, moment: 0 }));
   }
 
-  const reactionsByDof = stiffness.map(row => row.reduce((sum, value, col) => sum + value * displacements[col], 0)).map((value, index) => value - force[index]);
-  const totalHorizontal = loads.filter(load => load.type === 'point').reduce((sum, load) => sum + pointFx(load), 0);
-  const horizontalSupports = nodes.filter(node => ['pin', 'fixed'].includes(node.support));
-  const horizontalSupport = horizontalSupports[0];
+  if (model.type === 'cantilever') {
+    const support = model.supports[0];
+    const minX = Math.min(...state.nodes.map(node => node.x));
+    const maxX = Math.max(...state.nodes.map(node => node.x));
+    const isLeftFixed = Math.abs(support.x - minX) < eps;
+    const momentMagnitude = verticalLoads.reduce((sum, load) => sum + load.total * Math.abs(load.x - support.x), 0);
+    reactions.push(applyHorizontalReaction({ nodeId: support.id, x: support.x, vertical: totalLoad, moment: -momentMagnitude, includeMomentInLeftExpression: isLeftFixed }));
+    if (Math.abs(support.x - minX) > eps && Math.abs(support.x - maxX) > eps) throw new Error('Model ini belum didukung pada versi awal.');
+  }
 
-  return nodes
-    .map((node, index) => ({
-      nodeId: node.id,
-      x: node.x,
-      vertical: constrained.has(index * 2) ? reactionsByDof[index * 2] : 0,
-      moment: constrained.has(index * 2 + 1) ? reactionsByDof[index * 2 + 1] : 0,
-      horizontal: horizontalSupport && node.id === horizontalSupport.id ? -totalHorizontal : 0
-    }))
-    .filter(reaction => Math.abs(reaction.vertical) > 1e-7 || Math.abs(reaction.moment) > 1e-7 || Math.abs(reaction.horizontal) > 1e-7)
-    .map(reaction => ({
-      ...reaction,
-      vertical: Math.abs(reaction.vertical) < 1e-7 ? 0 : reaction.vertical,
-      moment: Math.abs(reaction.moment) < 1e-7 ? 0 : reaction.moment,
-      horizontal: Math.abs(reaction.horizontal) < 1e-7 ? 0 : reaction.horizontal
-    }));
+  return reactions;
 }
 function shearAt(x, loads, reactions) {
   let shear = 0;
@@ -489,7 +281,7 @@ function momentAt(x, loads, reactions) {
   reactions.forEach(reaction => {
     if (x >= reaction.x - eps) {
       moment += reaction.vertical * (x - reaction.x);
-      if (reaction.moment) moment -= reaction.moment;
+      if (reaction.includeMomentInLeftExpression) moment += reaction.moment;
     }
   });
   loads.forEach(load => {
@@ -577,269 +369,134 @@ function renderTable(rows) {
   $('#forceTableBody').innerHTML = rows.map(row => `<tr><td>E${row.id}</td><td>${fmt(row.start)} m</td><td>${fmt(row.end)} m</td><td>${fmt(row.nStart)} kN</td><td>${fmt(row.nEnd)} kN</td><td>${fmt(row.vStart)} kN</td><td>${fmt(row.vEnd)} kN</td><td>${fmt(row.mStart)} kNm</td><td>${fmt(row.mMid)} kNm</td><td>${fmt(row.mEnd)} kNm</td></tr>`).join('');
 }
 
+function chartDataset(label, data, color, unit) {
+  // Buat dua dataset terpisah: positif dan negatif, agar fill area tidak overlap di tengah baseline
+  const positiveData = data.map(v => v >= 0 ? v : 0);
+  const negativeData = data.map(v => v < 0 ? v : 0);
+  return [
+    {
+      label: label + ' (+)',
+      data: positiveData,
+      unit,
+      borderColor: color,
+      backgroundColor: color + '30',
+      fill: 'origin',
+      tension: 0,
+      pointRadius: 0,
+      pointHitRadius: 8,
+      borderWidth: 2,
+      _originalData: data
+    },
+    {
+      label: label + ' (-)',
+      data: negativeData,
+      unit,
+      borderColor: color,
+      backgroundColor: color + '18',
+      fill: 'origin',
+      tension: 0,
+      pointRadius: 0,
+      pointHitRadius: 8,
+      borderWidth: 2,
+      _originalData: data
+    }
+  ];
+}
+
+// Plugin khusus untuk label nilai max/min di chart dengan dua dataset (pos/neg)
 const valueLabelPlugin = {
   id: 'valueLabelPlugin',
   afterDatasetsDraw(chart) {
+    // Ambil data asli dari dataset pertama (positif)
+    const ds0 = chart.data.datasets[0];
+    const originalData = ds0?._originalData;
+    if (!originalData?.length) return;
+    const maxVal = Math.max(...originalData);
+    const minVal = Math.min(...originalData);
+    const targets = new Map();
+    if (Math.abs(maxVal) > 1e-9) targets.set(originalData.indexOf(maxVal), maxVal);
+    if (Math.abs(minVal) > 1e-9 && originalData.indexOf(minVal) !== originalData.indexOf(maxVal)) {
+      targets.set(originalData.indexOf(minVal), minVal);
+    }
     const ctx = chart.ctx;
     ctx.save();
-    const { chartArea, scales } = chart;
-    if (!chartArea || !scales?.x) return;
-
-    chart.data.datasets.forEach((dataset, datasetIndex) => {
-      if (dataset.hidden || !dataset.data?.length) return;
-      const meta = chart.getDatasetMeta(datasetIndex);
-      const values = dataset.data.map(point => point.y);
-      const rawValues = dataset.rawValues || values;
-
-      // Always show: first, last, max-abs, min-abs
-      const indices = new Set();
-      indices.add(0);                                           // start
-      indices.add(values.length - 1);                          // end
-      indices.add(rawValues.map(Math.abs).indexOf(Math.max(...rawValues.map(Math.abs)))); // peak
-      // add min only if meaningfully different
-      const minIdx = rawValues.indexOf(Math.min(...rawValues));
-      if (Math.abs(rawValues[minIdx]) > 0.01) indices.add(minIdx);
-
-      ctx.font = '700 10.5px Inter, sans-serif';
-
-      indices.forEach(index => {
-        const point = meta.data[index];
-        if (!point) return;
-        const rawVal = rawValues[index] ?? values[index];
-        if (Math.abs(rawVal) < 0.001) return; // skip near-zero
-
-        const displayVal = `${fmt(rawVal)} ${dataset.unit}`;
-        const metrics = ctx.measureText(displayVal);
-        const pw = metrics.width + 10;
-        const ph = 18;
-
-        // position: above baseline if positive band, below if negative
-        const isFirst = index === 0;
-        const isLast = index === values.length - 1;
-        let px = point.x;
-        let py = values[index] >= 0 ? point.y - 13 : point.y + 22;
-
-        // clamp horizontally inside chart area
-        px = Math.max(chartArea.left + pw / 2 + 2, Math.min(px, chartArea.right - pw / 2 - 2));
-
-        // pill background
-        ctx.fillStyle = 'rgba(255,255,255,0.92)';
-        ctx.strokeStyle = dataset.borderColor + '88';
-        ctx.lineWidth = 1;
-        const rx = 4;
-        ctx.beginPath();
-        ctx.roundRect(px - pw / 2, py - 13, pw, ph, rx);
-        ctx.fill();
-        ctx.stroke();
-
-        // text
-        ctx.fillStyle = dataset.borderColor;
-        ctx.textAlign = 'center';
-        ctx.fillText(displayVal, px, py);
-
-        // tiny dot at data point
-        ctx.beginPath();
-        ctx.arc(point.x, point.y, 3.5, 0, Math.PI * 2);
-        ctx.fillStyle = dataset.borderColor;
-        ctx.fill();
-      });
+    ctx.font = '700 11px Inter, sans-serif';
+    targets.forEach((value, index) => {
+      // Gunakan dataset yang sesuai (positif atau negatif)
+      const dsIndex = value >= 0 ? 0 : 1;
+      const meta = chart.getDatasetMeta(dsIndex);
+      const point = meta?.data[index];
+      if (!point) return;
+      ctx.fillStyle = ds0.borderColor;
+      const text = fmt(value) + ' ' + ds0.unit;
+      const textWidth = ctx.measureText(text).width;
+      const px = Math.min(point.x + 6, chart.chartArea.right - textWidth - 4);
+      const py = value >= 0 ? point.y - 8 : point.y + 16;
+      ctx.fillText(text, px, py);
     });
     ctx.restore();
   }
 };
 
-function chartDataset(label, data, color, unit, hidden = false, rawValues = null) {
-  return {
-    label,
-    data,
-    unit,
-    rawValues,
-    hidden,
-    parsing: false,
-    borderColor: color,
-    backgroundColor: color + '22',
-    fill: 'origin',
-    tension: 0,
-    pointRadius: 0,
-    pointHitRadius: 12,
-    borderWidth: 2.8,
-    borderJoinStyle: 'round',
-    borderCapStyle: 'round'
+function renderCharts(samples) {
+  const labels = samples.map(item => fmt(item.x));
+  const afdData = samples.map(item => item.axial);
+  const sfdData = samples.map(item => item.shear);
+  const bmdData = samples.map(item => item.moment);
+  const paddedRange = values => {
+    const min = Math.min(...values, 0);
+    const max = Math.max(...values, 0);
+    const pad = Math.max((max - min) * 0.18, 1);
+    return { suggestedMin: min - pad, suggestedMax: max + pad };
   };
-}
-
-const diagramBands = {
-  afd: { center: 2, label: 'AFD' },
-  sfd: { center: 0, label: 'SFD' },
-  bmd: { center: -2, label: 'BMD' }
-};
-
-function toBandData(points, band, rawValues = null) {
-  const values = rawValues || points.map(point => point.y);
-  const maxAbs = Math.max(...values.map(value => Math.abs(value)), 1);
-  const amplitude = 0.62;
-  return points.map((point, index) => ({
-    x: point.x,
-    y: diagramBands[band].center + (point.y / maxAbs) * amplitude
-  }));
-}
-
-const bandGuidePlugin = {
-  id: 'bandGuidePlugin',
-  beforeDatasetsDraw(chart) {
-    const { ctx, chartArea, scales } = chart;
-    if (!chartArea || !scales?.y) return;
-    ctx.save();
-
-    const bandColors = {
-      bmd: { line: 'rgba(212,0,0,.2)', fill: 'rgba(212,0,0,.04)', text: '#d40000' },
-      sfd: { line: 'rgba(0,77,255,.18)', fill: 'rgba(0,77,255,.04)', text: '#004dff' },
-      afd: { line: 'rgba(107,79,216,.18)', fill: 'rgba(107,79,216,.04)', text: '#6b4fd8' }
-    };
-
-    Object.entries(diagramBands).forEach(([key, band]) => {
-      const yPx = scales.y.getPixelForValue(band.center);
-      const c = bandColors[key];
-
-      // dashed baseline
-      ctx.setLineDash([5, 5]);
-      ctx.lineWidth = 1;
-      ctx.strokeStyle = c.line;
-      ctx.beginPath();
-      ctx.moveTo(chartArea.left, yPx);
-      ctx.lineTo(chartArea.right, yPx);
-      ctx.stroke();
-      ctx.setLineDash([]);
-
-      // pill label
-      const label = band.label;
-      ctx.font = '800 11px Inter, sans-serif';
-      const tw = ctx.measureText(label).width;
-      const px = chartArea.left + 8;
-      const py = yPx - 9;
-      const pw = tw + 14;
-      const ph = 18;
-
-      ctx.fillStyle = 'rgba(255,255,255,.95)';
-      ctx.strokeStyle = c.line;
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.roundRect(px, py, pw, ph, 4);
-      ctx.fill();
-      ctx.stroke();
-
-      ctx.fillStyle = c.text;
-      ctx.textAlign = 'left';
-      ctx.fillText(label, px + 7, py + 13);
-    });
-
-    ctx.restore();
-  }
-};
-
-function buildJumpAwareSeries(loads, reactions, key, valueFn) {
-  const minX = Math.min(...state.nodes.map(node => node.x));
-  const maxX = Math.max(...state.nodes.map(node => node.x));
-  const breakpoints = new Set([minX, maxX]);
-  state.nodes.forEach(node => breakpoints.add(node.x));
-  reactions.forEach(reaction => breakpoints.add(reaction.x));
-  loads.forEach(load => {
-    if (load.type === 'point') breakpoints.add(load.x);
-    if (load.type === 'udl') { breakpoints.add(load.a); breakpoints.add(load.b); }
-  });
-  const points = [...breakpoints].sort((a, b) => a - b);
-  const series = [];
-  points.forEach((x, index) => {
-    const leftValue = index === 0 ? valueFn(x + 1e-7) : valueFn(x - 1e-7);
-    const rightValue = index === points.length - 1 ? valueFn(x - 1e-7) : valueFn(x + 1e-7);
-    if (index > 0) series.push({ x, y: leftValue, source: key });
-    series.push({ x, y: rightValue, source: key });
-  });
-  return series;
-}
-
-function renderCharts(samples, loads, reactions) {
-  const afdRaw = buildJumpAwareSeries(loads, reactions, 'axial', x => axialAt(x, loads, reactions));
-  const sfdRaw = buildJumpAwareSeries(loads, reactions, 'shear', x => shearAt(x, loads, reactions));
-  const bmdRaw = samples.map(item => ({ x: item.x, y: item.moment }));
-  const bmdDisplay = bmdRaw.map(point => ({ x: point.x, y: -point.y }));
-  const afdData = toBandData(afdRaw, 'afd');
-  const sfdData = toBandData(sfdRaw, 'sfd');
-  const bmdData = toBandData(bmdDisplay, 'bmd', bmdRaw.map(point => point.y));
-  const afdRawValues = afdRaw.map(point => point.y);
-  const sfdRawValues = sfdRaw.map(point => point.y);
-  const bmdRawValues = bmdRaw.map(point => point.y);
-  const mode = controls.diagramOutput.value;
-  const shouldHide = name => mode !== 'all' && mode !== name;
-  const minX = Math.min(...state.nodes.map(node => node.x));
-  const maxX = Math.max(...state.nodes.map(node => node.x));
-  const options = {
+  const baseOptions = (unit, values) => ({
     responsive: true,
     maintainAspectRatio: false,
-    interaction: { mode: 'nearest', intersect: false },
     plugins: {
-      legend: {
-        display: true,
-        labels: { usePointStyle: true, boxWidth: 9, font: { weight: 800 } }
-      },
-      tooltip: {
-        callbacks: {
-          label(context) {
-            const dataset = context.dataset;
-            const rawValue = dataset.rawValues?.[context.dataIndex] ?? context.parsed.y;
-            return `${dataset.label}: ${fmt(rawValue)} ${dataset.unit}`;
-          }
-        }
-      }
+      legend: { display: false },
+      // Pastikan filler plugin aktif untuk fill: 'origin'
+      filler: { propagate: false }
     },
     scales: {
-      x: {
-        type: 'linear',
-        min: minX,
-        max: maxX,
-        title: { display: true, text: 'x (m)' },
-        ticks: { maxTicksLimit: 8, callback: value => fmt(value) }
-      },
-      y: {
-        min: -2.9,
-        max: 2.9,
-        title: { display: true, text: 'AFD / SFD / BMD' },
-        ticks: {
-          stepSize: 1,
-          callback(value) {
-            if (Math.abs(value - diagramBands.afd.center) < 0.01) return 'AFD';
-            if (Math.abs(value - diagramBands.sfd.center) < 0.01) return 'SFD';
-            if (Math.abs(value - diagramBands.bmd.center) < 0.01) return 'BMD';
-            return '';
-          }
-        }
-      }
-    }
-  };
-
-  if (state.forceChart) state.forceChart.destroy();
-  state.forceChart = new Chart($('#forceDiagramChart'), {
-    type: 'line',
-    data: {
-      datasets: [
-        chartDataset('AFD - N', afdData, '#6b4fd8', 'kN', shouldHide('afd'), afdRawValues),
-        chartDataset('SFD - V', sfdData, '#004dff', 'kN', shouldHide('sfd'), sfdRawValues),
-        chartDataset('BMD - M', bmdData, '#d40000', 'kNm', shouldHide('bmd'), bmdRawValues)
-      ]
+      x: { title: { display: true, text: 'x (m)' }, ticks: { maxTicksLimit: 8 } },
+      y: { ...paddedRange(values), title: { display: true, text: unit }, ticks: { maxTicksLimit: 5 } }
     },
-    options,
-    plugins: [bandGuidePlugin, valueLabelPlugin]
+    interaction: { mode: 'index', intersect: false },
+    elements: { line: { fill: true } }
   });
+
+  if (state.afdChart) state.afdChart.destroy();
+  if (state.sfdChart) state.sfdChart.destroy();
+  if (state.bmdChart) state.bmdChart.destroy();
+
+  // Setiap chart punya dua dataset terpisah (positif & negatif) dengan fill ke baseline y=0
+  state.afdChart = new Chart($('#afdChart'), {
+    type: 'line',
+    data: { labels, datasets: chartDataset('N', afdData, '#6b4fd8', 'kN') },
+    options: baseOptions('N (kN)', afdData),
+    plugins: [valueLabelPlugin]
+  });
+  state.sfdChart = new Chart($('#sfdChart'), {
+    type: 'line',
+    data: { labels, datasets: chartDataset('V', sfdData, '#1a56ff', 'kN') },
+    options: baseOptions('V (kN)', sfdData),
+    plugins: [valueLabelPlugin]
+  });
+  const bmdOptions = baseOptions('M (kNm)', bmdData);
+  bmdOptions.scales.y = { ...bmdOptions.scales.y, reverse: true };
+  state.bmdChart = new Chart($('#bmdChart'), {
+    type: 'line',
+    data: { labels, datasets: chartDataset('M', bmdData, '#d40000', 'kNm') },
+    options: bmdOptions,
+    plugins: [valueLabelPlugin]
+  });
+  updateChartVisibility();
 }
 function updateChartVisibility() {
   const mode = controls.diagramOutput.value;
-  if (!state.forceChart) return;
-  state.forceChart.data.datasets.forEach(dataset => {
-    if (dataset.label.startsWith('AFD')) dataset.hidden = mode !== 'all' && mode !== 'afd';
-    if (dataset.label.startsWith('SFD')) dataset.hidden = mode !== 'all' && mode !== 'sfd';
-    if (dataset.label.startsWith('BMD')) dataset.hidden = mode !== 'all' && mode !== 'bmd';
-  });
-  state.forceChart.update();
+  $('#afdCard').style.display = mode !== 'all' && mode !== 'afd' ? 'none' : '';
+  $('#sfdCard').style.display = mode !== 'all' && mode !== 'sfd' ? 'none' : '';
+  $('#bmdCard').style.display = mode !== 'all' && mode !== 'bmd' ? 'none' : '';
 }
 
 function analyze() {
@@ -851,8 +508,8 @@ function analyze() {
     const table = buildElementTable(loads, reactions);
     renderSummary(reactions, samples);
     renderTable(table);
-    renderCharts(samples, loads, reactions);
-    showMessage('Analisis berhasil. Support pin, roller, dan fixed dihitung dengan metode kekakuan balok 1D.', true);
+    renderCharts(samples);
+    showMessage('Analisis berhasil untuk model ' + (model.type === 'simple' ? 'simply supported beam.' : 'fixed-end cantilever.'), true);
   } catch (error) {
     $('#reactionResults').innerHTML = '';
     $('#forceTableBody').innerHTML = '<tr><td colspan="10">Belum ada hasil analisis.</td></tr>';
@@ -938,8 +595,12 @@ function resetModel() {
   state.nextNodeId = 1;
   state.nextElementId = 1;
   state.nextLoadId = 1;
-  if (state.forceChart) state.forceChart.destroy();
-  state.forceChart = null;
+  if (state.afdChart) state.afdChart.destroy();
+  if (state.sfdChart) state.sfdChart.destroy();
+  if (state.bmdChart) state.bmdChart.destroy();
+  state.afdChart = null;
+  state.sfdChart = null;
+  state.bmdChart = null;
   $('#reactionResults').innerHTML = '';
   $('#forceTableBody').innerHTML = '<tr><td colspan="10">Belum ada hasil analisis.</td></tr>';
   showMessage('Model direset. Tambahkan node sesuai panjang balok yang diinginkan.', true);
