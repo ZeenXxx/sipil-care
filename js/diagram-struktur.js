@@ -145,10 +145,31 @@ function renderSvg() {
 
   let content = `
     <defs>
-      <filter id="beamShadow" x="-10%" y="-60%" width="120%" height="220%"><feDropShadow dx="0" dy="4" stdDeviation="4" flood-color="#0f4d3a" flood-opacity=".16"/></filter>
-      <marker id="arrowOrange" markerWidth="10" markerHeight="10" refX="10" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 Z" fill="#d67a00"/></marker>
+      <linearGradient id="beamGrad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#1d7a58"/>
+        <stop offset="40%" stop-color="#0b4a38"/>
+        <stop offset="100%" stop-color="#062e22"/>
+      </linearGradient>
+      <radialGradient id="nodeGrad" cx="38%" cy="32%" r="62%">
+        <stop offset="0%" stop-color="#ffffff"/>
+        <stop offset="100%" stop-color="#d4ede5"/>
+      </radialGradient>
+      <filter id="beamShadow" x="-10%" y="-60%" width="120%" height="220%">
+        <feDropShadow dx="0" dy="5" stdDeviation="5" flood-color="#0f4d3a" flood-opacity=".22"/>
+      </filter>
+      <filter id="nodeShadow" x="-40%" y="-40%" width="180%" height="180%">
+        <feDropShadow dx="0" dy="3" stdDeviation="3.5" flood-color="#0f4d3a" flood-opacity=".3"/>
+      </filter>
+      <filter id="supportGlow" x="-20%" y="-20%" width="140%" height="140%">
+        <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#0f4d3a" flood-opacity=".25"/>
+      </filter>
+      <marker id="arrowOrange" markerWidth="10" markerHeight="10" refX="10" refY="5" orient="auto">
+        <path d="M0,0 L10,5 L0,10 Z" fill="#d67a00"/>
+      </marker>
     </defs>
-    <line x1="${left}" y1="${y + 92}" x2="${right}" y2="${y + 92}" stroke="#dce6e2" stroke-width="2"/>
+    <line x1="${left}" y1="${y + 92}" x2="${right}" y2="${y + 92}" stroke="#c8ddd7" stroke-width="1.5"/>
+    <line x1="${left}" y1="${y + 88}" x2="${left}" y2="${y + 96}" stroke="#0f4d3a" stroke-width="2"/>
+    <line x1="${right}" y1="${y + 88}" x2="${right}" y2="${y + 96}" stroke="#0f4d3a" stroke-width="2"/>
     <text class="diagram-axis-label" x="${left - 2}" y="${y + 125}">x (m)</text>
   `;
   let beamLayer = '';
@@ -160,7 +181,7 @@ function renderSvg() {
     const b = getNode(element.endNode);
     const x1 = sx(a.x);
     const x2 = sx(b.x);
-    beamLayer += `<line class="diagram-element-shadow" x1="${x1}" y1="${y + 4}" x2="${x2}" y2="${y + 4}"></line><line class="diagram-element" x1="${x1}" y1="${y}" x2="${x2}" y2="${y}"></line><line class="diagram-element-highlight" x1="${x1}" y1="${y - 4}" x2="${x2}" y2="${y - 4}"></line><text class="diagram-label diagram-element-label" x="${(x1 + x2) / 2 - 16}" y="${y + 30}">E${element.id}</text>`;
+    beamLayer += `<line class="diagram-element-glow" x1="${x1}" y1="${y}" x2="${x2}" y2="${y}"></line><line class="diagram-element-shadow" x1="${x1}" y1="${y + 4}" x2="${x2}" y2="${y + 4}"></line><line class="diagram-element" x1="${x1}" y1="${y}" x2="${x2}" y2="${y}"></line><line class="diagram-element-highlight" x1="${x1}" y1="${y - 4}" x2="${x2}" y2="${y - 4}"></line><text class="diagram-label diagram-element-label" x="${(x1 + x2) / 2}" y="${y + 30}" text-anchor="middle">E${element.id}</text>`;
   });
 
   const occupyLane = (lanes, x1, x2) => {
@@ -228,7 +249,15 @@ function renderSvg() {
   nodes.forEach(node => {
     const x = sx(node.x);
     supportLayer += drawSupport(node, x, y);
-    supportLayer += `<circle class="diagram-node" cx="${x}" cy="${y}" r="8"></circle><text class="diagram-node-label" x="${x}" y="${y + 86}">${nodeLabel(node)}</text><text class="diagram-dim-label" x="${x - 22}" y="${y + 106}">${fmt(node.x)} m</text>`;
+    // vertical dimension line
+    supportLayer += `<line class="diagram-dim-line" x1="${x}" y1="${y + 8}" x2="${x}" y2="${y + 88}"/>`;
+    // node circle with gradient
+    supportLayer += `<circle class="diagram-node" cx="${x}" cy="${y}" r="9" fill="url(#nodeGrad)" filter="url(#nodeShadow)"/>`;
+    // node label (letter)
+    supportLayer += `<text class="diagram-node-label" x="${x}" y="${y + 78}">${nodeLabel(node)}</text>`;
+    // dimension label (position in m)
+    supportLayer += `<rect fill="rgba(255,255,255,.88)" x="${x - 26}" y="${y + 93}" width="52" height="18" rx="4"/>`;
+    supportLayer += `<text class="diagram-dim-label" x="${x}" y="${y + 106}">${fmt(node.x)} m</text>`;
   });
 
   svg.innerHTML = content + beamLayer + loadLayer + supportLayer;
@@ -553,18 +582,66 @@ const valueLabelPlugin = {
   afterDatasetsDraw(chart) {
     const ctx = chart.ctx;
     ctx.save();
-    ctx.font = '700 11px Inter, sans-serif';
+    const { chartArea, scales } = chart;
+    if (!chartArea || !scales?.x) return;
+
     chart.data.datasets.forEach((dataset, datasetIndex) => {
       if (dataset.hidden || !dataset.data?.length) return;
       const meta = chart.getDatasetMeta(datasetIndex);
       const values = dataset.data.map(point => point.y);
-      const indices = new Set([values.indexOf(Math.max(...values)), values.indexOf(Math.min(...values))]);
-      ctx.fillStyle = dataset.borderColor;
+      const rawValues = dataset.rawValues || values;
+
+      // Always show: first, last, max-abs, min-abs
+      const indices = new Set();
+      indices.add(0);                                           // start
+      indices.add(values.length - 1);                          // end
+      indices.add(rawValues.map(Math.abs).indexOf(Math.max(...rawValues.map(Math.abs)))); // peak
+      // add min only if meaningfully different
+      const minIdx = rawValues.indexOf(Math.min(...rawValues));
+      if (Math.abs(rawValues[minIdx]) > 0.01) indices.add(minIdx);
+
+      ctx.font = '700 10.5px Inter, sans-serif';
+
       indices.forEach(index => {
         const point = meta.data[index];
         if (!point) return;
-        const displayValue = dataset.rawValues?.[index] ?? values[index];
-        ctx.fillText(fmt(displayValue) + ' ' + dataset.unit, point.x + 6, point.y + (values[index] >= 0 ? -8 : 16));
+        const rawVal = rawValues[index] ?? values[index];
+        if (Math.abs(rawVal) < 0.001) return; // skip near-zero
+
+        const displayVal = `${fmt(rawVal)} ${dataset.unit}`;
+        const metrics = ctx.measureText(displayVal);
+        const pw = metrics.width + 10;
+        const ph = 18;
+
+        // position: above baseline if positive band, below if negative
+        const isFirst = index === 0;
+        const isLast = index === values.length - 1;
+        let px = point.x;
+        let py = values[index] >= 0 ? point.y - 13 : point.y + 22;
+
+        // clamp horizontally inside chart area
+        px = Math.max(chartArea.left + pw / 2 + 2, Math.min(px, chartArea.right - pw / 2 - 2));
+
+        // pill background
+        ctx.fillStyle = 'rgba(255,255,255,0.92)';
+        ctx.strokeStyle = dataset.borderColor + '88';
+        ctx.lineWidth = 1;
+        const rx = 4;
+        ctx.beginPath();
+        ctx.roundRect(px - pw / 2, py - 13, pw, ph, rx);
+        ctx.fill();
+        ctx.stroke();
+
+        // text
+        ctx.fillStyle = dataset.borderColor;
+        ctx.textAlign = 'center';
+        ctx.fillText(displayVal, px, py);
+
+        // tiny dot at data point
+        ctx.beginPath();
+        ctx.arc(point.x, point.y, 3.5, 0, Math.PI * 2);
+        ctx.fillStyle = dataset.borderColor;
+        ctx.fill();
       });
     });
     ctx.restore();
@@ -580,12 +657,14 @@ function chartDataset(label, data, color, unit, hidden = false, rawValues = null
     hidden,
     parsing: false,
     borderColor: color,
-    backgroundColor: color + '14',
-    fill: false,
+    backgroundColor: color + '22',
+    fill: 'origin',
     tension: 0,
     pointRadius: 0,
-    pointHitRadius: 10,
-    borderWidth: 2.4
+    pointHitRadius: 12,
+    borderWidth: 2.8,
+    borderJoinStyle: 'round',
+    borderCapStyle: 'round'
   };
 }
 
@@ -611,19 +690,49 @@ const bandGuidePlugin = {
     const { ctx, chartArea, scales } = chart;
     if (!chartArea || !scales?.y) return;
     ctx.save();
-    ctx.setLineDash([6, 6]);
-    ctx.lineWidth = 1;
-    ctx.font = '800 12px Inter, sans-serif';
+
+    const bandColors = {
+      bmd: { line: 'rgba(212,0,0,.2)', fill: 'rgba(212,0,0,.04)', text: '#d40000' },
+      sfd: { line: 'rgba(0,77,255,.18)', fill: 'rgba(0,77,255,.04)', text: '#004dff' },
+      afd: { line: 'rgba(107,79,216,.18)', fill: 'rgba(107,79,216,.04)', text: '#6b4fd8' }
+    };
+
     Object.entries(diagramBands).forEach(([key, band]) => {
-      const y = scales.y.getPixelForValue(band.center);
-      ctx.strokeStyle = key === 'bmd' ? 'rgba(212,0,0,.26)' : key === 'sfd' ? 'rgba(0,77,255,.24)' : 'rgba(107,79,216,.24)';
+      const yPx = scales.y.getPixelForValue(band.center);
+      const c = bandColors[key];
+
+      // dashed baseline
+      ctx.setLineDash([5, 5]);
+      ctx.lineWidth = 1;
+      ctx.strokeStyle = c.line;
       ctx.beginPath();
-      ctx.moveTo(chartArea.left, y);
-      ctx.lineTo(chartArea.right, y);
+      ctx.moveTo(chartArea.left, yPx);
+      ctx.lineTo(chartArea.right, yPx);
       ctx.stroke();
-      ctx.fillStyle = '#0f4d3a';
-      ctx.fillText(band.label, chartArea.left + 6, y - 8);
+      ctx.setLineDash([]);
+
+      // pill label
+      const label = band.label;
+      ctx.font = '800 11px Inter, sans-serif';
+      const tw = ctx.measureText(label).width;
+      const px = chartArea.left + 8;
+      const py = yPx - 9;
+      const pw = tw + 14;
+      const ph = 18;
+
+      ctx.fillStyle = 'rgba(255,255,255,.95)';
+      ctx.strokeStyle = c.line;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.roundRect(px, py, pw, ph, 4);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = c.text;
+      ctx.textAlign = 'left';
+      ctx.fillText(label, px + 7, py + 13);
     });
+
     ctx.restore();
   }
 };

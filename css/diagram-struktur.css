@@ -24,8 +24,17 @@ summary { cursor: pointer; color: var(--primary); font-weight: 900; }
 .action-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 16px; }
 .model-message { margin-top: 12px; color: #8a4b00; font-weight: 800; }
 .model-message.ok { color: var(--primary); }
-.svg-wrap { width: 100%; max-width: 100%; overflow-x: auto; overflow-y: hidden; border: 1px solid var(--line); border-radius: 8px; background: linear-gradient(#f2f8f6 1px, transparent 1px), linear-gradient(90deg, #f2f8f6 1px, transparent 1px), radial-gradient(circle at 12% 12%, rgba(15,77,58,.06), transparent 28%), #fff; background-size: 32px 32px, 32px 32px, auto; }
-#beamCanvas { display: block; width: 100%; min-width: 620px; min-height: 420px; }
+.svg-wrap {
+  width: 100%; max-width: 100%; overflow-x: auto; overflow-y: hidden;
+  border: 1px solid var(--line); border-radius: 12px;
+  background:
+    linear-gradient(rgba(15,77,58,.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(15,77,58,.045) 1px, transparent 1px),
+    linear-gradient(135deg, #f0f8f5 0%, #fff 60%, #f5faf8 100%);
+  background-size: 40px 40px, 40px 40px, auto;
+  box-shadow: inset 0 2px 8px rgba(15,77,58,.06), 0 8px 32px rgba(15,77,58,.08);
+}
+#beamCanvas { display: block; width: 100%; min-width: 620px; min-height: 460px; }
 .model-list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 14px; }
 .model-list article { border: 1px solid var(--line); border-radius: 8px; padding: 12px; background: #fbfdfc; }
 .model-list h3 { margin: 0 0 8px; color: var(--primary); font-size: 15px; }
@@ -38,20 +47,23 @@ summary { cursor: pointer; color: var(--primary); font-weight: 900; }
 .result-card-small span { display: block; color: var(--muted); font-size: 13px; }
 .result-card-small strong { color: var(--primary); font-size: 22px; }
 .chart-grid { display: grid; grid-template-columns: 1fr; gap: 16px; max-width: 100%; }
-.chart-card { min-width: 0; border: 1px solid var(--line); border-radius: 8px; padding: 14px; height: 340px; min-height: 340px; background: #fff; }
-.chart-card canvas { max-height: 280px; }
-.combined-chart-card { height: 390px; min-height: 390px; }
-.combined-chart-card canvas { max-height: 320px; }
+.chart-card { min-width: 0; border: 1px solid var(--line); border-radius: 10px; padding: 18px; height: 360px; min-height: 360px; background: linear-gradient(135deg,#fff,#f8fcfa); box-shadow: 0 4px 20px rgba(15,77,58,.06); }
+.chart-card canvas { max-height: 290px; }
+.combined-chart-card { height: 420px; min-height: 420px; }
+.combined-chart-card canvas { max-height: 350px; }
 .chart-card h3 { margin: 0 0 12px; color: var(--primary); }
 .table-wrap { overflow-x: auto; margin-top: 18px; border: 1px solid var(--line); border-radius: 8px; }
 table { width: 100%; border-collapse: collapse; min-width: 980px; }
 th, td { padding: 12px; border-bottom: 1px solid var(--line); text-align: left; font-size: 14px; }
 th { background: var(--soft); color: var(--primary); }
-.diagram-node { fill: #fff; stroke: #0f4d3a; stroke-width: 3; filter: drop-shadow(0 3px 4px rgba(15,77,58,.18)); }
-.diagram-element-shadow { stroke: rgba(15,77,58,.16); stroke-width: 18; stroke-linecap: round; }
-.diagram-element { stroke: #0b4a38; stroke-width: 12; stroke-linecap: round; }
-.diagram-element-highlight { stroke: rgba(255,255,255,.58); stroke-width: 3; stroke-linecap: round; }
-.diagram-element-label { fill: #0f4d3a; font-size: 12px; }
+/* ── Beam diagram SVG elements ── */
+.diagram-node { fill: #fff; stroke: #0f4d3a; stroke-width: 3; filter: drop-shadow(0 3px 6px rgba(15,77,58,.28)); }
+.diagram-node-online { fill: #e8f9f1; }
+.diagram-element-glow { stroke: rgba(15,77,58,.12); stroke-width: 28; stroke-linecap: round; }
+.diagram-element-shadow { stroke: rgba(15,77,58,.22); stroke-width: 18; stroke-linecap: round; }
+.diagram-element { stroke: url(#beamGrad); stroke-width: 13; stroke-linecap: round; }
+.diagram-element-highlight { stroke: rgba(255,255,255,.72); stroke-width: 3.5; stroke-linecap: round; }
+.diagram-element-label { fill: #0f4d3a; font-size: 12px; font-weight: 900; }
 .diagram-load { stroke: #c93434; stroke-width: 3.2; stroke-linecap: round; }
 .diagram-hload { stroke: #6b4fd8; stroke-width: 3.2; stroke-linecap: round; }
 .diagram-udl { stroke: #d67a00; stroke-width: 2.8; marker-end: url(#arrowOrange); }
@@ -59,14 +71,16 @@ th { background: var(--soft); color: var(--primary); }
 .diagram-load-head { fill: #c93434; stroke: #c93434; stroke-width: 1; }
 .diagram-hload-head { fill: #6b4fd8; stroke: #6b4fd8; stroke-width: 1; }
 .diagram-load-seat { stroke: #c93434; stroke-width: 3.2; stroke-linecap: round; }
-.diagram-support { fill: #d9c529; stroke: #0f4d3a; stroke-width: 2; }
+.diagram-support { fill: #d9c529; stroke: #0f4d3a; stroke-width: 2.2; filter: drop-shadow(0 2px 4px rgba(15,77,58,.2)); }
 .diagram-label { fill: #17231f; font-size: 14px; font-weight: 800; }
 .diagram-load-label { font-size: 12px; }
-.diagram-label-bg { fill: rgba(255,255,255,.94); stroke: rgba(201,52,52,.22); }
+.diagram-label-bg { fill: rgba(255,255,255,.96); stroke: rgba(201,52,52,.22); rx: 6; filter: drop-shadow(0 1px 3px rgba(0,0,0,.1)); }
 .diagram-label-bg.orange { stroke: rgba(214,122,0,.28); }
 .diagram-node-label { fill: #0f4d3a; font-size: 16px; font-weight: 900; text-anchor: middle; }
-.diagram-dim-label { fill: #17231f; font-size: 12px; font-weight: 800; }
+.diagram-dim-label { fill: #17231f; font-size: 12px; font-weight: 800; text-anchor: middle; }
 .diagram-axis-label { fill: #6b7d77; font-size: 12px; font-weight: 800; }
+.diagram-dim-line { stroke: #0f4d3a; stroke-width: 1.2; stroke-dasharray: 4 3; opacity: .5; }
+.diagram-end-val { font-size: 11px; font-weight: 900; text-anchor: middle; }
 @media (max-width: 1280px) { .diagram-layout { grid-template-columns: 1fr; } .input-panel { position: static; } }
 @media (max-width: 980px) { .diagram-hero-grid, .chart-grid { grid-template-columns: 1fr; } .model-list, .result-grid { grid-template-columns: 1fr; } }
 @media (max-width: 560px) { .diagram-hero { padding-top: 56px; } .form-grid.two, .action-row, .output-switch { grid-template-columns: 1fr; display: grid; } .editor-panel, .result-panel, .input-panel { padding: 14px; } #beamCanvas { min-width: 520px; } .chart-card, .combined-chart-card { height: 320px; min-height: 320px; } .chart-card canvas, .combined-chart-card canvas { max-height: 250px; } }
