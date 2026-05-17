@@ -648,7 +648,7 @@ const valueLabelPlugin = {
   }
 };
 
-function chartDataset(label, data, color, unit, hidden = false, rawValues = null) {
+function chartDataset(label, data, color, unit, hidden = false, rawValues = null, baseline = 0) {
   return {
     label,
     data,
@@ -658,7 +658,11 @@ function chartDataset(label, data, color, unit, hidden = false, rawValues = null
     parsing: false,
     borderColor: color,
     backgroundColor: color + '22',
-    fill: 'origin',
+    fill: {
+      target: { value: baseline },
+      above: color + '22',
+      below: color + '22'
+    },
     tension: 0,
     pointRadius: 0,
     pointHitRadius: 12,
@@ -822,9 +826,9 @@ function renderCharts(samples, loads, reactions) {
     type: 'line',
     data: {
       datasets: [
-        chartDataset('AFD - N', afdData, '#6b4fd8', 'kN', shouldHide('afd'), afdRawValues),
-        chartDataset('SFD - V', sfdData, '#004dff', 'kN', shouldHide('sfd'), sfdRawValues),
-        chartDataset('BMD - M', bmdData, '#d40000', 'kNm', shouldHide('bmd'), bmdRawValues)
+        chartDataset('AFD - N', afdData, '#6b4fd8', 'kN', shouldHide('afd'), afdRawValues, diagramBands.afd.center),
+        chartDataset('SFD - V', sfdData, '#004dff', 'kN', shouldHide('sfd'), sfdRawValues, diagramBands.sfd.center),
+        chartDataset('BMD - M', bmdData, '#d40000', 'kNm', shouldHide('bmd'), bmdRawValues, diagramBands.bmd.center)
       ]
     },
     options,
