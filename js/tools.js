@@ -292,6 +292,33 @@ const getItemFontSize = item => {
 
 const normalizePdfText = value => String(value || '').replace(/\s+/g, ' ').trim();
 
+const inferWordFont = (item, styles = {}) => {
+  const style = styles[item.fontName] || {};
+  const source = `${item.fontName || ''} ${style.fontFamily || ''}`.toLowerCase();
+  const cleanName = source.replace(/^[a-z0-9]{6}\+/, '');
+  let font = 'Times New Roman';
+  if (/times|tnr|serif|roman/.test(cleanName)) font = 'Times New Roman';
+  if (/arial|helvetica|sans/.test(cleanName)) font = 'Arial';
+  if (/calibri/.test(cleanName)) font = 'Calibri';
+  if (/cambria/.test(cleanName)) font = 'Cambria';
+  if (/courier|mono|consolas/.test(cleanName)) font = 'Courier New';
+  return {
+    font,
+    bold: /bold|black|heavy|semibold|demi/.test(cleanName),
+    italics: /italic|oblique/.test(cleanName)
+  };
+};
+
+const getRowAlignment = (row, pageWidth) => {
+  const rowCenter = row.x + row.width / 2;
+  if (Math.abs(rowCenter - pageWidth / 2) <= Math.max(12, pageWidth * .035) && row.width <= pageWidth * .82) return 'center';
+  if (row.x > pageWidth * .56) return 'right';
+  return 'left';
+};
+
+const toTwip = value => Math.max(0, Math.round(value * 20));
+const toHalfPoint = value => Math.max(12, Math.min(72, Math.round(value * 2)));
+
 const buildLayoutText = items => {
   let cursor = 0;
   return items.map((item, index) => {
@@ -306,16 +333,21 @@ const buildLayoutText = items => {
 const extractPdfPageRows = async page => {
   const viewport = page.getViewport({ scale: 1 });
   const content = await page.getTextContent();
+  const styles = content.styles || {};
   const items = content.items
     .map(item => {
       const text = normalizePdfText(item.str);
       const fontSize = getItemFontSize(item);
+      const fontStyle = inferWordFont(item, styles);
       return {
         text,
         x: item.transform[4],
         y: viewport.height - item.transform[5],
         width: Math.max(item.width || text.length * fontSize * .45, fontSize * .25),
-        fontSize
+        fontSize,
+        font: fontStyle.font,
+        bold: fontStyle.bold,
+        italics: fontStyle.italics
       };
     })
     .filter(item => item.text)
@@ -337,15 +369,23 @@ const extractPdfPageRows = async page => {
       const gaps = sorted.slice(1).map((item, index) => item.x - (sorted[index].x + sorted[index].width));
       return {
         x: Math.min(...sorted.map(item => item.x)),
+        width: Math.max(...sorted.map(item => item.x + item.width)) - Math.min(...sorted.map(item => item.x)),
         y: row.y,
         fontSize: row.fontSize,
         text: sorted.map(item => item.text).join(' ').replace(/\s+([,.;:!?])/g, '$1'),
         layoutText: buildLayoutText(sorted),
+        items: sorted,
         largeGaps: gaps.filter(gap => gap > row.fontSize * 1.4).length
       };
     })
     .sort((a, b) => a.y - b.y);
-  return { rows: normalizedRows, width: viewport.width, height: viewport.height, left: Math.min(...normalizedRows.map(row => row.x), 36) };
+  return {
+    rows: normalizedRows,
+    width: viewport.width,
+    height: viewport.height,
+    left: Math.min(...normalizedRows.map(row => row.x), 36),
+    right: Math.max(...normalizedRows.map(row => row.x + row.width), viewport.width - 36)
+  };
 };
 
 const rowsToFlowBlocks = rows => {
@@ -371,37 +411,46 @@ const rowsToFlowBlocks = rows => {
 };
 
 const pushLayoutRows = ({ children, pageData, pageNumber, isFirstPage, docx }) => {
-  const { Paragraph, TextRun, HeadingLevel } = docx;
-  children.push(new Paragraph({
-    text: `Halaman ${pageNumber}`,
-    heading: HeadingLevel.HEADING_2,
-    pageBreakBefore: !isFirstPage,
-    spacing: { before: isFirstPage ? 0 : 180, after: 140 }
-  }));
+  const { Paragraph, TextRun, AlignmentType } = docx;
   pageData.rows.forEach((row, index) => {
     const previous = pageData.rows[index - 1];
     const gapBefore = previous ? Math.max(0, row.y - previous.y - previous.fontSize) : 0;
-    const fontSize = Math.max(14, Math.min(26, Math.round(row.fontSize * 1.7)));
-    const leftIndent = Math.max(0, Math.min(7200, Math.round((row.x - pageData.left) * 11)));
-    children.push(new Paragraph({
-      children: [new TextRun({ text: row.layoutText || row.text, font: 'Courier New', size: fontSize })],
+    const alignment = getRowAlignment(row, pageData.width);
+    let cursor = row.x;
+    const runs = row.items.map((item, itemIndex) => {
+      const gap = itemIndex === 0 ? 0 : Math.max(0, item.x - cursor);
+      cursor = Math.max(cursor, item.x + item.width);
+      const leading = itemIndex === 0 ? '' : ' '.repeat(Math.max(1, Math.min(12, Math.round(gap / Math.max(4, item.fontSize * .36)))));
+      return new TextRun({
+        text: leading + item.text,
+        font: item.font,
+        size: toHalfPoint(item.fontSize),
+        bold: item.bold,
+        italics: item.italics
+      });
+    });
+    const leftIndent = alignment === 'left' ? Math.max(0, toTwip(row.x)) : 0;
+    const paragraphOptions = {
+      children: runs,
+      alignment: alignment === 'center' ? (AlignmentType?.CENTER || 'center') : alignment === 'right' ? (AlignmentType?.RIGHT || 'right') : undefined,
       indent: { left: leftIndent },
-      spacing: { before: Math.min(180, Math.round(gapBefore * 6)), after: 0, line: 220 }
+      spacing: {
+        before: index === 0 ? toTwip(Math.max(0, row.y - row.fontSize)) : Math.min(900, toTwip(gapBefore)),
+        after: 0,
+        line: Math.max(180, Math.round(row.fontSize * 24))
+      }
+    };
+    children.push(new Paragraph({
+      ...paragraphOptions
     }));
   });
 };
 
 const pushFlowRows = ({ children, pageData, pageNumber, isFirstPage, docx }) => {
-  const { Paragraph, TextRun, HeadingLevel } = docx;
-  children.push(new Paragraph({
-    text: `Halaman ${pageNumber}`,
-    heading: HeadingLevel.HEADING_2,
-    pageBreakBefore: !isFirstPage,
-    spacing: { before: isFirstPage ? 0 : 180, after: 140 }
-  }));
+  const { Paragraph, TextRun } = docx;
   rowsToFlowBlocks(pageData.rows).forEach(block => {
     children.push(new Paragraph({
-      children: [new TextRun({ text: block.text, bold: block.heading, font: block.tableLike ? 'Courier New' : 'Arial' })],
+      children: [new TextRun({ text: block.text, bold: block.heading, font: 'Times New Roman' })],
       spacing: { after: block.heading ? 120 : 90, line: 276 }
     }));
   });
@@ -475,6 +524,44 @@ const buildVisualWordDoc = async ({ pdf, pages, fileName, docx }) => {
   });
 };
 
+const buildEditableWordDoc = async ({ pdf, pages, fileName, mode, docx }) => {
+  const { Document } = docx;
+  const sections = [];
+  let extractedLines = 0;
+  for (const [index, pageNumber] of pages.entries()) {
+    wordNote.innerHTML = `<h3>Memproses PDF</h3><p>Merekonstruksi halaman ${index + 1} dari ${pages.length} menjadi teks Word editable...</p>`;
+    const page = await pdf.getPage(pageNumber);
+    const pageData = await extractPdfPageRows(page);
+    extractedLines += pageData.rows.length;
+    const children = [];
+    if (pageData.rows.length) {
+      const payload = { children, pageData, pageNumber, isFirstPage: index === 0, docx };
+      if (mode === 'flow') pushFlowRows(payload);
+      else pushLayoutRows(payload);
+    } else {
+      children.push(new docx.Paragraph({ text: '' }));
+    }
+    sections.push({
+      properties: {
+        page: {
+          size: { width: toTwip(pageData.width), height: toTwip(pageData.height) },
+          margin: { top: 0, right: 0, bottom: 0, left: 0, header: 0, footer: 0, gutter: 0 }
+        }
+      },
+      children
+    });
+  }
+  return {
+    doc: new Document({
+      creator: 'SIPIL CARE',
+      title: fileName.replace(/\.pdf$/i, ''),
+      description: 'PDF to Word editable SIPIL CARE',
+      sections
+    }),
+    extractedLines
+  };
+};
+
 wordMode?.addEventListener('change', updateWordPageInputs);
 updateWordPageInputs();
 
@@ -488,8 +575,8 @@ document.getElementById('wordBtn')?.addEventListener('click', async () => {
     wordNote.innerHTML = '<h3>Memproses PDF</h3><p>Menyiapkan dokumen Word...</p>';
     const pdf = await window.pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise;
     const pages = getWordPages(pdf.numPages);
-    const { Document, Packer, Paragraph, TextRun, HeadingLevel, ImageRun } = window.docx;
-    const docx = { Paragraph, TextRun, HeadingLevel, ImageRun, Document };
+    const { Document, Packer, Paragraph, TextRun, HeadingLevel, ImageRun, AlignmentType } = window.docx;
+    const docx = { Paragraph, TextRun, HeadingLevel, ImageRun, Document, AlignmentType };
     if (wordLayoutMode?.value === 'visual') {
       if (!ImageRun) return showToast('Library Word belum mendukung gambar. Coba refresh halaman.');
       const visualDoc = await buildVisualWordDoc({ pdf, pages, fileName: file.name, docx });
@@ -499,40 +586,20 @@ document.getElementById('wordBtn')?.addEventListener('click', async () => {
       return showToast('PDF berhasil dikonversi ke Word.');
     }
 
-    const children = [
-      new Paragraph({ text: file.name.replace(/\.pdf$/i, ''), heading: HeadingLevel.TITLE }),
-      new Paragraph({ text: 'Dikonversi oleh SIPIL CARE PDF to Word.' })
-    ];
-
-    let extractedLines = 0;
-    for (const [index, pageNumber] of pages.entries()) {
-      const page = await pdf.getPage(pageNumber);
-      const pageData = await extractPdfPageRows(page);
-      extractedLines += pageData.rows.length;
-      if (pageData.rows.length) {
-        const payload = { children, pageData, pageNumber, isFirstPage: index === 0, docx };
-        if (wordLayoutMode?.value === 'flow') pushFlowRows(payload);
-        else pushLayoutRows(payload);
-      } else {
-        if (index > 0) children.push(new Paragraph({ text: '' }));
-        children.push(new Paragraph({ text: `Halaman ${pageNumber}`, heading: HeadingLevel.HEADING_2 }));
-        children.push(new Paragraph({ text: 'Tidak ada teks yang dapat diekstrak dari halaman ini.' }));
-      }
-    }
-
-    const doc = new Document({
-      creator: 'SIPIL CARE',
-      title: file.name.replace(/\.pdf$/i, ''),
-      description: 'PDF to Word SIPIL CARE',
-      sections: [{ children }]
+    const { doc, extractedLines } = await buildEditableWordDoc({
+      pdf,
+      pages,
+      fileName: file.name,
+      mode: wordLayoutMode?.value === 'flow' ? 'flow' : 'editable',
+      docx
     });
     const blob = await Packer.toBlob(doc);
     downloadBlob(blob, slug(file.name.replace(/\.pdf$/i, '')) + '.docx');
-    wordNote.innerHTML = `<h3>Konversi selesai</h3><p>${pages.length} halaman diproses dan ${extractedLines} baris teks disusun ke Word dengan mode ${wordLayoutMode?.value === 'flow' ? 'paragraf' : 'layout'}.</p><p class="small-text">Jika hasil kosong, kemungkinan PDF berupa scan gambar dan perlu OCR terlebih dahulu.</p>`;
+    wordNote.innerHTML = `<h3>Konversi selesai</h3><p>${pages.length} halaman diproses dan ${extractedLines} baris teks menjadi Word editable dengan mode ${wordLayoutMode?.value === 'flow' ? 'paragraf' : 'mirip Word asli'}.</p><p class="small-text">Jika gambar tidak ikut pada mode editable, gunakan mode visual. PDF tidak selalu menyimpan gambar sebagai objek Word yang bisa dikembalikan.</p>`;
     showToast('PDF berhasil dikonversi ke Word.');
   } catch (error) {
     console.error(error);
-    wordNote.innerHTML = '<h3>Catatan konversi</h3><p>Mode mirip PDF merender tiap halaman sebagai gambar berkualitas tinggi di Word, sehingga font, posisi, tabel, dan gambar tetap mengikuti PDF.</p><p class="small-text">Gunakan mode teks editable hanya jika isi perlu diedit. Mode teks tidak bisa menjamin gambar dan layout PDF tetap sama.</p>';
+    wordNote.innerHTML = '<h3>Catatan konversi</h3><p>Mode editable merekonstruksi teks menjadi Word yang bisa diedit dengan font, ukuran, alignment, dan jarak baris dari PDF. Header dan footer teks ikut terbawa sebagai teks biasa.</p><p class="small-text">PDF tidak menyimpan struktur Word asli secara utuh. Untuk gambar yang harus 100% sama, gunakan mode visual sebagai cadangan.</p>';
     if (error.message === 'OUT_OF_RANGE') return showToast('Halaman akhir melebihi jumlah halaman PDF.');
     if (error.message === 'REVERSED_RANGE') return showToast('Halaman awal tidak boleh lebih besar dari halaman akhir.');
     if (error.message === 'INVALID_RANGE') return showToast('Masukkan nomor halaman yang valid.');
