@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="../../css/style.css?v=19">
-    <link rel="stylesheet" href="../../css/admin.css?v=27">
+    <link rel="stylesheet" href="../../css/admin.css?v=28">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -97,7 +97,10 @@
           <input type="hidden" id="adminAccountOriginalUsername">
           <input class="control" id="adminAccountUsername" placeholder="Username admin" autocomplete="off" required>
           <input class="control" id="adminAccountName" placeholder="Nama admin" autocomplete="off" required>
-          <input class="control" id="adminAccountPassword" type="password" placeholder="Password baru" autocomplete="new-password" required>
+          <div class="password-field">
+            <input class="control" id="adminAccountPassword" type="password" placeholder="Password baru" autocomplete="new-password" required>
+            <button class="password-toggle" type="button" data-password-toggle aria-label="Tampilkan password admin" aria-pressed="false">Lihat</button>
+          </div>
           <select class="control" id="adminAccountRole" required></select>
           <label class="admin-check"><input id="adminAccountActive" type="checkbox" checked> Aktif</label>
           <div class="admin-account-actions">
@@ -126,7 +129,7 @@
 
     <div class="toast" id="toast"></div>
     <script src="../../js/student-config.js?v=20"></script>
-    <script src="../../js/auth.js?v=26"></script>
+    <script src="../../js/auth.js?v=27"></script>
     <script src="../../js/push-config.js?v=1"></script>
     <script type="module" src="../../js/admin-panel.js?v=45"></script>
   </body>

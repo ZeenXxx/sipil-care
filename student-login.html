@@ -5,12 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Student Login - SIPIL CARE</title>
     <link rel="stylesheet" href="css/style.css?v=18">
-    <link rel="stylesheet" href="css/admin.css?v=19">
+    <link rel="stylesheet" href="css/admin.css?v=28">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <script src="js/student-config.js?v=18"></script>
-    <script src="js/student-auth.js?v=31"></script>
+    <script src="js/student-auth.js?v=32"></script>
   </head>
   <body class="login-page student-login-page">
     <main class="login-shell">
@@ -29,8 +29,14 @@
 
         <form id="studentLoginForm" class="form-grid student-form" data-mode="login">
           <input class="form-control" id="studentNim" placeholder="NIM mahasiswa" inputmode="numeric" autocomplete="username" required>
-          <input class="form-control" id="studentPassword" type="password" placeholder="Password" autocomplete="current-password" required>
-          <input class="form-control" id="studentNewPassword" type="password" placeholder="Password baru" autocomplete="new-password" hidden>
+          <div class="password-field">
+            <input class="form-control" id="studentPassword" type="password" placeholder="Password" autocomplete="current-password" required>
+            <button class="password-toggle" type="button" data-password-toggle aria-label="Tampilkan password" aria-pressed="false">Lihat</button>
+          </div>
+          <div class="password-field" id="studentNewPasswordField" hidden>
+            <input class="form-control" id="studentNewPassword" type="password" placeholder="Password baru" autocomplete="new-password" hidden>
+            <button class="password-toggle" type="button" data-password-toggle aria-label="Tampilkan password baru" aria-pressed="false">Lihat</button>
+          </div>
           <button class="btn btn-primary" id="studentSubmit" type="submit">Login</button>
         </form>
 

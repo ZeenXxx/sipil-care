@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="../css/style.css?v=14">
     <link rel="stylesheet" href="../css/navbar.css?v=23">
-    <link rel="stylesheet" href="../css/admin.css?v=26">
+    <link rel="stylesheet" href="../css/admin.css?v=28">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -18,7 +18,10 @@
       <p>Masuk untuk mengelola resource dan upload ke panel admin.</p>
       <form id="loginForm" class="form">
         <input class="control" id="username" placeholder="Username" required>
-        <input class="control" id="password" type="password" placeholder="Password" required>
+        <div class="password-field">
+          <input class="control" id="password" type="password" placeholder="Password" required>
+          <button class="password-toggle" type="button" data-password-toggle aria-label="Tampilkan password" aria-pressed="false">Lihat</button>
+        </div>
         <button class="btn btn-primary" type="submit">Login</button>
       </form>
       <a class="back-link" href="admin.html">Kembali ke lobby admin</a>
@@ -27,7 +30,7 @@
   <div class="toast" id="toast"></div>
   <script src="../js/navbar.js?v=20"></script>
   <script src="../js/student-config.js?v=20"></script>
-  <script src="../js/auth.js?v=26"></script>
+  <script src="../js/auth.js?v=27"></script>
 </body>
 </html>
 

@@ -488,6 +488,7 @@
     const nimInput = document.getElementById("studentNim");
     const passwordInput = document.getElementById("studentPassword");
     const newPasswordInput = document.getElementById("studentNewPassword");
+    const newPasswordField = document.getElementById("studentNewPasswordField");
     const submit = document.getElementById("studentSubmit");
     const modeLabel = document.getElementById("storageModeLabel");
     const helpText = document.getElementById("studentHelpText");
@@ -504,6 +505,7 @@
       mode = nextMode;
       tabs.forEach((tab) => tab.classList.toggle("active", tab.dataset.mode === mode));
       newPasswordInput.hidden = mode === "login";
+      if (newPasswordField) newPasswordField.hidden = mode === "login";
       newPasswordInput.required = mode !== "login";
       passwordInput.placeholder = mode === "change"
         ? "Password saat ini / password awal"
@@ -524,6 +526,23 @@
             : "Masuk dengan NIM dan password. Sesi login tersimpan 1 hari sejak terakhir membuka website.";
       }
     };
+
+    form.querySelectorAll("[data-password-toggle]").forEach((button) => {
+      const input = button.closest(".password-field")?.querySelector("input");
+      if (!input) return;
+      const updateLabel = () => {
+        const visible = input.type === "text";
+        button.textContent = visible ? "Sembunyikan" : "Lihat";
+        button.setAttribute("aria-pressed", visible ? "true" : "false");
+        button.setAttribute("aria-label", visible ? "Sembunyikan password" : "Tampilkan password");
+      };
+      button.addEventListener("click", () => {
+        input.type = input.type === "password" ? "text" : "password";
+        updateLabel();
+        input.focus();
+      });
+      updateLabel();
+    });
 
     tabs.forEach((tab) => tab.addEventListener("click", () => setMode(tab.dataset.mode)));
     if (session?.nim && mode === "change") {

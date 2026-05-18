@@ -26,6 +26,33 @@ const loginPagePath = `${rootPrefix}pages/admin-panel.html`;
 const username = document.getElementById('username');
 const password = document.getElementById('password');
 
+const setupPasswordToggles = (root = document) => {
+  root.querySelectorAll('[data-password-toggle]').forEach(button => {
+    if (button.dataset.passwordToggleReady === 'true') return;
+    const input = button.closest('.password-field')?.querySelector('input');
+    if (!input) return;
+    const updateLabel = () => {
+      const visible = input.type === 'text';
+      button.textContent = visible ? 'Sembunyikan' : 'Lihat';
+      button.setAttribute('aria-pressed', visible ? 'true' : 'false');
+      button.setAttribute('aria-label', visible ? 'Sembunyikan password' : 'Tampilkan password');
+    };
+    button.dataset.passwordToggleReady = 'true';
+    button.addEventListener('click', () => {
+      input.type = input.type === 'password' ? 'text' : 'password';
+      updateLabel();
+      input.focus();
+    });
+    updateLabel();
+  });
+};
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => setupPasswordToggles());
+} else {
+  setupPasswordToggles();
+}
+
 const normalizeList = value => {
   if (Array.isArray(value)) return value.filter(Boolean);
   if (typeof value === 'string') {
