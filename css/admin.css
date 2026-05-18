@@ -702,6 +702,92 @@
 
 }
 
+.admin-role-form  {
+
+    display: grid;
+
+    gap: 16px;
+
+    margin: 16px 0 22px
+
+}
+
+.admin-role-basic  {
+
+    display: grid;
+
+    grid-template-columns: minmax(180px, 1fr) minmax(220px, 1.2fr) auto;
+
+    gap: 10px
+
+}
+
+.admin-permission-grid  {
+
+    display: grid;
+
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+
+    gap: 14px
+
+}
+
+.admin-permission-grid>div  {
+
+    padding: 16px;
+
+    border: 1px solid var(--line);
+
+    border-radius: 8px;
+
+    background: #f9fcfb
+
+}
+
+.admin-permission-grid h4  {
+
+    margin: 0 0 12px;
+
+    color: var(--primary)
+
+}
+
+.admin-check-grid  {
+
+    display: grid;
+
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+
+    gap: 8px
+
+}
+
+.admin-mini-check  {
+
+    display: flex;
+
+    align-items: flex-start;
+
+    gap: 8px;
+
+    min-height: 38px;
+
+    padding: 9px 10px;
+
+    border: 1px solid rgba(15, 77, 58, .12);
+
+    border-radius: 8px;
+
+    background: #fff;
+
+    color: var(--ink);
+
+    font-size: 13px;
+
+    font-weight: 800
+
+}
+
 .student-bulk-form  {
 
     display: grid;
@@ -969,6 +1055,12 @@ th  {
 }
 
     .admin-account-form  {
+
+        grid-template-columns: 1fr
+
+}
+
+    .admin-role-basic, .admin-permission-grid, .admin-check-grid  {
 
         grid-template-columns: 1fr
 

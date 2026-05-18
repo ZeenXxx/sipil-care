@@ -128,6 +128,17 @@ const adminAccountCancel = document.getElementById('adminAccountCancel');
 const adminAccountRefresh = document.getElementById('adminAccountRefresh');
 const adminAccountSearch = document.getElementById('adminAccountSearch');
 const adminAccountTable = document.getElementById('adminAccountTable');
+const adminRoleForm = document.getElementById('adminRoleForm');
+const adminRoleOriginal = document.getElementById('adminRoleOriginal');
+const adminRoleKey = document.getElementById('adminRoleKey');
+const adminRoleLabel = document.getElementById('adminRoleLabel');
+const adminRoleActive = document.getElementById('adminRoleActive');
+const adminRolePages = document.getElementById('adminRolePages');
+const adminRolePermissions = document.getElementById('adminRolePermissions');
+const adminRoleSubmit = document.getElementById('adminRoleSubmit');
+const adminRoleCancel = document.getElementById('adminRoleCancel');
+const adminRoleRefresh = document.getElementById('adminRoleRefresh');
+const adminRoleTable = document.getElementById('adminRoleTable');
 const studentCohortForm = document.getElementById('studentCohortForm');
 const studentCohortInput = document.getElementById('studentCohortInput');
 const studentCohortLabel = document.getElementById('studentCohortLabel');
@@ -175,6 +186,7 @@ let adminActivities = [];
 let auditLogs = [];
 let accessLogs = [];
 let adminAccounts = [];
+let adminRoles = [];
 let studentAccounts = [];
 let studentCohorts = [];
 let studentBulkPreviewRows = [];
@@ -298,6 +310,59 @@ const adminRoleTemplates = {
   }
 };
 
+const adminPageOptions = [
+  { value: 'dashboard.html', label: 'Dashboard', permission: 'dashboard' },
+  { value: 'resources.html', label: 'Resources', permission: 'resources' },
+  { value: 'announcements.html', label: 'Pemberitahuan', permission: 'announcements' },
+  { value: 'messages.html', label: 'Pesan Mahasiswa', permission: 'messages' },
+  { value: 'admin-accounts.html', label: 'Akun Admin', permission: 'admin_accounts' },
+  { value: 'student-accounts.html', label: 'Akun Mahasiswa', permission: 'student_accounts' }
+];
+
+const adminPermissionOptions = [
+  { value: 'dashboard', label: 'Lihat dashboard' },
+  { value: 'resources', label: 'Kelola resources, software, video, praktikum' },
+  { value: 'announcements', label: 'Kelola pemberitahuan' },
+  { value: 'messages', label: 'Kelola pesan dan live chat' },
+  { value: 'audit', label: 'Lihat audit log' },
+  { value: 'admin_accounts', label: 'Kelola akun admin' },
+  { value: 'student_accounts', label: 'Kelola akun mahasiswa' },
+  { value: 'log_delete', label: 'Hapus log dashboard' }
+];
+
+const normalizeAdminRole = role => {
+  const template = adminRoleTemplates[role?.role] || {};
+  return {
+    role: role?.role || template.role || 'admin_sipil',
+    roleLabel: role?.role_label || role?.roleLabel || template.roleLabel || role?.role || 'Admin',
+    allowedPages: Array.isArray(role?.allowed_pages)
+      ? role.allowed_pages
+      : Array.isArray(role?.allowedPages)
+        ? role.allowedPages
+        : template.allowedPages || [],
+    permissions: Array.isArray(role?.permissions) ? role.permissions : template.permissions || [],
+    isActive: role?.is_active !== false,
+    isSystem: role?.is_system === true || role?.isSystem === true || role?.role === 'developer'
+  };
+};
+
+const fallbackAdminRoles = () => Object.values(adminRoleTemplates).map(role => ({
+  role: role.role,
+  roleLabel: role.roleLabel,
+  allowedPages: role.allowedPages,
+  permissions: role.permissions,
+  isActive: true,
+  isSystem: role.role === 'developer'
+}));
+
+const allAdminRoles = () => (adminRoles.length ? adminRoles : fallbackAdminRoles()).map(normalizeAdminRole);
+
+const activeAdminRoles = includeRole => allAdminRoles().filter(role => role.isActive || role.role === includeRole || role.role === adminAccountRole?.value);
+
+const getAdminRoleTemplate = role => allAdminRoles().find(item => item.role === role)
+  || normalizeAdminRole(adminRoleTemplates[role])
+  || normalizeAdminRole(adminRoleTemplates.admin_sipil);
+
 const auditActionLabels = {
   CREATE_RESOURCE: 'Tambah resource',
   UPDATE_RESOURCE: 'Edit resource',
@@ -322,6 +387,9 @@ const auditActionLabels = {
   CREATE_ADMIN_ACCOUNT: 'Tambah akun admin',
   UPDATE_ADMIN_ACCOUNT: 'Update akun admin',
   DELETE_ADMIN_ACCOUNT: 'Hapus akun admin',
+  CREATE_ADMIN_ROLE: 'Tambah role admin',
+  UPDATE_ADMIN_ROLE: 'Update role admin',
+  DELETE_ADMIN_ROLE: 'Hapus role admin',
   CREATE_STUDENT_COHORT: 'Tambah angkatan mahasiswa',
   DELETE_STUDENT_COHORT: 'Hapus angkatan mahasiswa',
   IMPORT_STUDENT_ACCOUNTS: 'Import akun mahasiswa',
@@ -629,7 +697,7 @@ const buildStudentPayload = async (rows, angkatan) => {
 };
 
 const normalizeAdminAccount = account => {
-  const template = adminRoleTemplates[account.role] || adminRoleTemplates.admin_sipil;
+  const template = getAdminRoleTemplate(account.role);
   return {
     ...account,
     roleLabel: account.role_label || account.roleLabel || template.roleLabel,
@@ -646,6 +714,68 @@ const resetAdminAccountForm = () => {
   if (adminAccountActive) adminAccountActive.checked = true;
   if (adminAccountPassword) adminAccountPassword.required = true;
   if (adminAccountSubmit) adminAccountSubmit.textContent = 'Simpan Akun';
+  renderAdminRoleOptions();
+};
+
+const normalizeRoleKey = value => String(value || '')
+  .trim()
+  .toLowerCase()
+  .replace(/[^a-z0-9_]+/g, '_')
+  .replace(/^_+|_+$/g, '');
+
+const checkedValues = container => [...(container?.querySelectorAll('input[type="checkbox"]:checked') || [])]
+  .map(input => input.value);
+
+const setCheckedValues = (container, values = []) => {
+  const selected = new Set(values);
+  container?.querySelectorAll('input[type="checkbox"]').forEach(input => {
+    input.checked = selected.has(input.value);
+  });
+};
+
+const syncRolePermissionsFromPages = () => {
+  if (!adminRolePages || !adminRolePermissions) return;
+  const selectedPages = checkedValues(adminRolePages);
+  const selectedPermissions = new Set(checkedValues(adminRolePermissions));
+  adminPageOptions.forEach(page => {
+    if (selectedPages.includes(page.value) && page.permission) selectedPermissions.add(page.permission);
+  });
+  setCheckedValues(adminRolePermissions, [...selectedPermissions]);
+};
+
+const renderAdminRoleChecklist = () => {
+  if (adminRolePages) {
+    adminRolePages.innerHTML = adminPageOptions.map(item => `
+      <label class="admin-mini-check"><input type="checkbox" value="${escapeText(item.value)}"> ${escapeText(item.label)}</label>
+    `).join('');
+  }
+  if (adminRolePermissions) {
+    adminRolePermissions.innerHTML = adminPermissionOptions.map(item => `
+      <label class="admin-mini-check"><input type="checkbox" value="${escapeText(item.value)}"> ${escapeText(item.label)}</label>
+    `).join('');
+  }
+};
+
+const renderAdminRoleOptions = includeRole => {
+  if (!adminAccountRole) return;
+  const current = adminAccountRole.value;
+  const roles = activeAdminRoles(includeRole);
+  adminAccountRole.innerHTML = roles
+    .map(role => `<option value="${escapeText(role.role)}">${escapeText(role.roleLabel)}</option>`)
+    .join('');
+  if (includeRole && roles.some(role => role.role === includeRole)) adminAccountRole.value = includeRole;
+  else if (roles.some(role => role.role === current)) adminAccountRole.value = current;
+  else if (roles.some(role => role.role === 'admin_sipil')) adminAccountRole.value = 'admin_sipil';
+};
+
+const resetAdminRoleForm = () => {
+  if (!adminRoleForm) return;
+  adminRoleForm.reset();
+  if (adminRoleOriginal) adminRoleOriginal.value = '';
+  if (adminRoleActive) adminRoleActive.checked = true;
+  setCheckedValues(adminRolePages, []);
+  setCheckedValues(adminRolePermissions, []);
+  if (adminRoleSubmit) adminRoleSubmit.textContent = 'Simpan Role';
 };
 
 const resetStudentEditForm = () => {
@@ -1184,6 +1314,42 @@ function auditTableRender() {
   `).join('') || `<tr><td colspan="${showDelete ? 7 : 6}">Belum ada aktivitas admin yang cocok.</td></tr>`;
 }
 
+function adminRoleTableRender() {
+  if (!adminRoleTable) return;
+  if (!canManageAdminAccounts()) {
+    adminRoleTable.innerHTML = '<tr><td colspan="5">Menu ini hanya tersedia untuk Developer.</td></tr>';
+    return;
+  }
+
+  const accountCounts = adminAccounts.reduce((map, account) => {
+    map[account.role] = (map[account.role] || 0) + 1;
+    return map;
+  }, {});
+
+  const rows = (adminRoles.length ? adminRoles : fallbackAdminRoles())
+    .map(normalizeAdminRole)
+    .sort((a, b) => (a.role === 'developer' ? -1 : b.role === 'developer' ? 1 : a.roleLabel.localeCompare(b.roleLabel)))
+    .map(role => {
+      const usedCount = accountCounts[role.role] || 0;
+      const deleteDisabled = role.role === 'developer' || usedCount > 0;
+      return `
+        <tr>
+          <td><b>${escapeText(role.roleLabel)}</b><br><span class="small-text">${escapeText(role.role)}${usedCount ? ` &middot; ${usedCount} akun` : ''}</span></td>
+          <td>${role.isActive ? '<span class="badge">Aktif</span>' : '<span class="badge">Nonaktif</span>'}</td>
+          <td>${escapeText(role.allowedPages.join(', ') || '-')}</td>
+          <td>${escapeText(role.permissions.join(', ') || '-')}</td>
+          <td>
+            <button class="action-btn" data-edit-admin-role="${escapeText(role.role)}" type="button">Edit</button>
+            <button class="action-btn danger" data-del-admin-role="${escapeText(role.role)}" type="button" ${deleteDisabled ? 'disabled' : ''}>Hapus</button>
+          </td>
+        </tr>
+      `;
+    })
+    .join('');
+
+  adminRoleTable.innerHTML = rows || '<tr><td colspan="5">Belum ada role admin.</td></tr>';
+}
+
 function adminAccountTableRender() {
   if (!adminAccountTable) return;
   if (!canManageAdminAccounts()) {
@@ -1219,6 +1385,7 @@ function adminAccountTableRender() {
     .join('');
 
   adminAccountTable.innerHTML = rows || '<tr><td colspan="6">Belum ada akun admin yang cocok.</td></tr>';
+  adminRoleTableRender();
 }
 
 function studentCohortOptions() {
@@ -1339,6 +1506,7 @@ const render = () => {
   accessLogRender();
   auditFilters();
   auditTableRender();
+  adminRoleTableRender();
   adminAccountTableRender();
   studentCohortRender();
   studentBulkPreviewRender();
@@ -2060,6 +2228,140 @@ on(auditDeleteAll, 'click', async () => {
   }
 });
 
+on(adminRolePages, 'change', syncRolePermissionsFromPages);
+
+on(adminRoleTable, 'click', async e => {
+  if (!canManageAdminAccounts()) {
+    toast('Menu role admin hanya tersedia untuk Developer.');
+    return;
+  }
+
+  const editButton = e.target.closest('[data-edit-admin-role]');
+  const deleteButton = e.target.closest('[data-del-admin-role]');
+  const roleKey = editButton?.dataset.editAdminRole || deleteButton?.dataset.delAdminRole;
+  if (!roleKey) return;
+
+  const role = (adminRoles.length ? adminRoles : fallbackAdminRoles()).map(normalizeAdminRole).find(item => item.role === roleKey);
+  if (!role) return;
+
+  if (editButton) {
+    adminRoleOriginal.value = role.role;
+    adminRoleKey.value = role.role;
+    adminRoleLabel.value = role.roleLabel;
+    adminRoleActive.checked = role.isActive;
+    setCheckedValues(adminRolePages, role.allowedPages);
+    setCheckedValues(adminRolePermissions, role.permissions);
+    adminRoleSubmit.textContent = 'Update Role';
+    adminRoleKey.focus();
+    return;
+  }
+
+  if (deleteButton) {
+    if (role.role === 'developer') {
+      toast('Role Developer tidak bisa dihapus.');
+      return;
+    }
+    if (adminAccounts.some(account => account.role === role.role)) {
+      toast('Role masih dipakai akun admin. Pindahkan akun ke role lain dulu.');
+      return;
+    }
+    if (!confirm(`Yakin hapus role "${role.roleLabel}"?`)) return;
+    try {
+      deleteButton.disabled = true;
+      const supabase = await loadSupabaseClient();
+      const { data, error } = await supabase.rpc('sipilcare_delete_admin_role', {
+        p_session_token_hash: await adminSessionTokenHash(),
+        p_role: role.role
+      });
+      if (error) throw error;
+      if (data !== true) throw new Error('Role admin tidak terhapus di database.');
+      await writeAuditLog({
+        action: 'DELETE_ADMIN_ROLE',
+        targetType: 'admin_role',
+        targetId: role.role,
+        targetTitle: role.roleLabel,
+        detail: `Role admin ${role.roleLabel} dihapus.`
+      });
+      toast('Role admin berhasil dihapus.');
+      resetAdminRoleForm();
+      await loadAdminRoles();
+      await loadAdminAccounts();
+    } catch (error) {
+      console.error('Delete admin role error:', error);
+      toast(error.message || 'Gagal menghapus role admin. Pastikan SQL admin_roles sudah dijalankan.');
+    } finally {
+      deleteButton.disabled = false;
+    }
+  }
+});
+
+on(adminRoleForm, 'submit', async e => {
+  e.preventDefault();
+  if (!canManageAdminAccounts()) {
+    toast('Menu role admin hanya tersedia untuk Developer.');
+    return;
+  }
+
+  const originalRole = normalizeRoleKey(adminRoleOriginal.value);
+  const role = normalizeRoleKey(adminRoleKey.value);
+  const roleLabelValue = adminRoleLabel.value.trim();
+  const allowedPages = checkedValues(adminRolePages);
+  const permissions = checkedValues(adminRolePermissions);
+
+  if (!role || !roleLabelValue) {
+    toast('Lengkapi kode role dan nama role.');
+    return;
+  }
+  if (!allowedPages.length) {
+    toast('Pilih minimal satu halaman untuk role ini.');
+    return;
+  }
+  if (!permissions.length) {
+    toast('Pilih minimal satu permission untuk role ini.');
+    return;
+  }
+  if (originalRole === 'developer' && role !== 'developer') {
+    toast('Kode role Developer tidak bisa diganti.');
+    return;
+  }
+
+  try {
+    adminRoleSubmit.disabled = true;
+    const supabase = await loadSupabaseClient();
+    const { data, error } = await supabase.rpc('sipilcare_save_admin_role', {
+      p_session_token_hash: await adminSessionTokenHash(),
+      p_original_role: originalRole || null,
+      p_role: role,
+      p_role_label: roleLabelValue,
+      p_allowed_pages: allowedPages,
+      p_permissions: permissions,
+      p_is_active: adminRoleActive.checked
+    });
+    if (error) throw error;
+    const savedRole = Array.isArray(data) ? data[0] : data;
+    if (!savedRole?.role) throw new Error('Role admin tidak tersimpan di database.');
+    await writeAuditLog({
+      action: originalRole ? 'UPDATE_ADMIN_ROLE' : 'CREATE_ADMIN_ROLE',
+      targetType: 'admin_role',
+      targetId: role,
+      targetTitle: roleLabelValue,
+      detail: `Role admin ${roleLabelValue} disimpan dengan ${allowedPages.length} halaman dan ${permissions.length} permission.`
+    });
+    toast(originalRole ? 'Role admin berhasil diperbarui.' : 'Role admin berhasil ditambahkan.');
+    resetAdminRoleForm();
+    await loadAdminRoles();
+    await loadAdminAccounts();
+  } catch (error) {
+    console.error('Save admin role error:', error);
+    toast(error.message || 'Gagal menyimpan role admin. Pastikan SQL admin_roles sudah dijalankan.');
+  } finally {
+    adminRoleSubmit.disabled = false;
+  }
+});
+
+on(adminRoleCancel, 'click', () => resetAdminRoleForm());
+on(adminRoleRefresh, 'click', () => loadAdminRoles({ manual: true }));
+
 on(adminAccountTable, 'click', async e => {
   if (!canManageAdminAccounts()) {
     toast('Menu akun admin hanya tersedia untuk Developer.');
@@ -2079,7 +2381,7 @@ on(adminAccountTable, 'click', async e => {
     adminAccountOriginalUsername.value = normalized.username;
     adminAccountUsername.value = normalized.username;
     adminAccountName.value = normalized.name || '';
-    adminAccountRole.value = normalized.role || 'admin_sipil';
+    renderAdminRoleOptions(normalized.role || 'admin_sipil');
     adminAccountActive.checked = normalized.isActive;
     adminAccountPassword.value = '';
     adminAccountPassword.required = false;
@@ -2131,7 +2433,7 @@ on(adminAccountForm, 'submit', async e => {
   const originalUsername = adminAccountOriginalUsername.value.trim().toLowerCase();
   const usernameValue = adminAccountUsername.value.trim().toLowerCase();
   const passwordValue = adminAccountPassword.value;
-  const roleTemplate = adminRoleTemplates[adminAccountRole.value] || adminRoleTemplates.admin_sipil;
+  const roleTemplate = getAdminRoleTemplate(adminAccountRole.value);
 
   if (!usernameValue || !adminAccountName.value.trim()) {
     toast('Lengkapi username dan nama admin.');
@@ -2156,6 +2458,9 @@ on(adminAccountForm, 'submit', async e => {
       p_name: adminAccountName.value.trim(),
       p_password_hash: passwordValue ? await sha256(passwordValue) : null,
       p_role: roleTemplate.role,
+      p_role_label: roleTemplate.roleLabel,
+      p_allowed_pages: roleTemplate.allowedPages,
+      p_permissions: roleTemplate.permissions,
       p_is_active: adminAccountActive.checked
     });
     if (error) throw error;
@@ -2493,6 +2798,8 @@ on(accessLogActionFilter, 'change', () => accessLogRender());
 on(accessLogRefresh, 'click', () => accessLogRender());
 on(auditSearch, 'input', () => auditTableRender());
 on(auditFilter, 'change', () => auditTableRender());
+renderAdminRoleChecklist();
+renderAdminRoleOptions();
 syncNotificationButton();
 applyAdminRoleUI();
 
@@ -2545,6 +2852,36 @@ async function loadStudentActivity(options = {}) {
     }
   } finally {
     if (studentActivityRefresh) studentActivityRefresh.disabled = false;
+  }
+}
+
+async function loadAdminRoles(options = {}) {
+  if (!adminRoleTable && !adminAccountRole) return;
+  if (!canManageAdminAccounts()) return;
+
+  try {
+    if (adminRoleRefresh) adminRoleRefresh.disabled = true;
+    const supabase = await loadSupabaseClient();
+    const { data, error } = await supabase.rpc('sipilcare_list_admin_roles', {
+      p_session_token_hash: await adminSessionTokenHash()
+    });
+    if (error) throw error;
+    adminRoles = (data || []).map(normalizeAdminRole);
+    renderAdminRoleOptions();
+    adminRoleTableRender();
+    adminAccountTableRender();
+    if (options.manual) toast('Data role admin berhasil diperbarui.');
+  } catch (error) {
+    console.error('Load admin roles failed:', error);
+    adminRoles = fallbackAdminRoles();
+    renderAdminRoleOptions();
+    adminRoleTableRender();
+    if (adminRoleTable) {
+      adminRoleTable.insertAdjacentHTML('beforeend', '<tr><td colspan="5">RPC role admin belum tersedia. Jalankan SQL admin_roles di dokumentasi agar role baru bisa tersimpan di database.</td></tr>');
+    }
+    if (options.manual) toast('Role custom belum aktif di Supabase. Cek SQL admin_roles.');
+  } finally {
+    if (adminRoleRefresh) adminRoleRefresh.disabled = false;
   }
 }
 
@@ -2602,6 +2939,7 @@ async function loadStudentAccountData(options = {}) {
 
 loadStudentActivity();
 setInterval(() => loadStudentActivity(), 30000);
+loadAdminRoles();
 loadAdminAccounts();
 loadStudentAccountData();
 
