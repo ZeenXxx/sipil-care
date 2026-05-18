@@ -13,7 +13,7 @@ import {
 
 const db = getFirestore(app);
 const SESSION_KEY = 'sipilcare_student_session';
-const SESSION_TTL = 7 * 24 * 60 * 60 * 1000;
+const SESSION_TTL = 24 * 60 * 60 * 1000;
 const params = new URLSearchParams(location.search);
 const source = params.get('source') === 'practicum' ? 'practicum' : 'resources';
 const collectionName = source === 'practicum' ? 'practicum_studio_modules' : 'resources';

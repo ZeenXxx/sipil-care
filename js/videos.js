@@ -12,7 +12,7 @@ import {
 
 const db = getFirestore(app);
 const SESSION_KEY = 'sipilcare_student_session';
-const SESSION_TTL = 7 * 24 * 60 * 60 * 1000;
+const SESSION_TTL = 24 * 60 * 60 * 1000;
 
 let videos = [];
 const videoGrid = document.getElementById('videoGrid');
