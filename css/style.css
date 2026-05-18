@@ -1439,6 +1439,80 @@ button, input, select, textarea  {
 
 }
 
+.developer-credit {
+
+    grid-column: 1 / -1;
+
+    padding: 16px 18px;
+
+    border: 1px dashed rgba(15, 77, 58, .2);
+
+    border-radius: 8px;
+
+    background: #f9fcfb;
+
+}
+
+.developer-credit summary {
+
+    width: max-content;
+
+    cursor: pointer;
+
+    color: var(--muted);
+
+    font-size: 14px;
+
+    font-weight: 800;
+
+    list-style-position: inside;
+
+}
+
+.developer-credit summary:hover {
+
+    color: var(--primary);
+
+}
+
+.developer-credit-grid {
+
+    display: grid;
+
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+
+    gap: 16px;
+
+    margin-top: 16px;
+
+}
+
+.compact-profile {
+
+    box-shadow: none;
+
+}
+
+.compact-profile .avatar {
+
+    width: 86px;
+
+    height: 86px;
+
+}
+
+.compact-profile h2 {
+
+    font-size: 22px;
+
+}
+
+@media (max-width: 760px) {
+  .developer-credit-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* ===== DARK MODE ===== */
 html.dark {
   --primary: #4ade9a;
@@ -1468,6 +1542,7 @@ html.dark .timeline div,
 html.dark .map-card,
 html.dark .map-info,
 html.dark .announcement-body,
+html.dark .developer-credit,
 html.dark .notice-card {
   background: #162520;
   border-color: var(--line);
