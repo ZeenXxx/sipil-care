@@ -251,3 +251,99 @@ document.getElementById('jpgPdfBtn')?.addEventListener('click', async () => {
     showToast('Gagal membuat PDF dari gambar. Pastikan file JPG tidak rusak.');
   }
 });
+
+const wordMode = document.getElementById('wordMode');
+const wordPageStart = document.getElementById('wordPageStart');
+const wordPageEnd = document.getElementById('wordPageEnd');
+const wordNote = document.getElementById('wordNote');
+
+const updateWordPageInputs = () => {
+  if (!wordMode || !wordPageStart || !wordPageEnd) return;
+  const mode = wordMode.value;
+  wordPageStart.disabled = mode === 'all';
+  wordPageEnd.disabled = mode !== 'range';
+  wordPageStart.closest('div').style.display = mode === 'all' ? 'none' : '';
+  wordPageEnd.closest('div').style.display = mode === 'range' ? '' : 'none';
+};
+
+const getWordPages = totalPages => {
+  const mode = wordMode.value;
+  if (mode === 'all') return Array.from({ length: totalPages }, (_, index) => index + 1);
+  const start = Number(wordPageStart.value || 1);
+  const end = mode === 'range' ? Number(wordPageEnd.value || start) : start;
+  if (!Number.isInteger(start) || !Number.isInteger(end) || start < 1 || end < 1) throw new Error('INVALID_RANGE');
+  if (start > end) throw new Error('REVERSED_RANGE');
+  if (end > totalPages) throw new Error('OUT_OF_RANGE');
+  return Array.from({ length: end - start + 1 }, (_, index) => start + index);
+};
+
+const extractPdfPageLines = async page => {
+  const content = await page.getTextContent();
+  const items = content.items
+    .filter(item => String(item.str || '').trim())
+    .map(item => ({ text: String(item.str).trim(), x: item.transform[4], y: item.transform[5] }))
+    .sort((a, b) => Math.abs(b.y - a.y) > 3 ? b.y - a.y : a.x - b.x);
+  const rows = [];
+  items.forEach(item => {
+    const row = rows.find(entry => Math.abs(entry.y - item.y) <= 3);
+    if (row) row.items.push(item);
+    else rows.push({ y: item.y, items: [item] });
+  });
+  return rows
+    .sort((a, b) => b.y - a.y)
+    .map(row => row.items.sort((a, b) => a.x - b.x).map(item => item.text).join(' '))
+    .filter(Boolean);
+};
+
+wordMode?.addEventListener('change', updateWordPageInputs);
+updateWordPageInputs();
+
+document.getElementById('wordBtn')?.addEventListener('click', async () => {
+  const file = document.getElementById('wordPdfFile')?.files?.[0];
+  if (!file) return showToast('Pilih file PDF terlebih dahulu.');
+  if (!window.pdfjsLib) return showToast('Library PDF belum siap. Coba ulang beberapa detik lagi.');
+  if (!window.docx?.Document || !window.docx?.Packer) return showToast('Library Word belum siap. Coba ulang beberapa detik lagi.');
+
+  try {
+    wordNote.innerHTML = '<h3>Memproses PDF</h3><p>Membaca teks PDF dan menyusun dokumen Word...</p>';
+    const pdf = await window.pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise;
+    const pages = getWordPages(pdf.numPages);
+    const { Document, Packer, Paragraph, TextRun, HeadingLevel } = window.docx;
+    const children = [
+      new Paragraph({ text: file.name.replace(/\.pdf$/i, ''), heading: HeadingLevel.TITLE }),
+      new Paragraph({ text: 'Dikonversi oleh SIPIL CARE PDF to Word.' })
+    ];
+
+    let extractedLines = 0;
+    for (const [index, pageNumber] of pages.entries()) {
+      const page = await pdf.getPage(pageNumber);
+      const lines = await extractPdfPageLines(page);
+      extractedLines += lines.length;
+      if (index > 0) children.push(new Paragraph({ text: '' }));
+      children.push(new Paragraph({ text: `Halaman ${pageNumber}`, heading: HeadingLevel.HEADING_2 }));
+      if (lines.length) {
+        lines.forEach(line => children.push(new Paragraph({ children: [new TextRun(line)] })));
+      } else {
+        children.push(new Paragraph({ text: 'Tidak ada teks yang dapat diekstrak dari halaman ini.' }));
+      }
+    }
+
+    const doc = new Document({
+      creator: 'SIPIL CARE',
+      title: file.name.replace(/\.pdf$/i, ''),
+      description: 'PDF to Word SIPIL CARE',
+      sections: [{ children }]
+    });
+    const blob = await Packer.toBlob(doc);
+    downloadBlob(blob, slug(file.name.replace(/\.pdf$/i, '')) + '.docx');
+    wordNote.innerHTML = `<h3>Konversi selesai</h3><p>${pages.length} halaman diproses dan ${extractedLines} baris teks diekstrak ke Word.</p><p class="small-text">Jika hasil kosong, kemungkinan PDF berupa scan gambar dan perlu OCR terlebih dahulu.</p>`;
+    showToast('PDF berhasil dikonversi ke Word.');
+  } catch (error) {
+    console.error(error);
+    wordNote.innerHTML = '<h3>Catatan konversi</h3><p>Konversi ini mengambil teks PDF dan menyusunnya per halaman ke dokumen Word. Layout kompleks, tabel rumit, scan gambar, dan tanda tangan tidak selalu bisa dipertahankan.</p><p class="small-text">File diproses lokal di browser. Untuk PDF hasil scan, gunakan OCR terlebih dahulu agar teks bisa terbaca.</p>';
+    if (error.message === 'OUT_OF_RANGE') return showToast('Halaman akhir melebihi jumlah halaman PDF.');
+    if (error.message === 'REVERSED_RANGE') return showToast('Halaman awal tidak boleh lebih besar dari halaman akhir.');
+    if (error.message === 'INVALID_RANGE') return showToast('Masukkan nomor halaman yang valid.');
+    showToast('Gagal mengubah PDF ke Word. Pastikan PDF tidak rusak atau terkunci.');
+  }
+});
