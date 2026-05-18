@@ -319,13 +319,13 @@ begin
   end if;
 
   if v_original is not null and v_original <> v_role then
-    update public.admin_roles set role = v_role where role = v_original;
-    update public.admins set role = v_role where role = v_original;
+    update public.admin_roles ar set role = v_role where ar.role = v_original;
+    update public.admins a set role = v_role where a.role = v_original;
   end if;
 
   insert into public.admin_roles (role, role_label, allowed_pages, permissions, is_active, is_system, updated_at)
   values (v_role, trim(p_role_label), p_allowed_pages, p_permissions, case when v_role = 'developer' then true else p_is_active end, v_system, now())
-  on conflict (role) do update set
+  on conflict on constraint admin_roles_pkey do update set
     role_label = excluded.role_label,
     allowed_pages = excluded.allowed_pages,
     permissions = excluded.permissions,
@@ -333,15 +333,15 @@ begin
     is_system = excluded.is_system,
     updated_at = now();
 
-  update public.admins
+  update public.admins a
   set role_label = trim(p_role_label),
       allowed_pages = p_allowed_pages,
       permissions = p_permissions,
       updated_at = now()
-  where role = v_role;
+  where a.role = v_role;
 
-  delete from public.admin_sessions
-  where username in (select username from public.admins where role = v_role);
+  delete from public.admin_sessions s
+  where s.username in (select a.username from public.admins a where a.role = v_role);
 
   return query
   select r.role, r.role_label, r.allowed_pages, r.permissions, r.is_active, r.is_system
@@ -368,11 +368,11 @@ begin
   if v_role = 'developer' then
     raise exception 'Role Developer tidak bisa dihapus.';
   end if;
-  if exists (select 1 from public.admins where role = v_role) then
+  if exists (select 1 from public.admins a where a.role = v_role) then
     raise exception 'Role masih dipakai akun admin.';
   end if;
 
-  delete from public.admin_roles where role = v_role and is_system = false;
+  delete from public.admin_roles ar where ar.role = v_role and ar.is_system = false;
   return found;
 end;
 $$;
@@ -415,7 +415,7 @@ begin
   end if;
 
   if v_original is not null then
-    select password_hash into v_password from public.admins where username = v_original;
+    select a.password_hash into v_password from public.admins a where a.username = v_original;
   end if;
   v_password := coalesce(p_password_hash, v_password);
   if v_password is null then
@@ -423,13 +423,13 @@ begin
   end if;
 
   if v_original is not null and v_original <> v_username then
-    delete from public.admin_sessions where username = v_original;
-    update public.admins set username = v_username where username = v_original;
+    delete from public.admin_sessions s where s.username = v_original;
+    update public.admins a set username = v_username where a.username = v_original;
   end if;
 
   insert into public.admins (username, name, password_hash, role, role_label, allowed_pages, permissions, is_active, updated_at)
   values (v_username, trim(p_name), v_password, p_role, p_role_label, p_allowed_pages, p_permissions, p_is_active, now())
-  on conflict (username) do update set
+  on conflict on constraint admins_pkey do update set
     name = excluded.name,
     password_hash = excluded.password_hash,
     role = excluded.role,
@@ -439,7 +439,7 @@ begin
     is_active = excluded.is_active,
     updated_at = now();
 
-  delete from public.admin_sessions where username = v_username;
+  delete from public.admin_sessions s where s.username = v_username;
 
   return query
   select a.username, a.name, a.role, a.role_label, a.allowed_pages, a.permissions, a.is_active
