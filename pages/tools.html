@@ -83,8 +83,8 @@
           <section class="tool-panel" id="tool-word">
             <div class="tool-header"><div><span class="tool-code">PW</span><h2>PDF to Word</h2></div><p>Ekstrak teks dari PDF menjadi file Word .docx. Cocok untuk PDF laporan atau modul berbasis teks.</p></div>
             <div class="tool-layout">
-              <div class="card tool-card"><label for="wordPdfFile">Pilih PDF</label><input class="control file-control" id="wordPdfFile" type="file" accept="application/pdf"><label for="wordMode">Ambil halaman</label><select class="control" id="wordMode"><option value="all">Semua halaman</option><option value="single">Satu halaman</option><option value="range">Rentang halaman</option></select><div class="tool-grid-2 word-page-fields"><div><label for="wordPageStart">Halaman awal</label><input class="control" id="wordPageStart" type="number" min="1" value="1"></div><div><label for="wordPageEnd">Halaman akhir</label><input class="control" id="wordPageEnd" type="number" min="1" value="1"></div></div><button class="btn btn-primary full-btn" type="button" id="wordBtn">Konversi PDF ke Word</button></div>
-              <div class="tool-note" id="wordNote"><h3>Catatan konversi</h3><p>Konversi ini mengambil teks PDF dan menyusunnya per halaman ke dokumen Word. Layout kompleks, tabel rumit, scan gambar, dan tanda tangan tidak selalu bisa dipertahankan.</p><p class="small-text">File diproses lokal di browser. Untuk PDF hasil scan, gunakan OCR terlebih dahulu agar teks bisa terbaca.</p></div>
+              <div class="card tool-card"><label for="wordPdfFile">Pilih PDF</label><input class="control file-control" id="wordPdfFile" type="file" accept="application/pdf"><label for="wordMode">Ambil halaman</label><select class="control" id="wordMode"><option value="all">Semua halaman</option><option value="single">Satu halaman</option><option value="range">Rentang halaman</option></select><div class="tool-grid-2 word-page-fields"><div><label for="wordPageStart">Halaman awal</label><input class="control" id="wordPageStart" type="number" min="1" value="1"></div><div><label for="wordPageEnd">Halaman akhir</label><input class="control" id="wordPageEnd" type="number" min="1" value="1"></div></div><label for="wordLayoutMode">Format hasil</label><select class="control" id="wordLayoutMode"><option value="layout" selected>Pertahankan layout PDF</option><option value="flow">Rapikan jadi paragraf</option></select><button class="btn btn-primary full-btn" type="button" id="wordBtn">Konversi PDF ke Word</button></div>
+              <div class="tool-note" id="wordNote"><h3>Catatan konversi</h3><p>Mode layout mempertahankan posisi teks, indent, dan jarak antar kolom agar tabel atau format laporan tidak mudah berantakan. Mode paragraf cocok untuk modul berbasis teks biasa.</p><p class="small-text">File diproses lokal di browser. Untuk PDF hasil scan, gunakan OCR terlebih dahulu agar teks bisa terbaca.</p></div>
             </div>
           </section>
           <section class="tool-panel" id="tool-jpgpdf">
@@ -112,6 +112,6 @@
     <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.js"></script>
     <script src="../js/navbar.js?v=20"></script>
-    <script src="../js/tools.js?v=5"></script>
+    <script src="../js/tools.js?v=6"></script>
   </body>
 </html>

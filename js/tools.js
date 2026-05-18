@@ -255,6 +255,7 @@ document.getElementById('jpgPdfBtn')?.addEventListener('click', async () => {
 const wordMode = document.getElementById('wordMode');
 const wordPageStart = document.getElementById('wordPageStart');
 const wordPageEnd = document.getElementById('wordPageEnd');
+const wordLayoutMode = document.getElementById('wordLayoutMode');
 const wordNote = document.getElementById('wordNote');
 
 const updateWordPageInputs = () => {
@@ -277,22 +278,133 @@ const getWordPages = totalPages => {
   return Array.from({ length: end - start + 1 }, (_, index) => start + index);
 };
 
-const extractPdfPageLines = async page => {
+const getMedian = values => {
+  const clean = values.filter(Number.isFinite).sort((a, b) => a - b);
+  if (!clean.length) return 10;
+  const middle = Math.floor(clean.length / 2);
+  return clean.length % 2 ? clean[middle] : (clean[middle - 1] + clean[middle]) / 2;
+};
+
+const getItemFontSize = item => {
+  const [, b, c, d] = item.transform || [0, 0, 0, 10];
+  return Math.max(6, Math.abs(d) || Math.hypot(b, c) || 10);
+};
+
+const normalizePdfText = value => String(value || '').replace(/\s+/g, ' ').trim();
+
+const buildLayoutText = items => {
+  let cursor = 0;
+  return items.map((item, index) => {
+    const fontSize = Math.max(item.fontSize, 8);
+    const gap = Math.max(0, item.x - cursor);
+    const spaces = index === 0 ? 0 : Math.max(1, Math.min(18, Math.round(gap / (fontSize * .38))));
+    cursor = Math.max(cursor, item.x + item.width);
+    return `${' '.repeat(spaces)}${item.text}`;
+  }).join('').replace(/\s+$/g, '');
+};
+
+const extractPdfPageRows = async page => {
+  const viewport = page.getViewport({ scale: 1 });
   const content = await page.getTextContent();
   const items = content.items
-    .filter(item => String(item.str || '').trim())
-    .map(item => ({ text: String(item.str).trim(), x: item.transform[4], y: item.transform[5] }))
-    .sort((a, b) => Math.abs(b.y - a.y) > 3 ? b.y - a.y : a.x - b.x);
+    .map(item => {
+      const text = normalizePdfText(item.str);
+      const fontSize = getItemFontSize(item);
+      return {
+        text,
+        x: item.transform[4],
+        y: viewport.height - item.transform[5],
+        width: Math.max(item.width || text.length * fontSize * .45, fontSize * .25),
+        fontSize
+      };
+    })
+    .filter(item => item.text)
+    .sort((a, b) => Math.abs(a.y - b.y) > 3 ? a.y - b.y : a.x - b.x);
   const rows = [];
   items.forEach(item => {
-    const row = rows.find(entry => Math.abs(entry.y - item.y) <= 3);
-    if (row) row.items.push(item);
-    else rows.push({ y: item.y, items: [item] });
+    const row = rows.find(entry => Math.abs(entry.y - item.y) <= Math.max(2.5, Math.min(entry.fontSize, item.fontSize) * .42));
+    if (row) {
+      row.items.push(item);
+      row.y = (row.y * (row.items.length - 1) + item.y) / row.items.length;
+      row.fontSize = Math.max(row.fontSize, item.fontSize);
+    } else {
+      rows.push({ y: item.y, fontSize: item.fontSize, items: [item] });
+    }
   });
-  return rows
-    .sort((a, b) => b.y - a.y)
-    .map(row => row.items.sort((a, b) => a.x - b.x).map(item => item.text).join(' '))
-    .filter(Boolean);
+  const normalizedRows = rows
+    .map(row => {
+      const sorted = row.items.sort((a, b) => a.x - b.x);
+      const gaps = sorted.slice(1).map((item, index) => item.x - (sorted[index].x + sorted[index].width));
+      return {
+        x: Math.min(...sorted.map(item => item.x)),
+        y: row.y,
+        fontSize: row.fontSize,
+        text: sorted.map(item => item.text).join(' ').replace(/\s+([,.;:!?])/g, '$1'),
+        layoutText: buildLayoutText(sorted),
+        largeGaps: gaps.filter(gap => gap > row.fontSize * 1.4).length
+      };
+    })
+    .sort((a, b) => a.y - b.y);
+  return { rows: normalizedRows, width: viewport.width, height: viewport.height, left: Math.min(...normalizedRows.map(row => row.x), 36) };
+};
+
+const rowsToFlowBlocks = rows => {
+  const medianFont = getMedian(rows.map(row => row.fontSize));
+  const left = Math.min(...rows.map(row => row.x), 36);
+  const blocks = [];
+  let current = null;
+  rows.forEach((row, index) => {
+    const previous = rows[index - 1];
+    const gap = previous ? row.y - previous.y : 999;
+    const isHeading = row.fontSize > medianFont * 1.22 && row.text.length < 120;
+    const isTableLike = row.largeGaps >= 2;
+    const isIndented = row.x - left > 34;
+    const startsNew = !current || isHeading || isTableLike || gap > medianFont * 1.75 || isIndented;
+    if (startsNew) {
+      current = { text: row.text, fontSize: row.fontSize, heading: isHeading, tableLike: isTableLike };
+      blocks.push(current);
+    } else {
+      current.text += ` ${row.text}`;
+    }
+  });
+  return blocks;
+};
+
+const pushLayoutRows = ({ children, pageData, pageNumber, isFirstPage, docx }) => {
+  const { Paragraph, TextRun, HeadingLevel } = docx;
+  children.push(new Paragraph({
+    text: `Halaman ${pageNumber}`,
+    heading: HeadingLevel.HEADING_2,
+    pageBreakBefore: !isFirstPage,
+    spacing: { before: isFirstPage ? 0 : 180, after: 140 }
+  }));
+  pageData.rows.forEach((row, index) => {
+    const previous = pageData.rows[index - 1];
+    const gapBefore = previous ? Math.max(0, row.y - previous.y - previous.fontSize) : 0;
+    const fontSize = Math.max(14, Math.min(26, Math.round(row.fontSize * 1.7)));
+    const leftIndent = Math.max(0, Math.min(7200, Math.round((row.x - pageData.left) * 11)));
+    children.push(new Paragraph({
+      children: [new TextRun({ text: row.layoutText || row.text, font: 'Courier New', size: fontSize })],
+      indent: { left: leftIndent },
+      spacing: { before: Math.min(180, Math.round(gapBefore * 6)), after: 0, line: 220 }
+    }));
+  });
+};
+
+const pushFlowRows = ({ children, pageData, pageNumber, isFirstPage, docx }) => {
+  const { Paragraph, TextRun, HeadingLevel } = docx;
+  children.push(new Paragraph({
+    text: `Halaman ${pageNumber}`,
+    heading: HeadingLevel.HEADING_2,
+    pageBreakBefore: !isFirstPage,
+    spacing: { before: isFirstPage ? 0 : 180, after: 140 }
+  }));
+  rowsToFlowBlocks(pageData.rows).forEach(block => {
+    children.push(new Paragraph({
+      children: [new TextRun({ text: block.text, bold: block.heading, font: block.tableLike ? 'Courier New' : 'Arial' })],
+      spacing: { after: block.heading ? 120 : 90, line: 276 }
+    }));
+  });
 };
 
 wordMode?.addEventListener('change', updateWordPageInputs);
@@ -305,10 +417,11 @@ document.getElementById('wordBtn')?.addEventListener('click', async () => {
   if (!window.docx?.Document || !window.docx?.Packer) return showToast('Library Word belum siap. Coba ulang beberapa detik lagi.');
 
   try {
-    wordNote.innerHTML = '<h3>Memproses PDF</h3><p>Membaca teks PDF dan menyusun dokumen Word...</p>';
+    wordNote.innerHTML = '<h3>Memproses PDF</h3><p>Membaca posisi teks PDF dan menyusun dokumen Word...</p>';
     const pdf = await window.pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise;
     const pages = getWordPages(pdf.numPages);
     const { Document, Packer, Paragraph, TextRun, HeadingLevel } = window.docx;
+    const docx = { Paragraph, TextRun, HeadingLevel };
     const children = [
       new Paragraph({ text: file.name.replace(/\.pdf$/i, ''), heading: HeadingLevel.TITLE }),
       new Paragraph({ text: 'Dikonversi oleh SIPIL CARE PDF to Word.' })
@@ -317,13 +430,15 @@ document.getElementById('wordBtn')?.addEventListener('click', async () => {
     let extractedLines = 0;
     for (const [index, pageNumber] of pages.entries()) {
       const page = await pdf.getPage(pageNumber);
-      const lines = await extractPdfPageLines(page);
-      extractedLines += lines.length;
-      if (index > 0) children.push(new Paragraph({ text: '' }));
-      children.push(new Paragraph({ text: `Halaman ${pageNumber}`, heading: HeadingLevel.HEADING_2 }));
-      if (lines.length) {
-        lines.forEach(line => children.push(new Paragraph({ children: [new TextRun(line)] })));
+      const pageData = await extractPdfPageRows(page);
+      extractedLines += pageData.rows.length;
+      if (pageData.rows.length) {
+        const payload = { children, pageData, pageNumber, isFirstPage: index === 0, docx };
+        if (wordLayoutMode?.value === 'flow') pushFlowRows(payload);
+        else pushLayoutRows(payload);
       } else {
+        if (index > 0) children.push(new Paragraph({ text: '' }));
+        children.push(new Paragraph({ text: `Halaman ${pageNumber}`, heading: HeadingLevel.HEADING_2 }));
         children.push(new Paragraph({ text: 'Tidak ada teks yang dapat diekstrak dari halaman ini.' }));
       }
     }
@@ -336,11 +451,11 @@ document.getElementById('wordBtn')?.addEventListener('click', async () => {
     });
     const blob = await Packer.toBlob(doc);
     downloadBlob(blob, slug(file.name.replace(/\.pdf$/i, '')) + '.docx');
-    wordNote.innerHTML = `<h3>Konversi selesai</h3><p>${pages.length} halaman diproses dan ${extractedLines} baris teks diekstrak ke Word.</p><p class="small-text">Jika hasil kosong, kemungkinan PDF berupa scan gambar dan perlu OCR terlebih dahulu.</p>`;
+    wordNote.innerHTML = `<h3>Konversi selesai</h3><p>${pages.length} halaman diproses dan ${extractedLines} baris teks disusun ke Word dengan mode ${wordLayoutMode?.value === 'flow' ? 'paragraf' : 'layout'}.</p><p class="small-text">Jika hasil kosong, kemungkinan PDF berupa scan gambar dan perlu OCR terlebih dahulu.</p>`;
     showToast('PDF berhasil dikonversi ke Word.');
   } catch (error) {
     console.error(error);
-    wordNote.innerHTML = '<h3>Catatan konversi</h3><p>Konversi ini mengambil teks PDF dan menyusunnya per halaman ke dokumen Word. Layout kompleks, tabel rumit, scan gambar, dan tanda tangan tidak selalu bisa dipertahankan.</p><p class="small-text">File diproses lokal di browser. Untuk PDF hasil scan, gunakan OCR terlebih dahulu agar teks bisa terbaca.</p>';
+    wordNote.innerHTML = '<h3>Catatan konversi</h3><p>Mode layout mempertahankan posisi teks, indent, dan jarak antar kolom agar tabel atau format laporan tidak mudah berantakan. Mode paragraf cocok untuk modul berbasis teks biasa.</p><p class="small-text">File diproses lokal di browser. Untuk PDF hasil scan, gunakan OCR terlebih dahulu agar teks bisa terbaca.</p>';
     if (error.message === 'OUT_OF_RANGE') return showToast('Halaman akhir melebihi jumlah halaman PDF.');
     if (error.message === 'REVERSED_RANGE') return showToast('Halaman awal tidak boleh lebih besar dari halaman akhir.');
     if (error.message === 'INVALID_RANGE') return showToast('Masukkan nomor halaman yang valid.');
