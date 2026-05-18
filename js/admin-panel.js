@@ -247,7 +247,7 @@ const currentAdmin = () => {
   };
 };
 
-const hasPermission = permission => currentAdmin().permissions.includes(permission);
+const hasPermission = permission => currentAdmin().role === 'developer' || currentAdmin().permissions.includes(permission);
 const canManageAdminAccounts = () => currentAdmin().role === 'developer' || hasPermission('admin_accounts');
 const canManageStudentAccounts = () => currentAdmin().role === 'developer' || hasPermission('student_accounts');
 const canDeleteDashboardLogs = () => currentAdmin().role === 'developer' || hasPermission('log_delete');
@@ -281,6 +281,10 @@ const applyAdminRoleUI = () => {
   document.querySelectorAll('[data-log-delete-only="true"]').forEach(item => {
     item.hidden = !canDeleteDashboardLogs();
   });
+  document.querySelectorAll('[data-admin-permission]').forEach(item => {
+    const permissions = item.dataset.adminPermission.split(',').map(value => value.trim()).filter(Boolean);
+    item.hidden = permissions.length ? !permissions.some(permission => hasPermission(permission)) : false;
+  });
 };
 
 const adminRoleTemplates = {
@@ -288,19 +292,31 @@ const adminRoleTemplates = {
     role: 'developer',
     roleLabel: 'Developer',
     allowedPages: ['dashboard.html', 'resources.html', 'announcements.html', 'messages.html', 'admin-accounts.html', 'student-accounts.html'],
-    permissions: ['dashboard', 'resources', 'announcements', 'messages', 'audit', 'admin_accounts', 'student_accounts', 'log_delete']
+    permissions: ['dashboard', 'resources', 'practicum_studio', 'software', 'videos', 'announcements', 'messages', 'audit', 'admin_accounts', 'student_accounts', 'log_delete']
   },
   admin_sipil: {
     role: 'admin_sipil',
     roleLabel: 'Admin SIPIL CARE',
     allowedPages: ['dashboard.html', 'resources.html', 'announcements.html', 'messages.html'],
-    permissions: ['dashboard', 'resources', 'announcements', 'messages', 'audit']
+    permissions: ['dashboard', 'resources', 'practicum_studio', 'software', 'videos', 'announcements', 'messages', 'audit']
   },
   pendprof_hms: {
     role: 'pendprof_hms',
     roleLabel: 'PENDPROF HMS',
     allowedPages: ['resources.html', 'messages.html'],
     permissions: ['resources', 'messages']
+  },
+  aslab_hms: {
+    role: 'aslab_hms',
+    roleLabel: 'Admin Aslab',
+    allowedPages: ['resources.html', 'messages.html'],
+    permissions: ['practicum_studio', 'messages']
+  },
+  asdos_hms: {
+    role: 'asdos_hms',
+    roleLabel: 'Admin Asdos',
+    allowedPages: ['resources.html', 'messages.html'],
+    permissions: ['practicum_studio', 'messages']
   },
   eksternal_hms: {
     role: 'eksternal_hms',
@@ -312,7 +328,7 @@ const adminRoleTemplates = {
 
 const adminPageOptions = [
   { value: 'dashboard.html', label: 'Dashboard', permission: 'dashboard' },
-  { value: 'resources.html', label: 'Resources', permission: 'resources' },
+  { value: 'resources.html', label: 'Resources / Upload Materi' },
   { value: 'announcements.html', label: 'Pemberitahuan', permission: 'announcements' },
   { value: 'messages.html', label: 'Pesan Mahasiswa', permission: 'messages' },
   { value: 'admin-accounts.html', label: 'Akun Admin', permission: 'admin_accounts' },
@@ -321,7 +337,10 @@ const adminPageOptions = [
 
 const adminPermissionOptions = [
   { value: 'dashboard', label: 'Lihat dashboard' },
-  { value: 'resources', label: 'Kelola resources, software, video, praktikum' },
+  { value: 'resources', label: 'Upload & kelola resource umum' },
+  { value: 'practicum_studio', label: 'Upload & kelola Praktikum/Studio' },
+  { value: 'software', label: 'Upload & kelola software' },
+  { value: 'videos', label: 'Upload & kelola video' },
   { value: 'announcements', label: 'Kelola pemberitahuan' },
   { value: 'messages', label: 'Kelola pesan dan live chat' },
   { value: 'audit', label: 'Lihat audit log' },
@@ -1607,7 +1626,7 @@ on(resourceForm, 'submit', async e => {
 
 on(softwareForm, 'submit', async e => {
   e.preventDefault();
-  if (!requirePermission('resources', 'Software')) return;
+  if (!requirePermission('software', 'Software')) return;
   if (!softwareTitle.value.trim() || !softwareDescription.value.trim() || !softwareAuthor.value.trim() || !softwareDate.value) {
     toast('Lengkapi Judul, Deskripsi, Author, dan Tanggal.');
     return;
@@ -1665,7 +1684,7 @@ on(softwareForm, 'submit', async e => {
 
 on(practicumForm, 'submit', async e => {
   e.preventDefault();
-  if (!requirePermission('resources', 'Praktikum & Studio')) return;
+  if (!requirePermission('practicum_studio', 'Praktikum & Studio')) return;
   if (!validatePracticumForm()) return;
 
   setLoading(true);
@@ -1717,7 +1736,7 @@ on(practicumForm, 'submit', async e => {
 });
 on(videoForm, 'submit', async e => {
   e.preventDefault();
-  if (!requirePermission('resources', 'Video')) return;
+  if (!requirePermission('videos', 'Video')) return;
   if (!validateVideoForm()) return;
 
   setLoading(true);
@@ -1865,7 +1884,7 @@ on(resourceTable, 'click', async e => {
 on(softwareTable, 'click', async e => {
   const docId = e.target.dataset.del || e.target.dataset.edit;
   if (!docId) return;
-  if (!requirePermission('resources', 'Software')) return;
+  if (!requirePermission('software', 'Software')) return;
 
   if (e.target.dataset.del) {
     if (confirm('Yakin hapus software ini?')) {
@@ -1907,7 +1926,7 @@ on(softwareTable, 'click', async e => {
 on(practicumTable, 'click', async e => {
   const docId = e.target.dataset.del || e.target.dataset.edit;
   if (!docId) return;
-  if (!requirePermission('resources', 'Praktikum & Studio')) return;
+  if (!requirePermission('practicum_studio', 'Praktikum & Studio')) return;
 
   if (e.target.dataset.del) {
     if (confirm('Yakin hapus modul praktikum/studio ini?')) {
@@ -1951,7 +1970,7 @@ on(practicumTable, 'click', async e => {
 on(videoTable, 'click', async e => {
   const docId = e.target.dataset.del || e.target.dataset.edit;
   if (!docId) return;
-  if (!requirePermission('resources', 'Video')) return;
+  if (!requirePermission('videos', 'Video')) return;
 
   if (e.target.dataset.del) {
     if (confirm('Yakin hapus video ini?')) {

@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="../../css/style.css?v=19">
-    <link rel="stylesheet" href="../../css/admin.css?v=26">
+    <link rel="stylesheet" href="../../css/admin.css?v=27">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -28,11 +28,11 @@
       <section class="admin-page-head">
         <span class="eyebrow">Resources</span>
         <h2>Kelola Materi Akademik</h2>
-        <p>Upload dan kelola Resources, Praktikum & Studio, Software, dan Video dalam satu halaman admin.</p>
+        <p>Upload dan kelola Resource umum, Praktikum & Studio, Software, dan Video dengan permission admin yang terpisah.</p>
       </section>
 
       <section id="resource-upload" class="admin-panel-grid">
-        <form class="admin-card" id="resourceForm" novalidate>
+        <form class="admin-card" id="resourceForm" data-admin-permission="resources" novalidate>
           <h3>Upload Resource</h3>
           <input type="hidden" id="resourceId">
           <input class="control" id="resourceTitle" placeholder="Judul" required>
@@ -60,7 +60,7 @@
           <button id="submitResourceBtn" class="btn btn-primary" type="submit">Simpan Resource</button>
         </form>
 
-        <form class="admin-card" id="practicumForm" novalidate>
+        <form class="admin-card" id="practicumForm" data-admin-permission="practicum_studio" novalidate>
           <h3>Upload Praktikum &amp; Studio</h3>
           <input type="hidden" id="practicumId">
           <input class="control" id="practicumTitle" placeholder="Judul modul" required>
@@ -93,7 +93,7 @@
           <button id="submitPracticumBtn" class="btn btn-primary" type="submit">Simpan Modul</button>
         </form>
 
-        <form class="admin-card" id="softwareForm" novalidate>
+        <form class="admin-card" id="softwareForm" data-admin-permission="software" novalidate>
           <h3>Upload Software</h3>
           <input type="hidden" id="softwareId">
           <input class="control" id="softwareTitle" placeholder="Judul" required>
@@ -113,7 +113,7 @@
           <button id="submitSoftwareBtn" class="btn btn-primary" type="submit">Simpan Software</button>
         </form>
 
-        <form class="admin-card" id="videoForm">
+        <form class="admin-card" id="videoForm" data-admin-permission="videos">
           <h3>Upload Video</h3>
           <input class="control" id="videoTitle" placeholder="Judul video" required>
           <input class="control" id="videoThumb" placeholder="Thumbnail label" required>
@@ -126,22 +126,22 @@
         </form>
       </section>
 
-      <section id="resources" class="admin-card">
+      <section id="resources" class="admin-card" data-admin-permission="resources">
         <div class="admin-table-head"><h3>Resource Management</h3><div><input class="control" id="adminSearch" placeholder="Search"><select class="control" id="adminFilter"><option value="All">All</option></select></div></div>
         <div class="table-wrap"><table><thead><tr><th>Judul</th><th>Kategori</th><th>Tipe</th><th>Tanggal</th><th>Aksi</th></tr></thead><tbody id="resourceTable"></tbody></table></div>
       </section>
 
-      <section id="practicum-studio" class="admin-card">
+      <section id="practicum-studio" class="admin-card" data-admin-permission="practicum_studio">
         <div class="admin-table-head"><h3>Praktikum &amp; Studio Management</h3><div><input class="control" id="practicumSearch" placeholder="Search"><select class="control" id="practicumFilter"><option value="All">All</option></select></div></div>
         <div class="table-wrap"><table><thead><tr><th>Judul</th><th>Kategori</th><th>Semester</th><th>Tipe</th><th>Tanggal</th><th>Aksi</th></tr></thead><tbody id="practicumTable"></tbody></table></div>
       </section>
 
-      <section id="software" class="admin-card">
+      <section id="software" class="admin-card" data-admin-permission="software">
         <div class="admin-table-head"><h3>Software Management</h3><div><input class="control" id="softwareSearch" placeholder="Search"><select class="control" id="softwareFilter"><option value="All">All</option></select></div></div>
         <div class="table-wrap"><table><thead><tr><th>Judul</th><th>Kategori</th><th>Tipe</th><th>Tanggal</th><th>Aksi</th></tr></thead><tbody id="softwareTable"></tbody></table></div>
       </section>
 
-      <section id="videos" class="admin-card">
+      <section id="videos" class="admin-card" data-admin-permission="videos">
         <div class="admin-table-head"><h3>Video Management</h3><div><input class="control" id="videoSearch" placeholder="Search"><select class="control" id="videoFilter"><option value="All">All</option></select></div></div>
         <div class="table-wrap"><table><thead><tr><th>Judul</th><th>Kategori</th><th>Channel</th><th>Aksi</th></tr></thead><tbody id="videoTable"></tbody></table></div>
       </section>
@@ -151,6 +151,6 @@
     <script src="../../js/student-config.js?v=20"></script>
     <script src="../../js/auth.js?v=26"></script>
     <script src="../../js/push-config.js?v=1"></script>
-    <script type="module" src="../../js/admin-panel.js?v=43"></script>
+    <script type="module" src="../../js/admin-panel.js?v=45"></script>
   </body>
 </html>

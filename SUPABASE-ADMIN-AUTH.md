@@ -94,7 +94,7 @@ values
   'developer',
   'Developer',
   '["dashboard.html","resources.html","announcements.html","messages.html","admin-accounts.html","student-accounts.html"]'::jsonb,
-  '["dashboard","resources","announcements","messages","audit","admin_accounts","student_accounts","log_delete"]'::jsonb,
+  '["dashboard","resources","practicum_studio","software","videos","announcements","messages","audit","admin_accounts","student_accounts","log_delete"]'::jsonb,
   true
 ),
 (
@@ -104,7 +104,7 @@ values
   'admin_sipil',
   'Admin SIPIL CARE',
   '["dashboard.html","resources.html","announcements.html","messages.html"]'::jsonb,
-  '["dashboard","resources","announcements","messages","audit"]'::jsonb,
+  '["dashboard","resources","practicum_studio","software","videos","announcements","messages","audit"]'::jsonb,
   true
 ),
 (
@@ -223,9 +223,11 @@ alter table public.admin_roles enable row level security;
 
 insert into public.admin_roles (role, role_label, allowed_pages, permissions, is_active, is_system)
 values
-('developer', 'Developer', '["dashboard.html","resources.html","announcements.html","messages.html","admin-accounts.html","student-accounts.html"]'::jsonb, '["dashboard","resources","announcements","messages","audit","admin_accounts","student_accounts","log_delete"]'::jsonb, true, true),
-('admin_sipil', 'Admin SIPIL CARE', '["dashboard.html","resources.html","announcements.html","messages.html"]'::jsonb, '["dashboard","resources","announcements","messages","audit"]'::jsonb, true, false),
+('developer', 'Developer', '["dashboard.html","resources.html","announcements.html","messages.html","admin-accounts.html","student-accounts.html"]'::jsonb, '["dashboard","resources","practicum_studio","software","videos","announcements","messages","audit","admin_accounts","student_accounts","log_delete"]'::jsonb, true, true),
+('admin_sipil', 'Admin SIPIL CARE', '["dashboard.html","resources.html","announcements.html","messages.html"]'::jsonb, '["dashboard","resources","practicum_studio","software","videos","announcements","messages","audit"]'::jsonb, true, false),
 ('pendprof_hms', 'PENDPROF HMS', '["resources.html","messages.html"]'::jsonb, '["resources","messages"]'::jsonb, true, false),
+('aslab_hms', 'Admin Aslab', '["resources.html","messages.html"]'::jsonb, '["practicum_studio","messages"]'::jsonb, true, false),
+('asdos_hms', 'Admin Asdos', '["resources.html","messages.html"]'::jsonb, '["practicum_studio","messages"]'::jsonb, true, false),
 ('eksternal_hms', 'Eksternal HMS', '["announcements.html","messages.html"]'::jsonb, '["announcements","messages"]'::jsonb, true, false)
 on conflict (role) do update set
   role_label = excluded.role_label,
