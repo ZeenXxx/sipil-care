@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="../css/style.css?v=14">
     <link rel="stylesheet" href="../css/navbar.css?v=23">
-    <link rel="stylesheet" href="../css/tools.css?v=6">
+    <link rel="stylesheet" href="../css/tools.css?v=7">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -24,7 +24,7 @@
       <section class="page-head tools-hero">
         <div class="container tools-hero-grid">
           <div><span class="eyebrow">Academic tools</span><h1>Toolkit praktis untuk tugas Teknik Sipil</h1><p class="lead">Kalkulator konversi, PDF tools, Structural Analyzer, Preliminary Design, dan kalkulator tulangan balok untuk mempercepat tugas akademik.</p></div>
-          <div class="tools-hero-panel"><span>9</span><strong>alat akademik</strong><p>Converter, PDF tools, analyzer struktur, preliminary design, dan tulangan balok.</p></div>
+          <div class="tools-hero-panel"><span>8</span><strong>alat akademik</strong><p>Converter, PDF tools, analyzer struktur, preliminary design, dan tulangan balok.</p></div>
         </div>
       </section>
       <section class="section">
@@ -39,7 +39,6 @@
             <button class="tool-tab" type="button" data-tool-tab="export">Export PDF</button>
             <button class="tool-tab" type="button" data-tool-tab="merge">PDF Merger</button>
             <button class="tool-tab" type="button" data-tool-tab="image">PDF to Image</button>
-            <button class="tool-tab" type="button" data-tool-tab="word">PDF to Word</button>
             <button class="tool-tab" type="button" data-tool-tab="jpgpdf">JPG to PDF</button>
           </div>
           <section class="tool-panel active" id="tool-converter">
@@ -80,13 +79,6 @@
               <div class="image-preview" id="imagePreview"><p>Preview gambar akan muncul di sini.</p></div>
             </div>
           </section>
-          <section class="tool-panel" id="tool-word">
-            <div class="tool-header"><div><span class="tool-code">PW</span><h2>PDF to Word</h2></div><p>Ubah PDF menjadi Word editable dengan rekonstruksi font, alignment, spasi, header, dan footer semirip mungkin.</p></div>
-            <div class="tool-layout">
-              <div class="card tool-card"><label for="wordPdfFile">Pilih PDF</label><input class="control file-control" id="wordPdfFile" type="file" accept="application/pdf"><label for="wordMode">Ambil halaman</label><select class="control" id="wordMode"><option value="all">Semua halaman</option><option value="single">Satu halaman</option><option value="range">Rentang halaman</option></select><div class="tool-grid-2 word-page-fields"><div><label for="wordPageStart">Halaman awal</label><input class="control" id="wordPageStart" type="number" min="1" value="1"></div><div><label for="wordPageEnd">Halaman akhir</label><input class="control" id="wordPageEnd" type="number" min="1" value="1"></div></div><label for="wordLayoutMode">Format hasil</label><select class="control" id="wordLayoutMode"><option value="editable" selected>Editable - mirip Word asli</option><option value="visual">Visual paling mirip PDF</option><option value="flow">Editable - rapikan paragraf</option></select><button class="btn btn-primary full-btn" type="button" id="wordBtn">Konversi PDF ke Word</button></div>
-              <div class="tool-note" id="wordNote"><h3>Catatan konversi</h3><p>Mode editable merekonstruksi teks menjadi Word yang bisa diedit dengan font, ukuran, alignment, dan jarak baris dari PDF. Header dan footer teks ikut terbawa sebagai teks biasa.</p><p class="small-text">PDF tidak menyimpan struktur Word asli secara utuh. Untuk gambar yang harus 100% sama, gunakan mode visual sebagai cadangan.</p></div>
-            </div>
-          </section>
           <section class="tool-panel" id="tool-jpgpdf">
             <div class="tool-header"><div><span class="tool-code">JP</span><h2>JPG to PDF</h2></div><p>Gabungkan satu atau beberapa gambar JPG/JPEG menjadi file PDF A4. Gambar otomatis menyesuaikan halaman tanpa terpotong.</p></div>
             <div class="tool-layout">
@@ -101,7 +93,7 @@
       <div class="footer-grid">
         <div><a class="footer-brand" href="../index.html"><img src="../assets/images/logo-hms.png" alt="Logo HMS"><span>SIPIL CARE</span></a><p>Platform digital akademik Teknik Sipil untuk akses referensi, standar, modul, video, dan perangkat belajar mahasiswa.</p></div>
         <div><h3>Navigasi</h3><a href="resources.html">Resources</a><a href="praktikum-studio.html">Praktikum &amp; Studio</a><a href="videos.html">Videos</a><a href="tools.html">Tools</a><a href="about.html">About</a></div>
-        <div><h3>Tools</h3><a href="tools.html#converter">Converter</a><a href="../tools/diagram-struktur.html">Structural Analyzer</a><a href="../tools/preliminary-design.html">Preliminary Design</a><a href="../tools/tulangan-balok.html">Tulangan Balok</a><a href="tools.html#word">PDF to Word</a></div>
+        <div><h3>Tools</h3><a href="tools.html#converter">Converter</a><a href="../tools/diagram-struktur.html">Structural Analyzer</a><a href="../tools/preliminary-design.html">Preliminary Design</a><a href="../tools/tulangan-balok.html">Tulangan Balok</a><a href="tools.html#jpgpdf">JPG to PDF</a></div>
         <div><h3>HMS Unjani</h3><p>Kampus UNJANI<br>Academic Resource Platform<br>2026</p></div>
       </div>
       <div class="footer-bottom"><span>© 2026 PENDPROF HMS - HMS UNJANI</span><span>Built for civil engineering students.</span></div>
@@ -110,8 +102,7 @@
     <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.js"></script>
     <script src="../js/navbar.js?v=20"></script>
-    <script src="../js/tools.js?v=8"></script>
+    <script src="../js/tools.js?v=9"></script>
   </body>
 </html>
