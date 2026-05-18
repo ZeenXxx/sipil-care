@@ -407,6 +407,74 @@ const pushFlowRows = ({ children, pageData, pageNumber, isFirstPage, docx }) => 
   });
 };
 
+const canvasToArrayBuffer = canvas => new Promise((resolve, reject) => {
+  canvas.toBlob(blob => {
+    if (!blob) return reject(new Error('CANVAS_EXPORT_FAILED'));
+    blob.arrayBuffer().then(resolve).catch(reject);
+  }, 'image/png', 1);
+});
+
+const renderPdfPageImage = async page => {
+  const baseViewport = page.getViewport({ scale: 1 });
+  const renderScale = Math.min(2.6, Math.max(1.8, 1800 / Math.max(baseViewport.width, baseViewport.height)));
+  const viewport = page.getViewport({ scale: renderScale });
+  const canvas = document.createElement('canvas');
+  const context = canvas.getContext('2d', { alpha: false });
+  canvas.width = Math.ceil(viewport.width);
+  canvas.height = Math.ceil(viewport.height);
+  context.fillStyle = '#ffffff';
+  context.fillRect(0, 0, canvas.width, canvas.height);
+  await page.render({ canvasContext: context, viewport }).promise;
+  const imageBuffer = await canvasToArrayBuffer(canvas);
+  canvas.width = 1;
+  canvas.height = 1;
+  return {
+    imageBuffer,
+    widthPt: baseViewport.width,
+    heightPt: baseViewport.height
+  };
+};
+
+const buildVisualWordDoc = async ({ pdf, pages, fileName, docx }) => {
+  const { Document, Paragraph, ImageRun } = docx;
+  const sections = [];
+  for (const [index, pageNumber] of pages.entries()) {
+    wordNote.innerHTML = `<h3>Memproses PDF</h3><p>Merender halaman ${index + 1} dari ${pages.length} agar tampilan Word sama seperti PDF...</p>`;
+    const page = await pdf.getPage(pageNumber);
+    const pageImage = await renderPdfPageImage(page);
+    const pageWidthTwip = Math.round(pageImage.widthPt * 20);
+    const pageHeightTwip = Math.round(pageImage.heightPt * 20);
+    const displayWidthPx = Math.round(pageImage.widthPt * 96 / 72);
+    const displayHeightPx = Math.round(pageImage.heightPt * 96 / 72);
+    sections.push({
+      properties: {
+        page: {
+          size: { width: pageWidthTwip, height: pageHeightTwip },
+          margin: { top: 0, right: 0, bottom: 0, left: 0, header: 0, footer: 0, gutter: 0 }
+        }
+      },
+      children: [
+        new Paragraph({
+          children: [
+            new ImageRun({
+              data: new Uint8Array(pageImage.imageBuffer),
+              transformation: { width: displayWidthPx, height: displayHeightPx }
+            })
+          ],
+          spacing: { before: 0, after: 0, line: 240 },
+          indent: { left: 0, right: 0 }
+        })
+      ]
+    });
+  }
+  return new Document({
+    creator: 'SIPIL CARE',
+    title: fileName.replace(/\.pdf$/i, ''),
+    description: 'PDF to Word visual SIPIL CARE',
+    sections
+  });
+};
+
 wordMode?.addEventListener('change', updateWordPageInputs);
 updateWordPageInputs();
 
@@ -417,11 +485,20 @@ document.getElementById('wordBtn')?.addEventListener('click', async () => {
   if (!window.docx?.Document || !window.docx?.Packer) return showToast('Library Word belum siap. Coba ulang beberapa detik lagi.');
 
   try {
-    wordNote.innerHTML = '<h3>Memproses PDF</h3><p>Membaca posisi teks PDF dan menyusun dokumen Word...</p>';
+    wordNote.innerHTML = '<h3>Memproses PDF</h3><p>Menyiapkan dokumen Word...</p>';
     const pdf = await window.pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise;
     const pages = getWordPages(pdf.numPages);
-    const { Document, Packer, Paragraph, TextRun, HeadingLevel } = window.docx;
-    const docx = { Paragraph, TextRun, HeadingLevel };
+    const { Document, Packer, Paragraph, TextRun, HeadingLevel, ImageRun } = window.docx;
+    const docx = { Paragraph, TextRun, HeadingLevel, ImageRun, Document };
+    if (wordLayoutMode?.value === 'visual') {
+      if (!ImageRun) return showToast('Library Word belum mendukung gambar. Coba refresh halaman.');
+      const visualDoc = await buildVisualWordDoc({ pdf, pages, fileName: file.name, docx });
+      const blob = await Packer.toBlob(visualDoc);
+      downloadBlob(blob, slug(file.name.replace(/\.pdf$/i, '')) + '.docx');
+      wordNote.innerHTML = `<h3>Konversi selesai</h3><p>${pages.length} halaman dirender ke Word dengan tampilan visual mengikuti PDF, termasuk font dan gambar.</p><p class="small-text">Hasil mode ini sangat mirip PDF, tetapi isi halaman menjadi gambar sehingga teks tidak diedit per huruf.</p>`;
+      return showToast('PDF berhasil dikonversi ke Word.');
+    }
+
     const children = [
       new Paragraph({ text: file.name.replace(/\.pdf$/i, ''), heading: HeadingLevel.TITLE }),
       new Paragraph({ text: 'Dikonversi oleh SIPIL CARE PDF to Word.' })
@@ -455,10 +532,11 @@ document.getElementById('wordBtn')?.addEventListener('click', async () => {
     showToast('PDF berhasil dikonversi ke Word.');
   } catch (error) {
     console.error(error);
-    wordNote.innerHTML = '<h3>Catatan konversi</h3><p>Mode layout mempertahankan posisi teks, indent, dan jarak antar kolom agar tabel atau format laporan tidak mudah berantakan. Mode paragraf cocok untuk modul berbasis teks biasa.</p><p class="small-text">File diproses lokal di browser. Untuk PDF hasil scan, gunakan OCR terlebih dahulu agar teks bisa terbaca.</p>';
+    wordNote.innerHTML = '<h3>Catatan konversi</h3><p>Mode mirip PDF merender tiap halaman sebagai gambar berkualitas tinggi di Word, sehingga font, posisi, tabel, dan gambar tetap mengikuti PDF.</p><p class="small-text">Gunakan mode teks editable hanya jika isi perlu diedit. Mode teks tidak bisa menjamin gambar dan layout PDF tetap sama.</p>';
     if (error.message === 'OUT_OF_RANGE') return showToast('Halaman akhir melebihi jumlah halaman PDF.');
     if (error.message === 'REVERSED_RANGE') return showToast('Halaman awal tidak boleh lebih besar dari halaman akhir.');
     if (error.message === 'INVALID_RANGE') return showToast('Masukkan nomor halaman yang valid.');
+    if (error.message === 'CANVAS_EXPORT_FAILED') return showToast('Gagal merender halaman PDF menjadi gambar.');
     showToast('Gagal mengubah PDF ke Word. Pastikan PDF tidak rusak atau terkunci.');
   }
 });
