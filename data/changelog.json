@@ -1,0 +1,16 @@
+[
+  {
+    "id": "2026-05-20:changelog",
+    "date": "2026-05-20",
+    "dateLabel": "20 Mei 2026",
+    "generated": true,
+    "summary": "Changelog Otomatis",
+    "items": [
+      {
+        "type": "added",
+        "title": "Changelog Otomatis",
+        "description": "Riwayat update kini dibuat dari file yang berubah, lalu ditampilkan dengan bahasa yang lebih rapi dan mudah dipahami mahasiswa."
+      }
+    ]
+  }
+]

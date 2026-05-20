@@ -10,6 +10,9 @@
   },
   "hosting": {
     "public": ".",
+    "predeploy": [
+      "node scripts/generate-changelog.js"
+    ],
     "ignore": [
       "firebase.json",
       "**/.*",

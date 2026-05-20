@@ -1,0 +1,6 @@
+{
+  "scripts": {
+    "build": "node scripts/generate-changelog.js",
+    "changelog": "node scripts/generate-changelog.js"
+  }
+}
