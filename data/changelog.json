@@ -1,5 +1,19 @@
 [
   {
+    "id": "2026-05-20:maintenance",
+    "date": "2026-05-20",
+    "dateLabel": "20 Mei 2026",
+    "generated": true,
+    "summary": "Pemeliharaan Website",
+    "items": [
+      {
+        "type": "improved",
+        "title": "Pemeliharaan Website",
+        "description": "SIPIL CARE mendapatkan pembaruan teknis untuk menjaga stabilitas dan kenyamanan penggunaan."
+      }
+    ]
+  },
+  {
     "id": "2026-05-20:changelog",
     "date": "2026-05-20",
     "dateLabel": "20 Mei 2026",
