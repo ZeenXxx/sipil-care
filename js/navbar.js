@@ -30,6 +30,12 @@ const closeMenu = () => {
 
 if (menuToggle && navLinks) {
   if (!navLinks.querySelector('[data-help-link]')) {
+    const changelogLink = document.createElement('a');
+    changelogLink.href = resolveSitePath('pages/changelog.html');
+    changelogLink.dataset.changelogLink = 'true';
+    changelogLink.textContent = 'Changelog';
+    navLinks.appendChild(changelogLink);
+
     const helpLink = document.createElement('a');
     helpLink.href = resolveSitePath('pages/help.html');
     helpLink.dataset.helpLink = 'true';
@@ -116,6 +122,7 @@ function createGlobalSearch() {
     { title: 'About', type: 'Halaman', url: 'pages/about.html', text: 'Tentang SIPIL CARE dan FAQ singkat' },
     { title: 'Developer', type: 'Halaman', url: 'pages/developer.html', text: 'Tim pengembang dan informasi platform' },
     { title: 'Contact', type: 'Halaman', url: 'pages/contact.html', text: 'Kontak pengurus, live chat, pesan mahasiswa' },
+    { title: 'Changelog', type: 'Info Update', url: 'pages/changelog.html', text: 'Riwayat update, perbaikan bug, fitur baru SIPIL CARE' },
     { title: 'Bantuan & FAQ', type: 'Bantuan', url: 'pages/help.html', text: 'Cara login, download resource, lupa password, pakai tools, hubungi admin' }
   ];
   let searchItems = staticItems;

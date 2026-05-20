@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8">
+    <script>!function(){var t=localStorage.getItem("sipilcare_theme");(t==="dark"||(t===null&&window.matchMedia("(prefers-color-scheme: dark)").matches))&&document.documentElement.classList.add("dark")}();</script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="../css/style.css?v=24">
+    <link rel="stylesheet" href="../css/navbar.css?v=26">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <title>Changelog - SIPIL CARE</title>
+    <script src="../js/student-config.js?v=18"></script>
+    <script src="../js/student-auth.js?v=32"></script>
+  </head>
+  <body>
+    <header class="navbar">
+      <a class="brand" href="../index.html"><img src="../assets/images/logo-hms.png" alt="Logo HMS"><span><strong>SIPIL CARE</strong><small>Center for Academic, Resource &amp; Education</small></span></a>
+      <button class="menu-toggle" type="button" aria-label="Toggle navigation" aria-expanded="false"><span></span></button>
+      <nav class="nav-links"><a href="../index.html">Home</a><a href="resources.html">Resources</a><a href="praktikum-studio.html">Praktikum &amp; Studio</a><a href="videos.html">Videos</a><a href="tools.html">Tools</a><a href="about.html">About</a><a href="developer.html">Developer</a><a href="contact.html">Contact</a></nav>
+    </header>
+
+    <main>
+      <section class="page-head">
+        <div class="container">
+          <span class="eyebrow">Changelog</span>
+          <h1>Riwayat update SIPIL CARE</h1>
+          <p class="lead">Catatan ringkas fitur baru, perbaikan bug, dan peningkatan tampilan agar mahasiswa tahu apa saja yang berubah di platform.</p>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="container changelog-layout">
+          <aside class="changelog-summary card">
+            <span class="badge">Terbaru</span>
+            <h2>Update Mei 2026</h2>
+            <p>Fokus update terakhir adalah stabilitas akun, dashboard admin, tools teknik sipil, pencarian global, dan bantuan mahasiswa.</p>
+            <a class="btn btn-primary" href="help.html">Buka Bantuan</a>
+          </aside>
+
+          <div class="changelog-list">
+            <article class="changelog-item">
+              <time datetime="2026-05-20">20 Mei 2026</time>
+              <div>
+                <span class="changelog-type added">Ditambahkan</span>
+                <h3>Halaman Changelog</h3>
+                <p>Mahasiswa sekarang bisa melihat riwayat fitur baru, perbaikan, dan peningkatan web SIPIL CARE dari satu halaman khusus.</p>
+              </div>
+            </article>
+
+            <article class="changelog-item">
+              <time datetime="2026-05-20">20 Mei 2026</time>
+              <div>
+                <span class="changelog-type improved">Ditingkatkan</span>
+                <h3>Pencarian Global</h3>
+                <p>Tombol Cari di navbar ditambahkan untuk menemukan halaman, resource, video, tools, FAQ, dan changelog. Area hasil juga sudah bisa discroll.</p>
+              </div>
+            </article>
+
+            <article class="changelog-item">
+              <time datetime="2026-05-20">20 Mei 2026</time>
+              <div>
+                <span class="changelog-type improved">Ditingkatkan</span>
+                <h3>Dashboard Admin Mobile</h3>
+                <p>Navbar admin di HP dibuat lebih ringkas, scroll dashboard diperbaiki, dan ditambahkan quick jump ke Mahasiswa Online, Admin Online, History Akses, serta Audit Log.</p>
+              </div>
+            </article>
+
+            <article class="changelog-item">
+              <time datetime="2026-05-20">20 Mei 2026</time>
+              <div>
+                <span class="changelog-type added">Ditambahkan</span>
+                <h3>Halaman Bantuan & FAQ</h3>
+                <p>Ditambahkan panduan login mahasiswa, lupa password, download resource, penggunaan tools, dan cara menghubungi admin HMS.</p>
+              </div>
+            </article>
+
+            <article class="changelog-item">
+              <time datetime="2026-05-18">18 Mei 2026</time>
+              <div>
+                <span class="changelog-type fixed">Diperbaiki</span>
+                <h3>Role dan Akun Admin</h3>
+                <p>Perbaikan penyimpanan role admin dan akun admin di Supabase agar pengaturan role, permission, username, dan password benar-benar tersimpan.</p>
+              </div>
+            </article>
+
+            <article class="changelog-item">
+              <time datetime="2026-05-18">18 Mei 2026</time>
+              <div>
+                <span class="changelog-type improved">Ditingkatkan</span>
+                <h3>Permission Upload Admin</h3>
+                <p>Permission upload dipisahkan untuk resource umum, praktikum/studio, software, video, pemberitahuan, pesan, akun admin, akun mahasiswa, dan hapus log.</p>
+              </div>
+            </article>
+
+            <article class="changelog-item">
+              <time datetime="2026-05-18">18 Mei 2026</time>
+              <div>
+                <span class="changelog-type added">Ditambahkan</span>
+                <h3>Pengelolaan Akun Mahasiswa</h3>
+                <p>Developer dapat menambah angkatan, menghapus angkatan, bulk import mahasiswa, reset password default, dan melihat status online mahasiswa.</p>
+              </div>
+            </article>
+
+            <article class="changelog-item">
+              <time datetime="2026-05-18">18 Mei 2026</time>
+              <div>
+                <span class="changelog-type fixed">Diperbaiki</span>
+                <h3>Tools PDF to Word Dihapus</h3>
+                <p>Tools PDF to Word dihapus karena hasil konversi tidak memenuhi kualitas yang dibutuhkan mahasiswa.</p>
+              </div>
+            </article>
+
+            <article class="changelog-item">
+              <time datetime="2026-05-18">18 Mei 2026</time>
+              <div>
+                <span class="changelog-type added">Ditambahkan</span>
+                <h3>Tools Teknik Sipil Baru</h3>
+                <p>Ditambahkan Preliminary Design SNI 2847:2019 dan Kalkulator Tulangan Balok untuk membantu perhitungan awal struktur beton.</p>
+              </div>
+            </article>
+
+            <article class="changelog-item">
+              <time datetime="2026-05-18">18 Mei 2026</time>
+              <div>
+                <span class="changelog-type improved">Ditingkatkan</span>
+                <h3>Structural Diagram Analyzer</h3>
+                <p>Visual editor, tumpuan, elemen, pembebanan, dan area diagram gaya dalam diperbaiki agar lebih jelas dibaca.</p>
+              </div>
+            </article>
+
+            <article class="changelog-item">
+              <time datetime="2026-05-18">18 Mei 2026</time>
+              <div>
+                <span class="changelog-type improved">Ditingkatkan</span>
+                <h3>Sesi Login Mahasiswa dan Admin</h3>
+                <p>Sesi login mahasiswa dibatasi 1 hari, sedangkan admin otomatis logout setelah 30 menit tidak aktif.</p>
+              </div>
+            </article>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="footer-grid">
+        <div><a class="footer-brand" href="../index.html"><img src="../assets/images/logo-hms.png" alt="Logo HMS"><span>SIPIL CARE</span></a><p>Catatan update dan pengembangan platform akademik Teknik Sipil.</p></div>
+        <div><h3>Navigasi</h3><a href="resources.html">Resources</a><a href="praktikum-studio.html">Praktikum &amp; Studio</a><a href="videos.html">Videos</a><a href="tools.html">Tools</a></div>
+        <div><h3>Info</h3><a href="help.html">Bantuan</a><a href="contact.html">Contact</a><a href="developer.html">Developer</a></div>
+        <div><h3>HMS Unjani</h3><p>Kampus UNJANI<br>Academic Resource Platform<br>2026</p></div>
+      </div>
+      <div class="footer-bottom"><span>(c) 2026 PENDPROF HMS - HMS UNJANI</span><span>Built for civil engineering students.</span></div>
+    </footer>
+    <script src="../js/navbar.js?v=22"></script>
+  </body>
+</html>

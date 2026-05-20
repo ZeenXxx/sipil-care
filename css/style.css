@@ -610,6 +610,142 @@ button, input, select, textarea  {
 
 }
 
+.changelog-layout  {
+
+    display: grid;
+
+    grid-template-columns: minmax(260px, .72fr) minmax(0, 1.6fr);
+
+    gap: 22px;
+
+    align-items: start
+
+}
+
+.changelog-summary  {
+
+    position: sticky;
+
+    top: 110px
+
+}
+
+.changelog-summary h2  {
+
+    margin: 12px 0;
+
+    color: var(--primary);
+
+    font-size: 30px;
+
+    line-height: 1.1
+
+}
+
+.changelog-summary p  {
+
+    color: var(--muted);
+
+    line-height: 1.65
+
+}
+
+.changelog-list  {
+
+    display: grid;
+
+    gap: 14px
+
+}
+
+.changelog-item  {
+
+    display: grid;
+
+    grid-template-columns: 130px minmax(0, 1fr);
+
+    gap: 18px;
+
+    padding: 18px;
+
+    border: 1px solid var(--line);
+
+    border-radius: 8px;
+
+    background: #fff;
+
+    box-shadow: 0 10px 26px rgba(15, 77, 58, .07)
+
+}
+
+.changelog-item time  {
+
+    color: var(--muted);
+
+    font-size: 13px;
+
+    font-weight: 900
+
+}
+
+.changelog-type  {
+
+    display: inline-flex;
+
+    min-height: 28px;
+
+    align-items: center;
+
+    padding: 0 10px;
+
+    border-radius: 999px;
+
+    background: #edf4f1;
+
+    color: var(--primary);
+
+    font-size: 12px;
+
+    font-weight: 900
+
+}
+
+.changelog-type.added  {
+
+    background: rgba(15, 77, 58, .1)
+
+}
+
+.changelog-type.improved  {
+
+    background: rgba(217, 197, 41, .24)
+
+}
+
+.changelog-type.fixed  {
+
+    background: rgba(41, 117, 217, .12)
+
+}
+
+.changelog-item h3  {
+
+    margin: 10px 0 6px;
+
+    color: var(--primary)
+
+}
+
+.changelog-item p  {
+
+    margin: 0;
+
+    color: var(--muted);
+
+    line-height: 1.65
+
+}
+
 .meta  {
   
     display: flex;
@@ -1307,6 +1443,19 @@ button, input, select, textarea  {
     
 }
 
+    .changelog-layout,
+    .changelog-item  {
+
+        grid-template-columns: 1fr
+
+}
+
+    .changelog-summary  {
+
+        position: static
+
+}
+
     .hero  {
   
         min-height: auto;
@@ -1590,6 +1739,7 @@ html.dark .timeline div,
 html.dark .map-card,
 html.dark .map-info,
 html.dark .announcement-body,
+html.dark .changelog-item,
 html.dark .developer-credit,
 html.dark .notice-card {
   background: #162520;
