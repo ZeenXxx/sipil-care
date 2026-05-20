@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8">
+    <script>!function(){var t=localStorage.getItem("sipilcare_theme");(t==="dark"||(t===null&&window.matchMedia("(prefers-color-scheme: dark)").matches))&&document.documentElement.classList.add("dark")}();</script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="../css/style.css?v=23">
+    <link rel="stylesheet" href="../css/navbar.css?v=24">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <title>Bantuan & FAQ - SIPIL CARE</title>
+    <script src="../js/student-config.js?v=18"></script>
+    <script src="../js/student-auth.js?v=32"></script>
+  </head>
+  <body>
+    <header class="navbar">
+      <a class="brand" href="../index.html"><img src="../assets/images/logo-hms.png" alt="Logo HMS"><span><strong>SIPIL CARE</strong><small>Center for Academic, Resource &amp; Education</small></span></a>
+      <button class="menu-toggle" type="button" aria-label="Toggle navigation" aria-expanded="false"><span></span></button>
+      <nav class="nav-links"><a href="../index.html">Home</a><a href="resources.html">Resources</a><a href="praktikum-studio.html">Praktikum &amp; Studio</a><a href="videos.html">Videos</a><a href="tools.html">Tools</a><a href="about.html">About</a><a href="developer.html">Developer</a><a href="contact.html">Contact</a></nav>
+    </header>
+
+    <main>
+      <section class="page-head">
+        <div class="container">
+          <span class="eyebrow">Bantuan</span>
+          <h1>FAQ dan panduan cepat SIPIL CARE</h1>
+          <p class="lead">Temukan jawaban untuk login, download resource, penggunaan tools, notifikasi, dan cara menghubungi admin HMS.</p>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="container grid g2">
+          <article class="card faq">
+            <h3>Bagaimana cara login mahasiswa?</h3>
+            <p>Gunakan NIM dan password yang diberikan admin/HMS. Jika password belum pernah diubah, format awalnya adalah NIM + @Sipil.</p>
+            <a class="btn btn-secondary" href="../student-login.html">Buka Login Mahasiswa</a>
+          </article>
+          <article class="card faq">
+            <h3>Lupa password mahasiswa?</h3>
+            <p>Pilih tab Lupa Password di halaman login, lalu masukkan NIM, kode pemulihan, dan password baru.</p>
+            <a class="btn btn-secondary" href="../student-login.html?mode=recover">Reset Password</a>
+          </article>
+          <article class="card faq">
+            <h3>Kenapa resource tidak bisa dibuka?</h3>
+            <p>Pastikan akun masih login, koneksi stabil, dan file memang tersedia. Jika tombol download tidak merespons, laporkan judul file ke admin.</p>
+            <a class="btn btn-secondary" href="resources.html">Cek Resources</a>
+          </article>
+          <article class="card faq">
+            <h3>Apa bedanya Resources dan Praktikum & Studio?</h3>
+            <p>Resources berisi materi umum seperti SNI, modul, dan software. Praktikum & Studio berisi modul atau bahan khusus mata kuliah praktikum/studio.</p>
+            <a class="btn btn-secondary" href="praktikum-studio.html">Buka Praktikum</a>
+          </article>
+          <article class="card faq">
+            <h3>Tools apa yang paling sering dipakai?</h3>
+            <p>Structural Analyzer, Preliminary Design SNI 2847:2019, kalkulator tulangan balok, converter satuan, PDF merger, dan JPG to PDF.</p>
+            <a class="btn btn-secondary" href="tools.html">Buka Tools</a>
+          </article>
+          <article class="card faq">
+            <h3>Bagaimana menghubungi admin?</h3>
+            <p>Buka halaman Contact untuk mengirim pesan atau live chat. Sertakan NIM, angkatan, dan kendala yang dialami agar cepat dicek.</p>
+            <a class="btn btn-secondary" href="contact.html">Hubungi Admin</a>
+          </article>
+        </div>
+      </section>
+
+      <section class="section soft">
+        <div class="container">
+          <span class="eyebrow">Alur cepat</span>
+          <h2 class="title">Jika mengalami kendala</h2>
+          <div class="grid g4">
+            <div class="card quick"><span class="icon">01</span><h3>Cek login</h3><p>Pastikan sesi belum habis dan NIM/password benar.</p></div>
+            <div class="card quick"><span class="icon">02</span><h3>Cari konten</h3><p>Gunakan tombol Cari di navbar untuk menemukan resource, video, atau tools.</p></div>
+            <div class="card quick"><span class="icon">03</span><h3>Coba refresh</h3><p>Refresh halaman jika data terbaru belum muncul.</p></div>
+            <div class="card quick"><span class="icon">04</span><h3>Laporkan</h3><p>Kirim detail kendala lewat Contact jika masih gagal.</p></div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="footer-grid">
+        <div><a class="footer-brand" href="../index.html"><img src="../assets/images/logo-hms.png" alt="Logo HMS"><span>SIPIL CARE</span></a><p>Pusat bantuan penggunaan platform akademik Teknik Sipil.</p></div>
+        <div><h3>Navigasi</h3><a href="resources.html">Resources</a><a href="praktikum-studio.html">Praktikum &amp; Studio</a><a href="videos.html">Videos</a><a href="tools.html">Tools</a></div>
+        <div><h3>Bantuan</h3><a href="../student-login.html">Login Mahasiswa</a><a href="../student-login.html?mode=recover">Lupa Password</a><a href="contact.html">Contact</a></div>
+        <div><h3>HMS Unjani</h3><p>Kampus UNJANI<br>Academic Resource Platform<br>2026</p></div>
+      </div>
+      <div class="footer-bottom"><span>(c) 2026 PENDPROF HMS - HMS UNJANI</span><span>Built for civil engineering students.</span></div>
+    </footer>
+    <script src="../js/navbar.js?v=21"></script>
+  </body>
+</html>
