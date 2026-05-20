@@ -340,6 +340,8 @@
 
     display: grid;
 
+    grid-template-rows: auto auto minmax(0, 1fr);
+
     gap: 14px;
 
     padding: 20px;
@@ -428,11 +430,19 @@
 
     display: grid;
 
+    align-content: start;
+
     gap: 10px;
+
+    min-height: 0;
 
     overflow-y: auto;
 
-    padding-right: 4px
+    padding-right: 4px;
+
+    overscroll-behavior: contain;
+
+    -webkit-overflow-scrolling: touch
 
 }
 
