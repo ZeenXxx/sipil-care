@@ -172,6 +172,8 @@ const adminFilter = document.getElementById('adminFilter');
 const adminStats = document.getElementById('adminStats');
 const toastEl = document.getElementById('toast');
 const submitButton = resourceForm?.querySelector('button[type="submit"]');
+const adminSidebar = document.querySelector('.admin-sidebar');
+const adminNav = document.querySelector('.admin-nav');
 const adminNavLinks = [...document.querySelectorAll('.admin-nav a[href^="#"]')];
 const on = (element, event, handler) => element?.addEventListener(event, handler);
 
@@ -251,6 +253,40 @@ const hasPermission = permission => currentAdmin().role === 'developer' || curre
 const canManageAdminAccounts = () => currentAdmin().role === 'developer' || hasPermission('admin_accounts');
 const canManageStudentAccounts = () => currentAdmin().role === 'developer' || hasPermission('student_accounts');
 const canDeleteDashboardLogs = () => currentAdmin().role === 'developer' || hasPermission('log_delete');
+
+const closeAdminMobileNav = () => {
+  adminSidebar?.classList.remove('admin-nav-open');
+  document.body.classList.remove('admin-nav-open');
+  document.querySelector('.admin-menu-toggle')?.classList.remove('active');
+  document.querySelector('.admin-menu-toggle')?.setAttribute('aria-expanded', 'false');
+};
+
+const setupAdminMobileNav = () => {
+  if (!adminSidebar || !adminNav || adminSidebar.querySelector('.admin-menu-toggle')) return;
+  const button = document.createElement('button');
+  button.className = 'admin-menu-toggle';
+  button.type = 'button';
+  button.setAttribute('aria-label', 'Buka menu admin');
+  button.setAttribute('aria-expanded', 'false');
+  button.innerHTML = '<span></span>';
+  adminSidebar.insertBefore(button, adminNav);
+
+  button.addEventListener('click', () => {
+    const open = !adminSidebar.classList.contains('admin-nav-open');
+    adminSidebar.classList.toggle('admin-nav-open', open);
+    document.body.classList.toggle('admin-nav-open', open);
+    button.classList.toggle('active', open);
+    button.setAttribute('aria-expanded', String(open));
+  });
+  adminNav.querySelectorAll('a').forEach(link => link.addEventListener('click', closeAdminMobileNav));
+  document.getElementById('logoutBtn')?.addEventListener('click', closeAdminMobileNav);
+  document.addEventListener('keydown', event => {
+    if (event.key === 'Escape') closeAdminMobileNav();
+  });
+  window.addEventListener('resize', () => {
+    if (window.innerWidth > 900) closeAdminMobileNav();
+  });
+};
 
 const requirePermission = (permission, label) => {
   if (hasPermission(permission)) return true;
@@ -2820,14 +2856,18 @@ on(auditFilter, 'change', () => auditTableRender());
 renderAdminRoleChecklist();
 renderAdminRoleOptions();
 syncNotificationButton();
+setupAdminMobileNav();
 applyAdminRoleUI();
 
 const setActiveAdminNav = id => {
   adminNavLinks.forEach(link => {
     const active = link.getAttribute('href') === `#${id}`;
     link.classList.toggle('active', active);
-    if (active && window.matchMedia('(max-width: 900px)').matches) {
-      link.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+    if (active && window.matchMedia('(max-width: 900px)').matches && adminNav && adminNav.offsetParent !== null) {
+      adminNav.scrollTo({
+        left: Math.max(0, link.offsetLeft - 16),
+        behavior: 'smooth'
+      });
     }
   });
 };
