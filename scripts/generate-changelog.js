@@ -47,7 +47,10 @@ const parseStatus = () => {
     const statusFiles = run('git status --short')
       .split(/\r?\n/)
       .filter(Boolean)
-      .map(line => line.replace(/^..\s+/, '').trim().replace(/^.* -> /, '').replace(/\\/g, '/'))
+      .map(line => {
+        const file = line[2] === ' ' ? line.slice(3) : line.replace(/^[ MADRCU?!]{1,2}\s+/, '');
+        return file.trim().replace(/^.* -> /, '').replace(/\\/g, '/');
+      })
       .filter(file => ![
         'data/changelog.json'
       ].includes(file));
@@ -94,6 +97,13 @@ const rules = [
     title: 'Navbar Lebih Ringkas',
     description: 'Menu utama dirapikan menjadi kelompok Materi dan Info agar navigasi tidak terlalu penuh di desktop maupun mobile.',
     match: (file, diff) => (file === 'js/navbar.js' || file === 'css/navbar.css') && diff.includes('nav-dropdown')
+  },
+  {
+    key: 'navbar-controls',
+    type: 'improved',
+    title: 'Kontrol Navbar Dirapikan',
+    description: 'Posisi tombol pencarian dan mode tampilan dirapikan agar sejajar dengan menu utama dan lebih nyaman digunakan di desktop maupun mobile.',
+    match: file => file === 'css/navbar.css'
   },
   {
     key: 'global-search',

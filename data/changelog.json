@@ -1,5 +1,24 @@
 [
   {
+    "id": "2026-05-21:changelog,navbar-controls",
+    "date": "2026-05-21",
+    "dateLabel": "21 Mei 2026",
+    "generated": true,
+    "summary": "Changelog Otomatis, Kontrol Navbar Dirapikan",
+    "items": [
+      {
+        "type": "added",
+        "title": "Changelog Otomatis",
+        "description": "Riwayat update kini dibuat dari file yang berubah, lalu ditampilkan dengan bahasa yang lebih rapi dan mudah dipahami mahasiswa."
+      },
+      {
+        "type": "improved",
+        "title": "Kontrol Navbar Dirapikan",
+        "description": "Posisi tombol pencarian dan mode tampilan dirapikan agar sejajar dengan menu utama dan lebih nyaman digunakan di desktop maupun mobile."
+      }
+    ]
+  },
+  {
     "id": "2026-05-21:changelog,compact-navbar",
     "date": "2026-05-21",
     "dateLabel": "21 Mei 2026",
