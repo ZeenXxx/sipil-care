@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="../../css/style.css?v=25">
+    <link rel="stylesheet" href="../../css/admin.css?v=32">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <title>Panduan Admin - SIPIL CARE</title>
+  </head>
+  <body class="admin-page">
+    <aside class="admin-sidebar">
+      <div class="admin-brand"><span>SC</span><div><h1>SIPIL CARE</h1><small>HMS Admin Panel</small></div></div>
+      <nav class="admin-nav" aria-label="Admin navigation">
+        <a href="dashboard.html"><span>DB</span>Dashboard</a>
+        <a class="active" href="guide.html"><span>PA</span>Panduan Admin</a>
+        <a href="admin-accounts.html" data-developer-only="true"><span>AA</span>Akun Admin</a>
+        <a href="student-accounts.html" data-student-account-only="true"><span>AM</span>Akun Mahasiswa</a>
+        <a href="resources.html"><span>RS</span>Resources</a>
+        <a href="announcements.html"><span>IF</span>Pemberitahuan</a>
+        <a href="messages.html"><span>PM</span>Pesan Mahasiswa</a>
+      </nav>
+      <button class="admin-logout" id="logoutBtn" type="button"><span>LO</span>Logout</button>
+    </aside>
+
+    <main class="admin-main">
+      <section class="admin-page-head">
+        <span class="eyebrow">Dokumentasi internal</span>
+        <h2>Panduan Admin & Developer</h2>
+        <p>Ringkasan operasional untuk mengelola akun, role, permission, upload konten, log, dan live chat SIPIL CARE.</p>
+        <div class="admin-guide-alert">
+          <strong>Catatan akses</strong>
+          <span>Halaman ini hanya untuk admin yang sudah login. Gunakan sebagai checklist sebelum memberi akses atau mengubah data penting.</span>
+        </div>
+      </section>
+
+      <section class="admin-guide-grid">
+        <article class="admin-card guide-card">
+          <span class="eyebrow">Akses</span>
+          <h3>Role dan permission</h3>
+          <p>Role menentukan halaman yang bisa dibuka. Permission menentukan aksi di dalam halaman tersebut.</p>
+          <ul class="guide-list">
+            <li><b>Developer</b> mengatur role, akun admin, akun mahasiswa, dan semua log.</li>
+            <li><b>Admin SIPIL CARE</b> memantau dashboard, upload konten, pemberitahuan, pesan, dan audit.</li>
+            <li><b>Aslab/Asdos</b> fokus pada Praktikum & Studio dan pesan mahasiswa.</li>
+            <li><b>Eksternal HMS</b> fokus pada pemberitahuan dan pesan.</li>
+          </ul>
+        </article>
+
+        <article class="admin-card guide-card">
+          <span class="eyebrow">Keamanan</span>
+          <h3>Aturan akun</h3>
+          <p>Setiap admin sebaiknya memakai akun sendiri agar audit log dan status online tetap jelas.</p>
+          <ul class="guide-list">
+            <li>Jangan membagikan satu akun untuk banyak orang.</li>
+            <li>Setelah role/password diubah, sesi lama admin akan diminta login ulang.</li>
+            <li>Admin otomatis logout jika 30 menit tidak membuka web.</li>
+            <li>Mahasiswa otomatis logout jika 1 hari tidak membuka web.</li>
+          </ul>
+        </article>
+      </section>
+
+      <section class="admin-card">
+        <div class="admin-table-head">
+          <div>
+            <h3>Alur Kerja Harian</h3>
+            <p class="small-text">Gunakan urutan ini agar pengelolaan konten dan akun lebih konsisten.</p>
+          </div>
+        </div>
+        <div class="guide-steps">
+          <article>
+            <span>01</span>
+            <h4>Cek dashboard</h4>
+            <p>Lihat mahasiswa/admin online, history akses, audit log, dan catatan error browser.</p>
+          </article>
+          <article>
+            <span>02</span>
+            <h4>Upload sesuai permission</h4>
+            <p>Resource umum, Praktikum/Studio, Software, dan Video punya permission berbeda.</p>
+          </article>
+          <article>
+            <span>03</span>
+            <h4>Kelola pemberitahuan</h4>
+            <p>Pastikan judul, tipe, tanggal, deskripsi, dan foto opsional sudah benar sebelum simpan.</p>
+          </article>
+          <article>
+            <span>04</span>
+            <h4>Balas pesan</h4>
+            <p>Live chat dan pesan mahasiswa dipakai untuk kendala login, download, tools, dan akademik.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="admin-card" data-developer-only="true">
+        <div class="admin-table-head">
+          <div>
+            <h3>Checklist Developer</h3>
+            <p class="small-text">Dipakai saat membuat role baru, menambah admin, atau import akun mahasiswa.</p>
+          </div>
+        </div>
+        <div class="guide-checklist">
+          <label><input type="checkbox" disabled> Buat role dengan kode singkat dan konsisten, contoh: <b>aslab_sipil</b>.</label>
+          <label><input type="checkbox" disabled> Pilih halaman yang boleh dibuka sesuai kebutuhan role.</label>
+          <label><input type="checkbox" disabled> Pilih permission aksi yang benar, terutama upload dan hapus log.</label>
+          <label><input type="checkbox" disabled> Setelah edit akun admin, minta admin tersebut login ulang.</label>
+          <label><input type="checkbox" disabled> Saat import mahasiswa, pastikan NIM dan nama sudah bersih dari typo.</label>
+          <label><input type="checkbox" disabled> Untuk tahun ajaran baru, tambah angkatan dulu sebelum import akun.</label>
+        </div>
+      </section>
+
+      <section class="admin-card">
+        <div class="admin-table-head">
+          <div>
+            <h3>Kamus Permission</h3>
+            <p class="small-text">Daftar permission yang dipakai oleh panel admin.</p>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Permission</th><th>Fungsi</th><th>Catatan</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><b>dashboard</b></td><td>Melihat dashboard, online user, dan log.</td><td>Cocok untuk admin monitoring.</td></tr>
+              <tr><td><b>resources</b></td><td>Upload dan kelola resource umum.</td><td>Tidak otomatis memberi akses Praktikum/Studio.</td></tr>
+              <tr><td><b>practicum_studio</b></td><td>Upload dan kelola modul praktikum/studio.</td><td>Untuk Aslab atau Asdos.</td></tr>
+              <tr><td><b>software</b></td><td>Upload dan kelola software.</td><td>Pakai jika admin memang mengurus installer/aplikasi.</td></tr>
+              <tr><td><b>videos</b></td><td>Kelola video pembelajaran.</td><td>Untuk admin konten belajar.</td></tr>
+              <tr><td><b>announcements</b></td><td>Kelola pemberitahuan.</td><td>Untuk info HMS, akademik, eksternal, dan umum.</td></tr>
+              <tr><td><b>messages</b></td><td>Kelola pesan mahasiswa dan live chat.</td><td>Butuh respons cepat saat ada kendala login/download.</td></tr>
+              <tr><td><b>audit</b></td><td>Melihat audit log admin.</td><td>Jangan diberikan jika role tidak perlu melihat aktivitas admin.</td></tr>
+              <tr><td><b>admin_accounts</b></td><td>Kelola akun dan role admin.</td><td>Disarankan hanya Developer.</td></tr>
+              <tr><td><b>student_accounts</b></td><td>Kelola angkatan dan akun mahasiswa.</td><td>Disarankan hanya Developer.</td></tr>
+              <tr><td><b>log_delete</b></td><td>Menghapus log dashboard.</td><td>Gunakan hati-hati karena menghapus data dari server.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="admin-card">
+        <div class="admin-table-head">
+          <div>
+            <h3>Troubleshooting Cepat</h3>
+            <p class="small-text">Masalah yang paling sering muncul dan langkah pengecekannya.</p>
+          </div>
+        </div>
+        <div class="guide-faq">
+          <details open>
+            <summary>Admin tidak bisa membuka halaman tertentu</summary>
+            <p>Cek role admin di menu Akun Admin. Pastikan halaman tersebut dipilih di bagian halaman yang bisa dibuka dan permission aksinya juga sesuai.</p>
+          </details>
+          <details>
+            <summary>Upload berhasil di satu device tapi tidak muncul di device lain</summary>
+            <p>Pastikan konten tersimpan ke database/server, bukan local storage. Setelah simpan, refresh halaman publik dan cek koneksi Firebase/Supabase.</p>
+          </details>
+          <details>
+            <summary>Tombol hapus log gagal</summary>
+            <p>Pastikan role memiliki permission <b>log_delete</b>. Jika masih gagal, cek rules/policy server dan catatan error browser di dashboard.</p>
+          </details>
+          <details>
+            <summary>Mahasiswa gagal login atau balik ke halaman login</summary>
+            <p>Cek status akun mahasiswa, angkatan, password, dan sesi. Jika akun baru diimport, pastikan NIM tersimpan tanpa spasi.</p>
+          </details>
+          <details>
+            <summary>Pemberitahuan tidak tersimpan</summary>
+            <p>Cek permission <b>announcements</b>, rules Firebase, koneksi storage foto, dan pastikan field wajib sudah terisi.</p>
+          </details>
+        </div>
+      </section>
+    </main>
+
+    <div class="toast" id="toast"></div>
+    <script src="../../js/student-config.js?v=20"></script>
+    <script src="../../js/auth.js?v=28"></script>
+    <script src="../../js/push-config.js?v=1"></script>
+    <script type="module" src="../../js/admin-panel.js?v=49"></script>
+  </body>
+</html>

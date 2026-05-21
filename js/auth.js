@@ -3,13 +3,14 @@ const FALLBACK_ADMIN = {
   name: 'Developer SIPIL CARE',
   role: 'admin_sipil',
   roleLabel: 'Admin SIPIL CARE',
-  allowedPages: ['dashboard.html', 'resources.html', 'announcements.html', 'messages.html'],
+  allowedPages: ['dashboard.html', 'guide.html', 'resources.html', 'announcements.html', 'messages.html'],
   permissions: ['dashboard', 'resources', 'announcements', 'messages', 'audit']
 };
 
 const ADMIN_SESSION_KEY = 'sipilcare_admin_session';
 const ADMIN_PROFILE_KEY = 'sipilcare_admin_profile';
 const ADMIN_SESSION_TTL = 30 * 60 * 1000;
+const ADMIN_GUIDE_PAGE = 'guide.html';
 const toast = m => {
   const t = document.getElementById('toast');
   if (!t) return;
@@ -66,14 +67,18 @@ const normalizeList = value => {
   return [];
 };
 
+const withAdminGuidePage = pages => [...new Set([...pages, ADMIN_GUIDE_PAGE])];
+
 const normalizeAdminProfile = profile => ({
   username: profile.username || FALLBACK_ADMIN.username,
   name: profile.name || FALLBACK_ADMIN.name,
   role: profile.role || FALLBACK_ADMIN.role,
   roleLabel: profile.roleLabel || profile.role_label || FALLBACK_ADMIN.roleLabel,
-  allowedPages: normalizeList(profile.allowedPages || profile.allowed_pages).length
-    ? normalizeList(profile.allowedPages || profile.allowed_pages)
-    : FALLBACK_ADMIN.allowedPages,
+  allowedPages: withAdminGuidePage(
+    normalizeList(profile.allowedPages || profile.allowed_pages).length
+      ? normalizeList(profile.allowedPages || profile.allowed_pages)
+      : FALLBACK_ADMIN.allowedPages
+  ),
   permissions: normalizeList(profile.permissions).length
     ? normalizeList(profile.permissions)
     : FALLBACK_ADMIN.permissions,

@@ -220,6 +220,7 @@ const ADMIN_LOGIN_TRACKED_KEY = 'sipilcare_admin_login_tracked';
 const ADMIN_SESSION_KEY = 'sipilcare_admin_session';
 const ADMIN_PROFILE_KEY = 'sipilcare_admin_profile';
 const CLIENT_ERROR_KEY = 'sipilcare_client_errors';
+const ADMIN_GUIDE_PAGE = 'guide.html';
 let liveChatSnapshotReady = false;
 const practicumCategories = [
   'Computer Aided Design (CAD)-S',
@@ -245,6 +246,8 @@ const getAdminProfile = () => {
   }
 };
 
+const withAdminGuidePage = pages => [...new Set([...(Array.isArray(pages) ? pages : []), ADMIN_GUIDE_PAGE])];
+
 const currentAdmin = () => {
   const profile = getAdminProfile();
   return {
@@ -252,7 +255,7 @@ const currentAdmin = () => {
     name: profile.name || 'Developer SIPIL CARE',
     role: profile.role || 'developer',
     roleLabel: profile.roleLabel || 'Developer',
-    allowedPages: profile.allowedPages || ['dashboard.html', 'resources.html', 'announcements.html', 'messages.html'],
+    allowedPages: withAdminGuidePage(profile.allowedPages || ['dashboard.html', 'resources.html', 'announcements.html', 'messages.html']),
     permissions: profile.permissions || ['dashboard', 'resources', 'announcements', 'messages', 'audit']
   };
 };
@@ -379,43 +382,44 @@ const adminRoleTemplates = {
   developer: {
     role: 'developer',
     roleLabel: 'Developer',
-    allowedPages: ['dashboard.html', 'resources.html', 'announcements.html', 'messages.html', 'admin-accounts.html', 'student-accounts.html'],
+    allowedPages: ['dashboard.html', 'guide.html', 'resources.html', 'announcements.html', 'messages.html', 'admin-accounts.html', 'student-accounts.html'],
     permissions: ['dashboard', 'resources', 'practicum_studio', 'software', 'videos', 'announcements', 'messages', 'audit', 'admin_accounts', 'student_accounts', 'log_delete']
   },
   admin_sipil: {
     role: 'admin_sipil',
     roleLabel: 'Admin SIPIL CARE',
-    allowedPages: ['dashboard.html', 'resources.html', 'announcements.html', 'messages.html'],
+    allowedPages: ['dashboard.html', 'guide.html', 'resources.html', 'announcements.html', 'messages.html'],
     permissions: ['dashboard', 'resources', 'practicum_studio', 'software', 'videos', 'announcements', 'messages', 'audit']
   },
   pendprof_hms: {
     role: 'pendprof_hms',
     roleLabel: 'PENDPROF HMS',
-    allowedPages: ['resources.html', 'messages.html'],
+    allowedPages: ['guide.html', 'resources.html', 'messages.html'],
     permissions: ['resources', 'messages']
   },
   aslab_hms: {
     role: 'aslab_hms',
     roleLabel: 'Admin Aslab',
-    allowedPages: ['resources.html', 'messages.html'],
+    allowedPages: ['guide.html', 'resources.html', 'messages.html'],
     permissions: ['practicum_studio', 'messages']
   },
   asdos_hms: {
     role: 'asdos_hms',
     roleLabel: 'Admin Asdos',
-    allowedPages: ['resources.html', 'messages.html'],
+    allowedPages: ['guide.html', 'resources.html', 'messages.html'],
     permissions: ['practicum_studio', 'messages']
   },
   eksternal_hms: {
     role: 'eksternal_hms',
     roleLabel: 'Eksternal HMS',
-    allowedPages: ['announcements.html', 'messages.html'],
+    allowedPages: ['guide.html', 'announcements.html', 'messages.html'],
     permissions: ['announcements', 'messages']
   }
 };
 
 const adminPageOptions = [
   { value: 'dashboard.html', label: 'Dashboard', permission: 'dashboard' },
+  { value: 'guide.html', label: 'Panduan Admin' },
   { value: 'resources.html', label: 'Resources / Upload Materi' },
   { value: 'announcements.html', label: 'Pemberitahuan', permission: 'announcements' },
   { value: 'messages.html', label: 'Pesan Mahasiswa', permission: 'messages' },
@@ -442,11 +446,11 @@ const normalizeAdminRole = role => {
   return {
     role: role?.role || template.role || 'admin_sipil',
     roleLabel: role?.role_label || role?.roleLabel || template.roleLabel || role?.role || 'Admin',
-    allowedPages: Array.isArray(role?.allowed_pages)
+    allowedPages: withAdminGuidePage(Array.isArray(role?.allowed_pages)
       ? role.allowed_pages
       : Array.isArray(role?.allowedPages)
         ? role.allowedPages
-        : template.allowedPages || [],
+        : template.allowedPages || []),
     permissions: Array.isArray(role?.permissions) ? role.permissions : template.permissions || [],
     isActive: role?.is_active !== false,
     isSystem: role?.is_system === true || role?.isSystem === true || role?.role === 'developer'
@@ -866,7 +870,7 @@ const normalizeAdminAccount = account => {
   return {
     ...account,
     roleLabel: account.role_label || account.roleLabel || template.roleLabel,
-    allowedPages: Array.isArray(account.allowed_pages) ? account.allowed_pages : template.allowedPages,
+    allowedPages: withAdminGuidePage(Array.isArray(account.allowed_pages) ? account.allowed_pages : template.allowedPages),
     permissions: Array.isArray(account.permissions) ? account.permissions : template.permissions,
     isActive: account.is_active !== false
   };

@@ -127,6 +127,13 @@ const rules = [
     match: file => file.startsWith('pages/admin/') || file === 'js/admin-panel.js' || file === 'css/admin.css'
   },
   {
+    key: 'admin-guide',
+    type: 'added',
+    title: 'Panduan Admin & Developer',
+    description: 'Panel admin kini dilengkapi halaman panduan internal berisi alur kerja, role, permission, checklist developer, dan troubleshooting cepat.',
+    match: file => file === 'pages/admin/guide.html' || file === 'js/auth.js'
+  },
+  {
     key: 'admin-system-overview',
     type: 'added',
     title: 'Ringkasan Sistem Admin',
@@ -203,19 +210,25 @@ try {
   existing = [];
 }
 
+const sameDayGenerated = existing.find(item => item.generated && item.date === date);
+const mergedItems = [
+  ...selected.map(item => ({
+    type: item.type,
+    title: item.title,
+    description: item.description
+  })),
+  ...(sameDayGenerated?.items || [])
+].filter((item, index, list) => list.findIndex(candidate => candidate.title === item.title) === index);
+
 const nextEntry = {
   id: generatedKey,
   date,
   dateLabel: todayLabel(date),
   generated: true,
-  summary: selected.length === 1
-    ? selected[0].title
-    : selected.map(item => item.title).slice(0, 3).join(', '),
-  items: selected.map(item => ({
-    type: item.type,
-    title: item.title,
-    description: item.description
-  }))
+  summary: mergedItems.length === 1
+    ? mergedItems[0].title
+    : mergedItems.map(item => item.title).slice(0, 3).join(', '),
+  items: mergedItems
 };
 
 const next = [nextEntry, ...existing.filter(item => item.id !== generatedKey && !(item.generated && item.date === date))].slice(0, 40);

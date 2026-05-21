@@ -1,15 +1,35 @@
 [
   {
-    "id": "2026-05-22:admin-dashboard,admin-system-overview,changelog,floating-help,global-search,help-information,navbar-controls,public-help-onboarding,public-interface,search-help-ranking,student-access",
+    "id": "2026-05-22:admin-dashboard,admin-guide,admin-system-overview,changelog,public-interface",
     "date": "2026-05-22",
     "dateLabel": "22 Mei 2026",
     "generated": true,
-    "summary": "Changelog Otomatis, Bantuan & FAQ Mengambang, Kontrol Navbar Dirapikan",
+    "summary": "Changelog Otomatis, Dashboard Admin, Panduan Admin & Developer",
     "items": [
       {
         "type": "added",
         "title": "Changelog Otomatis",
         "description": "Riwayat update kini dibuat dari file yang berubah, lalu ditampilkan dengan bahasa yang lebih rapi dan mudah dipahami mahasiswa."
+      },
+      {
+        "type": "improved",
+        "title": "Dashboard Admin",
+        "description": "Dashboard admin ditingkatkan agar navigasi, tampilan mobile, ringkasan data, dan akses ke bagian log lebih nyaman digunakan."
+      },
+      {
+        "type": "added",
+        "title": "Panduan Admin & Developer",
+        "description": "Panel admin kini dilengkapi halaman panduan internal berisi alur kerja, role, permission, checklist developer, dan troubleshooting cepat."
+      },
+      {
+        "type": "added",
+        "title": "Ringkasan Sistem Admin",
+        "description": "Dashboard admin kini menampilkan ringkasan status konten, pengguna online, log tersimpan, permission role aktif, serta catatan error browser lokal untuk membantu pengecekan cepat."
+      },
+      {
+        "type": "improved",
+        "title": "Tampilan Public Website",
+        "description": "Tampilan halaman public diperhalus agar lebih responsif, konsisten, dan nyaman dibuka dari perangkat mobile."
       },
       {
         "type": "improved",
@@ -33,16 +53,6 @@
       },
       {
         "type": "improved",
-        "title": "Dashboard Admin",
-        "description": "Dashboard admin ditingkatkan agar navigasi, tampilan mobile, ringkasan data, dan akses ke bagian log lebih nyaman digunakan."
-      },
-      {
-        "type": "added",
-        "title": "Ringkasan Sistem Admin",
-        "description": "Dashboard admin kini menampilkan ringkasan status konten, pengguna online, log tersimpan, permission role aktif, serta catatan error browser lokal untuk membantu pengecekan cepat."
-      },
-      {
-        "type": "improved",
         "title": "Akses dan Login Mahasiswa",
         "description": "Alur login, sesi akun, dan pengalaman mahasiswa diperbaiki agar akses lintas perangkat lebih stabil."
       },
@@ -55,11 +65,6 @@
         "type": "improved",
         "title": "FAQ Bisa Dibuka Tanpa Login",
         "description": "Halaman bantuan kini dapat dibuka sebelum login dan dilengkapi panduan mulai agar mahasiswa baru lebih cepat memahami akun, pencarian materi, dan pelaporan kendala."
-      },
-      {
-        "type": "improved",
-        "title": "Tampilan Public Website",
-        "description": "Tampilan halaman public diperhalus agar lebih responsif, konsisten, dan nyaman dibuka dari perangkat mobile."
       }
     ]
   },

@@ -723,6 +723,204 @@
 
 }
 
+.admin-guide-alert  {
+
+    display: flex;
+
+    flex-wrap: wrap;
+
+    gap: 10px;
+
+    align-items: center;
+
+    margin-top: 18px;
+
+    padding: 14px 16px;
+
+    border: 1px solid rgba(15, 77, 58, .14);
+
+    border-radius: 8px;
+
+    background: var(--soft);
+
+    color: var(--primary)
+
+}
+
+.admin-guide-alert strong  {
+
+    font-weight: 900
+
+}
+
+.admin-guide-alert span  {
+
+    color: var(--muted)
+
+}
+
+.admin-guide-grid  {
+
+    display: grid;
+
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+
+    gap: 18px
+
+}
+
+.guide-card h3  {
+
+    margin: 8px 0;
+
+    color: var(--primary)
+
+}
+
+.guide-card p  {
+
+    margin: 0 0 14px;
+
+    color: var(--muted)
+
+}
+
+.guide-list,
+.guide-checklist  {
+
+    display: grid;
+
+    gap: 10px;
+
+    margin: 0;
+
+    padding: 0;
+
+    list-style: none
+
+}
+
+.guide-list li,
+.guide-checklist label  {
+
+    padding: 12px;
+
+    border: 1px solid var(--line);
+
+    border-radius: 8px;
+
+    background: #fff;
+
+    color: #1b2f2b
+
+}
+
+.guide-checklist label  {
+
+    display: flex;
+
+    gap: 10px;
+
+    align-items: flex-start
+
+}
+
+.guide-steps  {
+
+    display: grid;
+
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+
+    gap: 14px
+
+}
+
+.guide-steps article  {
+
+    padding: 16px;
+
+    border: 1px solid var(--line);
+
+    border-radius: 8px;
+
+    background: #fff
+
+}
+
+.guide-steps span  {
+
+    display: inline-grid;
+
+    place-items: center;
+
+    width: 42px;
+
+    height: 42px;
+
+    border-radius: 8px;
+
+    background: var(--primary);
+
+    color: #fff;
+
+    font-weight: 900
+
+}
+
+.guide-steps h4  {
+
+    margin: 12px 0 6px;
+
+    color: var(--primary)
+
+}
+
+.guide-steps p  {
+
+    margin: 0;
+
+    color: var(--muted)
+
+}
+
+.guide-faq  {
+
+    display: grid;
+
+    gap: 10px
+
+}
+
+.guide-faq details  {
+
+    padding: 14px 16px;
+
+    border: 1px solid var(--line);
+
+    border-radius: 8px;
+
+    background: #fff
+
+}
+
+.guide-faq summary  {
+
+    cursor: pointer;
+
+    color: var(--primary);
+
+    font-weight: 900
+
+}
+
+.guide-faq p  {
+
+    margin: 10px 0 0;
+
+    color: var(--muted)
+
+}
+
 .admin-dashboard-page .admin-main  {
 
     gap: 18px
@@ -1592,7 +1790,7 @@ th  {
 
 }
 
-    .admin-stats, .admin-panel-grid, .student-activity-summary, .cohort-list, .dashboard-overview  {
+    .admin-stats, .admin-panel-grid, .student-activity-summary, .cohort-list, .dashboard-overview, .admin-guide-grid, .guide-steps  {
   
         grid-template-columns: 1fr
     
