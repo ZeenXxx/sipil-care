@@ -372,7 +372,9 @@ const applyAdminRoleUI = () => {
     item.textContent = `${admin.roleLabel} Panel`;
   });
   document.querySelectorAll('.admin-nav a').forEach(link => {
-    link.hidden = !canSeeAdminNavLink(link);
+    const hidden = !canSeeAdminNavLink(link);
+    link.hidden = hidden;
+    link.style.display = hidden ? 'none' : '';
   });
   document.querySelectorAll('[data-developer-only="true"]').forEach(item => {
     if (item.closest('.admin-nav')) return;

@@ -139,6 +139,12 @@
 
 }
 
+body.admin-page [hidden]  {
+
+    display: none !important
+
+}
+
 .admin-sidebar  {
   
     position: sticky;
