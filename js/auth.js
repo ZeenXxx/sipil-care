@@ -11,6 +11,7 @@ const ADMIN_SESSION_KEY = 'sipilcare_admin_session';
 const ADMIN_PROFILE_KEY = 'sipilcare_admin_profile';
 const ADMIN_SESSION_TTL = 30 * 60 * 1000;
 const ADMIN_GUIDE_PAGE = 'guide.html';
+const ADMIN_ALL_PAGES = ['dashboard.html', 'guide.html', 'resources.html', 'announcements.html', 'messages.html', 'admin-accounts.html', 'student-accounts.html'];
 const toast = m => {
   const t = document.getElementById('toast');
   if (!t) return;
@@ -69,21 +70,25 @@ const normalizeList = value => {
 
 const withAdminGuidePage = pages => [...new Set([...pages, ADMIN_GUIDE_PAGE])];
 
-const normalizeAdminProfile = profile => ({
-  username: profile.username || FALLBACK_ADMIN.username,
-  name: profile.name || FALLBACK_ADMIN.name,
-  role: profile.role || FALLBACK_ADMIN.role,
-  roleLabel: profile.roleLabel || profile.role_label || FALLBACK_ADMIN.roleLabel,
-  allowedPages: withAdminGuidePage(
-    normalizeList(profile.allowedPages || profile.allowed_pages).length
-      ? normalizeList(profile.allowedPages || profile.allowed_pages)
-      : FALLBACK_ADMIN.allowedPages
-  ),
-  permissions: normalizeList(profile.permissions).length
-    ? normalizeList(profile.permissions)
-    : FALLBACK_ADMIN.permissions,
-  sessionCheckedAt: Date.now()
-});
+const normalizeAdminProfile = profile => {
+  const role = profile.role || FALLBACK_ADMIN.role;
+  const rawPages = normalizeList(profile.allowedPages || profile.allowed_pages);
+  const allowedPages = role === 'developer'
+    ? ADMIN_ALL_PAGES
+    : withAdminGuidePage(rawPages.length ? rawPages : FALLBACK_ADMIN.allowedPages);
+
+  return {
+    username: profile.username || FALLBACK_ADMIN.username,
+    name: profile.name || FALLBACK_ADMIN.name,
+    role,
+    roleLabel: profile.roleLabel || profile.role_label || FALLBACK_ADMIN.roleLabel,
+    allowedPages,
+    permissions: normalizeList(profile.permissions).length
+      ? normalizeList(profile.permissions)
+      : FALLBACK_ADMIN.permissions,
+    sessionCheckedAt: Date.now()
+  };
+};
 
 const readLocalJson = key => {
   try {

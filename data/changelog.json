@@ -1,16 +1,11 @@
 [
   {
-    "id": "2026-05-22:admin-dashboard,admin-guide,admin-system-overview,changelog,public-interface",
+    "id": "2026-05-22:admin-dashboard,admin-guide",
     "date": "2026-05-22",
     "dateLabel": "22 Mei 2026",
     "generated": true,
-    "summary": "Changelog Otomatis, Dashboard Admin, Panduan Admin & Developer",
+    "summary": "Dashboard Admin, Panduan Admin & Developer, Changelog Otomatis",
     "items": [
-      {
-        "type": "added",
-        "title": "Changelog Otomatis",
-        "description": "Riwayat update kini dibuat dari file yang berubah, lalu ditampilkan dengan bahasa yang lebih rapi dan mudah dipahami mahasiswa."
-      },
       {
         "type": "improved",
         "title": "Dashboard Admin",
@@ -20,6 +15,11 @@
         "type": "added",
         "title": "Panduan Admin & Developer",
         "description": "Panel admin kini dilengkapi halaman panduan internal berisi alur kerja, role, permission, checklist developer, dan troubleshooting cepat."
+      },
+      {
+        "type": "added",
+        "title": "Changelog Otomatis",
+        "description": "Riwayat update kini dibuat dari file yang berubah, lalu ditampilkan dengan bahasa yang lebih rapi dan mudah dipahami mahasiswa."
       },
       {
         "type": "added",

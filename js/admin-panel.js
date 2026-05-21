@@ -221,6 +221,7 @@ const ADMIN_SESSION_KEY = 'sipilcare_admin_session';
 const ADMIN_PROFILE_KEY = 'sipilcare_admin_profile';
 const CLIENT_ERROR_KEY = 'sipilcare_client_errors';
 const ADMIN_GUIDE_PAGE = 'guide.html';
+const ADMIN_ALL_PAGES = ['dashboard.html', 'guide.html', 'resources.html', 'announcements.html', 'messages.html', 'admin-accounts.html', 'student-accounts.html'];
 let liveChatSnapshotReady = false;
 const practicumCategories = [
   'Computer Aided Design (CAD)-S',
@@ -250,12 +251,15 @@ const withAdminGuidePage = pages => [...new Set([...(Array.isArray(pages) ? page
 
 const currentAdmin = () => {
   const profile = getAdminProfile();
+  const role = profile.role || 'developer';
   return {
     username: profile.username || 'developer',
     name: profile.name || 'Developer SIPIL CARE',
-    role: profile.role || 'developer',
+    role,
     roleLabel: profile.roleLabel || 'Developer',
-    allowedPages: withAdminGuidePage(profile.allowedPages || ['dashboard.html', 'resources.html', 'announcements.html', 'messages.html']),
+    allowedPages: role === 'developer'
+      ? ADMIN_ALL_PAGES
+      : withAdminGuidePage(profile.allowedPages || ['dashboard.html', 'resources.html', 'announcements.html', 'messages.html']),
     permissions: profile.permissions || ['dashboard', 'resources', 'announcements', 'messages', 'audit']
   };
 };
@@ -348,6 +352,39 @@ const requirePermission = (permission, label) => {
   return false;
 };
 
+const navHashPermissions = {
+  'student-activity': 'dashboard',
+  'admin-activity': 'dashboard',
+  'client-error-log': 'dashboard',
+  'access-history': 'audit',
+  'audit-log': 'audit'
+};
+
+const navPagePermissions = {
+  'dashboard.html': 'dashboard',
+  'announcements.html': 'announcements',
+  'messages.html': 'messages',
+  'admin-accounts.html': 'admin_accounts',
+  'student-accounts.html': 'student_accounts'
+};
+
+const canSeeAdminNavLink = link => {
+  const admin = currentAdmin();
+  if (admin.role === 'developer') return true;
+
+  const href = link.getAttribute('href') || '';
+  const page = href.split('#')[0] || location.pathname.split('/').pop();
+  const hash = href.includes('#') ? href.split('#')[1] : '';
+  const pageAllowed = page ? admin.allowedPages.includes(page) : true;
+  const pagePermission = navPagePermissions[page];
+  const hashPermission = navHashPermissions[hash];
+
+  if (page && !pageAllowed) return false;
+  if (pagePermission && !hasPermission(pagePermission)) return false;
+  if (hashPermission && !hasPermission(hashPermission)) return false;
+  return true;
+};
+
 const applyAdminRoleUI = () => {
   const admin = currentAdmin();
   document.documentElement.dataset.adminRole = admin.role;
@@ -355,12 +392,7 @@ const applyAdminRoleUI = () => {
     item.textContent = `${admin.roleLabel} Panel`;
   });
   document.querySelectorAll('.admin-nav a').forEach(link => {
-    const href = link.getAttribute('href') || '';
-    const page = href.split('#')[0] || location.pathname.split('/').pop();
-    const hash = href.includes('#') ? href.split('#')[1] : '';
-    const pageAllowed = page ? admin.allowedPages.includes(page) : true;
-    const hashAllowed = hash === 'audit-log' ? hasPermission('audit') : true;
-    if (!pageAllowed || !hashAllowed) link.hidden = true;
+    link.hidden = !canSeeAdminNavLink(link);
   });
   document.querySelectorAll('[data-developer-only="true"]').forEach(item => {
     item.hidden = !canManageAdminAccounts();
