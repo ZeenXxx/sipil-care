@@ -249,26 +249,6 @@ const getAdminProfile = () => {
 
 const withAdminGuidePage = pages => [...new Set([...(Array.isArray(pages) ? pages : []), ADMIN_GUIDE_PAGE])];
 
-const currentAdmin = () => {
-  const profile = getAdminProfile();
-  const role = profile.role || 'developer';
-  return {
-    username: profile.username || 'developer',
-    name: profile.name || 'Developer SIPIL CARE',
-    role,
-    roleLabel: profile.roleLabel || 'Developer',
-    allowedPages: role === 'developer'
-      ? ADMIN_ALL_PAGES
-      : withAdminGuidePage(profile.allowedPages || ['dashboard.html', 'resources.html', 'announcements.html', 'messages.html']),
-    permissions: profile.permissions || ['dashboard', 'resources', 'announcements', 'messages', 'audit']
-  };
-};
-
-const hasPermission = permission => currentAdmin().role === 'developer' || currentAdmin().permissions.includes(permission);
-const canManageAdminAccounts = () => currentAdmin().role === 'developer' || hasPermission('admin_accounts');
-const canManageStudentAccounts = () => currentAdmin().role === 'developer' || hasPermission('student_accounts');
-const canDeleteDashboardLogs = () => currentAdmin().role === 'developer' || hasPermission('log_delete');
-
 const readClientErrors = () => {
   try {
     return JSON.parse(localStorage.getItem(CLIENT_ERROR_KEY) || '[]');
@@ -395,9 +375,11 @@ const applyAdminRoleUI = () => {
     link.hidden = !canSeeAdminNavLink(link);
   });
   document.querySelectorAll('[data-developer-only="true"]').forEach(item => {
+    if (item.closest('.admin-nav')) return;
     item.hidden = !canManageAdminAccounts();
   });
   document.querySelectorAll('[data-student-account-only="true"]').forEach(item => {
+    if (item.closest('.admin-nav')) return;
     item.hidden = !canManageStudentAccounts();
   });
   document.querySelectorAll('[data-log-delete-only="true"]').forEach(item => {
@@ -408,6 +390,17 @@ const applyAdminRoleUI = () => {
     item.hidden = permissions.length ? !permissions.some(permission => hasPermission(permission)) : false;
   });
   renderAdminPermissionSummary();
+};
+
+const applyAdminRoleUIAfterSession = async () => {
+  try {
+    if (window.SIPILCARE_ADMIN_READY?.then) {
+      await window.SIPILCARE_ADMIN_READY;
+    }
+  } catch {
+    return;
+  }
+  applyAdminRoleUI();
 };
 
 const adminRoleTemplates = {
@@ -448,6 +441,34 @@ const adminRoleTemplates = {
     permissions: ['announcements', 'messages']
   }
 };
+
+const currentAdmin = () => {
+  const profile = getAdminProfile();
+  const role = profile.role || 'developer';
+  const template = adminRoleTemplates[role] || {};
+  const profilePages = Array.isArray(profile.allowedPages) ? profile.allowedPages : [];
+  const profilePermissions = Array.isArray(profile.permissions) ? profile.permissions : [];
+  const shouldUseTemplatePages = role !== 'developer' && Boolean(template.allowedPages);
+  const shouldUseTemplatePermissions = role !== 'developer' && Boolean(template.permissions);
+
+  return {
+    username: profile.username || 'developer',
+    name: profile.name || 'Developer SIPIL CARE',
+    role,
+    roleLabel: profile.roleLabel || template.roleLabel || 'Developer',
+    allowedPages: role === 'developer'
+      ? ADMIN_ALL_PAGES
+      : withAdminGuidePage(shouldUseTemplatePages ? template.allowedPages : profilePages.length ? profilePages : template.allowedPages || [ADMIN_GUIDE_PAGE]),
+    permissions: role === 'developer'
+      ? ['dashboard', 'resources', 'practicum_studio', 'software', 'videos', 'announcements', 'messages', 'audit', 'admin_accounts', 'student_accounts', 'log_delete']
+      : shouldUseTemplatePermissions ? template.permissions : profilePermissions.length ? profilePermissions : template.permissions || []
+  };
+};
+
+const hasPermission = permission => currentAdmin().role === 'developer' || currentAdmin().permissions.includes(permission);
+const canManageAdminAccounts = () => currentAdmin().role === 'developer' || hasPermission('admin_accounts');
+const canManageStudentAccounts = () => currentAdmin().role === 'developer' || hasPermission('student_accounts');
+const canDeleteDashboardLogs = () => currentAdmin().role === 'developer' || hasPermission('log_delete');
 
 const adminPageOptions = [
   { value: 'dashboard.html', label: 'Dashboard', permission: 'dashboard' },
@@ -3017,7 +3038,7 @@ renderAdminRoleChecklist();
 renderAdminRoleOptions();
 syncNotificationButton();
 setupAdminMobileNav();
-applyAdminRoleUI();
+applyAdminRoleUIAfterSession();
 
 const setActiveAdminNav = id => {
   adminNavLinks.forEach(link => {

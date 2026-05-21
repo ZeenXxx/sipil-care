@@ -12,6 +12,33 @@ const ADMIN_PROFILE_KEY = 'sipilcare_admin_profile';
 const ADMIN_SESSION_TTL = 30 * 60 * 1000;
 const ADMIN_GUIDE_PAGE = 'guide.html';
 const ADMIN_ALL_PAGES = ['dashboard.html', 'guide.html', 'resources.html', 'announcements.html', 'messages.html', 'admin-accounts.html', 'student-accounts.html'];
+const ADMIN_ROLE_ACCESS = {
+  admin_sipil: {
+    roleLabel: 'Admin SIPIL CARE',
+    allowedPages: ['dashboard.html', 'guide.html', 'resources.html', 'announcements.html', 'messages.html'],
+    permissions: ['dashboard', 'resources', 'practicum_studio', 'software', 'videos', 'announcements', 'messages', 'audit']
+  },
+  pendprof_hms: {
+    roleLabel: 'PENDPROF HMS',
+    allowedPages: ['guide.html', 'resources.html', 'messages.html'],
+    permissions: ['resources', 'messages']
+  },
+  aslab_hms: {
+    roleLabel: 'Admin Aslab',
+    allowedPages: ['guide.html', 'resources.html', 'messages.html'],
+    permissions: ['practicum_studio', 'messages']
+  },
+  asdos_hms: {
+    roleLabel: 'Admin Asdos',
+    allowedPages: ['guide.html', 'resources.html', 'messages.html'],
+    permissions: ['practicum_studio', 'messages']
+  },
+  eksternal_hms: {
+    roleLabel: 'Eksternal HMS',
+    allowedPages: ['guide.html', 'announcements.html', 'messages.html'],
+    permissions: ['announcements', 'messages']
+  }
+};
 const toast = m => {
   const t = document.getElementById('toast');
   if (!t) return;
@@ -72,20 +99,24 @@ const withAdminGuidePage = pages => [...new Set([...pages, ADMIN_GUIDE_PAGE])];
 
 const normalizeAdminProfile = profile => {
   const role = profile.role || FALLBACK_ADMIN.role;
+  const roleAccess = ADMIN_ROLE_ACCESS[role] || null;
   const rawPages = normalizeList(profile.allowedPages || profile.allowed_pages);
+  const rawPermissions = normalizeList(profile.permissions);
+  const shouldUseRolePages = Boolean(roleAccess);
+  const shouldUseRolePermissions = Boolean(roleAccess);
   const allowedPages = role === 'developer'
     ? ADMIN_ALL_PAGES
-    : withAdminGuidePage(rawPages.length ? rawPages : FALLBACK_ADMIN.allowedPages);
+    : withAdminGuidePage(shouldUseRolePages ? roleAccess.allowedPages : rawPages.length ? rawPages : roleAccess?.allowedPages || [ADMIN_GUIDE_PAGE]);
 
   return {
     username: profile.username || FALLBACK_ADMIN.username,
     name: profile.name || FALLBACK_ADMIN.name,
     role,
-    roleLabel: profile.roleLabel || profile.role_label || FALLBACK_ADMIN.roleLabel,
+    roleLabel: profile.roleLabel || profile.role_label || roleAccess?.roleLabel || FALLBACK_ADMIN.roleLabel,
     allowedPages,
-    permissions: normalizeList(profile.permissions).length
-      ? normalizeList(profile.permissions)
-      : FALLBACK_ADMIN.permissions,
+    permissions: role === 'developer'
+      ? ['dashboard', 'resources', 'practicum_studio', 'software', 'videos', 'announcements', 'messages', 'audit', 'admin_accounts', 'student_accounts', 'log_delete']
+      : shouldUseRolePermissions ? roleAccess.permissions : rawPermissions.length ? rawPermissions : roleAccess?.permissions || [],
     sessionCheckedAt: Date.now()
   };
 };
