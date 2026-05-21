@@ -824,6 +824,34 @@ body.search-open  {
 
 }
 
+.footer-admin-access  {
+
+    display: inline-flex !important;
+
+    align-items: center;
+
+    margin: 0 !important;
+
+    color: #d9eadf !important;
+
+    font-weight: 800;
+
+    text-decoration: none;
+
+    opacity: .78;
+
+    transition: opacity .18s ease, color .18s ease
+
+}
+
+.footer-admin-access:hover  {
+
+    color: #fff !important;
+
+    opacity: 1
+
+}
+
 body.nav-open  {
   
     overflow: hidden
