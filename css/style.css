@@ -830,6 +830,20 @@ button, input, select, textarea  {
 
 }
 
+.help-head-actions  {
+
+    margin-top: 24px
+
+}
+
+.onboarding-grid .quick  {
+
+    min-height: 100%;
+
+    border-top: 4px solid var(--primary)
+
+}
+
 .pagination  {
   
     display: flex;

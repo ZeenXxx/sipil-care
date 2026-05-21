@@ -10,6 +10,7 @@
   const isAdminLogin = currentPage === "login.html";
   const isAdminPanel = currentPage === "panel-hms-sipil-2026.html";
   const isHomePage = currentPage === "index.html" && !location.pathname.includes("/pages/");
+  const isPublicHelpPage = currentPage === "help.html";
   const usingSupabase = CONFIG.mode === "supabase" && CONFIG.supabaseUrl && CONFIG.supabaseAnonKey;
   const HMS_INSTAGRAM = "https://www.instagram.com/hmsunjani";
   const HMS_YOUTUBE = "https://youtube.com/@hmsunjani1986?si=d_lPiLa4u7yzBDYE";
@@ -449,7 +450,7 @@
   };
 
   if (!isStudentLogin && !isAdminLogin && !isAdminPanel) {
-    if (!readSession() && !isHomePage) {
+    if (!readSession() && !isHomePage && !isPublicHelpPage) {
       const currentFile = location.pathname.split("/").pop() || "index.html";
       const currentPath = currentFile + location.search + location.hash;
       const inPages = location.pathname.includes("/pages/");

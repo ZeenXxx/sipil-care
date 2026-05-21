@@ -170,6 +170,13 @@ const resourceTable = document.getElementById('resourceTable');
 const adminSearch = document.getElementById('adminSearch');
 const adminFilter = document.getElementById('adminFilter');
 const adminStats = document.getElementById('adminStats');
+const dashboardHealthGrid = document.getElementById('dashboardHealthGrid');
+const adminPermissionTitle = document.getElementById('adminPermissionTitle');
+const adminPermissionSummary = document.getElementById('adminPermissionSummary');
+const adminPermissionChips = document.getElementById('adminPermissionChips');
+const clientErrorList = document.getElementById('clientErrorList');
+const clientErrorRefresh = document.getElementById('clientErrorRefresh');
+const clientErrorClear = document.getElementById('clientErrorClear');
 const toastEl = document.getElementById('toast');
 const submitButton = resourceForm?.querySelector('button[type="submit"]');
 const adminSidebar = document.querySelector('.admin-sidebar');
@@ -212,6 +219,7 @@ const ADMIN_ONLINE_WINDOW = 2 * 60 * 1000;
 const ADMIN_LOGIN_TRACKED_KEY = 'sipilcare_admin_login_tracked';
 const ADMIN_SESSION_KEY = 'sipilcare_admin_session';
 const ADMIN_PROFILE_KEY = 'sipilcare_admin_profile';
+const CLIENT_ERROR_KEY = 'sipilcare_client_errors';
 let liveChatSnapshotReady = false;
 const practicumCategories = [
   'Computer Aided Design (CAD)-S',
@@ -253,6 +261,49 @@ const hasPermission = permission => currentAdmin().role === 'developer' || curre
 const canManageAdminAccounts = () => currentAdmin().role === 'developer' || hasPermission('admin_accounts');
 const canManageStudentAccounts = () => currentAdmin().role === 'developer' || hasPermission('student_accounts');
 const canDeleteDashboardLogs = () => currentAdmin().role === 'developer' || hasPermission('log_delete');
+
+const readClientErrors = () => {
+  try {
+    return JSON.parse(localStorage.getItem(CLIENT_ERROR_KEY) || '[]');
+  } catch {
+    return [];
+  }
+};
+
+const writeClientErrors = errors => {
+  localStorage.setItem(CLIENT_ERROR_KEY, JSON.stringify(errors.slice(0, 30)));
+};
+
+const recordClientError = payload => {
+  const errors = readClientErrors();
+  const entry = {
+    type: payload.type || 'error',
+    message: String(payload.message || 'Error browser tidak diketahui').slice(0, 240),
+    source: String(payload.source || '').slice(0, 240),
+    stack: String(payload.stack || '').slice(0, 500),
+    page: location.pathname,
+    time: new Date().toISOString()
+  };
+  writeClientErrors([entry, ...errors]);
+};
+
+window.SIPILCARE_LOG_CLIENT_ERROR = recordClientError;
+window.addEventListener('error', event => {
+  recordClientError({
+    type: 'javascript',
+    message: event.message,
+    source: `${event.filename || 'inline'}:${event.lineno || 0}:${event.colno || 0}`,
+    stack: event.error?.stack
+  });
+});
+window.addEventListener('unhandledrejection', event => {
+  recordClientError({
+    type: 'promise',
+    message: event.reason?.message || event.reason,
+    source: 'unhandledrejection',
+    stack: event.reason?.stack
+  });
+});
 
 const closeAdminMobileNav = () => {
   adminSidebar?.classList.remove('admin-nav-open');
@@ -321,6 +372,7 @@ const applyAdminRoleUI = () => {
     const permissions = item.dataset.adminPermission.split(',').map(value => value.trim()).filter(Boolean);
     item.hidden = permissions.length ? !permissions.some(permission => hasPermission(permission)) : false;
   });
+  renderAdminPermissionSummary();
 };
 
 const adminRoleTemplates = {
@@ -667,6 +719,64 @@ const formatRelativeTime = value => {
   return `${Math.floor(diff / 86400000)} hari lalu`;
 };
 
+const permissionLabelMap = () => adminPermissionOptions.reduce((labels, item) => {
+  labels[item.value] = item.label;
+  return labels;
+}, {});
+
+function renderAdminPermissionSummary() {
+  if (!adminPermissionTitle && !adminPermissionSummary && !adminPermissionChips) return;
+  const admin = currentAdmin();
+  const labels = permissionLabelMap();
+  const permissions = admin.role === 'developer'
+    ? [...new Set([...admin.permissions, ...adminPermissionOptions.map(item => item.value)])]
+    : admin.permissions;
+
+  if (adminPermissionTitle) {
+    adminPermissionTitle.textContent = `${admin.roleLabel} (${admin.username})`;
+  }
+  if (adminPermissionSummary) {
+    adminPermissionSummary.textContent = `${admin.allowedPages.length} halaman aktif - ${permissions.length} permission tersedia.`;
+  }
+  if (adminPermissionChips) {
+    adminPermissionChips.innerHTML = permissions.length
+      ? permissions.slice(0, 8).map(permission => `<span>${escapeText(labels[permission] || permission)}</span>`).join('')
+      : '<span>Permission belum tersedia</span>';
+  }
+}
+
+function renderClientErrors() {
+  if (!clientErrorList) return;
+  const errors = readClientErrors().slice(0, 8);
+  clientErrorList.innerHTML = errors.length
+    ? errors.map(item => `
+      <article class="client-error-item">
+        <strong>${escapeText(item.message || item.type || 'Error browser')}</strong>
+        <small>${escapeText(item.page || location.pathname)} - ${escapeText(formatDateTime(item.time))}</small>
+        <code>${escapeText(item.source || item.stack || '-')}</code>
+      </article>
+    `).join('')
+    : '<div class="empty">Belum ada error browser yang terekam di device ini.</div>';
+}
+
+function renderDashboardHealth() {
+  if (!dashboardHealthGrid) return;
+  const academicResources = resources.filter(r => r.category !== 'Software' && !isPracticumResource(r));
+  const softwareResources = resources.filter(r => r.category === 'Software');
+  const clientErrors = readClientErrors();
+  const items = [
+    `${academicResources.length} resource umum`,
+    `${softwareResources.length} software`,
+    `${practicumModules.length} praktikum/studio`,
+    `${videos.length} video`,
+    `${students.filter(isStudentOnline).length} mahasiswa online`,
+    `${adminActivities.filter(isAdminOnline).length} admin online`,
+    `${accessLogs.length + auditLogs.length} log dashboard`,
+    `${clientErrors.length} error browser lokal`
+  ];
+  dashboardHealthGrid.innerHTML = items.map(item => `<span>${escapeText(item)}</span>`).join('');
+}
+
 const sha256 = async value => {
   const data = new TextEncoder().encode(value);
   const hash = await crypto.subtle.digest('SHA-256', data);
@@ -976,6 +1086,9 @@ function stats() {
     <div class="admin-stat"><b>${adminActivities.filter(isAdminOnline).length}</b><span>Admin Online</span></div>
     <div class="admin-stat"><b>${auditLogs.length}</b><span>Audit Log</span></div>
   `;
+  renderDashboardHealth();
+  renderAdminPermissionSummary();
+  renderClientErrors();
 }
 
 function filters() {
@@ -2853,6 +2966,17 @@ on(accessLogActionFilter, 'change', () => accessLogRender());
 on(accessLogRefresh, 'click', () => accessLogRender());
 on(auditSearch, 'input', () => auditTableRender());
 on(auditFilter, 'change', () => auditTableRender());
+on(clientErrorRefresh, 'click', () => {
+  renderClientErrors();
+  renderDashboardHealth();
+  toast('Catatan error browser diperbarui.');
+});
+on(clientErrorClear, 'click', () => {
+  localStorage.removeItem(CLIENT_ERROR_KEY);
+  renderClientErrors();
+  renderDashboardHealth();
+  toast('Catatan error browser dibersihkan.');
+});
 renderAdminRoleChecklist();
 renderAdminRoleOptions();
 syncNotificationButton();

@@ -564,6 +564,165 @@
 
 }
 
+.dashboard-overview  {
+
+    display: grid;
+
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+
+    gap: 16px;
+
+    margin-top: 18px
+
+}
+
+.dashboard-status-card  {
+
+    padding: 18px;
+
+    border: 1px solid var(--line);
+
+    border-radius: 8px;
+
+    background: #fff;
+
+    box-shadow: 0 10px 26px rgba(15, 77, 58, .08)
+
+}
+
+.dashboard-status-card h3  {
+
+    margin: 8px 0 6px;
+
+    color: var(--primary);
+
+    font-size: 22px
+
+}
+
+.dashboard-status-card p  {
+
+    margin: 0;
+
+    color: var(--muted)
+
+}
+
+.system-health-grid,
+.permission-chip-list  {
+
+    display: flex;
+
+    flex-wrap: wrap;
+
+    gap: 8px;
+
+    margin-top: 14px
+
+}
+
+.system-health-grid span,
+.permission-chip-list span  {
+
+    display: inline-flex;
+
+    align-items: center;
+
+    min-height: 32px;
+
+    padding: 0 10px;
+
+    border-radius: 999px;
+
+    background: var(--soft);
+
+    color: var(--primary);
+
+    font-size: 12px;
+
+    font-weight: 900
+
+}
+
+.dashboard-quick-actions  {
+
+    display: flex;
+
+    flex-wrap: wrap;
+
+    gap: 10px;
+
+    margin-top: 14px
+
+}
+
+.dashboard-quick-actions a  {
+
+    display: inline-flex;
+
+    align-items: center;
+
+    min-height: 42px;
+
+    padding: 0 14px;
+
+    border: 1px solid rgba(15, 77, 58, .14);
+
+    border-radius: 8px;
+
+    background: #fff;
+
+    color: var(--primary);
+
+    font-weight: 900;
+
+    box-shadow: 0 8px 18px rgba(15, 77, 58, .07)
+
+}
+
+.dashboard-quick-actions a:hover  {
+
+    background: var(--primary);
+
+    color: #fff
+
+}
+
+.client-error-list  {
+
+    display: grid;
+
+    gap: 10px
+
+}
+
+.client-error-item  {
+
+    padding: 14px;
+
+    border: 1px solid var(--line);
+
+    border-radius: 8px;
+
+    background: #fff
+
+}
+
+.client-error-item strong  {
+
+    display: block;
+
+    color: var(--primary)
+
+}
+
+.client-error-item small,
+.client-error-item code  {
+
+    color: var(--muted)
+
+}
+
 .admin-dashboard-page .admin-main  {
 
     gap: 18px
@@ -1433,7 +1592,7 @@ th  {
 
 }
 
-    .admin-stats, .admin-panel-grid, .student-activity-summary, .cohort-list  {
+    .admin-stats, .admin-panel-grid, .student-activity-summary, .cohort-list, .dashboard-overview  {
   
         grid-template-columns: 1fr
     

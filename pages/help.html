@@ -4,14 +4,14 @@
     <meta charset="UTF-8">
     <script>!function(){var t=localStorage.getItem("sipilcare_theme");(t==="dark"||(t===null&&window.matchMedia("(prefers-color-scheme: dark)").matches))&&document.documentElement.classList.add("dark")}();</script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="../css/style.css?v=24">
-    <link rel="stylesheet" href="../css/navbar.css?v=29">
+    <link rel="stylesheet" href="../css/style.css?v=25">
+    <link rel="stylesheet" href="../css/navbar.css?v=30">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <title>Bantuan & FAQ - SIPIL CARE</title>
     <script src="../js/student-config.js?v=18"></script>
-    <script src="../js/student-auth.js?v=32"></script>
+    <script src="../js/student-auth.js?v=33"></script>
   </head>
   <body>
     <header class="navbar">
@@ -26,6 +26,23 @@
           <span class="eyebrow">Bantuan</span>
           <h1>FAQ dan panduan cepat SIPIL CARE</h1>
           <p class="lead">Temukan jawaban untuk login, download resource, penggunaan tools, notifikasi, dan cara menghubungi admin HMS.</p>
+          <div class="actions help-head-actions">
+            <a class="btn btn-primary" href="../student-login.html">Login Mahasiswa</a>
+            <a class="btn btn-secondary" href="../student-login.html?mode=recover">Lupa Password</a>
+          </div>
+        </div>
+      </section>
+
+      <section class="section soft">
+        <div class="container">
+          <span class="eyebrow">Panduan mulai</span>
+          <h2 class="title">Mulai pakai SIPIL CARE dalam 4 langkah</h2>
+          <div class="grid g4 onboarding-grid">
+            <article class="card quick"><span class="icon">01</span><h3>Siapkan akun</h3><p>Akun mahasiswa dibuat oleh admin/developer. Gunakan NIM sebagai identitas login.</p></article>
+            <article class="card quick"><span class="icon">02</span><h3>Login pertama</h3><p>Password awal mengikuti format <b>NIM@Sipil</b>, kecuali admin memberi password lain.</p></article>
+            <article class="card quick"><span class="icon">03</span><h3>Cari materi</h3><p>Pakai tombol Cari atau menu Materi untuk membuka resource, praktikum, video, dan software.</p></article>
+            <article class="card quick"><span class="icon">04</span><h3>Laporkan kendala</h3><p>Jika login, download, atau tools bermasalah, kirim detail lewat Contact atau live chat.</p></article>
+          </div>
         </div>
       </section>
 
@@ -35,6 +52,11 @@
             <h3>Bagaimana cara login mahasiswa?</h3>
             <p>Gunakan NIM dan password yang diberikan admin/HMS. Jika password belum pernah diubah, format awalnya adalah NIM + @Sipil.</p>
             <a class="btn btn-secondary" href="../student-login.html">Buka Login Mahasiswa</a>
+          </article>
+          <article class="card faq">
+            <h3>Apakah FAQ bisa dibuka tanpa login?</h3>
+            <p>Bisa. Halaman Bantuan sengaja dibuat publik agar mahasiswa yang belum berhasil login tetap dapat melihat panduan dan reset password.</p>
+            <a class="btn btn-secondary" href="../student-login.html?mode=recover">Buka Reset Password</a>
           </article>
           <article class="card faq">
             <h3>Lupa password mahasiswa?</h3>
@@ -60,6 +82,11 @@
             <h3>Bagaimana menghubungi admin?</h3>
             <p>Buka halaman Contact untuk mengirim pesan atau live chat. Sertakan NIM, angkatan, dan kendala yang dialami agar cepat dicek.</p>
             <a class="btn btn-secondary" href="contact.html">Hubungi Admin</a>
+          </article>
+          <article class="card faq">
+            <h3>Bagaimana tahu fitur terbaru?</h3>
+            <p>Buka Changelog untuk melihat update, perbaikan, dan fitur baru yang sudah masuk ke SIPIL CARE.</p>
+            <a class="btn btn-secondary" href="changelog.html">Buka Changelog</a>
           </article>
         </div>
       </section>
@@ -87,6 +114,6 @@
       </div>
       <div class="footer-bottom"><span>(c) 2026 PENDPROF HMS - HMS UNJANI</span><span>Built for civil engineering students.</span></div>
     </footer>
-    <script src="../js/navbar.js?v=24"></script>
+    <script src="../js/navbar.js?v=25"></script>
   </body>
 </html>

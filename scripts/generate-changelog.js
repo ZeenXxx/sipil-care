@@ -39,7 +39,7 @@ const isCacheBustOnly = file => {
     .split(/\r?\n/)
     .filter(line => /^[+-][^+-]/.test(line));
   if (!changedLines.length) return false;
-  return changedLines.every(line => /navbar\.(css|js)\?v=\d+/.test(line));
+  return changedLines.every(line => /(?:css|js)\/[^"']+\.(?:css|js)\?v=\d+/.test(line));
 };
 
 const parseStatus = () => {
@@ -113,11 +113,25 @@ const rules = [
     match: (file, diff) => (file === 'js/navbar.js' || file === 'css/navbar.css') && diff.includes('global-search')
   },
   {
+    key: 'search-help-ranking',
+    type: 'improved',
+    title: 'Pencarian Bantuan Lebih Akurat',
+    description: 'Hasil pencarian kini diberi label yang lebih jelas, dilengkapi saran cepat, dan memprioritaskan topik bantuan seperti login, lupa password, download, serta changelog.',
+    match: (file, diff) => file === 'js/navbar.js' && (diff.includes('scoreItem') || diff.includes('data-search-suggest'))
+  },
+  {
     key: 'admin-dashboard',
     type: 'improved',
     title: 'Dashboard Admin',
     description: 'Dashboard admin ditingkatkan agar navigasi, tampilan mobile, ringkasan data, dan akses ke bagian log lebih nyaman digunakan.',
     match: file => file.startsWith('pages/admin/') || file === 'js/admin-panel.js' || file === 'css/admin.css'
+  },
+  {
+    key: 'admin-system-overview',
+    type: 'added',
+    title: 'Ringkasan Sistem Admin',
+    description: 'Dashboard admin kini menampilkan ringkasan status konten, pengguna online, log tersimpan, permission role aktif, serta catatan error browser lokal untuk membantu pengecekan cepat.',
+    match: (file, diff) => ['pages/admin/dashboard.html', 'js/admin-panel.js', 'css/admin.css'].includes(file) && (diff.includes('dashboardHealthGrid') || diff.includes('clientErrorList') || diff.includes('dashboard-overview'))
   },
   {
     key: 'student-access',
@@ -146,6 +160,13 @@ const rules = [
     title: 'Bantuan Mahasiswa',
     description: 'Panduan penggunaan SIPIL CARE ditambahkan agar mahasiswa dapat memahami login, download resource, tools, dan cara menghubungi admin.',
     match: file => file === 'pages/help.html'
+  },
+  {
+    key: 'public-help-onboarding',
+    type: 'improved',
+    title: 'FAQ Bisa Dibuka Tanpa Login',
+    description: 'Halaman bantuan kini dapat dibuka sebelum login dan dilengkapi panduan mulai agar mahasiswa baru lebih cepat memahami akun, pencarian materi, dan pelaporan kendala.',
+    match: (file, diff) => file === 'pages/help.html' || (file === 'js/student-auth.js' && diff.includes('isPublicHelpPage'))
   },
   {
     key: 'public-interface',
@@ -197,6 +218,6 @@ const nextEntry = {
   }))
 };
 
-const next = [nextEntry, ...existing.filter(item => item.id !== generatedKey)].slice(0, 40);
+const next = [nextEntry, ...existing.filter(item => item.id !== generatedKey && !(item.generated && item.date === date))].slice(0, 40);
 fs.writeFileSync(outputPath, `${JSON.stringify(next, null, 2)}\n`);
 console.log(`Changelog updated: ${selected.length} item(s), ${changedFiles.length} changed file(s).`);

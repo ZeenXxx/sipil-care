@@ -3,6 +3,42 @@ const navLinks = document.querySelector('.nav-links');
 const pathName = location.pathname.replace(/\\/g, '/');
 const isPagesPath = pathName.includes('/pages/') && !pathName.includes('/pages/admin/');
 const isToolsPath = pathName.includes('/tools/');
+const CLIENT_ERROR_KEY = 'sipilcare_client_errors';
+
+const saveClientError = payload => {
+  try {
+    const errors = JSON.parse(localStorage.getItem(CLIENT_ERROR_KEY) || '[]');
+    const entry = {
+      type: payload.type || 'error',
+      message: String(payload.message || 'Error browser tidak diketahui').slice(0, 240),
+      source: String(payload.source || '').slice(0, 240),
+      stack: String(payload.stack || '').slice(0, 500),
+      page: location.pathname,
+      time: new Date().toISOString()
+    };
+    localStorage.setItem(CLIENT_ERROR_KEY, JSON.stringify([entry, ...errors].slice(0, 30)));
+  } catch {
+    // localStorage can be unavailable in strict browser privacy modes.
+  }
+};
+
+window.SIPILCARE_LOG_CLIENT_ERROR = saveClientError;
+window.addEventListener('error', event => {
+  saveClientError({
+    type: 'javascript',
+    message: event.message,
+    source: `${event.filename || 'inline'}:${event.lineno || 0}:${event.colno || 0}`,
+    stack: event.error?.stack
+  });
+});
+window.addEventListener('unhandledrejection', event => {
+  saveClientError({
+    type: 'promise',
+    message: event.reason?.message || event.reason,
+    source: 'unhandledrejection',
+    stack: event.reason?.stack
+  });
+});
 
 const resolveSitePath = path => {
   if (/^https?:\/\//i.test(path) || path.startsWith('#')) return path;
@@ -206,18 +242,26 @@ function createGlobalSearch() {
 
   const staticItems = [
     { title: 'Home', type: 'Halaman', url: 'index.html', text: 'Pemberitahuan HMS, tools akademik, video highlight, quick access' },
-    { title: 'Resources', type: 'Halaman', url: 'pages/resources.html', text: 'SNI, modul kuliah, referensi, materi akademik, software' },
-    { title: 'Praktikum & Studio', type: 'Halaman', url: 'pages/praktikum-studio.html', text: 'Modul praktikum, studio, CAD, BIM, geoteknik, hidraulika' },
-    { title: 'Videos', type: 'Halaman', url: 'pages/videos.html', text: 'Video pembelajaran teknik sipil dan software' },
-    { title: 'Tools', type: 'Halaman', url: 'pages/tools.html', text: 'Converter, PDF merger, PDF to image, JPG to PDF' },
-    { title: 'Structural Diagram Analyzer', type: 'Tool', url: 'tools/diagram-struktur.html', text: 'Balok 1D, reaksi tumpuan, AFD, SFD, BMD' },
-    { title: 'Preliminary Design SNI 2847:2019', type: 'Tool', url: 'tools/preliminary-design.html', text: 'Kolom, balok, pelat satu arah dua arah, dinding geser' },
-    { title: 'Kalkulator Tulangan Balok', type: 'Tool', url: 'tools/tulangan-balok.html', text: 'Tulangan lentur, sengkang, Mu, Vu, fc, fy' },
-    { title: 'About', type: 'Halaman', url: 'pages/about.html', text: 'Tentang SIPIL CARE dan FAQ singkat' },
-    { title: 'Developer', type: 'Halaman', url: 'pages/developer.html', text: 'Tim pengembang dan informasi platform' },
-    { title: 'Contact', type: 'Halaman', url: 'pages/contact.html', text: 'Kontak pengurus, live chat, pesan mahasiswa' },
-    { title: 'Changelog', type: 'Info Update', url: 'pages/changelog.html', text: 'Riwayat update, perbaikan bug, fitur baru SIPIL CARE' },
-    { title: 'Bantuan & FAQ', type: 'Bantuan', url: 'pages/help.html', text: 'Cara login, download resource, lupa password, pakai tools, hubungi admin' }
+    { title: 'Resources', type: 'Materi', url: 'pages/resources.html', text: 'SNI, modul kuliah, referensi, materi akademik, software' },
+    { title: 'Praktikum & Studio', type: 'Materi', url: 'pages/praktikum-studio.html', text: 'Modul praktikum, studio, CAD, BIM, geoteknik, hidraulika' },
+    { title: 'Videos', type: 'Materi', url: 'pages/videos.html', text: 'Video pembelajaran teknik sipil dan software' },
+    { title: 'Software', type: 'Materi', url: 'pages/resources.html?category=Software', text: 'Aplikasi, installer, software teknik sipil, CAD, BIM, analisis' },
+    { title: 'Tools', type: 'Tools', url: 'pages/tools.html', text: 'Converter, PDF merger, PDF to image, JPG to PDF' },
+    { title: 'Structural Diagram Analyzer', type: 'Tools', url: 'tools/diagram-struktur.html', text: 'Balok 1D, reaksi tumpuan, AFD, SFD, BMD' },
+    { title: 'Preliminary Design SNI 2847:2019', type: 'Tools', url: 'tools/preliminary-design.html', text: 'Kolom, balok, pelat satu arah dua arah, dinding geser' },
+    { title: 'Kalkulator Tulangan Balok', type: 'Tools', url: 'tools/tulangan-balok.html', text: 'Tulangan lentur, sengkang, Mu, Vu, fc, fy' },
+    { title: 'About', type: 'Info', url: 'pages/about.html', text: 'Tentang SIPIL CARE dan FAQ singkat' },
+    { title: 'Developer', type: 'Info', url: 'pages/developer.html', text: 'Tim pengembang dan informasi platform' },
+    { title: 'Contact', type: 'Info', url: 'pages/contact.html', text: 'Kontak pengurus, live chat, pesan mahasiswa' },
+    { title: 'Changelog', type: 'Update', url: 'pages/changelog.html', text: 'Riwayat update, perbaikan bug, fitur baru SIPIL CARE' },
+    { title: 'Bantuan & FAQ', type: 'Bantuan', url: 'pages/help.html', text: 'Cara login, download resource, lupa password, pakai tools, hubungi admin' },
+    { title: 'Login Mahasiswa', type: 'Bantuan', url: 'student-login.html', text: 'Masuk akun mahasiswa, NIM, password, sesi login, akses materi' },
+    { title: 'Login Admin', type: 'Bantuan', url: 'login.html', text: 'Masuk akun admin, developer, role, permission, dashboard admin' },
+    { title: 'Panduan mulai mahasiswa', type: 'Bantuan', url: 'pages/help.html', text: 'Login pertama, password awal NIM@Sipil, akun dibuat admin, cara mencari materi, alur lapor kendala' },
+    { title: 'Lupa password mahasiswa', type: 'Bantuan', url: 'student-login.html?mode=recover', text: 'Reset password login, kode pemulihan, recovery, akun mahasiswa tidak bisa masuk' },
+    { title: 'Format password awal', type: 'Bantuan', url: 'pages/help.html', text: 'Password awal mahasiswa adalah NIM@Sipil kecuali admin memberi password lain' },
+    { title: 'Download resource bermasalah', type: 'Bantuan', url: 'pages/help.html', text: 'Tombol download tidak merespons, file tidak terbuka, akses resource gagal' },
+    { title: 'Hubungi admin HMS', type: 'Bantuan', url: 'pages/contact.html', text: 'Kirim pesan, live chat, laporkan kendala login, resource, tools, atau download' }
   ];
   let searchItems = staticItems;
 
@@ -261,30 +305,50 @@ function createGlobalSearch() {
   })[char]);
 
   const normalize = value => String(value || '').toLowerCase().trim();
+  const typeClass = type => normalize(type).replace(/[^a-z0-9]+/g, '-');
+  const scoreItem = (item, terms) => {
+    const title = normalize(item.title);
+    const type = normalize(item.type);
+    const text = normalize([item.text, item.category].join(' '));
+    return terms.reduce((total, term) => {
+      if (title.includes(term)) return total + 4;
+      if (type.includes(term)) return total + 2;
+      if (text.includes(term)) return total + 1;
+      return total;
+    }, 0);
+  };
+
   const renderResults = () => {
     const q = normalize(input.value);
     if (!q) {
-      results.innerHTML = '<p class="global-search-empty">Ketik kata kunci untuk mencari halaman, resource, video, atau tools.</p>';
+      results.innerHTML = `
+        <p class="global-search-empty">Ketik kata kunci untuk mencari halaman, materi, tools, FAQ, atau changelog.</p>
+        <div class="global-search-suggestions">
+          <button type="button" data-search-suggest="login">login</button>
+          <button type="button" data-search-suggest="download">download</button>
+          <button type="button" data-search-suggest="SNI">SNI</button>
+          <button type="button" data-search-suggest="praktikum">praktikum</button>
+        </div>
+      `;
       return;
     }
     const terms = q.split(/\s+/).filter(Boolean);
     const found = searchItems
       .map(item => {
-        const haystack = normalize([item.title, item.type, item.text, item.category].join(' '));
-        const score = terms.reduce((total, term) => total + (haystack.includes(term) ? 1 : 0), 0);
+        const score = scoreItem(item, terms);
         return { ...item, score };
       })
       .filter(item => item.score > 0)
       .sort((a, b) => b.score - a.score || a.title.localeCompare(b.title))
-      .slice(0, 10);
+      .slice(0, 12);
 
     results.innerHTML = found.length ? found.map(item => `
       <a class="global-search-result" href="${escapeText(resolveSitePath(item.url))}">
-        <span>${escapeText(item.type)}</span>
+        <span class="search-type ${escapeText(typeClass(item.type))}">${escapeText(item.type)}</span>
         <strong>${escapeText(item.title)}</strong>
         <small>${escapeText(item.text || item.category || '')}</small>
       </a>
-    `).join('') : '<p class="global-search-empty">Tidak ada hasil yang cocok.</p>';
+    `).join('') : '<p class="global-search-empty">Tidak ada hasil yang cocok. Coba kata kunci seperti login, download, SNI, tools, atau praktikum.</p>';
   };
 
   const loadSearchData = async () => {
@@ -299,14 +363,14 @@ function createGlobalSearch() {
       ]);
       const resourceItems = (Array.isArray(resources) ? resources : []).map(item => ({
         title: item.title,
-        type: item.category === 'Software' ? 'Software' : 'Resource',
+        type: item.category === 'Software' ? 'Software' : 'Materi',
         category: item.category,
         url: `pages/resources.html${item.category ? `?category=${encodeURIComponent(item.category)}` : ''}`,
         text: [item.category, item.type, item.author, item.description].filter(Boolean).join(' ')
       }));
       const videoItems = (Array.isArray(videos) ? videos : []).map(item => ({
         title: item.title,
-        type: 'Video',
+        type: 'Materi',
         category: item.category,
         url: `pages/videos.html${item.category ? `?category=${encodeURIComponent(item.category)}` : ''}`,
         text: [item.category, item.duration, item.description].filter(Boolean).join(' ')
@@ -333,6 +397,13 @@ function createGlobalSearch() {
 
   button.addEventListener('click', openSearch);
   input.addEventListener('input', renderResults);
+  results.addEventListener('click', event => {
+    const suggest = event.target.closest('[data-search-suggest]');
+    if (!suggest) return;
+    input.value = suggest.dataset.searchSuggest;
+    input.focus();
+    renderResults();
+  });
   overlay.querySelectorAll('[data-search-close]').forEach(item => item.addEventListener('click', closeSearch));
   document.addEventListener('keydown', event => {
     if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
