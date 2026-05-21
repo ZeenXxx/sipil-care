@@ -124,6 +124,145 @@
 
 }
 
+.nav-dropdown {
+  
+    position: relative
+
+}
+
+.nav-dropdown-toggle {
+  
+    display: inline-flex;
+  
+    align-items: center;
+  
+    justify-content: center;
+  
+    gap: 8px;
+  
+    min-height: 42px;
+  
+    padding: 0 15px;
+  
+    border: 0;
+  
+    border-radius: 8px;
+  
+    background: transparent;
+  
+    color: #33443d;
+  
+    font-size: 14px;
+  
+    font-weight: 800;
+  
+    cursor: pointer;
+  
+    transition: .2s
+
+}
+
+.nav-dropdown-toggle:after {
+  
+    content: "";
+  
+    width: 7px;
+  
+    height: 7px;
+  
+    border-right: 2px solid currentColor;
+  
+    border-bottom: 2px solid currentColor;
+  
+    transform: translateY(-2px) rotate(45deg);
+  
+    transition: transform .2s
+
+}
+
+.nav-dropdown:hover .nav-dropdown-toggle,
+.nav-dropdown.open .nav-dropdown-toggle,
+.nav-dropdown.active .nav-dropdown-toggle {
+  
+    color: var(--primary);
+  
+    background: rgba(15, 77, 58, .08)
+
+}
+
+.nav-dropdown.open .nav-dropdown-toggle:after,
+.nav-dropdown:hover .nav-dropdown-toggle:after {
+  
+    transform: translateY(2px) rotate(225deg)
+
+}
+
+.nav-dropdown-menu {
+  
+    position: absolute;
+  
+    top: calc(100% + 10px);
+  
+    left: 0;
+  
+    z-index: 1100;
+  
+    min-width: 230px;
+  
+    display: none;
+  
+    padding: 8px;
+  
+    border: 1px solid rgba(15, 77, 58, .14);
+  
+    border-radius: 8px;
+  
+    background: #fff;
+  
+    box-shadow: 0 22px 48px rgba(15, 77, 58, .18)
+
+}
+
+.nav-dropdown-menu:before {
+  
+    content: "";
+  
+    position: absolute;
+  
+    left: 0;
+  
+    right: 0;
+  
+    top: -12px;
+  
+    height: 12px
+
+}
+
+.nav-dropdown:hover .nav-dropdown-menu,
+.nav-dropdown.open .nav-dropdown-menu,
+.nav-dropdown:focus-within .nav-dropdown-menu {
+  
+    display: grid;
+  
+    gap: 6px;
+  
+    animation: navDropIn .18s ease
+
+}
+
+.nav-dropdown-menu a {
+  
+    justify-content: flex-start;
+  
+    width: 100%;
+  
+    min-height: 40px;
+  
+    padding: 0 12px
+
+}
+
 .menu-toggle  {
   
     display: none;
@@ -797,6 +936,81 @@ body.nav-open:before  {
     
 }
 
+    .nav-dropdown  {
+
+        display: grid
+
+}
+
+    .nav-dropdown-toggle  {
+
+        justify-content: space-between;
+
+        width: 100%;
+
+        min-height: 54px;
+
+        padding: 0 16px 0 18px;
+
+        border: 1px solid rgba(15, 77, 58, .1);
+
+        border-left: 5px solid var(--primary);
+
+        background: #fff;
+
+        box-shadow: 0 10px 20px rgba(15, 77, 58, .08);
+
+        font-size: 16px
+
+}
+
+    .nav-dropdown-menu  {
+
+        position: static;
+
+        min-width: 0;
+
+        margin: 8px 0 0 12px;
+
+        padding: 8px;
+
+        box-shadow: none;
+
+        background: rgba(255, 255, 255, .72)
+
+}
+
+    .nav-dropdown-menu:before  {
+
+        display: none
+
+}
+
+    .nav-dropdown:hover .nav-dropdown-menu  {
+
+        display: none
+
+}
+
+    .nav-dropdown.open .nav-dropdown-menu,
+    .nav-dropdown:focus-within .nav-dropdown-menu  {
+
+        display: grid
+
+}
+
+    .nav-dropdown-menu a  {
+
+        min-height: 48px;
+
+        border-left-width: 3px;
+
+        box-shadow: none;
+
+        font-size: 15px
+
+}
+
     .nav-links a:after  {
   
         content: ">";
@@ -1233,6 +1447,23 @@ html.dark .nav-links a.active {
   background: rgba(74, 222, 154, .1);
 }
 
+html.dark .nav-dropdown-toggle {
+  color: #b0cfc5;
+}
+
+html.dark .nav-dropdown:hover .nav-dropdown-toggle,
+html.dark .nav-dropdown.open .nav-dropdown-toggle,
+html.dark .nav-dropdown.active .nav-dropdown-toggle {
+  color: var(--primary);
+  background: rgba(74, 222, 154, .1);
+}
+
+html.dark .nav-dropdown-menu {
+  background: #162520;
+  border-color: rgba(74, 222, 154, .14);
+  box-shadow: 0 22px 48px rgba(0, 0, 0, .32);
+}
+
 html.dark .menu-toggle {
   background: #162520;
   border-color: rgba(74, 222, 154, .18);
@@ -1281,6 +1512,12 @@ html.dark .nav-links {
 }
 
 html.dark .nav-links a {
+  background: #1a2e27;
+  border-color: rgba(74, 222, 154, .1);
+  border-left-color: var(--primary);
+}
+
+html.dark .nav-dropdown-toggle {
   background: #1a2e27;
   border-color: rgba(74, 222, 154, .1);
   border-left-color: var(--primary);

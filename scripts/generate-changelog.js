@@ -89,6 +89,13 @@ const rules = [
     match: (file, diff) => file === 'pages/help.html' || ((file === 'js/navbar.js' || file === 'css/navbar.css') && diff.includes('floating-help'))
   },
   {
+    key: 'compact-navbar',
+    type: 'improved',
+    title: 'Navbar Lebih Ringkas',
+    description: 'Menu utama dirapikan menjadi kelompok Materi dan Info agar navigasi tidak terlalu penuh di desktop maupun mobile.',
+    match: (file, diff) => (file === 'js/navbar.js' || file === 'css/navbar.css') && diff.includes('nav-dropdown')
+  },
+  {
     key: 'global-search',
     type: 'improved',
     title: 'Pencarian Global',

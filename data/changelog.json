@@ -1,5 +1,24 @@
 [
   {
+    "id": "2026-05-21:changelog,compact-navbar",
+    "date": "2026-05-21",
+    "dateLabel": "21 Mei 2026",
+    "generated": true,
+    "summary": "Changelog Otomatis, Navbar Lebih Ringkas",
+    "items": [
+      {
+        "type": "added",
+        "title": "Changelog Otomatis",
+        "description": "Riwayat update kini dibuat dari file yang berubah, lalu ditampilkan dengan bahasa yang lebih rapi dan mudah dipahami mahasiswa."
+      },
+      {
+        "type": "improved",
+        "title": "Navbar Lebih Ringkas",
+        "description": "Menu utama dirapikan menjadi kelompok Materi dan Info agar navigasi tidak terlalu penuh di desktop maupun mobile."
+      }
+    ]
+  },
+  {
     "id": "2026-05-21:changelog,floating-help",
     "date": "2026-05-21",
     "dateLabel": "21 Mei 2026",
