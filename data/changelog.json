@@ -1,5 +1,24 @@
 [
   {
+    "id": "2026-05-21:changelog,floating-help",
+    "date": "2026-05-21",
+    "dateLabel": "21 Mei 2026",
+    "generated": true,
+    "summary": "Changelog Otomatis, Bantuan & FAQ Mengambang",
+    "items": [
+      {
+        "type": "added",
+        "title": "Changelog Otomatis",
+        "description": "Riwayat update kini dibuat dari file yang berubah, lalu ditampilkan dengan bahasa yang lebih rapi dan mudah dipahami mahasiswa."
+      },
+      {
+        "type": "improved",
+        "title": "Bantuan & FAQ Mengambang",
+        "description": "Akses Bantuan dan FAQ dipindahkan menjadi tombol mengambang agar navbar lebih ringkas, tetapi tetap mudah ditemukan mahasiswa."
+      }
+    ]
+  },
+  {
     "id": "2026-05-20:maintenance",
     "date": "2026-05-20",
     "dateLabel": "20 Mei 2026",

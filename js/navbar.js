@@ -29,18 +29,12 @@ const closeMenu = () => {
 };
 
 if (menuToggle && navLinks) {
-  if (!navLinks.querySelector('[data-help-link]')) {
+  if (!navLinks.querySelector('[data-changelog-link]')) {
     const changelogLink = document.createElement('a');
     changelogLink.href = resolveSitePath('pages/changelog.html');
     changelogLink.dataset.changelogLink = 'true';
     changelogLink.textContent = 'Changelog';
     navLinks.appendChild(changelogLink);
-
-    const helpLink = document.createElement('a');
-    helpLink.href = resolveSitePath('pages/help.html');
-    helpLink.dataset.helpLink = 'true';
-    helpLink.textContent = 'Bantuan';
-    navLinks.appendChild(helpLink);
   }
 
   menuToggle.addEventListener('click', () => {
@@ -104,6 +98,23 @@ function createFloatingSocials() {
 }
 
 createFloatingSocials();
+
+function createFloatingHelp() {
+  const path = location.pathname.toLowerCase();
+  const blockedPages = ['admin', 'panel-hms', 'login.html'];
+  if (blockedPages.some(page => path.includes(page))) return;
+  if (document.querySelector('.floating-help')) return;
+
+  const link = document.createElement('a');
+  link.className = 'floating-help';
+  link.href = resolveSitePath('pages/help.html');
+  link.setAttribute('aria-label', 'Buka Bantuan dan FAQ');
+  link.title = 'Bantuan & FAQ';
+  link.innerHTML = '<span aria-hidden="true">?</span><b>FAQ</b>';
+  document.body.appendChild(link);
+}
+
+createFloatingHelp();
 
 function createGlobalSearch() {
   const navbar = document.querySelector('.navbar');

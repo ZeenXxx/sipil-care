@@ -19,29 +19,55 @@ const todayLabel = date => new Intl.DateTimeFormat('id-ID', {
   year: 'numeric'
 }).format(new Date(`${date}T00:00:00+07:00`));
 
+let activeDiffBase = 'git diff --unified=0';
+const diffCache = new Map();
+const readFileDiff = file => {
+  if (diffCache.has(file)) return diffCache.get(file);
+  try {
+    const diff = run(`${activeDiffBase} -- "${file}"`);
+    diffCache.set(file, diff);
+    return diff;
+  } catch {
+    diffCache.set(file, '');
+    return '';
+  }
+};
+
+const isCacheBustOnly = file => {
+  if (!file.endsWith('.html')) return false;
+  const changedLines = readFileDiff(file)
+    .split(/\r?\n/)
+    .filter(line => /^[+-][^+-]/.test(line));
+  if (!changedLines.length) return false;
+  return changedLines.every(line => /navbar\.(css|js)\?v=\d+/.test(line));
+};
+
 const parseStatus = () => {
   try {
     const statusFiles = run('git status --short')
       .split(/\r?\n/)
-      .map(line => line.trim())
       .filter(Boolean)
-      .map(line => line.replace(/^..\s+/, '').replace(/^.* -> /, '').replace(/\\/g, '/'))
+      .map(line => line.replace(/^..\s+/, '').trim().replace(/^.* -> /, '').replace(/\\/g, '/'))
       .filter(file => ![
         'data/changelog.json'
       ].includes(file));
-    if (statusFiles.length) return statusFiles;
+    if (statusFiles.length) return statusFiles.filter(file => !isCacheBustOnly(file));
 
     const previousSha = process.env.VERCEL_GIT_PREVIOUS_SHA;
     const currentSha = process.env.VERCEL_GIT_COMMIT_SHA;
     const diffCommand = previousSha && currentSha
       ? `git diff --name-only ${previousSha} ${currentSha}`
       : 'git diff --name-only HEAD~1 HEAD';
+    activeDiffBase = previousSha && currentSha
+      ? `git diff --unified=0 ${previousSha} ${currentSha}`
+      : 'git diff --unified=0 HEAD~1 HEAD';
 
     return run(diffCommand)
       .split(/\r?\n/)
       .map(line => line.trim().replace(/\\/g, '/'))
       .filter(Boolean)
-      .filter(file => file !== 'data/changelog.json');
+      .filter(file => file !== 'data/changelog.json')
+      .filter(file => !isCacheBustOnly(file));
   } catch {
     return [];
   }
@@ -56,11 +82,18 @@ const rules = [
     match: file => file.includes('changelog') || file === 'scripts/generate-changelog.js' || file === 'js/changelog.js'
   },
   {
+    key: 'floating-help',
+    type: 'improved',
+    title: 'Bantuan & FAQ Mengambang',
+    description: 'Akses Bantuan dan FAQ dipindahkan menjadi tombol mengambang agar navbar lebih ringkas, tetapi tetap mudah ditemukan mahasiswa.',
+    match: (file, diff) => file === 'pages/help.html' || ((file === 'js/navbar.js' || file === 'css/navbar.css') && diff.includes('floating-help'))
+  },
+  {
     key: 'global-search',
     type: 'improved',
     title: 'Pencarian Global',
     description: 'Pencarian global diperbarui agar mahasiswa lebih mudah menemukan halaman, resource, video, tools, bantuan, dan riwayat update.',
-    match: file => file === 'js/navbar.js' || file === 'css/navbar.css'
+    match: (file, diff) => (file === 'js/navbar.js' || file === 'css/navbar.css') && diff.includes('global-search')
   },
   {
     key: 'admin-dashboard',
@@ -114,7 +147,7 @@ const rules = [
 ];
 
 const changedFiles = parseStatus();
-const matched = rules.filter(rule => changedFiles.some(rule.match));
+const matched = rules.filter(rule => changedFiles.some(file => rule.match(file, readFileDiff(file))));
 const selected = matched.length ? matched : [{
   key: 'maintenance',
   type: 'improved',
