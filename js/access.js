@@ -13,10 +13,12 @@ import {
 import {
   ACADEMIC_SETTINGS_COLLECTION,
   ACADEMIC_SETTINGS_DOC,
+  PRACTICUM_ROSTER_COLLECTION,
+  normalizeText,
   semesterAccessLabel,
   semesterForCohort,
   semesterForPracticumResource
-} from './academic-period.js?v=1';
+} from './academic-period.js?v=2';
 
 const db = getFirestore(app);
 const SESSION_KEY = 'sipilcare_student_session';
@@ -197,10 +199,24 @@ const loadAcademicSettings = async () => {
   return snapshot.exists() ? snapshot.data() : {};
 };
 
-const canAccessPracticumResource = (resource, session, settings) => {
+const loadStudentPracticumRoster = async session => {
+  if (source !== 'practicum' || !session?.nim) return [];
+  const rosterQuery = query(collection(db, PRACTICUM_ROSTER_COLLECTION), where('nim', '==', session.nim));
+  const snapshot = await getDocs(rosterQuery);
+  return snapshot.docs.map(item => ({ id: item.id, ...item.data() })).filter(item => item.isActive !== false);
+};
+
+const canAccessPracticumResource = (resource, session, settings, rosters = []) => {
   if (source !== 'practicum') return { allowed: true };
   const activeSemester = semesterForCohort(session?.angkatan, settings);
   const resourceSemester = semesterForPracticumResource(resource);
+  const rosterAccess = rosters.some(roster => {
+    const resourceCategory = normalizeText(resource?.category);
+    const resourceCourse = normalizeText(resource?.course || resource?.title);
+    const rosterCategory = normalizeText(roster?.category);
+    const rosterCourse = normalizeText(roster?.course);
+    return resourceCategory === rosterCategory || resourceCourse.includes(rosterCourse);
+  });
 
   if (!activeSemester) {
     return {
@@ -218,7 +234,7 @@ const canAccessPracticumResource = (resource, session, settings) => {
     };
   }
 
-  if (resourceSemester !== activeSemester) {
+  if (resourceSemester !== activeSemester && !rosterAccess) {
     return {
       allowed: false,
       title: 'Modul tidak tersedia untuk semester aktif',
@@ -342,7 +358,8 @@ els.copy?.addEventListener('click', async () => {
       return;
     }
     const academicSettings = await loadAcademicSettings();
-    const accessCheck = canAccessPracticumResource(resource, session, academicSettings);
+    const practicumRoster = await loadStudentPracticumRoster(session);
+    const accessCheck = canAccessPracticumResource(resource, session, academicSettings, practicumRoster);
     if (!accessCheck.allowed) {
       setState('Akses semester dibatasi', accessCheck.title, accessCheck.description);
       return;

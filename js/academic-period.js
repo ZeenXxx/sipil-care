@@ -1,5 +1,8 @@
 export const ACADEMIC_SETTINGS_COLLECTION = 'site_settings';
 export const ACADEMIC_SETTINGS_DOC = 'academic_period';
+export const PRACTICUM_ROSTER_COLLECTION = 'practicum_rosters';
+export const PRACTICUM_ATTENDANCE_SESSION_COLLECTION = 'practicum_attendance_sessions';
+export const PRACTICUM_ATTENDANCE_RECORD_COLLECTION = 'practicum_attendance_records';
 
 export const PRACTICUM_COURSES = [
   { semester: 1, title: 'Computer Aided Design (CAD)', type: 'S' },
@@ -25,6 +28,22 @@ export const normalizeText = value => String(value || '').toLowerCase().replace(
 export const courseCategory = course => `${course.title}-${course.type}`;
 
 export const courseKind = type => type === 'P' ? 'Praktikum' : 'Studio';
+
+export const slugifyAcademic = value => String(value || '')
+  .toLowerCase()
+  .normalize('NFKD')
+  .replace(/[\u0300-\u036f]/g, '')
+  .replace(/[^a-z0-9]+/g, '-')
+  .replace(/^-+|-+$/g, '') || 'praktikum';
+
+export const courseFromCategory = category => {
+  const normalized = normalizeText(category);
+  return PRACTICUM_COURSES.find(course => {
+    const target = normalizeText(course.title);
+    const withSuffix = normalizeText(courseCategory(course));
+    return normalized === target || normalized === withSuffix;
+  }) || null;
+};
 
 export const matchesPracticumCourse = (resource, course) => {
   const category = normalizeText(resource?.category);

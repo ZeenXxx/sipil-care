@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="../../css/style.css?v=25">
-    <link rel="stylesheet" href="../../css/admin.css?v=34">
+    <link rel="stylesheet" href="../../css/admin.css?v=35">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -137,6 +137,58 @@
         <div class="table-wrap"><table><thead><tr><th>Judul</th><th>Kategori</th><th>Semester</th><th>Tipe</th><th>Tanggal</th><th>Aksi</th></tr></thead><tbody id="practicumTable"></tbody></table></div>
       </section>
 
+      <section id="practicum-attendance" class="admin-panel-grid" data-admin-permission="practicum_studio">
+        <form class="admin-card" id="practicumRosterForm">
+          <h3>Data Praktikan</h3>
+          <select class="control" id="rosterCategory"></select>
+          <input class="control" id="rosterAcademicYear" placeholder="Tahun akademik, contoh 2025/2026" required>
+          <input class="control" id="rosterClassName" placeholder="Kelas praktikum, contoh A / B / Reguler" required>
+          <textarea class="control textarea" id="rosterRows" placeholder="Paste data praktikan: NIM Nama Kelompok&#10;2350031009 Resti Sofiatul A&#10;2250031010 Mahasiswa Mengulang B" required></textarea>
+          <label class="small-text">Kelas wajib diisi. Kelompok boleh ditulis di kolom terakhir setiap baris.</label>
+          <button class="btn btn-primary" type="submit">Import Praktikan</button>
+        </form>
+
+        <form class="admin-card" id="attendanceSessionForm">
+          <h3>Buat Sesi Absen</h3>
+          <select class="control" id="attendanceCategory"></select>
+          <input class="control" id="attendanceAcademicYear" placeholder="Tahun akademik, contoh 2025/2026" required>
+          <input class="control" id="attendanceClassName" placeholder="Kelas praktikum, contoh A / B / Reguler" required>
+          <input class="control" id="attendanceModuleNumber" placeholder="Modul / pertemuan ke, contoh Modul 3" required>
+          <input class="control" id="attendanceModuleTitle" placeholder="Judul modul / kegiatan" required>
+          <div class="admin-inline-grid">
+            <input class="control" id="attendanceDate" type="date" required>
+            <input class="control" id="attendanceOpenAt" type="time" required>
+            <input class="control" id="attendanceCloseAt" type="time" required>
+          </div>
+          <input class="control" id="attendanceCode" placeholder="Kode absen opsional">
+          <select class="control" id="attendanceStatus">
+            <option value="open">Aktif</option>
+            <option value="closed">Ditutup</option>
+          </select>
+          <button class="btn btn-primary" type="submit">Simpan Sesi Absen</button>
+        </form>
+      </section>
+
+      <section id="practicum-attendance-recap" class="admin-card" data-admin-permission="practicum_studio">
+        <div class="admin-table-head">
+          <div>
+            <h3>Rekap Absensi Praktikum</h3>
+            <p class="small-text">Rekap hadir mengikuti data praktikan resmi yang diimport aslab, termasuk kelas praktikum.</p>
+          </div>
+          <div>
+            <input class="control" id="attendanceSearch" placeholder="Cari NIM, nama, kelas, modul">
+            <select class="control" id="attendanceSessionFilter"><option value="All">Semua sesi</option></select>
+            <button class="action-btn" id="attendanceExport" type="button">Export CSV</button>
+          </div>
+        </div>
+        <div class="student-activity-summary">
+          <article><span>Praktikan</span><strong id="rosterTotalCount">0</strong></article>
+          <article><span>Sesi absen</span><strong id="attendanceSessionCount">0</strong></article>
+          <article><span>Record hadir</span><strong id="attendanceRecordCount">0</strong></article>
+        </div>
+        <div class="table-wrap"><table><thead><tr><th>Praktikan</th><th>Kelas</th><th>Praktikum</th><th>Modul</th><th>Status</th><th>Waktu Absen</th><th>Aksi</th></tr></thead><tbody id="attendanceRecapTable"></tbody></table></div>
+      </section>
+
       <section id="software" class="admin-card" data-admin-permission="software">
         <div class="admin-table-head"><h3>Software Management</h3><div><input class="control" id="softwareSearch" placeholder="Search"><select class="control" id="softwareFilter"><option value="All">All</option></select></div></div>
         <div class="table-wrap"><table><thead><tr><th>Judul</th><th>Kategori</th><th>Tipe</th><th>Tanggal</th><th>Aksi</th></tr></thead><tbody id="softwareTable"></tbody></table></div>
@@ -152,6 +204,6 @@
     <script src="../../js/student-config.js?v=20"></script>
     <script src="../../js/auth.js?v=30"></script>
     <script src="../../js/push-config.js?v=1"></script>
-    <script type="module" src="../../js/admin-panel.js?v=53"></script>
+    <script type="module" src="../../js/admin-panel.js?v=54"></script>
   </body>
 </html>

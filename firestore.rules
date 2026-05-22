@@ -10,6 +10,18 @@ service cloud.firestore {
       allow read, create, update, delete: if true;
     }
 
+    match /practicum_rosters/{rosterId} {
+      allow read, create, update, delete: if true;
+    }
+
+    match /practicum_attendance_sessions/{sessionId} {
+      allow read, create, update, delete: if true;
+    }
+
+    match /practicum_attendance_records/{recordId} {
+      allow read, create, update, delete: if true;
+    }
+
     match /videos/{videoId} {
       allow read, create, update, delete: if true;
     }

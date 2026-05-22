@@ -25,5 +25,10 @@ body { background: #f6f9f8; }
 .module-item strong { color: var(--primary); }
 .module-item p { margin: 0; color: var(--muted); }
 .module-item .actions { margin-top: 2px; }
+.attendance-list { display: grid; gap: 10px; }
+.attendance-item { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px; border: 1px solid rgba(15,77,58,.14); border-radius: 8px; background: #eef6f2; }
+.attendance-item strong { color: var(--primary); }
+.attendance-item p { margin: 4px 0 0; color: var(--muted); font-weight: 700; }
+.attendance-item .btn { flex: 0 0 auto; }
 .empty-module { margin: 0; color: var(--muted); }
-@media (max-width: 780px) { .practicum-toolbar, .course-grid { grid-template-columns: 1fr; } .semester-head, .semester-access-note { display: grid; } }
+@media (max-width: 780px) { .practicum-toolbar, .course-grid { grid-template-columns: 1fr; } .semester-head, .semester-access-note, .attendance-item { display: grid; } .attendance-item .btn { width: 100%; } }
