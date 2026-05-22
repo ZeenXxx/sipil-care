@@ -13,6 +13,14 @@ import {
   writeBatch
 } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
 import { getMessaging, getToken, deleteToken, onMessage } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-messaging.js";
+import {
+  ACADEMIC_SETTINGS_COLLECTION,
+  ACADEMIC_SETTINGS_DOC,
+  academicPeriodLabel,
+  defaultAcademicPeriod,
+  normalizeAcademicSettings,
+  resolveAcademicPeriod
+} from './academic-period.js?v=1';
 
 if (window.SIPILCARE_ADMIN_READY) await window.SIPILCARE_ADMIN_READY;
 
@@ -177,6 +185,12 @@ const adminPermissionChips = document.getElementById('adminPermissionChips');
 const clientErrorList = document.getElementById('clientErrorList');
 const clientErrorRefresh = document.getElementById('clientErrorRefresh');
 const clientErrorClear = document.getElementById('clientErrorClear');
+const academicSettingsForm = document.getElementById('academicSettingsForm');
+const academicOverrideEnabled = document.getElementById('academicOverrideEnabled');
+const academicYearStart = document.getElementById('academicYearStart');
+const academicTerm = document.getElementById('academicTerm');
+const academicOverrideNote = document.getElementById('academicOverrideNote');
+const academicSettingsSummary = document.getElementById('academicSettingsSummary');
 const toastEl = document.getElementById('toast');
 const submitButton = resourceForm?.querySelector('button[type="submit"]');
 const adminSidebar = document.querySelector('.admin-sidebar');
@@ -198,6 +212,7 @@ let adminAccounts = [];
 let adminRoles = [];
 let studentAccounts = [];
 let studentCohorts = [];
+let academicSettings = {};
 let studentBulkPreviewRows = [];
 let editingDocId = null;
 let editingVideoDocId = null;
@@ -214,6 +229,7 @@ const ADMIN_PUSH_TOKEN_ID_KEY = 'sipilcare_admin_push_token_id';
 const ADMIN_AUDIT_COLLECTION = 'admin_audit_logs';
 const ADMIN_ACTIVITY_COLLECTION = 'admin_activity';
 const RESOURCE_ACCESS_LOG_COLLECTION = 'resource_access_logs';
+const ACADEMIC_SETTINGS_PATH = `${ACADEMIC_SETTINGS_COLLECTION}/${ACADEMIC_SETTINGS_DOC}`;
 const STUDENT_ONLINE_WINDOW = 2 * 60 * 1000;
 const ADMIN_ONLINE_WINDOW = 2 * 60 * 1000;
 const ADMIN_LOGIN_TRACKED_KEY = 'sipilcare_admin_login_tracked';
@@ -334,6 +350,7 @@ const requirePermission = (permission, label) => {
 
 const navHashPermissions = {
   'student-activity': 'dashboard',
+  'academic-settings': 'dashboard',
   'admin-activity': 'dashboard',
   'client-error-log': 'dashboard',
   'access-history': 'audit',
@@ -561,7 +578,8 @@ const auditActionLabels = {
   IMPORT_STUDENT_ACCOUNTS: 'Import akun mahasiswa',
   UPDATE_STUDENT_ACCOUNT: 'Update akun mahasiswa',
   DELETE_STUDENT_ACCOUNT: 'Hapus akun mahasiswa',
-  RESET_STUDENT_ACCOUNT: 'Reset akun mahasiswa'
+  RESET_STUDENT_ACCOUNT: 'Reset akun mahasiswa',
+  UPDATE_ACADEMIC_SETTINGS: 'Update kalender akademik'
 };
 
 async function writeAuditLog({ action, targetType, targetId = '', targetTitle = '', detail = '', metadata = {} }) {
@@ -834,6 +852,41 @@ function renderDashboardHealth() {
     `${clientErrors.length} error browser lokal`
   ];
   dashboardHealthGrid.innerHTML = items.map(item => `<span>${escapeText(item)}</span>`).join('');
+}
+
+function renderAcademicSettingsForm() {
+  if (!academicSettingsForm) return;
+  const normalized = normalizeAcademicSettings(academicSettings);
+  const automatic = defaultAcademicPeriod();
+  const active = resolveAcademicPeriod(academicSettings);
+
+  if (academicOverrideEnabled) academicOverrideEnabled.checked = normalized.overrideEnabled;
+  if (academicYearStart) academicYearStart.value = normalized.overrideAcademicYearStart || automatic.academicYearStart;
+  if (academicTerm) academicTerm.value = normalized.overrideTerm || automatic.term;
+  if (academicOverrideNote) academicOverrideNote.value = normalized.overrideNote || '';
+
+  if (academicSettingsSummary) {
+    const mode = active.mode === 'override' ? 'Override admin aktif' : 'Mode otomatis aktif';
+    const updated = normalized.updatedAt
+      ? `Terakhir disimpan ${formatDateTime(normalized.updatedAt)} oleh ${normalized.updatedBy || 'admin'}.`
+      : 'Belum ada override yang disimpan.';
+
+    academicSettingsSummary.innerHTML = `
+      <article>
+        <span>Periode aktif</span>
+        <strong>${escapeText(academicPeriodLabel(active))}</strong>
+      </article>
+      <article>
+        <span>Jadwal otomatis</span>
+        <strong>Ganjil: September-Januari. Genap: Februari-Juli.</strong>
+      </article>
+      <article>
+        <span>Status</span>
+        <strong>${escapeText(mode)}</strong>
+        <small>${escapeText(updated)}</small>
+      </article>
+    `;
+  }
 }
 
 const sha256 = async value => {
@@ -2992,6 +3045,54 @@ on(studentEditForm, 'submit', async e => {
   }
 });
 
+on(academicSettingsForm, 'submit', async e => {
+  e.preventDefault();
+  if (!requirePermission('dashboard', 'Pengaturan kalender akademik')) return;
+
+  const overrideEnabled = academicOverrideEnabled?.checked === true;
+  const year = Number(academicYearStart?.value);
+  const term = academicTerm?.value;
+
+  if (overrideEnabled && (!Number.isInteger(year) || year < 2020 || year > 2100 || !['odd', 'even'].includes(term))) {
+    toast('Isi tahun akademik dan semester override dengan benar.');
+    return;
+  }
+
+  const admin = currentAdmin();
+  const payload = {
+    overrideEnabled,
+    overrideAcademicYearStart: overrideEnabled ? year : null,
+    overrideTerm: overrideEnabled ? term : null,
+    overrideNote: String(academicOverrideNote?.value || '').trim(),
+    autoOddPeriod: 'September-Januari',
+    autoEvenPeriod: 'Februari-Juli',
+    updatedAt: new Date().toISOString(),
+    updatedBy: admin.username
+  };
+
+  try {
+    const submit = academicSettingsForm.querySelector('button[type="submit"]');
+    if (submit) submit.disabled = true;
+    await setDoc(doc(db, ACADEMIC_SETTINGS_COLLECTION, ACADEMIC_SETTINGS_DOC), payload, { merge: true });
+    await writeAuditLog({
+      action: 'UPDATE_ACADEMIC_SETTINGS',
+      targetType: 'academic_settings',
+      targetId: ACADEMIC_SETTINGS_PATH,
+      targetTitle: 'Kalender akademik Praktikum & Studio',
+      detail: overrideEnabled
+        ? `Override kalender akademik disimpan: ${academicPeriodLabel(resolveAcademicPeriod(payload))}.`
+        : 'Override kalender akademik dimatikan. Sistem kembali ke mode otomatis.'
+    });
+    toast('Pengaturan kalender akademik berhasil disimpan.');
+  } catch (error) {
+    console.error('Save academic settings error:', error);
+    toast('Gagal menyimpan pengaturan kalender akademik.');
+  } finally {
+    const submit = academicSettingsForm.querySelector('button[type="submit"]');
+    if (submit) submit.disabled = false;
+  }
+});
+
 on(studentEditCancel, 'click', () => resetStudentEditForm());
 on(studentAccountSearch, 'input', () => studentAccountTableRender());
 on(studentAccountCohortFilter, 'change', () => studentAccountTableRender());
@@ -3267,6 +3368,17 @@ onSnapshot(practicumQuery, snapshot => {
   console.error('Firestore practicum/studio error:', err);
   toast('Gagal memuat modul praktikum/studio dari Firebase.');
 });
+
+onSnapshot(doc(db, ACADEMIC_SETTINGS_COLLECTION, ACADEMIC_SETTINGS_DOC), snapshot => {
+  academicSettings = snapshot.exists() ? snapshot.data() : {};
+  renderAcademicSettingsForm();
+}, err => {
+  console.error('Firestore academic settings error:', err);
+  if (academicSettingsSummary) {
+    academicSettingsSummary.innerHTML = '<article><strong>Gagal memuat kalender akademik.</strong><small>Coba refresh dashboard admin.</small></article>';
+  }
+});
+
 const videosQuery = query(collection(db, 'videos'), orderBy('title'));
 onSnapshot(videosQuery, snapshot => {
   videos = snapshot.docs.map(documentSnapshot => ({

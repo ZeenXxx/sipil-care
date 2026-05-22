@@ -10,6 +10,13 @@ import {
   addDoc,
   serverTimestamp
 } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
+import {
+  ACADEMIC_SETTINGS_COLLECTION,
+  ACADEMIC_SETTINGS_DOC,
+  semesterAccessLabel,
+  semesterForCohort,
+  semesterForPracticumResource
+} from './academic-period.js?v=1';
 
 const db = getFirestore(app);
 const SESSION_KEY = 'sipilcare_student_session';
@@ -184,6 +191,44 @@ const loadResource = async id => {
   return loadFromJson(id);
 };
 
+const loadAcademicSettings = async () => {
+  if (source !== 'practicum') return {};
+  const snapshot = await getDoc(doc(db, ACADEMIC_SETTINGS_COLLECTION, ACADEMIC_SETTINGS_DOC));
+  return snapshot.exists() ? snapshot.data() : {};
+};
+
+const canAccessPracticumResource = (resource, session, settings) => {
+  if (source !== 'practicum') return { allowed: true };
+  const activeSemester = semesterForCohort(session?.angkatan, settings);
+  const resourceSemester = semesterForPracticumResource(resource);
+
+  if (!activeSemester) {
+    return {
+      allowed: false,
+      title: 'Semester mahasiswa belum terdeteksi',
+      description: 'Data angkatan pada akun kamu belum lengkap. Hubungi admin agar akun bisa diperbaiki.'
+    };
+  }
+
+  if (!resourceSemester) {
+    return {
+      allowed: false,
+      title: 'Semester modul belum terdeteksi',
+      description: 'Modul ini belum punya kategori semester yang jelas. Hubungi admin agar kategori Praktikum & Studio diperbaiki.'
+    };
+  }
+
+  if (resourceSemester !== activeSemester) {
+    return {
+      allowed: false,
+      title: 'Modul tidak tersedia untuk semester aktif',
+      description: `Modul ini untuk semester ${resourceSemester}. ${semesterAccessLabel(activeSemester, session.angkatan, settings)}`
+    };
+  }
+
+  return { allowed: true };
+};
+
 const renderResource = resource => {
   activeResource = resource;
   const session = readStudentSession();
@@ -294,6 +339,12 @@ els.copy?.addEventListener('click', async () => {
     const resource = await loadResource(resourceId);
     if (!resource) {
       setState('Resource tidak ditemukan', 'File belum tersedia', 'Resource mungkin sudah dihapus atau link tidak lengkap.');
+      return;
+    }
+    const academicSettings = await loadAcademicSettings();
+    const accessCheck = canAccessPracticumResource(resource, session, academicSettings);
+    if (!accessCheck.allowed) {
+      setState('Akses semester dibatasi', accessCheck.title, accessCheck.description);
       return;
     }
     renderResource(resource);

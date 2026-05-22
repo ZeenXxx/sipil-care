@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="../../css/style.css?v=25">
-    <link rel="stylesheet" href="../../css/admin.css?v=33">
+    <link rel="stylesheet" href="../../css/admin.css?v=34">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -17,6 +17,7 @@
         <a class="active" href="dashboard.html"><span>DB</span>Dashboard</a>
         <a href="guide.html"><span>PA</span>Panduan Admin</a>
         <a href="#admin-activity"><span>AO</span>Admin Online</a>
+        <a href="#academic-settings"><span>KA</span>Kalender Akademik</a>
         <a href="#access-history"><span>HA</span>History Akses</a>
         <a href="#audit-log"><span>AL</span>Audit Log</a>
         <a href="admin-accounts.html" data-developer-only="true"><span>AA</span>Akun Admin</a>
@@ -61,6 +62,7 @@
         </div>
         <nav class="dashboard-jump" aria-label="Navigasi dashboard">
           <a href="#student-activity">Mahasiswa Online</a>
+          <a href="#academic-settings">Kalender Akademik</a>
           <a href="#admin-activity">Admin Online</a>
           <a href="#client-error-log">Error Browser</a>
           <a href="#access-history">History Akses</a>
@@ -109,6 +111,37 @@
             <tbody id="studentActivityTable"></tbody>
           </table>
         </div>
+      </section>
+
+      <section id="academic-settings" class="admin-card" data-admin-permission="dashboard">
+        <div class="admin-table-head">
+          <div>
+            <h3>Kalender Akademik Praktikum &amp; Studio</h3>
+            <p class="small-text">Sistem otomatis membaca semester aktif dari angkatan mahasiswa. Gunakan override jika kalender akademik sedang bergeser.</p>
+          </div>
+        </div>
+        <form class="academic-settings-form" id="academicSettingsForm">
+          <label class="admin-mini-check academic-override-check">
+            <input id="academicOverrideEnabled" type="checkbox">
+            <span>Gunakan override kalender akademik</span>
+          </label>
+          <div class="academic-settings-grid">
+            <label>
+              <span>Tahun akademik awal</span>
+              <input class="control" id="academicYearStart" type="number" min="2020" max="2100" placeholder="Contoh: 2025">
+            </label>
+            <label>
+              <span>Semester akademik</span>
+              <select class="control" id="academicTerm">
+                <option value="odd">Ganjil</option>
+                <option value="even">Genap</option>
+              </select>
+            </label>
+          </div>
+          <textarea class="control textarea" id="academicOverrideNote" placeholder="Catatan override, opsional"></textarea>
+          <button class="btn btn-primary" type="submit">Simpan Pengaturan</button>
+        </form>
+        <div class="academic-settings-summary" id="academicSettingsSummary"></div>
       </section>
 
       <section id="client-error-log" class="admin-card">
@@ -247,6 +280,6 @@
     <script src="../../js/student-config.js?v=20"></script>
     <script src="../../js/auth.js?v=30"></script>
     <script src="../../js/push-config.js?v=1"></script>
-    <script type="module" src="../../js/admin-panel.js?v=52"></script>
+    <script type="module" src="../../js/admin-panel.js?v=53"></script>
   </body>
 </html>

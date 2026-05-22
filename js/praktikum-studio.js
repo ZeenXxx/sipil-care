@@ -1,32 +1,34 @@
 import { app } from './firebase-config.js';
-import { getFirestore, collection, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
+import { getFirestore, collection, doc, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
+import {
+  ACADEMIC_SETTINGS_COLLECTION,
+  ACADEMIC_SETTINGS_DOC,
+  PRACTICUM_COURSES,
+  academicPeriodLabel,
+  courseCategory,
+  courseKind,
+  matchesPracticumCourse,
+  normalizeText,
+  resolveAcademicPeriod,
+  semesterAccessLabel,
+  semesterForCohort
+} from './academic-period.js?v=1';
 
 const db = getFirestore(app);
+const SESSION_KEY = 'sipilcare_student_session';
+const SESSION_TTL = 24 * 60 * 60 * 1000;
 const search = document.getElementById('practicumSearch');
 const semesterFilter = document.getElementById('semesterFilter');
 const semesterTabs = document.getElementById('semesterTabs');
 const semesterGrid = document.getElementById('semesterGrid');
 
-const courses = [
-  { semester: 1, title: 'Computer Aided Design (CAD)', type: 'S' },
-  { semester: 1, title: 'Praktik Kimia', type: 'P' },
-  { semester: 2, title: 'Praktik Fisika', type: 'P' },
-  { semester: 2, title: 'Praktik Pemetaan Lahan Terapan', type: 'P' },
-  { semester: 3, title: 'Praktik Hidraulika', type: 'P' },
-  { semester: 3, title: 'Praktik Rekayasa Lalu Lintas', type: 'P' },
-  { semester: 4, title: 'Aplikasi Ketekniksipilan 1', type: 'S' },
-  { semester: 4, title: 'Praktik Bahan Perkerasan Jalan Raya', type: 'P' },
-  { semester: 4, title: 'Praktik Geoteknik', type: 'P' },
-  { semester: 5, title: 'Aplikasi Ketekniksipilan 2', type: 'S' },
-  { semester: 6, title: 'Pengantar Building Information Modeling (BIM)', type: 'S' }
-];
+const courses = PRACTICUM_COURSES;
 const courseKeys = courses.map(item => item.title.toLowerCase());
 let modules = [];
+let academicSettings = {};
 
 const escapeText = value => String(value || '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
-const normalize = value => String(value || '').toLowerCase().replace(/\s+/g, ' ').trim();
-const courseCategory = course => `${course.title}-${course.type}`;
-const courseKind = type => type === 'P' ? 'Praktikum' : 'Studio';
+const normalize = normalizeText;
 const slugify = value => String(value || '').toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'module';
 const accessId = item => encodeURIComponent(item.id || item.slug || slugify(item.title));
 const accessUrl = item => `access.html?source=practicum&id=${accessId(item)}`;
@@ -38,14 +40,18 @@ const showToast = message => {
   setTimeout(() => toast.classList.remove('show'), 3000);
 };
 
-function matchesCourse(resource, course) {
-  const category = normalize(resource.category);
-  const title = normalize(resource.title);
-  const type = normalize(resource.type);
-  const target = normalize(course.title);
-  const withSuffix = normalize(courseCategory(course));
-  return category === target || category === withSuffix || title.includes(target) || type === target || type === withSuffix;
-}
+const readStudentSession = () => {
+  try {
+    const raw = localStorage.getItem(SESSION_KEY) || sessionStorage.getItem(SESSION_KEY);
+    if (!raw) return null;
+    const session = JSON.parse(raw);
+    if (!session?.nim || !session?.lastSeenAt) return null;
+    if (Date.now() - session.lastSeenAt > SESSION_TTL) return null;
+    return session;
+  } catch {
+    return null;
+  }
+};
 
 function resourceCard(item) {
   const url = accessUrl(item);
@@ -66,17 +72,48 @@ function bindCopyButtons() {
   });
 }
 
+function syncSemesterFilter(activeSemester) {
+  if (!semesterFilter) return;
+  const value = String(activeSemester || '');
+  semesterFilter.innerHTML = activeSemester
+    ? `<option value="${value}">Semester ${escapeText(activeSemester)} aktif</option>`
+    : '<option value="">Semester belum terdeteksi</option>';
+  semesterFilter.value = value;
+}
+
 function render() {
+  const session = readStudentSession();
+  const activeSemester = semesterForCohort(session?.angkatan, academicSettings);
+  const academicPeriod = resolveAcademicPeriod(academicSettings);
   const q = normalize(search.value);
-  const selectedSemester = semesterFilter.value;
-  const semesters = [...new Set(courses.map(item => item.semester))];
-  semesterTabs.innerHTML = semesters.map(semester => `<a href="#semester-${semester}">Semester ${semester}</a>`).join('');
-  semesterGrid.innerHTML = semesters
-    .filter(semester => selectedSemester === 'All' || Number(selectedSemester) === semester)
+  const semesters = activeSemester ? [activeSemester] : [];
+  const hasConfiguredCourses = courses.some(course => course.semester === activeSemester);
+
+  syncSemesterFilter(activeSemester);
+  semesterTabs.innerHTML = activeSemester
+    ? `<a href="#semester-${activeSemester}">Semester ${escapeText(activeSemester)} aktif</a>`
+    : '';
+
+  if (!session) {
+    semesterGrid.innerHTML = '<div class="empty-state">Silakan login sebagai mahasiswa untuk melihat modul Praktikum &amp; Studio yang sesuai angkatan.</div>';
+    return;
+  }
+
+  if (!hasConfiguredCourses) {
+    semesterGrid.innerHTML = `<div class="empty-state"><strong>${escapeText(semesterAccessLabel(activeSemester, session.angkatan, academicSettings))}</strong><p>Modul untuk semester ini belum tersedia di SIPIL CARE.</p></div>`;
+    return;
+  }
+
+  semesterGrid.innerHTML = `
+    <div class="semester-access-note">
+      <strong>${escapeText(semesterAccessLabel(activeSemester, session.angkatan, academicSettings))}</strong>
+      <span>${escapeText(academicPeriodLabel(academicPeriod))}</span>
+    </div>
+  ` + semesters
     .map(semester => {
       const semesterCourses = courses.filter(course => course.semester === semester);
       const cards = semesterCourses.map(course => {
-        const courseModules = modules.filter(item => matchesCourse(item, course)).filter(item => normalize([item.title, item.description, item.author, item.category, item.course].join(' ')).includes(q));
+        const courseModules = modules.filter(item => matchesPracticumCourse(item, course)).filter(item => normalize([item.title, item.description, item.author, item.category, item.course].join(' ')).includes(q));
         return `<article class="course-card"><div class="course-top"><h3>${escapeText(course.title)}</h3><span class="course-type">${course.type}</span></div><p class="empty-module">${courseKind(course.type)} semester ${semester}</p><div class="module-list">${courseModules.length ? courseModules.map(resourceCard).join('') : '<p class="empty-module">Modul belum tersedia. Admin dapat upload modul Praktikum &amp; Studio dengan kategori ' + escapeText(courseCategory(course)) + '.</p>'}</div></article>`;
       }).join('');
       return `<section class="semester-block" id="semester-${semester}"><div class="semester-head"><h2>Semester ${semester}</h2><span>${semesterCourses.length} kategori praktikum/studio</span></div><div class="course-grid">${cards}</div></section>`;
@@ -84,9 +121,18 @@ function render() {
   bindCopyButtons();
 }
 
-semesterFilter.innerHTML += [...new Set(courses.map(item => item.semester))].map(semester => `<option value="${semester}">Semester ${semester}</option>`).join('');
 search.addEventListener('input', render);
 semesterFilter.addEventListener('change', render);
+
+const academicSettingsRef = doc(db, ACADEMIC_SETTINGS_COLLECTION, ACADEMIC_SETTINGS_DOC);
+onSnapshot(academicSettingsRef, snapshot => {
+  academicSettings = snapshot.exists() ? snapshot.data() : {};
+  render();
+}, error => {
+  console.warn('Academic period settings failed:', error);
+  academicSettings = {};
+  render();
+});
 
 const modulesQuery = query(collection(db, 'practicum_studio_modules'), orderBy('date', 'desc'));
 onSnapshot(modulesQuery, snapshot => {
