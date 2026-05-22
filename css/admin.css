@@ -1120,6 +1120,32 @@ body.admin-page [hidden]  {
 
 }
 
+.admin-account-scope  {
+
+    grid-column: 1 / -1;
+
+    display: grid;
+
+    gap: 10px;
+
+    padding: 14px;
+
+    border: 1px solid var(--line);
+
+    border-radius: 8px;
+
+    background: #f8fbfa
+
+}
+
+.admin-account-scope h4  {
+
+    margin: 0;
+
+    color: var(--primary)
+
+}
+
 .admin-page-head  {
 
     min-width: 0;

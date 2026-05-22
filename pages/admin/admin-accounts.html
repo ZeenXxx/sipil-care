@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="../../css/style.css?v=25">
-    <link rel="stylesheet" href="../../css/admin.css?v=35">
+    <link rel="stylesheet" href="../../css/admin.css?v=36">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -104,6 +104,11 @@
           </div>
           <select class="control" id="adminAccountRole" required></select>
           <label class="admin-check"><input id="adminAccountActive" type="checkbox" checked> Aktif</label>
+          <div class="admin-account-scope">
+            <h4>Scope Praktikum</h4>
+            <p class="small-text">Kosongkan untuk semua praktikum. Centang praktikum tertentu untuk akun aslab/asdos khusus.</p>
+            <div class="admin-check-grid" id="adminAccountPracticumScopes"></div>
+          </div>
           <div class="admin-account-actions">
             <button class="action-btn" id="adminAccountSubmit" type="submit">Simpan Akun</button>
             <button class="action-btn" id="adminAccountCancel" type="button">Batal</button>
@@ -119,6 +124,7 @@
                 <th>Status</th>
                 <th>Halaman</th>
                 <th>Permissions</th>
+                <th>Scope Praktikum</th>
                 <th>Aksi</th>
               </tr>
             </thead>
@@ -132,6 +138,6 @@
     <script src="../../js/student-config.js?v=20"></script>
     <script src="../../js/auth.js?v=30"></script>
     <script src="../../js/push-config.js?v=1"></script>
-    <script type="module" src="../../js/admin-panel.js?v=54"></script>
+    <script type="module" src="../../js/admin-panel.js?v=55"></script>
   </body>
 </html>

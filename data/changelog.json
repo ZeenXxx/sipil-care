@@ -1,20 +1,15 @@
 [
   {
-    "id": "2026-05-22:admin-dashboard,admin-system-overview,backend-security,public-interface,resources-content",
+    "id": "2026-05-22:admin-dashboard,backend-security,public-interface,resources-content",
     "date": "2026-05-22",
     "dateLabel": "22 Mei 2026",
     "generated": true,
-    "summary": "Dashboard Admin, Ringkasan Sistem Admin, Resource dan Materi Akademik",
+    "summary": "Dashboard Admin, Resource dan Materi Akademik, Tampilan Public Website",
     "items": [
       {
         "type": "improved",
         "title": "Dashboard Admin",
         "description": "Dashboard admin ditingkatkan agar navigasi, tampilan mobile, ringkasan data, dan akses ke bagian log lebih nyaman digunakan."
-      },
-      {
-        "type": "added",
-        "title": "Ringkasan Sistem Admin",
-        "description": "Dashboard admin kini menampilkan ringkasan status konten, pengguna online, log tersimpan, permission role aktif, serta catatan error browser lokal untuk membantu pengecekan cepat."
       },
       {
         "type": "improved",
@@ -30,6 +25,11 @@
         "type": "fixed",
         "title": "Backend dan Permission",
         "description": "Dokumentasi serta fungsi backend terkait akun, role, permission, dan sesi admin diperbaiki agar sistem lebih aman dan konsisten."
+      },
+      {
+        "type": "added",
+        "title": "Ringkasan Sistem Admin",
+        "description": "Dashboard admin kini menampilkan ringkasan status konten, pengguna online, log tersimpan, permission role aktif, serta catatan error browser lokal untuk membantu pengecekan cepat."
       },
       {
         "type": "improved",

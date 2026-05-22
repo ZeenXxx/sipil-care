@@ -16,6 +16,7 @@ import { getMessaging, getToken, deleteToken, onMessage } from "https://www.gsta
 import {
   ACADEMIC_SETTINGS_COLLECTION,
   ACADEMIC_SETTINGS_DOC,
+  ADMIN_PRACTICUM_SCOPE_COLLECTION,
   PRACTICUM_ATTENDANCE_RECORD_COLLECTION,
   PRACTICUM_ATTENDANCE_SESSION_COLLECTION,
   PRACTICUM_COURSES,
@@ -28,7 +29,7 @@ import {
   normalizeAcademicSettings,
   resolveAcademicPeriod,
   slugifyAcademic
-} from './academic-period.js?v=2';
+} from './academic-period.js?v=3';
 
 if (window.SIPILCARE_ADMIN_READY) await window.SIPILCARE_ADMIN_READY;
 
@@ -91,6 +92,7 @@ const attendanceSearch = document.getElementById('attendanceSearch');
 const attendanceSessionFilter = document.getElementById('attendanceSessionFilter');
 const attendanceExport = document.getElementById('attendanceExport');
 const attendanceRecapTable = document.getElementById('attendanceRecapTable');
+const attendanceSessionTable = document.getElementById('attendanceSessionTable');
 const rosterTotalCount = document.getElementById('rosterTotalCount');
 const attendanceSessionCount = document.getElementById('attendanceSessionCount');
 const attendanceRecordCount = document.getElementById('attendanceRecordCount');
@@ -162,6 +164,7 @@ const adminAccountName = document.getElementById('adminAccountName');
 const adminAccountPassword = document.getElementById('adminAccountPassword');
 const adminAccountRole = document.getElementById('adminAccountRole');
 const adminAccountActive = document.getElementById('adminAccountActive');
+const adminAccountPracticumScopes = document.getElementById('adminAccountPracticumScopes');
 const adminAccountSubmit = document.getElementById('adminAccountSubmit');
 const adminAccountCancel = document.getElementById('adminAccountCancel');
 const adminAccountRefresh = document.getElementById('adminAccountRefresh');
@@ -244,6 +247,7 @@ let auditLogs = [];
 let accessLogs = [];
 let adminAccounts = [];
 let adminRoles = [];
+let adminPracticumScopes = {};
 let studentAccounts = [];
 let studentCohorts = [];
 let academicSettings = {};
@@ -393,6 +397,7 @@ const navHashPermissions = {
 
 const navPagePermissions = {
   'dashboard.html': 'dashboard',
+  'resources.html': ['resources', 'practicum_studio', 'software', 'videos'],
   'announcements.html': 'announcements',
   'messages.html': 'messages',
   'admin-accounts.html': 'admin_accounts',
@@ -411,7 +416,8 @@ const canSeeAdminNavLink = link => {
   const hashPermission = navHashPermissions[hash];
 
   if (page && !pageAllowed) return false;
-  if (pagePermission && !hasPermission(pagePermission)) return false;
+  if (Array.isArray(pagePermission) && !pagePermission.some(permission => hasPermission(permission))) return false;
+  if (pagePermission && !Array.isArray(pagePermission) && !hasPermission(pagePermission)) return false;
   if (hashPermission && !hasPermission(hashPermission)) return false;
   return true;
 };
@@ -495,26 +501,44 @@ const adminRoleTemplates = {
   }
 };
 
+const normalizePracticumScopeList = value => {
+  const raw = Array.isArray(value)
+    ? value
+    : typeof value === 'string'
+      ? value.split(',')
+      : [];
+  const allowed = new Set(PRACTICUM_COURSES.map(courseCategory));
+  return [...new Set(raw.map(item => String(item || '').trim()).filter(item => allowed.has(item)))];
+};
+
+const adminScopeFor = username => {
+  const key = String(username || '').trim().toLowerCase();
+  const scopeDoc = adminPracticumScopes[key] || adminPracticumScopes[username] || {};
+  return normalizePracticumScopeList(scopeDoc.scopes || scopeDoc.practicumScopes || scopeDoc.practicum_scopes);
+};
+
 const currentAdmin = () => {
   const profile = getAdminProfile();
   const role = profile.role || 'developer';
   const template = adminRoleTemplates[role] || {};
   const profilePages = Array.isArray(profile.allowedPages) ? profile.allowedPages : [];
   const profilePermissions = Array.isArray(profile.permissions) ? profile.permissions : [];
-  const shouldUseTemplatePages = role !== 'developer' && Boolean(template.allowedPages);
-  const shouldUseTemplatePermissions = role !== 'developer' && Boolean(template.permissions);
+  const username = profile.username || 'developer';
+  const profileScopes = normalizePracticumScopeList(profile.practicumScopes || profile.practicum_scopes || profile.practicum_scope);
+  const dbScopes = adminScopeFor(username);
 
   return {
-    username: profile.username || 'developer',
+    username,
     name: profile.name || 'Developer SIPIL CARE',
     role,
     roleLabel: profile.roleLabel || template.roleLabel || 'Developer',
     allowedPages: role === 'developer'
       ? ADMIN_ALL_PAGES
-      : withAdminGuidePage(shouldUseTemplatePages ? template.allowedPages : profilePages.length ? profilePages : template.allowedPages || [ADMIN_GUIDE_PAGE]),
+      : withAdminGuidePage(profilePages.length ? profilePages : template.allowedPages || [ADMIN_GUIDE_PAGE]),
     permissions: role === 'developer'
       ? ['dashboard', 'resources', 'practicum_studio', 'software', 'videos', 'announcements', 'messages', 'audit', 'admin_accounts', 'student_accounts', 'log_delete']
-      : shouldUseTemplatePermissions ? template.permissions : profilePermissions.length ? profilePermissions : template.permissions || []
+      : profilePermissions.length ? profilePermissions : template.permissions || [],
+    practicumScopes: role === 'developer' ? [] : dbScopes.length ? dbScopes : profileScopes
   };
 };
 
@@ -522,6 +546,18 @@ const hasPermission = permission => currentAdmin().role === 'developer' || curre
 const canManageAdminAccounts = () => currentAdmin().role === 'developer' || hasPermission('admin_accounts');
 const canManageStudentAccounts = () => currentAdmin().role === 'developer' || hasPermission('student_accounts');
 const canDeleteDashboardLogs = () => currentAdmin().role === 'developer' || hasPermission('log_delete');
+const canAccessPracticumCategory = category => {
+  const admin = currentAdmin();
+  if (admin.role === 'developer') return true;
+  const scopes = normalizePracticumScopeList(admin.practicumScopes);
+  return !scopes.length || scopes.includes(category);
+};
+const scopedPracticumCourses = () => PRACTICUM_COURSES.filter(course => canAccessPracticumCategory(courseCategory(course)));
+const scopeLabel = scopes => {
+  const normalized = normalizePracticumScopeList(scopes);
+  if (!normalized.length) return 'Semua praktikum';
+  return normalized.map(category => courseFromCategory(category)?.title || category.replace(/-[PS]$/, '')).join(', ');
+};
 
 const adminPageOptions = [
   { value: 'dashboard.html', label: 'Dashboard', permission: 'dashboard' },
@@ -594,6 +630,7 @@ const auditActionLabels = {
   DELETE_PRACTICUM_ROSTER: 'Hapus praktikan',
   CREATE_ATTENDANCE_SESSION: 'Tambah sesi absen',
   UPDATE_ATTENDANCE_SESSION: 'Update sesi absen',
+  RESET_ATTENDANCE_SESSION: 'Reset record sesi absen',
   DELETE_ATTENDANCE_SESSION: 'Hapus sesi absen',
   CREATE_VIDEO: 'Tambah video',
   UPDATE_VIDEO: 'Edit video',
@@ -646,14 +683,7 @@ async function writeAuditLog({ action, targetType, targetId = '', targetTitle = 
 }
 
 const selectedPracticumMeta = () => {
-  const option = practicumCategory?.selectedOptions?.[0];
-  const category = practicumCategory?.value || '';
-  return {
-    category,
-    semester: Number(option?.dataset?.semester || 0),
-    kind: option?.dataset?.kind || category.slice(-1),
-    course: category.replace(/-[PS]$/, '')
-  };
+  return selectedCourseFrom(practicumCategory);
 };
 
 
@@ -1019,6 +1049,7 @@ const normalizeAdminAccount = account => {
     roleLabel: account.role_label || account.roleLabel || template.roleLabel,
     allowedPages: withAdminGuidePage(Array.isArray(account.allowed_pages) ? account.allowed_pages : template.allowedPages),
     permissions: Array.isArray(account.permissions) ? account.permissions : template.permissions,
+    practicumScopes: adminScopeFor(account.username),
     isActive: account.is_active !== false
   };
 };
@@ -1031,6 +1062,7 @@ const resetAdminAccountForm = () => {
   if (adminAccountPassword) adminAccountPassword.required = true;
   if (adminAccountSubmit) adminAccountSubmit.textContent = 'Simpan Akun';
   renderAdminRoleOptions();
+  setCheckedValues(adminAccountPracticumScopes, []);
 };
 
 const normalizeRoleKey = value => String(value || '')
@@ -1069,6 +1101,12 @@ const renderAdminRoleChecklist = () => {
     adminRolePermissions.innerHTML = adminPermissionOptions.map(item => `
       <label class="admin-mini-check"><input type="checkbox" value="${escapeText(item.value)}"> ${escapeText(item.label)}</label>
     `).join('');
+  }
+  if (adminAccountPracticumScopes) {
+    adminAccountPracticumScopes.innerHTML = PRACTICUM_COURSES.map(course => {
+      const category = courseCategory(course);
+      return `<label class="admin-mini-check"><input type="checkbox" value="${escapeText(category)}"> Semester ${course.semester} - ${escapeText(course.title)}</label>`;
+    }).join('');
   }
 };
 
@@ -1193,6 +1231,11 @@ function validateResourceForm() {
 }
 
 function validatePracticumForm() {
+  const meta = selectedPracticumMeta();
+  if (!meta.category || !canAccessPracticumCategory(meta.category)) {
+    toast('Akun ini tidak memiliki scope untuk praktikum/studio yang dipilih.');
+    return false;
+  }
   if (!practicumTitle.value.trim() || !practicumDescription.value.trim() || !practicumAuthor.value.trim() || !practicumDate.value) {
     toast('Lengkapi Judul, Deskripsi, Author, dan Tanggal modul praktikum/studio.');
     return false;
@@ -1257,14 +1300,17 @@ function softwareFilters() {
 
 function practicumFilters() {
   if (!practicumFilter) return;
-  const cats = [...new Set(practicumModules.map(item => item.category))];
+  const cats = [...new Set(practicumModules.filter(item => canAccessPracticumCategory(item.category)).map(item => item.category))];
+  const current = practicumFilter.value || 'All';
   practicumFilter.innerHTML = '<option value="All">All</option>' + cats.map(c => `<option>${escapeText(c)}</option>`).join('');
+  practicumFilter.value = current === 'All' || cats.includes(current) ? current : 'All';
 }
 
 function practicumTableRender() {
   const q = (practicumSearch?.value || '').toLowerCase();
   const cat = practicumFilter?.value || 'All';
   const rows = practicumModules
+    .filter(item => canAccessPracticumCategory(item.category))
     .filter(item => (cat === 'All' || item.category === cat) &&
       [item.title, item.category, item.course, item.description, item.author].join(' ').toLowerCase().includes(q))
     .map(item => `
@@ -1282,12 +1328,13 @@ function practicumTableRender() {
 }
 
 function practicumCourseOptions() {
-  const html = PRACTICUM_COURSES.map(course => {
+  const courses = scopedPracticumCourses();
+  const html = courses.length ? courses.map(course => {
     const category = courseCategory(course);
     return `<option value="${escapeText(category)}" data-semester="${course.semester}" data-kind="${course.type}">Semester ${course.semester} - ${escapeText(category)}</option>`;
-  }).join('');
+  }).join('') : '<option value="">Tidak ada scope praktikum</option>';
 
-  [rosterCategory, attendanceCategory].forEach(select => {
+  [practicumCategory, rosterCategory, attendanceCategory].forEach(select => {
     if (!select) return;
     const current = select.value;
     select.innerHTML = html;
@@ -1304,8 +1351,10 @@ const rosterDocId = row => [
 ].join('_');
 
 function selectedCourseFrom(select) {
-  const category = select?.value || courseCategory(PRACTICUM_COURSES[0]);
-  const course = courseFromCategory(category) || PRACTICUM_COURSES[0];
+  const fallback = scopedPracticumCourses()[0] || PRACTICUM_COURSES[0];
+  const selectedCategory = select?.value || courseCategory(fallback);
+  const category = canAccessPracticumCategory(selectedCategory) ? selectedCategory : courseCategory(fallback);
+  const course = courseFromCategory(category) || fallback;
   return {
     category,
     course: course.title,
@@ -1366,22 +1415,23 @@ function attendanceSessionLabel(session) {
 function attendanceSessionOptions() {
   if (!attendanceSessionFilter) return;
   const current = attendanceSessionFilter.value || 'All';
-  attendanceSessionFilter.innerHTML = '<option value="All">Semua sesi</option>' + practicumAttendanceSessions.map(session => (
+  const sessions = practicumAttendanceSessions.filter(session => canAccessPracticumCategory(session.category));
+  attendanceSessionFilter.innerHTML = '<option value="All">Semua sesi</option>' + sessions.map(session => (
     `<option value="${escapeText(session.docId)}">${escapeText(attendanceSessionLabel(session))}</option>`
   )).join('');
-  attendanceSessionFilter.value = current === 'All' || practicumAttendanceSessions.some(session => session.docId === current) ? current : 'All';
+  attendanceSessionFilter.value = current === 'All' || sessions.some(session => session.docId === current) ? current : 'All';
 }
 
 function attendanceRecapRows() {
   const q = (attendanceSearch?.value || '').toLowerCase();
   const sessionId = attendanceSessionFilter?.value || 'All';
   const recordByKey = new Map(practicumAttendanceRecords.map(record => [`${record.sessionId}_${record.nim}`, record]));
-  const selectedSessions = practicumAttendanceSessions.filter(session => sessionId === 'All' || session.docId === sessionId);
+  const selectedSessions = practicumAttendanceSessions.filter(session => canAccessPracticumCategory(session.category) && (sessionId === 'All' || session.docId === sessionId));
   const rows = [];
 
   if (!selectedSessions.length) {
     return practicumRosters
-      .filter(roster => roster.isActive !== false)
+      .filter(roster => roster.isActive !== false && canAccessPracticumCategory(roster.category))
       .map(roster => ({ session: null, roster, record: null }))
       .filter(({ roster }) => [
         roster.nim,
@@ -1397,6 +1447,7 @@ function attendanceRecapRows() {
   selectedSessions.forEach(session => {
     practicumRosters
       .filter(roster => roster.isActive !== false
+        && canAccessPracticumCategory(roster.category)
         && roster.category === session.category
         && (roster.classKey || slugifyAcademic(roster.className)) === (session.classKey || slugifyAcademic(session.className))
         && roster.academicYear === session.academicYear)
@@ -1422,9 +1473,10 @@ function attendanceRecapRows() {
 function attendanceRecapRender() {
   practicumCourseOptions();
   attendanceSessionOptions();
-  if (rosterTotalCount) rosterTotalCount.textContent = practicumRosters.filter(item => item.isActive !== false).length;
-  if (attendanceSessionCount) attendanceSessionCount.textContent = practicumAttendanceSessions.length;
-  if (attendanceRecordCount) attendanceRecordCount.textContent = practicumAttendanceRecords.length;
+  const scopedSessionIds = new Set(practicumAttendanceSessions.filter(item => canAccessPracticumCategory(item.category)).map(item => item.docId));
+  if (rosterTotalCount) rosterTotalCount.textContent = practicumRosters.filter(item => item.isActive !== false && canAccessPracticumCategory(item.category)).length;
+  if (attendanceSessionCount) attendanceSessionCount.textContent = scopedSessionIds.size;
+  if (attendanceRecordCount) attendanceRecordCount.textContent = practicumAttendanceRecords.filter(item => scopedSessionIds.has(item.sessionId)).length;
   if (!attendanceRecapTable) return;
 
   const rows = attendanceRecapRows().map(({ session, roster, record }) => {
@@ -1447,6 +1499,33 @@ function attendanceRecapRender() {
   }).join('');
 
   attendanceRecapTable.innerHTML = rows || '<tr><td colspan="7">Belum ada data praktikan atau sesi absen yang cocok.</td></tr>';
+}
+
+function attendanceSessionTableRender() {
+  if (!attendanceSessionTable) return;
+  const recordCounts = practicumAttendanceRecords.reduce((map, record) => {
+    map[record.sessionId] = (map[record.sessionId] || 0) + 1;
+    return map;
+  }, {});
+  const rows = practicumAttendanceSessions
+    .filter(session => canAccessPracticumCategory(session.category))
+    .map(session => `
+      <tr>
+        <td><b>${escapeText(session.course || session.category)}</b><br><span class="small-text">${escapeText(session.category || '-')}</span></td>
+        <td>${escapeText(session.className || '-')}<br><span class="small-text">${escapeText(session.academicYear || '-')}</span></td>
+        <td><b>${escapeText(session.moduleNumber || '-')}</b><br><span class="small-text">${escapeText(session.moduleTitle || '-')}</span></td>
+        <td>${escapeText(session.date || '-')}<br><span class="small-text">${escapeText([session.openAt, session.closeAt].filter(Boolean).join(' - ') || '-')}</span></td>
+        <td><span class="badge">${escapeText(session.status === 'closed' ? 'Ditutup' : 'Aktif')}</span></td>
+        <td>${recordCounts[session.docId] || 0} record</td>
+        <td>
+          <button class="action-btn" data-toggle-attendance-session="${escapeText(session.docId)}" type="button">${session.status === 'closed' ? 'Aktifkan' : 'Tutup'}</button>
+          <button class="action-btn" data-reset-attendance-session="${escapeText(session.docId)}" type="button">Reset Absen</button>
+          <button class="action-btn danger" data-delete-attendance-session="${escapeText(session.docId)}" type="button">Hapus Sesi</button>
+        </td>
+      </tr>
+    `).join('');
+
+  attendanceSessionTable.innerHTML = rows || '<tr><td colspan="7">Belum ada sesi absen untuk scope praktikum akun ini.</td></tr>';
 }
 
 const csvEscape = value => `"${String(value ?? '').replace(/"/g, '""')}"`;
@@ -1483,6 +1562,76 @@ function exportAttendanceCsv() {
   link.download = `rekap-absensi-praktikum-${Date.now()}.csv`;
   link.click();
   URL.revokeObjectURL(url);
+}
+
+async function toggleAttendanceSession(sessionId) {
+  const session = practicumAttendanceSessions.find(item => item.docId === sessionId);
+  if (!session) return;
+  if (!canAccessPracticumCategory(session.category)) {
+    toast('Akun ini tidak memiliki akses ke sesi absen tersebut.');
+    return;
+  }
+  const nextStatus = session.status === 'closed' ? 'open' : 'closed';
+  await updateDoc(doc(db, PRACTICUM_ATTENDANCE_SESSION_COLLECTION, sessionId), {
+    status: nextStatus,
+    updatedAt: new Date().toISOString(),
+    updatedBy: currentAdmin().username
+  });
+  await writeAuditLog({
+    action: 'UPDATE_ATTENDANCE_SESSION',
+    targetType: 'practicum_attendance_session',
+    targetId: sessionId,
+    targetTitle: attendanceSessionLabel(session),
+    detail: `Status sesi absen diubah menjadi ${nextStatus}.`
+  });
+  toast(nextStatus === 'open' ? 'Sesi absen diaktifkan.' : 'Sesi absen ditutup.');
+}
+
+async function resetAttendanceSession(sessionId) {
+  const session = practicumAttendanceSessions.find(item => item.docId === sessionId);
+  if (!session) return;
+  if (!canAccessPracticumCategory(session.category)) {
+    toast('Akun ini tidak memiliki akses ke sesi absen tersebut.');
+    return;
+  }
+  const records = practicumAttendanceRecords.filter(record => record.sessionId === sessionId);
+  if (!records.length) {
+    toast('Sesi ini belum memiliki record absen.');
+    return;
+  }
+  const batch = writeBatch(db);
+  records.forEach(record => batch.delete(doc(db, PRACTICUM_ATTENDANCE_RECORD_COLLECTION, record.docId)));
+  await batch.commit();
+  await writeAuditLog({
+    action: 'RESET_ATTENDANCE_SESSION',
+    targetType: 'practicum_attendance_session',
+    targetId: sessionId,
+    targetTitle: attendanceSessionLabel(session),
+    detail: `${records.length} record hadir pada sesi absen direset.`
+  });
+  toast('Record absen sesi ini berhasil direset.');
+}
+
+async function deleteAttendanceSession(sessionId) {
+  const session = practicumAttendanceSessions.find(item => item.docId === sessionId);
+  if (session && !canAccessPracticumCategory(session.category)) {
+    toast('Akun ini tidak memiliki akses ke sesi absen tersebut.');
+    return;
+  }
+  const batch = writeBatch(db);
+  practicumAttendanceRecords.filter(record => record.sessionId === sessionId).forEach(record => {
+    batch.delete(doc(db, PRACTICUM_ATTENDANCE_RECORD_COLLECTION, record.docId));
+  });
+  batch.delete(doc(db, PRACTICUM_ATTENDANCE_SESSION_COLLECTION, sessionId));
+  await batch.commit();
+  await writeAuditLog({
+    action: 'DELETE_ATTENDANCE_SESSION',
+    targetType: 'practicum_attendance_session',
+    targetId: sessionId,
+    targetTitle: session ? attendanceSessionLabel(session) : sessionId,
+    detail: 'Sesi absen dan record hadirnya dihapus.'
+  });
+  toast('Sesi absen berhasil dihapus.');
 }
 
 function videoFilters() {
@@ -1877,7 +2026,7 @@ function adminRoleTableRender() {
 function adminAccountTableRender() {
   if (!adminAccountTable) return;
   if (!canManageAdminAccounts()) {
-    adminAccountTable.innerHTML = '<tr><td colspan="6">Menu ini hanya tersedia untuk Developer.</td></tr>';
+    adminAccountTable.innerHTML = '<tr><td colspan="7">Menu ini hanya tersedia untuk Developer.</td></tr>';
     return;
   }
 
@@ -1899,6 +2048,7 @@ function adminAccountTableRender() {
           <td>${account.isActive ? '<span class="badge">Aktif</span>' : '<span class="badge">Nonaktif</span>'}</td>
           <td>${escapeText(account.allowedPages.join(', '))}</td>
           <td>${escapeText(account.permissions.join(', '))}</td>
+          <td>${escapeText(scopeLabel(account.practicumScopes))}</td>
           <td>
             <button class="action-btn" data-edit-admin-account="${escapeText(account.username)}" type="button">Edit</button>
             <button class="action-btn danger" data-del-admin-account="${escapeText(account.username)}" type="button" ${isSelf ? 'disabled' : ''}>Hapus</button>
@@ -1908,7 +2058,7 @@ function adminAccountTableRender() {
     })
     .join('');
 
-  adminAccountTable.innerHTML = rows || '<tr><td colspan="6">Belum ada akun admin yang cocok.</td></tr>';
+  adminAccountTable.innerHTML = rows || '<tr><td colspan="7">Belum ada akun admin yang cocok.</td></tr>';
   adminRoleTableRender();
 }
 
@@ -2019,6 +2169,7 @@ const render = () => {
   practicumFilters();
   practicumTableRender();
   attendanceRecapRender();
+  attendanceSessionTableRender();
   videoFilters();
   videoTableRender();
   announcementFilters();
@@ -2250,6 +2401,10 @@ on(practicumRosterForm, 'submit', async e => {
   const meta = selectedCourseFrom(rosterCategory);
   const parsed = parsePracticumRosterRows(rosterRows?.value, className);
 
+  if (!meta.category || !canAccessPracticumCategory(meta.category)) {
+    toast('Akun ini tidak memiliki scope untuk data praktikan tersebut.');
+    return;
+  }
   if (!academicYear || !className || !parsed.rows.length) {
     toast('Isi tahun akademik, kelas, dan data praktikan dengan benar.');
     return;
@@ -2311,6 +2466,10 @@ on(attendanceSessionForm, 'submit', async e => {
   const openAt = attendanceOpenAt?.value || '';
   const closeAt = attendanceCloseAt?.value || '';
 
+  if (!meta.category || !canAccessPracticumCategory(meta.category)) {
+    toast('Akun ini tidak memiliki scope untuk sesi absen tersebut.');
+    return;
+  }
   if (!academicYear || !className || !moduleNumber || !moduleTitle || !date || !openAt || !closeAt) {
     toast('Lengkapi praktikum, kelas, modul, tanggal, jam buka, dan jam tutup absen.');
     return;
@@ -2556,6 +2715,10 @@ on(practicumTable, 'click', async e => {
     if (confirm('Yakin hapus modul praktikum/studio ini?')) {
       try {
         const item = practicumModules.find(module => module.docId === docId);
+        if (item && !canAccessPracticumCategory(item.category)) {
+          toast('Akun ini tidak memiliki akses ke modul praktikum/studio tersebut.');
+          return;
+        }
         await deleteDoc(doc(db, 'practicum_studio_modules', docId));
         await writeAuditLog({
           action: 'DELETE_PRACTICUM',
@@ -2575,6 +2738,10 @@ on(practicumTable, 'click', async e => {
   if (e.target.dataset.edit) {
     const item = practicumModules.find(module => module.docId === docId);
     if (item) {
+      if (!canAccessPracticumCategory(item.category)) {
+        toast('Akun ini tidak memiliki akses ke modul praktikum/studio tersebut.');
+        return;
+      }
       practicumId.value = docId;
       practicumTitle.value = item.title || '';
       practicumCategory.value = item.category || 'Computer Aided Design (CAD)-S';
@@ -2602,6 +2769,10 @@ on(attendanceRecapTable, 'click', async e => {
     if (!confirm('Yakin hapus praktikan ini dari roster?')) return;
     try {
       const item = practicumRosters.find(roster => roster.docId === rosterId);
+      if (item && !canAccessPracticumCategory(item.category)) {
+        toast('Akun ini tidak memiliki akses ke data praktikan tersebut.');
+        return;
+      }
       await deleteDoc(doc(db, PRACTICUM_ROSTER_COLLECTION, rosterId));
       await writeAuditLog({
         action: 'DELETE_PRACTICUM_ROSTER',
@@ -2619,23 +2790,8 @@ on(attendanceRecapTable, 'click', async e => {
   }
 
   if (e.target.dataset.toggleAttendance) {
-    const session = practicumAttendanceSessions.find(item => item.docId === sessionId);
-    if (!session) return;
-    const nextStatus = session.status === 'closed' ? 'open' : 'closed';
     try {
-      await updateDoc(doc(db, PRACTICUM_ATTENDANCE_SESSION_COLLECTION, sessionId), {
-        status: nextStatus,
-        updatedAt: new Date().toISOString(),
-        updatedBy: currentAdmin().username
-      });
-      await writeAuditLog({
-        action: 'UPDATE_ATTENDANCE_SESSION',
-        targetType: 'practicum_attendance_session',
-        targetId: sessionId,
-        targetTitle: attendanceSessionLabel(session),
-        detail: `Status sesi absen diubah menjadi ${nextStatus}.`
-      });
-      toast(nextStatus === 'open' ? 'Sesi absen diaktifkan.' : 'Sesi absen ditutup.');
+      await toggleAttendanceSession(sessionId);
     } catch (error) {
       console.error('Toggle attendance session error:', error);
       toast('Gagal mengubah status sesi absen.');
@@ -2646,25 +2802,42 @@ on(attendanceRecapTable, 'click', async e => {
   if (e.target.dataset.delAttendanceSession) {
     if (!confirm('Yakin hapus sesi absen ini? Record hadir untuk sesi ini juga akan dihapus.')) return;
     try {
-      const batch = writeBatch(db);
-      const session = practicumAttendanceSessions.find(item => item.docId === sessionId);
-      practicumAttendanceRecords.filter(record => record.sessionId === sessionId).forEach(record => {
-        batch.delete(doc(db, PRACTICUM_ATTENDANCE_RECORD_COLLECTION, record.docId));
-      });
-      batch.delete(doc(db, PRACTICUM_ATTENDANCE_SESSION_COLLECTION, sessionId));
-      await batch.commit();
-      await writeAuditLog({
-        action: 'DELETE_ATTENDANCE_SESSION',
-        targetType: 'practicum_attendance_session',
-        targetId: sessionId,
-        targetTitle: session ? attendanceSessionLabel(session) : sessionId,
-        detail: 'Sesi absen dan record hadirnya dihapus.'
-      });
-      toast('Sesi absen berhasil dihapus.');
+      await deleteAttendanceSession(sessionId);
     } catch (error) {
       console.error('Delete attendance session error:', error);
       toast('Gagal menghapus sesi absen.');
     }
+  }
+});
+
+on(attendanceSessionTable, 'click', async e => {
+  const button = e.target.closest('[data-toggle-attendance-session], [data-reset-attendance-session], [data-delete-attendance-session]');
+  if (!button) return;
+  if (!requirePermission('practicum_studio', 'Sesi Absen')) return;
+
+  const sessionId = button.dataset.toggleAttendanceSession || button.dataset.resetAttendanceSession || button.dataset.deleteAttendanceSession;
+  if (!sessionId) return;
+
+  try {
+    button.disabled = true;
+    if (button.dataset.toggleAttendanceSession) {
+      await toggleAttendanceSession(sessionId);
+      return;
+    }
+    if (button.dataset.resetAttendanceSession) {
+      if (!confirm('Yakin reset record absen sesi ini? Sesi tetap ada, tetapi data hadir mahasiswa untuk sesi ini akan dihapus.')) return;
+      await resetAttendanceSession(sessionId);
+      return;
+    }
+    if (button.dataset.deleteAttendanceSession) {
+      if (!confirm('Yakin hapus sesi absen ini? Record hadir untuk sesi ini juga akan dihapus.')) return;
+      await deleteAttendanceSession(sessionId);
+    }
+  } catch (error) {
+    console.error('Attendance session table action error:', error);
+    toast('Gagal memproses sesi absen.');
+  } finally {
+    button.disabled = false;
   }
 });
 
@@ -3103,6 +3276,7 @@ on(adminAccountTable, 'click', async e => {
     adminAccountName.value = normalized.name || '';
     renderAdminRoleOptions(normalized.role || 'admin_sipil');
     adminAccountActive.checked = normalized.isActive;
+    setCheckedValues(adminAccountPracticumScopes, normalized.practicumScopes);
     adminAccountPassword.value = '';
     adminAccountPassword.required = false;
     adminAccountSubmit.textContent = 'Update Akun';
@@ -3125,6 +3299,9 @@ on(adminAccountTable, 'click', async e => {
       });
       if (error) throw error;
       if (data !== true) throw new Error('Akun admin tidak terhapus di database.');
+      await deleteDoc(doc(db, ADMIN_PRACTICUM_SCOPE_COLLECTION, usernameValue)).catch(scopeError => {
+        console.warn('Delete admin practicum scope failed:', scopeError);
+      });
       await writeAuditLog({
         action: 'DELETE_ADMIN_ACCOUNT',
         targetType: 'admin_account',
@@ -3154,6 +3331,7 @@ on(adminAccountForm, 'submit', async e => {
   const usernameValue = adminAccountUsername.value.trim().toLowerCase();
   const passwordValue = adminAccountPassword.value;
   const roleTemplate = getAdminRoleTemplate(adminAccountRole.value);
+  const practicumScopes = checkedValues(adminAccountPracticumScopes);
 
   if (!usernameValue || !adminAccountName.value.trim()) {
     toast('Lengkapi username dan nama admin.');
@@ -3186,13 +3364,24 @@ on(adminAccountForm, 'submit', async e => {
     if (error) throw error;
     const savedAccount = Array.isArray(data) ? data[0] : data;
     if (!savedAccount?.username) throw new Error('Akun admin tidak tersimpan di database.');
+    if (originalUsername && originalUsername !== usernameValue) {
+      await deleteDoc(doc(db, ADMIN_PRACTICUM_SCOPE_COLLECTION, originalUsername)).catch(scopeError => {
+        console.warn('Delete old admin practicum scope failed:', scopeError);
+      });
+    }
+    await setDoc(doc(db, ADMIN_PRACTICUM_SCOPE_COLLECTION, usernameValue), {
+      username: usernameValue,
+      scopes: practicumScopes,
+      updatedAt: new Date().toISOString(),
+      updatedBy: currentAdmin().username
+    }, { merge: true });
 
     await writeAuditLog({
       action: originalUsername ? 'UPDATE_ADMIN_ACCOUNT' : 'CREATE_ADMIN_ACCOUNT',
       targetType: 'admin_account',
       targetId: usernameValue,
       targetTitle: savedAccount.name || adminAccountName.value.trim(),
-      detail: `Akun admin ${usernameValue} disimpan dengan role ${roleTemplate.roleLabel}.`
+      detail: `Akun admin ${usernameValue} disimpan dengan role ${roleTemplate.roleLabel} dan scope ${scopeLabel(practicumScopes)}.`
     });
     toast(originalUsername ? 'Akun admin berhasil diperbarui.' : 'Akun admin berhasil ditambahkan.');
     resetAdminAccountForm();
@@ -3686,7 +3875,7 @@ async function loadAdminAccounts(options = {}) {
     if (options.manual) toast('Data akun admin berhasil diperbarui.');
   } catch (error) {
     console.error('Load admin accounts failed:', error);
-    adminAccountTable.innerHTML = '<tr><td colspan="6">Gagal memuat akun admin dari Supabase. Cek policy tabel admins.</td></tr>';
+    adminAccountTable.innerHTML = '<tr><td colspan="7">Gagal memuat akun admin dari Supabase. Cek policy tabel admins.</td></tr>';
     if (options.manual) toast('Gagal memuat akun admin dari Supabase.');
   } finally {
     if (adminAccountRefresh) adminAccountRefresh.disabled = false;
@@ -3740,6 +3929,7 @@ async function updateAdminPresence() {
     roleLabel: admin.roleLabel,
     allowedPages: admin.allowedPages,
     permissions: admin.permissions,
+    practicumScopes: admin.practicumScopes,
     last_seen_at: now,
     last_page: location.pathname,
     userAgent: navigator.userAgent,
@@ -3787,6 +3977,37 @@ updateAdminPresence();
 setInterval(() => updateAdminPresence(), 30000);
 loadAdminActivity();
 
+const adminPracticumScopeQuery = query(collection(db, ADMIN_PRACTICUM_SCOPE_COLLECTION));
+onSnapshot(adminPracticumScopeQuery, snapshot => {
+  adminPracticumScopes = snapshot.docs.reduce((map, documentSnapshot) => {
+    map[String(documentSnapshot.id || '').toLowerCase()] = {
+      docId: documentSnapshot.id,
+      ...documentSnapshot.data()
+    };
+    return map;
+  }, {});
+
+  const profile = getAdminProfile();
+  if (profile.username) {
+    const scopes = adminScopeFor(profile.username);
+    localStorage.setItem(ADMIN_PROFILE_KEY, JSON.stringify({
+      ...profile,
+      practicumScopes: scopes
+    }));
+  }
+
+  applyAdminRoleUI();
+  adminAccountTableRender();
+  practicumCourseOptions();
+  practicumFilters();
+  practicumTableRender();
+  attendanceRecapRender();
+  attendanceSessionTableRender();
+  updateAdminPresence();
+}, err => {
+  console.error('Firestore admin practicum scope error:', err);
+});
+
 const resourcesQuery = query(collection(db, 'resources'), orderBy('date', 'desc'));
 onSnapshot(resourcesQuery, snapshot => {
   resources = snapshot.docs.map(documentSnapshot => ({
@@ -3819,6 +4040,7 @@ onSnapshot(practicumRosterQuery, snapshot => {
     ...documentSnapshot.data()
   }));
   attendanceRecapRender();
+  attendanceSessionTableRender();
 }, err => {
   console.error('Firestore practicum roster error:', err);
   toast('Gagal memuat data praktikan.');
@@ -3831,6 +4053,7 @@ onSnapshot(attendanceSessionQuery, snapshot => {
     ...documentSnapshot.data()
   }));
   attendanceRecapRender();
+  attendanceSessionTableRender();
 }, err => {
   console.error('Firestore attendance session error:', err);
   toast('Gagal memuat sesi absen praktikum.');
@@ -3843,6 +4066,7 @@ onSnapshot(attendanceRecordQuery, snapshot => {
     ...documentSnapshot.data()
   }));
   attendanceRecapRender();
+  attendanceSessionTableRender();
 }, err => {
   console.error('Firestore attendance record error:', err);
   toast('Gagal memuat rekap absensi praktikum.');

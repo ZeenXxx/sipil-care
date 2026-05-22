@@ -1,5 +1,6 @@
 export const ACADEMIC_SETTINGS_COLLECTION = 'site_settings';
 export const ACADEMIC_SETTINGS_DOC = 'academic_period';
+export const ADMIN_PRACTICUM_SCOPE_COLLECTION = 'admin_practicum_scopes';
 export const PRACTICUM_ROSTER_COLLECTION = 'practicum_rosters';
 export const PRACTICUM_ATTENDANCE_SESSION_COLLECTION = 'practicum_attendance_sessions';
 export const PRACTICUM_ATTENDANCE_RECORD_COLLECTION = 'practicum_attendance_records';

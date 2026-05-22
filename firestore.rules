@@ -51,6 +51,10 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    match /admin_practicum_scopes/{adminId} {
+      allow read, create, update, delete: if true;
+    }
+
     match /site_settings/{settingId} {
       allow read: if true;
       allow create, update: if true;

@@ -16,7 +16,7 @@ import {
   semesterAccessLabel,
   semesterForCohort,
   slugifyAcademic
-} from './academic-period.js?v=2';
+} from './academic-period.js?v=3';
 
 const db = getFirestore(app);
 const SESSION_KEY = 'sipilcare_student_session';

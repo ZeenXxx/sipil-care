@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="../../css/style.css?v=25">
-    <link rel="stylesheet" href="../../css/admin.css?v=35">
+    <link rel="stylesheet" href="../../css/admin.css?v=36">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -189,6 +189,16 @@
         <div class="table-wrap"><table><thead><tr><th>Praktikan</th><th>Kelas</th><th>Praktikum</th><th>Modul</th><th>Status</th><th>Waktu Absen</th><th>Aksi</th></tr></thead><tbody id="attendanceRecapTable"></tbody></table></div>
       </section>
 
+      <section id="practicum-attendance-sessions" class="admin-card" data-admin-permission="practicum_studio">
+        <div class="admin-table-head">
+          <div>
+            <h3>Daftar Sesi Absen</h3>
+            <p class="small-text">Semua sesi absen tampil di sini walaupun belum ada praktikan atau belum ada yang absen.</p>
+          </div>
+        </div>
+        <div class="table-wrap"><table><thead><tr><th>Praktikum</th><th>Kelas</th><th>Modul</th><th>Jadwal</th><th>Status</th><th>Record</th><th>Aksi</th></tr></thead><tbody id="attendanceSessionTable"></tbody></table></div>
+      </section>
+
       <section id="software" class="admin-card" data-admin-permission="software">
         <div class="admin-table-head"><h3>Software Management</h3><div><input class="control" id="softwareSearch" placeholder="Search"><select class="control" id="softwareFilter"><option value="All">All</option></select></div></div>
         <div class="table-wrap"><table><thead><tr><th>Judul</th><th>Kategori</th><th>Tipe</th><th>Tanggal</th><th>Aksi</th></tr></thead><tbody id="softwareTable"></tbody></table></div>
@@ -204,6 +214,6 @@
     <script src="../../js/student-config.js?v=20"></script>
     <script src="../../js/auth.js?v=30"></script>
     <script src="../../js/push-config.js?v=1"></script>
-    <script type="module" src="../../js/admin-panel.js?v=54"></script>
+    <script type="module" src="../../js/admin-panel.js?v=55"></script>
   </body>
 </html>
