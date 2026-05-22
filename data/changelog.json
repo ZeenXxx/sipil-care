@@ -1,15 +1,20 @@
 [
   {
-    "id": "2026-05-22:navbar-controls,public-interface",
+    "id": "2026-05-22:navbar-controls,student-access",
     "date": "2026-05-22",
     "dateLabel": "22 Mei 2026",
     "generated": true,
-    "summary": "Kontrol Navbar Dirapikan, Tampilan Public Website, Dashboard Admin",
+    "summary": "Kontrol Navbar Dirapikan, Akses dan Login Mahasiswa, Tampilan Public Website",
     "items": [
       {
         "type": "improved",
         "title": "Kontrol Navbar Dirapikan",
         "description": "Posisi tombol pencarian dan mode tampilan dirapikan agar sejajar dengan menu utama dan lebih nyaman digunakan di desktop maupun mobile."
+      },
+      {
+        "type": "improved",
+        "title": "Akses dan Login Mahasiswa",
+        "description": "Alur login, sesi akun, dan pengalaman mahasiswa diperbaiki agar akses lintas perangkat lebih stabil."
       },
       {
         "type": "improved",
@@ -50,11 +55,6 @@
         "type": "improved",
         "title": "Pencarian Bantuan Lebih Akurat",
         "description": "Hasil pencarian kini diberi label yang lebih jelas, dilengkapi saran cepat, dan memprioritaskan topik bantuan seperti login, lupa password, download, serta changelog."
-      },
-      {
-        "type": "improved",
-        "title": "Akses dan Login Mahasiswa",
-        "description": "Alur login, sesi akun, dan pengalaman mahasiswa diperbaiki agar akses lintas perangkat lebih stabil."
       },
       {
         "type": "added",

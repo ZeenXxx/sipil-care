@@ -416,24 +416,6 @@ function createGlobalSearch() {
 
 createGlobalSearch();
 
-const createFooterAdminAccess = () => {
-  const footerBottom = document.querySelector('.site-footer .footer-bottom');
-  if (!footerBottom || footerBottom.querySelector('.footer-admin-access')) return;
-
-  const link = document.createElement('a');
-  link.className = 'footer-admin-access';
-  link.href = resolveSitePath('login.html');
-  link.textContent = 'Masuk Admin';
-  link.setAttribute('aria-label', 'Masuk ke halaman login admin SIPIL CARE');
-  footerBottom.appendChild(link);
-};
-
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', createFooterAdminAccess);
-} else {
-  createFooterAdminAccess();
-}
-
 // ===== DARK MODE TOGGLE =====
 (function() {
   // Apply saved preference immediately (before paint)
