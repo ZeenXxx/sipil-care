@@ -1,15 +1,20 @@
 [
   {
-    "id": "2026-05-22:navbar-controls",
+    "id": "2026-05-22:navbar-controls,public-interface",
     "date": "2026-05-22",
     "dateLabel": "22 Mei 2026",
     "generated": true,
-    "summary": "Kontrol Navbar Dirapikan, Dashboard Admin, Panduan Admin & Developer",
+    "summary": "Kontrol Navbar Dirapikan, Tampilan Public Website, Dashboard Admin",
     "items": [
       {
         "type": "improved",
         "title": "Kontrol Navbar Dirapikan",
         "description": "Posisi tombol pencarian dan mode tampilan dirapikan agar sejajar dengan menu utama dan lebih nyaman digunakan di desktop maupun mobile."
+      },
+      {
+        "type": "improved",
+        "title": "Tampilan Public Website",
+        "description": "Tampilan halaman public diperhalus agar lebih responsif, konsisten, dan nyaman dibuka dari perangkat mobile."
       },
       {
         "type": "improved",
@@ -30,11 +35,6 @@
         "type": "added",
         "title": "Ringkasan Sistem Admin",
         "description": "Dashboard admin kini menampilkan ringkasan status konten, pengguna online, log tersimpan, permission role aktif, serta catatan error browser lokal untuk membantu pengecekan cepat."
-      },
-      {
-        "type": "improved",
-        "title": "Tampilan Public Website",
-        "description": "Tampilan halaman public diperhalus agar lebih responsif, konsisten, dan nyaman dibuka dari perangkat mobile."
       },
       {
         "type": "improved",

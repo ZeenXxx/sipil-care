@@ -423,7 +423,7 @@ const createFooterAdminAccess = () => {
   const link = document.createElement('a');
   link.className = 'footer-admin-access';
   link.href = resolveSitePath('login.html');
-  link.textContent = 'Akses Pengelola';
+  link.textContent = 'Masuk Admin';
   link.setAttribute('aria-label', 'Masuk ke halaman login admin SIPIL CARE');
   footerBottom.appendChild(link);
 };
