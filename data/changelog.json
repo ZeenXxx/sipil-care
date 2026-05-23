@@ -4,12 +4,12 @@
     "date": "2026-05-24",
     "dateLabel": "24 Mei 2026",
     "generated": true,
-    "summary": "Identitas Situs dan Logo HMS",
+    "summary": "Identitas dan Deskripsi Situs",
     "items": [
       {
         "type": "improved",
-        "title": "Identitas Situs dan Logo HMS",
-        "description": "Logo HMS kini dipasang sebagai favicon, ikon perangkat, metadata sosial, dan data terstruktur agar identitas SIPIL CARE lebih jelas di browser serta hasil pencarian Google."
+        "title": "Identitas dan Deskripsi Situs",
+        "description": "Deskripsi SIPIL CARE, logo HMS, favicon, metadata sosial, dan data terstruktur diperbarui agar identitas website lebih jelas di browser serta hasil pencarian Google."
       }
     ]
   },

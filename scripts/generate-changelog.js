@@ -53,7 +53,7 @@ const isSiteIdentityOnly = file => {
   if (!file.endsWith('.html')) return false;
   const changedLines = getChangedLines(file);
   if (!changedLines.length) return false;
-  return changedLines.every(line => /rel="icon"|apple-touch-icon|theme-color|meta name="description"|rel="canonical"|og:|application\/ld\+json|<\/script>|schema\.org|@context|@type|WebSite|ImageObject|"name":|"alternateName":|"url":|"publisher":|"logo":|"width":|"height":|^[+-]\s*[{};,]?\s*$/.test(line));
+  return changedLines.every(line => /rel="icon"|apple-touch-icon|theme-color|SIPIL CARE menonjolkan update resmi HMS|Platform digital akademik Teknik Sipil|Platform Digital Akademik Mahasiswa Teknik Sipil UNJANI|belajar mahasiswa\.|meta name="description"|rel="canonical"|og:|application\/ld\+json|<\/script>|schema\.org|@context|@type|WebSite|ImageObject|"name":|"alternateName":|"description":|"url":|"publisher":|"logo":|"width":|"height":|^[+-]\s*[{};,]?\s*$/.test(line));
 };
 
 const parseStatus = () => {
@@ -94,8 +94,8 @@ const rules = [
   {
     key: 'site-identity',
     type: 'improved',
-    title: 'Identitas Situs dan Logo HMS',
-    description: 'Logo HMS kini dipasang sebagai favicon, ikon perangkat, metadata sosial, dan data terstruktur agar identitas SIPIL CARE lebih jelas di browser serta hasil pencarian Google.',
+    title: 'Identitas dan Deskripsi Situs',
+    description: 'Deskripsi SIPIL CARE, logo HMS, favicon, metadata sosial, dan data terstruktur diperbarui agar identitas website lebih jelas di browser serta hasil pencarian Google.',
     match: (file, diff) => file.endsWith('.html') && (diff.includes('rel="icon"') || diff.includes('og:site_name') || diff.includes('application/ld+json'))
   },
   {
@@ -220,7 +220,12 @@ const rules = [
 ];
 
 const changedFiles = parseStatus();
-const siteIdentityOnly = changedFiles.length > 0 && changedFiles.every(isSiteIdentityOnly);
+const siteIdentityTouched = changedFiles.some(file => {
+  const diff = readFileDiff(file);
+  return diff.includes('site-identity') || diff.includes('Platform Digital Akademik Mahasiswa Teknik Sipil UNJANI');
+});
+const siteIdentityOnly = siteIdentityTouched
+  && changedFiles.every(file => file.endsWith('.html') || file === 'scripts/generate-changelog.js' || isSiteIdentityOnly(file));
 const matched = siteIdentityOnly
   ? rules.filter(rule => rule.key === 'site-identity')
   : rules.filter(rule => changedFiles.some(file => rule.match(file, readFileDiff(file))));
