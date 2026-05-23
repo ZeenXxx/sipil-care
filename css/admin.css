@@ -2144,7 +2144,7 @@ th  {
 
 }
 
-    .student-tabs, .student-login-social  {
+    .student-tabs, .student-login-social, .student-admin-entry  {
 
         grid-template-columns: 1fr
 
@@ -2208,6 +2208,89 @@ th  {
   font-size: 13px;
 
   line-height: 1.55
+
+}
+
+.student-admin-entry  {
+
+  display: grid;
+
+  grid-template-columns: 1fr auto;
+
+  gap: 12px;
+
+  align-items: center;
+
+  margin-top: 16px;
+
+  padding: 12px;
+
+  border: 1px solid rgba(15, 77, 58, .16);
+
+  border-radius: 8px;
+
+  background: rgba(237, 244, 241, .82)
+
+}
+
+.student-admin-entry strong,
+.student-admin-entry span  {
+
+  display: block
+
+}
+
+.student-admin-entry strong  {
+
+  color: var(--primary);
+
+  font-size: 13px;
+
+  font-weight: 900
+
+}
+
+.student-admin-entry span  {
+
+  margin-top: 3px;
+
+  color: var(--muted);
+
+  font-size: 12px;
+
+  line-height: 1.45
+
+}
+
+.student-admin-entry a  {
+
+  display: inline-flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  min-height: 40px;
+
+  padding: 0 12px;
+
+  border-radius: 8px;
+
+  background: var(--primary);
+
+  color: #fff;
+
+  font-size: 13px;
+
+  font-weight: 900;
+
+  white-space: nowrap
+
+}
+
+.student-admin-entry a:hover  {
+
+  background: #0b3f30
 
 }
 
