@@ -42,6 +42,20 @@ const isCacheBustOnly = file => {
   return changedLines.every(line => /(?:css|js)\/[^"']+\.(?:css|js)\?v=\d+/.test(line));
 };
 
+const getChangedLines = file => readFileDiff(file)
+  .split(/\r?\n/)
+  .filter(line => /^[+-][^+-]/.test(line));
+
+const isSiteIdentityOnly = file => {
+  if (file === 'scripts/generate-changelog.js') {
+    return readFileDiff(file).includes('site-identity');
+  }
+  if (!file.endsWith('.html')) return false;
+  const changedLines = getChangedLines(file);
+  if (!changedLines.length) return false;
+  return changedLines.every(line => /rel="icon"|apple-touch-icon|theme-color|meta name="description"|rel="canonical"|og:|application\/ld\+json|<\/script>|schema\.org|@context|@type|WebSite|ImageObject|"name":|"alternateName":|"url":|"publisher":|"logo":|"width":|"height":|^[+-]\s*[{};,]?\s*$/.test(line));
+};
+
 const parseStatus = () => {
   try {
     const statusFiles = run('git status --short')
@@ -77,6 +91,13 @@ const parseStatus = () => {
 };
 
 const rules = [
+  {
+    key: 'site-identity',
+    type: 'improved',
+    title: 'Identitas Situs dan Logo HMS',
+    description: 'Logo HMS kini dipasang sebagai favicon, ikon perangkat, metadata sosial, dan data terstruktur agar identitas SIPIL CARE lebih jelas di browser serta hasil pencarian Google.',
+    match: (file, diff) => file.endsWith('.html') && (diff.includes('rel="icon"') || diff.includes('og:site_name') || diff.includes('application/ld+json'))
+  },
   {
     key: 'changelog',
     type: 'added',
@@ -199,7 +220,10 @@ const rules = [
 ];
 
 const changedFiles = parseStatus();
-const matched = rules.filter(rule => changedFiles.some(file => rule.match(file, readFileDiff(file))));
+const siteIdentityOnly = changedFiles.length > 0 && changedFiles.every(isSiteIdentityOnly);
+const matched = siteIdentityOnly
+  ? rules.filter(rule => rule.key === 'site-identity')
+  : rules.filter(rule => changedFiles.some(file => rule.match(file, readFileDiff(file))));
 const selected = matched.length ? matched : [{
   key: 'maintenance',
   type: 'improved',
@@ -224,7 +248,7 @@ const mergedItems = [
     title: item.title,
     description: item.description
   })),
-  ...(sameDayGenerated?.items || [])
+  ...(siteIdentityOnly ? [] : (sameDayGenerated?.items || []))
 ].filter((item, index, list) => list.findIndex(candidate => candidate.title === item.title) === index);
 
 const nextEntry = {
