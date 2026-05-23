@@ -894,6 +894,88 @@ button, input, select, textarea  {
 
 }
 
+.pwa-install-hint  {
+
+    position: fixed;
+
+    left: 18px;
+
+    bottom: 18px;
+
+    z-index: 1200;
+
+    width: min(340px, calc(100vw - 36px));
+
+    display: grid;
+
+    gap: 8px;
+
+    padding: 16px;
+
+    border: 1px solid rgba(15, 77, 58, .16);
+
+    border-radius: 8px;
+
+    background: #fff;
+
+    box-shadow: 0 24px 60px rgba(15, 77, 58, .22)
+
+}
+
+.pwa-install-hint strong  {
+
+    color: var(--primary);
+
+    font-size: 16px
+
+}
+
+.pwa-install-hint span  {
+
+    color: var(--muted);
+
+    font-size: 13px;
+
+    line-height: 1.5
+
+}
+
+.pwa-install-hint div  {
+
+    display: flex;
+
+    gap: 8px;
+
+    flex-wrap: wrap
+
+}
+
+.pwa-install-hint button  {
+
+    min-height: 38px;
+
+    padding: 0 13px;
+
+    border: 1px solid rgba(15, 77, 58, .18);
+
+    border-radius: 8px;
+
+    background: var(--primary);
+
+    color: #fff;
+
+    font-weight: 900
+
+}
+
+.pwa-install-hint button[data-pwa-close]  {
+
+    background: #fff;
+
+    color: var(--primary)
+
+}
+
 .pagination  {
   
     display: flex;
@@ -1516,6 +1598,18 @@ button, input, select, textarea  {
     .student-guide-panel article  {
 
         padding: 18px
+
+}
+
+    .pwa-install-hint  {
+
+        left: 14px;
+
+        right: 14px;
+
+        bottom: 14px;
+
+        width: auto
 
 }
 

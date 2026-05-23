@@ -43,7 +43,13 @@ service cloud.firestore {
     }
 
     match /admin_push_tokens/{tokenId} {
-      allow read, create, update, delete: if true;
+      allow read: if false;
+      allow create, update, delete: if true;
+    }
+
+    match /student_push_tokens/{tokenId} {
+      allow read: if false;
+      allow create, update, delete: if true;
     }
 
     match /admin_activity/{adminId} {

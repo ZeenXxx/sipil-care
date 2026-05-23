@@ -1,11 +1,16 @@
 [
   {
-    "id": "2026-05-24:admin-dashboard,floating-help,help-information,public-help-onboarding,public-interface",
+    "id": "2026-05-24:admin-dashboard,admin-guide,backend-security,changelog,civil-tools,floating-help,help-information,public-help-onboarding,public-interface,resources-content,student-access",
     "date": "2026-05-24",
     "dateLabel": "24 Mei 2026",
     "generated": true,
-    "summary": "Bantuan & FAQ Mengambang, Dashboard Admin, Bantuan Mahasiswa",
+    "summary": "Changelog Otomatis, Bantuan & FAQ Mengambang, Dashboard Admin",
     "items": [
+      {
+        "type": "added",
+        "title": "Changelog Otomatis",
+        "description": "Riwayat update kini dibuat dari file yang berubah, lalu ditampilkan dengan bahasa yang lebih rapi dan mudah dipahami mahasiswa."
+      },
       {
         "type": "improved",
         "title": "Bantuan & FAQ Mengambang",
@@ -15,6 +20,26 @@
         "type": "improved",
         "title": "Dashboard Admin",
         "description": "Dashboard admin ditingkatkan agar navigasi, tampilan mobile, ringkasan data, dan akses ke bagian log lebih nyaman digunakan."
+      },
+      {
+        "type": "added",
+        "title": "Panduan Admin & Developer",
+        "description": "Panel admin kini dilengkapi halaman panduan internal berisi alur kerja, role, permission, checklist developer, dan troubleshooting cepat."
+      },
+      {
+        "type": "improved",
+        "title": "Akses dan Login Mahasiswa",
+        "description": "Alur login, sesi akun, dan pengalaman mahasiswa diperbaiki agar akses lintas perangkat lebih stabil."
+      },
+      {
+        "type": "improved",
+        "title": "Tools Teknik Sipil",
+        "description": "Tools akademik Teknik Sipil diperbarui untuk membantu perhitungan, analisis struktur, preliminary design, dan pengelolaan file."
+      },
+      {
+        "type": "improved",
+        "title": "Resource dan Materi Akademik",
+        "description": "Halaman materi, praktikum, studio, software, video, dan akses file diperbarui agar konten akademik lebih mudah ditemukan dan digunakan."
       },
       {
         "type": "added",
@@ -32,9 +57,9 @@
         "description": "Tampilan halaman public diperhalus agar lebih responsif, konsisten, dan nyaman dibuka dari perangkat mobile."
       },
       {
-        "type": "improved",
-        "title": "Akses dan Login Mahasiswa",
-        "description": "Alur login, sesi akun, dan pengalaman mahasiswa diperbaiki agar akses lintas perangkat lebih stabil."
+        "type": "fixed",
+        "title": "Backend dan Permission",
+        "description": "Dokumentasi serta fungsi backend terkait akun, role, permission, dan sesi admin diperbaiki agar sistem lebih aman dan konsisten."
       },
       {
         "type": "improved",

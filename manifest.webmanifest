@@ -1,0 +1,56 @@
+{
+  "name": "SIPIL CARE",
+  "short_name": "SIPIL CARE",
+  "description": "Platform Digital Akademik Mahasiswa Teknik Sipil UNJANI - HIMPUNAN MAHASISWA SIPIL UNJANI",
+  "id": "/",
+  "start_url": "/index.html?source=pwa",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui", "browser"],
+  "orientation": "any",
+  "background_color": "#edf4f1",
+  "theme_color": "#0f4d3a",
+  "categories": ["education", "productivity", "utilities"],
+  "lang": "id-ID",
+  "dir": "ltr",
+  "icons": [
+    {
+      "src": "/assets/icons/pwa-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/assets/icons/pwa-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/assets/icons/pwa-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Resources",
+      "short_name": "Materi",
+      "url": "/pages/resources.html",
+      "icons": [{ "src": "/assets/icons/pwa-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Praktikum & Studio",
+      "short_name": "Praktikum",
+      "url": "/pages/praktikum-studio.html",
+      "icons": [{ "src": "/assets/icons/pwa-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Tools",
+      "short_name": "Tools",
+      "url": "/pages/tools.html",
+      "icons": [{ "src": "/assets/icons/pwa-192.png", "sizes": "192x192" }]
+    }
+  ]
+}
