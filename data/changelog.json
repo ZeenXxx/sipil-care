@@ -1,15 +1,35 @@
 [
   {
-    "id": "2026-05-24:admin-dashboard,student-access",
+    "id": "2026-05-24:admin-dashboard,floating-help,help-information,public-help-onboarding,public-interface",
     "date": "2026-05-24",
     "dateLabel": "24 Mei 2026",
     "generated": true,
-    "summary": "Dashboard Admin, Akses dan Login Mahasiswa, Identitas dan Deskripsi Situs",
+    "summary": "Bantuan & FAQ Mengambang, Dashboard Admin, Bantuan Mahasiswa",
     "items": [
+      {
+        "type": "improved",
+        "title": "Bantuan & FAQ Mengambang",
+        "description": "Akses Bantuan dan FAQ dipindahkan menjadi tombol mengambang agar navbar lebih ringkas, tetapi tetap mudah ditemukan mahasiswa."
+      },
       {
         "type": "improved",
         "title": "Dashboard Admin",
         "description": "Dashboard admin ditingkatkan agar navigasi, tampilan mobile, ringkasan data, dan akses ke bagian log lebih nyaman digunakan."
+      },
+      {
+        "type": "added",
+        "title": "Bantuan Mahasiswa",
+        "description": "Panduan penggunaan SIPIL CARE ditambahkan agar mahasiswa dapat memahami login, download resource, tools, dan cara menghubungi admin."
+      },
+      {
+        "type": "improved",
+        "title": "FAQ Bisa Dibuka Tanpa Login",
+        "description": "Halaman bantuan kini dapat dibuka sebelum login dan dilengkapi panduan mulai agar mahasiswa baru lebih cepat memahami akun, pencarian materi, dan pelaporan kendala."
+      },
+      {
+        "type": "improved",
+        "title": "Tampilan Public Website",
+        "description": "Tampilan halaman public diperhalus agar lebih responsif, konsisten, dan nyaman dibuka dari perangkat mobile."
       },
       {
         "type": "improved",

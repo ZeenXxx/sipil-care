@@ -438,17 +438,19 @@ const canSeeAdminNavLink = link => {
   return true;
 };
 
+const applyRoleVisibilityToLink = link => {
+  const hidden = !canSeeAdminNavLink(link);
+  link.hidden = hidden;
+  link.style.display = hidden ? 'none' : '';
+};
+
 const applyAdminRoleUI = () => {
   const admin = currentAdmin();
   document.documentElement.dataset.adminRole = admin.role;
   document.querySelectorAll('.admin-brand small').forEach(item => {
     item.textContent = `${admin.roleLabel} Panel`;
   });
-  document.querySelectorAll('.admin-nav a').forEach(link => {
-    const hidden = !canSeeAdminNavLink(link);
-    link.hidden = hidden;
-    link.style.display = hidden ? 'none' : '';
-  });
+  document.querySelectorAll('.admin-nav a, .dashboard-quick-actions a, .dashboard-jump a').forEach(applyRoleVisibilityToLink);
   document.querySelectorAll('[data-developer-only="true"]').forEach(item => {
     if (item.closest('.admin-nav')) return;
     item.hidden = !canManageAdminAccounts();
@@ -475,6 +477,7 @@ const applyAdminRoleUIAfterSession = async () => {
   } catch {
     return;
   }
+  enforceAdminPageAccess();
   applyAdminRoleUI();
 };
 
@@ -562,6 +565,29 @@ const hasPermission = permission => currentAdmin().role === 'developer' || curre
 const canManageAdminAccounts = () => currentAdmin().role === 'developer' || hasPermission('admin_accounts');
 const canManageStudentAccounts = () => currentAdmin().role === 'developer' || hasPermission('student_accounts');
 const canDeleteDashboardLogs = () => currentAdmin().role === 'developer' || hasPermission('log_delete');
+const canAccessAdminPage = (page = location.pathname.split('/').pop() || 'dashboard.html') => {
+  const admin = currentAdmin();
+  if (admin.role === 'developer') return true;
+  const allowed = admin.allowedPages.includes(page);
+  const pagePermission = navPagePermissions[page];
+  if (!allowed) return false;
+  if (Array.isArray(pagePermission)) return pagePermission.some(permission => hasPermission(permission));
+  return pagePermission ? hasPermission(pagePermission) : true;
+};
+const firstAllowedAdminPage = () => ADMIN_ALL_PAGES.find(page => canAccessAdminPage(page)) || ADMIN_GUIDE_PAGE;
+const enforceAdminPageAccess = () => {
+  const page = location.pathname.split('/').pop() || 'dashboard.html';
+  if (!location.pathname.includes('/pages/admin/')) return;
+  if (!canAccessAdminPage(page)) {
+    location.replace(firstAllowedAdminPage());
+    return;
+  }
+  const hash = location.hash.replace('#', '');
+  const hashPermission = navHashPermissions[hash];
+  if (hashPermission && !hasPermission(hashPermission)) {
+    history.replaceState(null, '', location.pathname);
+  }
+};
 const canAccessPracticumCategory = category => {
   const admin = currentAdmin();
   if (admin.role === 'developer') return true;

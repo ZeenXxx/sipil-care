@@ -1679,7 +1679,9 @@ body.admin-page [hidden]  {
 
     border-radius: 8px;
 
-    -webkit-overflow-scrolling: touch
+    -webkit-overflow-scrolling: touch;
+
+    scrollbar-gutter: stable
 
 }
 
@@ -2133,6 +2135,13 @@ th  {
 }
 
     .admin-table-head>div  {
+
+        width: 100%
+
+}
+
+    .admin-table-head .control,
+    .admin-table-head .action-btn  {
 
         width: 100%
 
