@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="../../css/style.css?v=25">
-    <link rel="stylesheet" href="../../css/admin.css?v=38">
+    <link rel="stylesheet" href="../../css/admin.css?v=39">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -148,53 +148,37 @@
         <div class="table-wrap"><table><thead><tr><th>Judul</th><th>Kategori</th><th>Angkatan</th><th>Semester</th><th>Tipe</th><th>Tanggal</th><th>Aksi</th></tr></thead><tbody id="practicumTable"></tbody></table></div>
       </section>
 
-      <section id="practicum-attendance" class="admin-compact-stack" data-admin-permission="practicum_studio">
-        <form class="admin-card practicum-compact-card" id="practicumRosterForm">
-          <div class="admin-table-head">
-            <div>
-              <h3>Data Praktikan</h3>
-              <p class="small-text">Import banyak praktikan sekaligus tanpa membuat halaman upload terlalu panjang.</p>
-            </div>
-          </div>
-          <div class="practicum-roster-compact-form">
-            <div class="practicum-roster-fields">
-              <select class="control" id="rosterCategory"></select>
-              <input class="control" id="rosterTargetCohort" placeholder="Target angkatan, contoh 2025" required>
-              <input class="control" id="rosterAcademicYear" placeholder="Tahun akademik, contoh 2025/2026" required>
-              <input class="control" id="rosterClassName" placeholder="Kelas praktikum, contoh A / B / Reguler" required>
-            </div>
-            <textarea class="control textarea" id="rosterRows" placeholder="Paste data praktikan: NIM Nama Kelompok&#10;2350031020 Arief Tediansyah A&#10;2250031010 Mahasiswa Mengulang B" required></textarea>
-            <div class="practicum-form-actions">
-              <label class="small-text">Kelas wajib diisi. Kelompok boleh ditulis di kolom terakhir setiap baris.</label>
-              <button class="btn btn-primary" type="submit">Import Praktikan</button>
-            </div>
-          </div>
+      <section id="practicum-attendance" class="admin-panel-grid" data-admin-permission="practicum_studio">
+        <form class="admin-card" id="practicumRosterForm">
+          <h3>Data Praktikan</h3>
+          <select class="control" id="rosterCategory"></select>
+          <input class="control" id="rosterTargetCohort" placeholder="Target angkatan, contoh 2025" required>
+          <input class="control" id="rosterAcademicYear" placeholder="Tahun akademik, contoh 2025/2026" required>
+          <input class="control" id="rosterClassName" placeholder="Kelas praktikum, contoh A / B / Reguler" required>
+          <textarea class="control textarea" id="rosterRows" placeholder="Paste data praktikan: NIM Nama Kelompok&#10;2350031020 Arief Tediansyah A&#10;2250031010 Mahasiswa Mengulang B" required></textarea>
+          <label class="small-text">Kelas wajib diisi. Kelompok boleh ditulis di kolom terakhir setiap baris.</label>
+          <button class="btn btn-primary" type="submit">Import Praktikan</button>
         </form>
 
-        <form class="admin-card practicum-compact-card" id="attendanceSessionForm">
-          <div class="admin-table-head">
-            <div>
-              <h3>Buat Sesi Absen</h3>
-              <p class="small-text">Buat sesi berdasarkan praktikum, angkatan, kelas, modul, dan jam absen.</p>
-            </div>
-          </div>
-          <div class="attendance-session-compact-form">
-            <select class="control" id="attendanceCategory"></select>
-            <input class="control" id="attendanceTargetCohort" placeholder="Target angkatan, contoh 2025" required>
-            <input class="control" id="attendanceAcademicYear" placeholder="Tahun akademik, contoh 2025/2026" required>
-            <input class="control" id="attendanceClassName" placeholder="Kelas praktikum, contoh A / B / Reguler" required>
-            <input class="control" id="attendanceModuleNumber" placeholder="Modul / pertemuan ke, contoh Modul 3" required>
-            <input class="control" id="attendanceModuleTitle" placeholder="Judul modul / kegiatan" required>
+        <form class="admin-card" id="attendanceSessionForm">
+          <h3>Buat Sesi Absen</h3>
+          <select class="control" id="attendanceCategory"></select>
+          <input class="control" id="attendanceTargetCohort" placeholder="Target angkatan, contoh 2025" required>
+          <input class="control" id="attendanceAcademicYear" placeholder="Tahun akademik, contoh 2025/2026" required>
+          <input class="control" id="attendanceClassName" placeholder="Kelas praktikum, contoh A / B / Reguler" required>
+          <input class="control" id="attendanceModuleNumber" placeholder="Modul / pertemuan ke, contoh Modul 3" required>
+          <input class="control" id="attendanceModuleTitle" placeholder="Judul modul / kegiatan" required>
+          <div class="admin-inline-grid">
             <input class="control" id="attendanceDate" type="date" required>
             <input class="control" id="attendanceOpenAt" type="time" required>
             <input class="control" id="attendanceCloseAt" type="time" required>
-            <input class="control" id="attendanceCode" placeholder="Kode absen opsional">
-            <select class="control" id="attendanceStatus">
-              <option value="open">Aktif</option>
-              <option value="closed">Ditutup</option>
-            </select>
-            <button class="btn btn-primary" type="submit">Simpan Sesi Absen</button>
           </div>
+          <input class="control" id="attendanceCode" placeholder="Kode absen opsional">
+          <select class="control" id="attendanceStatus">
+            <option value="open">Aktif</option>
+            <option value="closed">Ditutup</option>
+          </select>
+          <button class="btn btn-primary" type="submit">Simpan Sesi Absen</button>
         </form>
       </section>
 
@@ -217,7 +201,7 @@
           <article><span>Sesi absen</span><strong id="attendanceSessionCount">0</strong></article>
           <article><span>Record hadir</span><strong id="attendanceRecordCount">0</strong></article>
         </div>
-        <div class="table-wrap"><table><thead><tr><th>Praktikan</th><th>Kelas</th><th>Praktikum</th><th>Modul</th><th>Status</th><th>Waktu Absen</th><th>Aksi</th></tr></thead><tbody id="attendanceRecapTable"></tbody></table></div>
+        <div class="table-wrap attendance-recap-scroll"><table><thead><tr><th>Praktikan</th><th>Kelas</th><th>Praktikum</th><th>Modul</th><th>Status</th><th>Waktu Absen</th><th>Aksi</th></tr></thead><tbody id="attendanceRecapTable"></tbody></table></div>
       </section>
 
       <section id="practicum-attendance-sessions" class="admin-card" data-admin-permission="practicum_studio">

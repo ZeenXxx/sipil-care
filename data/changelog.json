@@ -1,10 +1,10 @@
 [
   {
-    "id": "2026-05-23:admin-dashboard,changelog,practicum-admin-forms",
+    "id": "2026-05-23:admin-dashboard,attendance-recap-scroll,changelog",
     "date": "2026-05-23",
     "dateLabel": "23 Mei 2026",
     "generated": true,
-    "summary": "Changelog Otomatis, Dashboard Admin, Form Praktikum Lebih Ringkas",
+    "summary": "Changelog Otomatis, Dashboard Admin, Rekap Absensi Praktikum Lebih Rapi",
     "items": [
       {
         "type": "added",
@@ -18,8 +18,8 @@
       },
       {
         "type": "improved",
-        "title": "Form Praktikum Lebih Ringkas",
-        "description": "Area Data Praktikan dan Sesi Absen di admin dirapikan agar aslab dapat import praktikan dan membuat sesi tanpa halaman upload menjadi terlalu panjang."
+        "title": "Rekap Absensi Praktikum Lebih Rapi",
+        "description": "Tabel rekap absensi praktikum kini memiliki scroll sendiri agar daftar praktikan yang panjang tidak membuat admin harus scroll terlalu jauh ke menu berikutnya."
       },
       {
         "type": "added",

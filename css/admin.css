@@ -1625,88 +1625,6 @@ body.admin-page [hidden]  {
 
 }
 
-.admin-compact-stack  {
-
-    display: grid;
-
-    gap: 16px
-
-}
-
-.practicum-compact-card  {
-
-    padding-bottom: 20px
-
-}
-
-.practicum-roster-compact-form  {
-
-    display: grid;
-
-    grid-template-columns: minmax(320px, 1fr) minmax(320px, 1.15fr) minmax(180px, 260px);
-
-    gap: 10px;
-
-    align-items: start;
-
-    margin-top: 14px
-
-}
-
-.practicum-roster-fields  {
-
-    display: grid;
-
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-
-    gap: 10px
-
-}
-
-.practicum-roster-compact-form .textarea  {
-
-    min-height: 118px;
-
-    resize: vertical
-
-}
-
-.practicum-form-actions  {
-
-    display: grid;
-
-    gap: 10px;
-
-    align-content: start
-
-}
-
-.practicum-form-actions .btn  {
-
-    width: 100%
-
-}
-
-.attendance-session-compact-form  {
-
-    display: grid;
-
-    grid-template-columns: repeat(4, minmax(170px, 1fr));
-
-    gap: 10px;
-
-    align-items: start;
-
-    margin-top: 14px
-
-}
-
-.attendance-session-compact-form .btn  {
-
-    min-height: 52px
-
-}
-
 .cohort-list  {
 
     display: grid;
@@ -1762,6 +1680,36 @@ body.admin-page [hidden]  {
     border-radius: 8px;
 
     -webkit-overflow-scrolling: touch
+
+}
+
+.attendance-recap-scroll  {
+
+    max-height: min(520px, 58vh);
+
+    overflow: auto;
+
+    border: 1px solid var(--line);
+
+    background: #fff
+
+}
+
+.attendance-recap-scroll table  {
+
+    margin: 0
+
+}
+
+.attendance-recap-scroll th  {
+
+    position: sticky;
+
+    top: 0;
+
+    z-index: 1;
+
+    background: #fff
 
 }
 
@@ -2060,7 +2008,7 @@ th  {
 
 }
 
-    .admin-stats, .admin-panel-grid, .student-activity-summary, .cohort-list, .dashboard-overview, .admin-guide-grid, .guide-steps, .academic-settings-grid, .academic-settings-summary, .admin-inline-grid, .practicum-roster-compact-form, .practicum-roster-fields, .attendance-session-compact-form  {
+    .admin-stats, .admin-panel-grid, .student-activity-summary, .cohort-list, .dashboard-overview, .admin-guide-grid, .guide-steps, .academic-settings-grid, .academic-settings-summary, .admin-inline-grid  {
   
         grid-template-columns: 1fr
     

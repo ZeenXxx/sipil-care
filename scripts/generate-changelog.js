@@ -141,11 +141,11 @@ const rules = [
     match: (file, diff) => ['pages/admin/dashboard.html', 'js/admin-panel.js'].includes(file) && (diff.includes('dashboardHealthGrid') || diff.includes('clientErrorList') || diff.includes('dashboard-overview'))
   },
   {
-    key: 'practicum-admin-forms',
+    key: 'attendance-recap-scroll',
     type: 'improved',
-    title: 'Form Praktikum Lebih Ringkas',
-    description: 'Area Data Praktikan dan Sesi Absen di admin dirapikan agar aslab dapat import praktikan dan membuat sesi tanpa halaman upload menjadi terlalu panjang.',
-    match: (file, diff) => (file === 'pages/admin/resources.html' || file === 'css/admin.css') && (diff.includes('practicum-roster-compact-form') || diff.includes('attendance-session-compact-form'))
+    title: 'Rekap Absensi Praktikum Lebih Rapi',
+    description: 'Tabel rekap absensi praktikum kini memiliki scroll sendiri agar daftar praktikan yang panjang tidak membuat admin harus scroll terlalu jauh ke menu berikutnya.',
+    match: (file, diff) => (file === 'pages/admin/resources.html' || file === 'css/admin.css') && diff.includes('attendance-recap-scroll')
   },
   {
     key: 'student-access',
