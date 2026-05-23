@@ -11,12 +11,15 @@ import {
   courseCategory,
   courseKind,
   matchesPracticumCourse,
+  normalizeCohortYear,
   normalizeText,
   resolveAcademicPeriod,
+  sameCohort,
   semesterAccessLabel,
   semesterForCohort,
-  slugifyAcademic
-} from './academic-period.js?v=3';
+  slugifyAcademic,
+  targetCohortForPracticumResource
+} from './academic-period.js?v=4';
 
 const db = getFirestore(app);
 const SESSION_KEY = 'sipilcare_student_session';
@@ -63,6 +66,24 @@ const readStudentSession = () => {
 
 const session = readStudentSession();
 
+const studentCohort = currentSession => normalizeCohortYear(currentSession?.angkatan);
+const resourceTargetCohort = item => targetCohortForPracticumResource(item);
+const sameTarget = (left, right) => {
+  const leftTarget = resourceTargetCohort(left);
+  const rightTarget = resourceTargetCohort(right);
+  return !leftTarget || !rightTarget || sameCohort(leftTarget, rightTarget);
+};
+const hasRosterAccess = (item, rosters) => rosters.some(roster => normalize(roster.category) === normalize(item.category)
+  && sameTarget(item, roster)
+  && (!item.academicYear || !roster.academicYear || item.academicYear === roster.academicYear));
+
+const canStudentSeeModule = (item, currentSession, activeSemester, rosters) => {
+  const target = resourceTargetCohort(item);
+  const cohort = studentCohort(currentSession);
+  if (target) return sameCohort(target, cohort) || hasRosterAccess(item, rosters);
+  return Number(item.semester) === Number(activeSemester) || hasRosterAccess(item, rosters);
+};
+
 function resourceCard(item) {
   const url = accessUrl(item);
   return `<article class="module-item"><strong>${escapeText(item.title)}</strong><p>${escapeText(item.description || 'Modul pembelajaran dari admin HMS/PENDPROF.')}</p><div class="meta"><span class="badge">${escapeText(item.type || 'PDF')}</span><span class="badge">${escapeText(item.date || 'Update')}</span></div><div class="actions"><a class="btn btn-primary" href="${url}">Akses Modul</a><button class="btn btn-ghost" data-access-url="${url}" type="button">Salin Link</button></div></article>`;
@@ -71,7 +92,9 @@ function resourceCard(item) {
 const rosterForCourse = course => studentRosters.filter(roster => roster.isActive !== false && matchesPracticumCourse(roster, course));
 const sessionsForCourse = (course, rosters) => attendanceSessions.filter(sessionItem => sessionItem.status !== 'closed'
   && matchesPracticumCourse(sessionItem, course)
-  && rosters.some(roster => (roster.classKey || slugifyAcademic(roster.className)) === (sessionItem.classKey || slugifyAcademic(sessionItem.className)) && roster.academicYear === sessionItem.academicYear));
+  && rosters.some(roster => sameTarget(sessionItem, roster)
+    && (roster.classKey || slugifyAcademic(roster.className)) === (sessionItem.classKey || slugifyAcademic(sessionItem.className))
+    && roster.academicYear === sessionItem.academicYear));
 
 const isSessionOpen = sessionItem => {
   if (sessionItem.status === 'closed') return false;
@@ -132,7 +155,11 @@ function render() {
   const activeSemester = semesterForCohort(currentSession?.angkatan, academicSettings);
   const academicPeriod = resolveAcademicPeriod(academicSettings);
   const q = normalize(search.value);
-  const visibleCourses = courses.filter(course => course.semester === activeSemester || rosterForCourse(course).length);
+  const visibleCourses = courses.filter(course => {
+    const courseRosters = rosterForCourse(course);
+    const courseModules = modules.filter(item => matchesPracticumCourse(item, course) && canStudentSeeModule(item, currentSession, activeSemester, courseRosters));
+    return course.semester === activeSemester || courseRosters.length || courseModules.length;
+  });
   const semesters = [...new Set(visibleCourses.map(course => course.semester))].sort((a, b) => a - b);
   const selectedSemester = semesterFilter?.value || 'All';
   const hasConfiguredCourses = visibleCourses.length;
@@ -161,7 +188,10 @@ function render() {
       const semesterCourses = visibleCourses.filter(course => course.semester === semester);
       const cards = semesterCourses.map(course => {
         const courseRosters = rosterForCourse(course);
-        const courseModules = modules.filter(item => matchesPracticumCourse(item, course)).filter(item => normalize([item.title, item.description, item.author, item.category, item.course].join(' ')).includes(q));
+        const courseModules = modules
+          .filter(item => matchesPracticumCourse(item, course))
+          .filter(item => canStudentSeeModule(item, currentSession, activeSemester, courseRosters))
+          .filter(item => normalize([item.title, item.description, item.author, item.category, item.course, item.targetAngkatan].join(' ')).includes(q));
         return `<article class="course-card"><div class="course-top"><h3>${escapeText(course.title)}</h3><span class="course-type">${course.type}</span></div><p class="empty-module">${courseKind(course.type)} semester ${semester}${courseRosters.length ? ` &middot; Kelas ${escapeText(courseRosters.map(item => item.className).join(', '))}` : ''}</p>${attendancePanel(course, courseRosters)}<div class="module-list">${courseModules.length ? courseModules.map(resourceCard).join('') : '<p class="empty-module">Modul belum tersedia. Admin dapat upload modul Praktikum &amp; Studio dengan kategori ' + escapeText(courseCategory(course)) + '.</p>'}</div></article>`;
       }).join('');
       return `<section class="semester-block" id="semester-${semester}"><div class="semester-head"><h2>Semester ${semester}</h2><span>${semesterCourses.length} kategori praktikum/studio</span></div><div class="course-grid">${cards}</div></section>`;
@@ -181,6 +211,7 @@ function bindAttendanceButtons() {
       const currentSession = readStudentSession();
       if (!item || !currentSession) return;
       const roster = studentRosters.find(row => row.category === item.category
+        && sameTarget(item, row)
         && (row.classKey || slugifyAcademic(row.className)) === (item.classKey || slugifyAcademic(item.className))
         && row.academicYear === item.academicYear);
       if (!roster) {
@@ -209,6 +240,7 @@ function bindAttendanceButtons() {
           category: item.category,
           course: item.course,
           semester: item.semester,
+          targetAngkatan: item.targetAngkatan || roster.targetAngkatan || '',
           academicYear: item.academicYear,
           className: item.className,
           group: roster.group || '',

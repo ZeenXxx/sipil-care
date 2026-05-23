@@ -78,6 +78,7 @@
             <option value="Aplikasi Ketekniksipilan 2-S" data-semester="5" data-kind="S">Semester 5 - Aplikasi Ketekniksipilan 2-S</option>
             <option value="Pengantar Building Information Modeling (BIM)-S" data-semester="6" data-kind="S">Semester 6 - Pengantar Building Information Modeling (BIM)-S</option>
           </select>
+          <input class="control" id="practicumTargetCohort" placeholder="Target angkatan, contoh 2025" required>
           <textarea class="control textarea" id="practicumDescription" placeholder="Deskripsi modul" required></textarea>
           <input class="control" id="practicumAuthor" placeholder="Author" required>
           <input class="control" id="practicumDate" type="date" required>
@@ -134,16 +135,17 @@
 
       <section id="practicum-studio" class="admin-card" data-admin-permission="practicum_studio">
         <div class="admin-table-head"><h3>Praktikum &amp; Studio Management</h3><div><input class="control" id="practicumSearch" placeholder="Search"><select class="control" id="practicumFilter"><option value="All">All</option></select></div></div>
-        <div class="table-wrap"><table><thead><tr><th>Judul</th><th>Kategori</th><th>Semester</th><th>Tipe</th><th>Tanggal</th><th>Aksi</th></tr></thead><tbody id="practicumTable"></tbody></table></div>
+        <div class="table-wrap"><table><thead><tr><th>Judul</th><th>Kategori</th><th>Angkatan</th><th>Semester</th><th>Tipe</th><th>Tanggal</th><th>Aksi</th></tr></thead><tbody id="practicumTable"></tbody></table></div>
       </section>
 
       <section id="practicum-attendance" class="admin-panel-grid" data-admin-permission="practicum_studio">
         <form class="admin-card" id="practicumRosterForm">
           <h3>Data Praktikan</h3>
           <select class="control" id="rosterCategory"></select>
+          <input class="control" id="rosterTargetCohort" placeholder="Target angkatan, contoh 2025" required>
           <input class="control" id="rosterAcademicYear" placeholder="Tahun akademik, contoh 2025/2026" required>
           <input class="control" id="rosterClassName" placeholder="Kelas praktikum, contoh A / B / Reguler" required>
-          <textarea class="control textarea" id="rosterRows" placeholder="Paste data praktikan: NIM Nama Kelompok&#10;2350031009 Resti Sofiatul A&#10;2250031010 Mahasiswa Mengulang B" required></textarea>
+          <textarea class="control textarea" id="rosterRows" placeholder="Paste data praktikan: NIM Nama Kelompok&#10;2350031020 Arief Tediansyah A&#10;2250031010 Mahasiswa Mengulang B" required></textarea>
           <label class="small-text">Kelas wajib diisi. Kelompok boleh ditulis di kolom terakhir setiap baris.</label>
           <button class="btn btn-primary" type="submit">Import Praktikan</button>
         </form>
@@ -151,6 +153,7 @@
         <form class="admin-card" id="attendanceSessionForm">
           <h3>Buat Sesi Absen</h3>
           <select class="control" id="attendanceCategory"></select>
+          <input class="control" id="attendanceTargetCohort" placeholder="Target angkatan, contoh 2025" required>
           <input class="control" id="attendanceAcademicYear" placeholder="Tahun akademik, contoh 2025/2026" required>
           <input class="control" id="attendanceClassName" placeholder="Kelas praktikum, contoh A / B / Reguler" required>
           <input class="control" id="attendanceModuleNumber" placeholder="Modul / pertemuan ke, contoh Modul 3" required>
@@ -214,6 +217,6 @@
     <script src="../../js/student-config.js?v=20"></script>
     <script src="../../js/auth.js?v=30"></script>
     <script src="../../js/push-config.js?v=1"></script>
-    <script type="module" src="../../js/admin-panel.js?v=55"></script>
+    <script type="module" src="../../js/admin-panel.js?v=56"></script>
   </body>
 </html>

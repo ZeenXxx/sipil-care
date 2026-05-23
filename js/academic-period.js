@@ -126,6 +126,52 @@ export const cohortYear = value => {
   return year < 100 ? 2000 + year : year;
 };
 
+export const normalizeCohortYear = value => {
+  const year = cohortYear(value);
+  return year ? String(year) : '';
+};
+
+export const targetCohortForSemester = (semester, settings = {}, date = new Date()) => {
+  const semesterNumber = Number(semester);
+  if (!Number.isFinite(semesterNumber) || semesterNumber < 1) return '';
+  const period = resolveAcademicPeriod(settings, date);
+  return String(period.academicYearStart - Math.floor((semesterNumber - 1) / 2));
+};
+
+export const academicYearForCohortSemester = (angkatan, semester) => {
+  const cohort = cohortYear(angkatan);
+  const semesterNumber = Number(semester);
+  if (!cohort || !Number.isFinite(semesterNumber) || semesterNumber < 1) return '';
+  const start = cohort + Math.floor((semesterNumber - 1) / 2);
+  return `${start}/${start + 1}`;
+};
+
+export const sameCohort = (left, right) => {
+  const leftYear = cohortYear(left);
+  const rightYear = cohortYear(right);
+  return Boolean(leftYear && rightYear && leftYear === rightYear);
+};
+
+export const targetCohortForPracticumResource = resource => {
+  const explicit = normalizeCohortYear(resource?.targetAngkatan || resource?.targetCohort || resource?.angkatanTarget);
+  if (explicit) return explicit;
+
+  const semester = semesterForPracticumResource(resource);
+  if (!semester) return '';
+
+  const academicYearMatch = String(resource?.academicYear || '').match(/\d{4}/);
+  if (academicYearMatch) {
+    return String(Number(academicYearMatch[0]) - Math.floor((Number(semester) - 1) / 2));
+  }
+
+  const resourceDate = resource?.date ? new Date(resource.date) : null;
+  if (resourceDate && !Number.isNaN(resourceDate.getTime())) {
+    return targetCohortForSemester(semester, {}, resourceDate);
+  }
+
+  return '';
+};
+
 export const semesterForCohort = (angkatan, settings = {}, date = new Date()) => {
   const cohort = cohortYear(angkatan);
   if (!cohort) return null;

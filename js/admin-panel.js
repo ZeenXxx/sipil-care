@@ -21,15 +21,20 @@ import {
   PRACTICUM_ATTENDANCE_SESSION_COLLECTION,
   PRACTICUM_COURSES,
   PRACTICUM_ROSTER_COLLECTION,
+  academicYearForCohortSemester,
   academicPeriodLabel,
   courseCategory,
   courseFromCategory,
   courseKind,
   defaultAcademicPeriod,
+  normalizeCohortYear,
   normalizeAcademicSettings,
   resolveAcademicPeriod,
-  slugifyAcademic
-} from './academic-period.js?v=3';
+  sameCohort,
+  slugifyAcademic,
+  targetCohortForPracticumResource,
+  targetCohortForSemester
+} from './academic-period.js?v=4';
 
 if (window.SIPILCARE_ADMIN_READY) await window.SIPILCARE_ADMIN_READY;
 
@@ -63,6 +68,7 @@ const practicumForm = document.getElementById('practicumForm');
 const practicumId = document.getElementById('practicumId');
 const practicumTitle = document.getElementById('practicumTitle');
 const practicumCategory = document.getElementById('practicumCategory');
+const practicumTargetCohort = document.getElementById('practicumTargetCohort');
 const practicumDescription = document.getElementById('practicumDescription');
 const practicumAuthor = document.getElementById('practicumAuthor');
 const practicumDate = document.getElementById('practicumDate');
@@ -74,11 +80,13 @@ const practicumFilter = document.getElementById('practicumFilter');
 const practicumTable = document.getElementById('practicumTable');
 const practicumRosterForm = document.getElementById('practicumRosterForm');
 const rosterCategory = document.getElementById('rosterCategory');
+const rosterTargetCohort = document.getElementById('rosterTargetCohort');
 const rosterAcademicYear = document.getElementById('rosterAcademicYear');
 const rosterClassName = document.getElementById('rosterClassName');
 const rosterRows = document.getElementById('rosterRows');
 const attendanceSessionForm = document.getElementById('attendanceSessionForm');
 const attendanceCategory = document.getElementById('attendanceCategory');
+const attendanceTargetCohort = document.getElementById('attendanceTargetCohort');
 const attendanceAcademicYear = document.getElementById('attendanceAcademicYear');
 const attendanceClassName = document.getElementById('attendanceClassName');
 const attendanceModuleNumber = document.getElementById('attendanceModuleNumber');
@@ -1232,8 +1240,13 @@ function validateResourceForm() {
 
 function validatePracticumForm() {
   const meta = selectedPracticumMeta();
+  const targetAngkatan = selectedTargetCohort(practicumTargetCohort, meta);
   if (!meta.category || !canAccessPracticumCategory(meta.category)) {
     toast('Akun ini tidak memiliki scope untuk praktikum/studio yang dipilih.');
+    return false;
+  }
+  if (!targetAngkatan) {
+    toast('Isi target angkatan modul praktikum/studio.');
     return false;
   }
   if (!practicumTitle.value.trim() || !practicumDescription.value.trim() || !practicumAuthor.value.trim() || !practicumDate.value) {
@@ -1317,6 +1330,7 @@ function practicumTableRender() {
       <tr>
         <td>${escapeText(item.title)}</td>
         <td>${escapeText(item.category)}</td>
+        <td>${escapeText(targetCohortForPracticumResource(item) || 'Legacy')}</td>
         <td>Semester ${escapeText(item.semester || '-')}</td>
         <td>${escapeText(item.kind === 'P' ? 'Praktikum' : 'Studio')} / ${escapeText(item.type || 'PDF')}</td>
         <td>${escapeText(item.date)}</td>
@@ -1324,7 +1338,7 @@ function practicumTableRender() {
       </tr>
     `)
     .join('');
-  if (practicumTable) practicumTable.innerHTML = rows || '<tr><td colspan="6">Belum ada modul praktikum/studio.</td></tr>';
+  if (practicumTable) practicumTable.innerHTML = rows || '<tr><td colspan="7">Belum ada modul praktikum/studio.</td></tr>';
 }
 
 function practicumCourseOptions() {
@@ -1340,6 +1354,7 @@ function practicumCourseOptions() {
     select.innerHTML = html;
     if (current && [...select.options].some(option => option.value === current)) select.value = current;
   });
+  syncAllPracticumTargetDefaults();
 }
 
 const normalizeClassName = value => String(value || '').trim().replace(/\s+/g, ' ');
@@ -1361,6 +1376,41 @@ function selectedCourseFrom(select) {
     semester: course.semester,
     kind: course.type
   };
+}
+
+const targetCohortSuggestion = meta => targetCohortForSemester(meta?.semester, academicSettings);
+
+function applyPracticumTargetDefaults(select, cohortInput, academicYearInput, force = false) {
+  const meta = selectedCourseFrom(select);
+  const suggestedCohort = targetCohortSuggestion(meta);
+  const currentCohort = normalizeCohortYear(cohortInput?.value);
+  const nextCohort = currentCohort || suggestedCohort;
+  if (cohortInput && (force || !currentCohort)) cohortInput.value = suggestedCohort || '';
+  if (academicYearInput && (force || !String(academicYearInput.value || '').trim())) {
+    academicYearInput.value = academicYearForCohortSemester(nextCohort || suggestedCohort, meta.semester);
+  }
+}
+
+function syncAllPracticumTargetDefaults(force = false) {
+  applyPracticumTargetDefaults(practicumCategory, practicumTargetCohort, null, force);
+  applyPracticumTargetDefaults(rosterCategory, rosterTargetCohort, rosterAcademicYear, force);
+  applyPracticumTargetDefaults(attendanceCategory, attendanceTargetCohort, attendanceAcademicYear, force);
+}
+
+function refreshAcademicYearFromTarget(select, cohortInput, academicYearInput) {
+  if (!academicYearInput) return;
+  const meta = selectedCourseFrom(select);
+  academicYearInput.value = academicYearForCohortSemester(selectedTargetCohort(cohortInput, meta), meta.semester);
+}
+
+function selectedTargetCohort(input, meta) {
+  return normalizeCohortYear(input?.value) || targetCohortSuggestion(meta);
+}
+
+function matchesTargetCohort(item, targetAngkatan) {
+  const target = normalizeCohortYear(targetAngkatan);
+  const itemTarget = targetCohortForPracticumResource(item);
+  return !target || !itemTarget || sameCohort(itemTarget, target);
 }
 
 function parsePracticumRosterRows(text, fallbackClassName) {
@@ -1440,6 +1490,7 @@ function attendanceRecapRows() {
         roster.group,
         roster.course,
         roster.category,
+        roster.targetAngkatan,
         roster.academicYear
       ].join(' ').toLowerCase().includes(q));
   }
@@ -1449,6 +1500,7 @@ function attendanceRecapRows() {
       .filter(roster => roster.isActive !== false
         && canAccessPracticumCategory(roster.category)
         && roster.category === session.category
+        && matchesTargetCohort(roster, session.targetAngkatan || session.targetCohort)
         && (roster.classKey || slugifyAcademic(roster.className)) === (session.classKey || slugifyAcademic(session.className))
         && roster.academicYear === session.academicYear)
       .forEach(roster => {
@@ -1464,6 +1516,7 @@ function attendanceRecapRows() {
     roster.group,
     session.course,
     session.category,
+    session.targetAngkatan,
     session.moduleNumber,
     session.moduleTitle,
     record?.status
@@ -1485,7 +1538,7 @@ function attendanceRecapRender() {
       <tr>
         <td><b>${escapeText(roster.nim)}</b><br><span class="small-text">${escapeText(roster.name)}</span></td>
         <td>${escapeText(roster.className)}${roster.group ? `<br><span class="small-text">Kelompok ${escapeText(roster.group)}</span>` : ''}</td>
-        <td>${escapeText(session?.course || roster.course || roster.category)}<br><span class="small-text">${escapeText(session?.academicYear || roster.academicYear)}</span></td>
+        <td>${escapeText(session?.course || roster.course || roster.category)}<br><span class="small-text">Angkatan ${escapeText(targetCohortForPracticumResource(session || roster) || '-')} &middot; ${escapeText(session?.academicYear || roster.academicYear)}</span></td>
         <td><b>${escapeText(session?.moduleNumber || 'Belum ada sesi')}</b><br><span class="small-text">${escapeText(session?.moduleTitle || 'Buat sesi absen untuk mulai rekap hadir.')}</span></td>
         <td>${session ? status : '<span class="student-status never">Roster</span>'}</td>
         <td>${escapeText(record ? formatDateTime(record.attendedAt || record.createdAt) : '-')}</td>
@@ -1512,7 +1565,7 @@ function attendanceSessionTableRender() {
     .map(session => `
       <tr>
         <td><b>${escapeText(session.course || session.category)}</b><br><span class="small-text">${escapeText(session.category || '-')}</span></td>
-        <td>${escapeText(session.className || '-')}<br><span class="small-text">${escapeText(session.academicYear || '-')}</span></td>
+        <td>${escapeText(session.className || '-')}<br><span class="small-text">Angkatan ${escapeText(targetCohortForPracticumResource(session) || '-')} &middot; ${escapeText(session.academicYear || '-')}</span></td>
         <td><b>${escapeText(session.moduleNumber || '-')}</b><br><span class="small-text">${escapeText(session.moduleTitle || '-')}</span></td>
         <td>${escapeText(session.date || '-')}<br><span class="small-text">${escapeText([session.openAt, session.closeAt].filter(Boolean).join(' - ') || '-')}</span></td>
         <td><span class="badge">${escapeText(session.status === 'closed' ? 'Ditutup' : 'Aktif')}</span></td>
@@ -1539,6 +1592,7 @@ function exportAttendanceCsv() {
     'Kelompok',
     'Praktikum',
     'Tahun Akademik',
+    'Angkatan Target',
     'Modul',
     'Judul Modul',
     'Status',
@@ -1550,6 +1604,7 @@ function exportAttendanceCsv() {
     roster.group || '',
     session?.course || roster.course || roster.category,
     session?.academicYear || roster.academicYear,
+    targetCohortForPracticumResource(session || roster) || '',
     session?.moduleNumber || '',
     session?.moduleTitle || '',
     session ? record ? 'Hadir' : 'Belum absen' : 'Roster',
@@ -2210,6 +2265,8 @@ const resetPracticumForm = () => {
   if (!practicumForm) return;
   practicumForm.reset();
   if (practicumId) practicumId.value = '';
+  if (practicumTargetCohort) practicumTargetCohort.value = '';
+  applyPracticumTargetDefaults(practicumCategory, practicumTargetCohort, null, true);
   editingPracticumDocId = null;
   const btn = practicumForm.querySelector('button[type="submit"]');
   if (btn) btn.textContent = 'Simpan Modul Praktikum/Studio';
@@ -2347,12 +2404,15 @@ on(practicumForm, 'submit', async e => {
   setLoading(true);
   try {
     const meta = selectedPracticumMeta();
+    const targetAngkatan = selectedTargetCohort(practicumTargetCohort, meta);
     const data = {
       title: practicumTitle.value.trim(),
       category: meta.category,
       course: meta.course,
       semester: meta.semester,
       kind: meta.kind,
+      targetAngkatan,
+      academicYear: academicYearForCohortSemester(targetAngkatan, meta.semester),
       description: practicumDescription.value.trim(),
       author: practicumAuthor.value.trim(),
       date: practicumDate.value,
@@ -2368,7 +2428,7 @@ on(practicumForm, 'submit', async e => {
         targetType: 'practicum_studio',
         targetId: editingPracticumDocId,
         targetTitle: data.title,
-        detail: `Modul ${data.category} diperbarui.`
+        detail: `Modul ${data.category} untuk angkatan ${targetAngkatan} diperbarui.`
       });
       toast('Modul praktikum/studio berhasil diperbarui.');
     } else {
@@ -2378,7 +2438,7 @@ on(practicumForm, 'submit', async e => {
         targetType: 'practicum_studio',
         targetId: created.id,
         targetTitle: data.title,
-        detail: `Modul ${data.category} ditambahkan.`
+        detail: `Modul ${data.category} untuk angkatan ${targetAngkatan} ditambahkan.`
       });
       toast('Modul praktikum/studio berhasil diupload.');
     }
@@ -2399,10 +2459,15 @@ on(practicumRosterForm, 'submit', async e => {
   const academicYear = String(rosterAcademicYear?.value || '').trim();
   const className = normalizeClassName(rosterClassName?.value);
   const meta = selectedCourseFrom(rosterCategory);
+  const targetAngkatan = selectedTargetCohort(rosterTargetCohort, meta);
   const parsed = parsePracticumRosterRows(rosterRows?.value, className);
 
   if (!meta.category || !canAccessPracticumCategory(meta.category)) {
     toast('Akun ini tidak memiliki scope untuk data praktikan tersebut.');
+    return;
+  }
+  if (!targetAngkatan) {
+    toast('Isi target angkatan data praktikan.');
     return;
   }
   if (!academicYear || !className || !parsed.rows.length) {
@@ -2425,6 +2490,7 @@ on(practicumRosterForm, 'submit', async e => {
         nim: row.nim,
         name: row.name,
         group: row.group,
+        targetAngkatan,
         className,
         classKey: slugifyAcademic(className),
         academicYear,
@@ -2438,9 +2504,9 @@ on(practicumRosterForm, 'submit', async e => {
     await writeAuditLog({
       action: 'IMPORT_PRACTICUM_ROSTER',
       targetType: 'practicum_roster',
-      targetId: `${meta.category} ${academicYear} ${className}`,
-      targetTitle: `${meta.course} - Kelas ${className}`,
-      detail: `${parsed.rows.length} praktikan diimport untuk ${meta.course}, kelas ${className}, tahun akademik ${academicYear}.`
+      targetId: `${meta.category} ${targetAngkatan} ${academicYear} ${className}`,
+      targetTitle: `${meta.course} - Angkatan ${targetAngkatan} - Kelas ${className}`,
+      detail: `${parsed.rows.length} praktikan diimport untuk ${meta.course}, angkatan ${targetAngkatan}, kelas ${className}, tahun akademik ${academicYear}.`
     });
     rosterRows.value = '';
     toast(`${parsed.rows.length} praktikan berhasil diimport.`);
@@ -2458,6 +2524,7 @@ on(attendanceSessionForm, 'submit', async e => {
   if (!requirePermission('practicum_studio', 'Sesi Absen')) return;
 
   const meta = selectedCourseFrom(attendanceCategory);
+  const targetAngkatan = selectedTargetCohort(attendanceTargetCohort, meta);
   const academicYear = String(attendanceAcademicYear?.value || '').trim();
   const className = normalizeClassName(attendanceClassName?.value);
   const moduleNumber = String(attendanceModuleNumber?.value || '').trim();
@@ -2470,12 +2537,16 @@ on(attendanceSessionForm, 'submit', async e => {
     toast('Akun ini tidak memiliki scope untuk sesi absen tersebut.');
     return;
   }
+  if (!targetAngkatan) {
+    toast('Isi target angkatan sesi absen.');
+    return;
+  }
   if (!academicYear || !className || !moduleNumber || !moduleTitle || !date || !openAt || !closeAt) {
     toast('Lengkapi praktikum, kelas, modul, tanggal, jam buka, dan jam tutup absen.');
     return;
   }
 
-  const rosterCount = practicumRosters.filter(item => item.isActive !== false && item.category === meta.category && item.academicYear === academicYear && item.className === className).length;
+  const rosterCount = practicumRosters.filter(item => item.isActive !== false && item.category === meta.category && matchesTargetCohort(item, targetAngkatan) && item.academicYear === academicYear && item.className === className).length;
   if (!rosterCount && !confirm('Belum ada data praktikan untuk kelas ini. Tetap buat sesi absen?')) return;
 
   try {
@@ -2483,6 +2554,7 @@ on(attendanceSessionForm, 'submit', async e => {
     if (submit) submit.disabled = true;
     const payload = {
       ...meta,
+      targetAngkatan,
       academicYear,
       className,
       classKey: slugifyAcademic(className),
@@ -2502,7 +2574,7 @@ on(attendanceSessionForm, 'submit', async e => {
       targetType: 'practicum_attendance_session',
       targetId: created.id,
       targetTitle: `${payload.course} - ${payload.moduleNumber}`,
-      detail: `Sesi absen ${payload.moduleNumber} ${payload.moduleTitle}, kelas ${payload.className}, dibuat.`
+      detail: `Sesi absen ${payload.moduleNumber} ${payload.moduleTitle}, angkatan ${targetAngkatan}, kelas ${payload.className}, dibuat.`
     });
     attendanceModuleNumber.value = '';
     attendanceModuleTitle.value = '';
@@ -2745,6 +2817,7 @@ on(practicumTable, 'click', async e => {
       practicumId.value = docId;
       practicumTitle.value = item.title || '';
       practicumCategory.value = item.category || 'Computer Aided Design (CAD)-S';
+      practicumTargetCohort.value = targetCohortForPracticumResource(item) || targetCohortSuggestion(selectedCourseFrom(practicumCategory));
       practicumDescription.value = item.description || '';
       practicumAuthor.value = item.author || '';
       practicumDate.value = item.date || '';
@@ -3734,6 +3807,11 @@ on(softwareSearch, 'input', () => softwareTableRender());
 on(softwareFilter, 'change', () => softwareTableRender());
 on(practicumSearch, 'input', () => practicumTableRender());
 on(practicumFilter, 'change', () => practicumTableRender());
+on(practicumCategory, 'change', () => applyPracticumTargetDefaults(practicumCategory, practicumTargetCohort, null, true));
+on(rosterCategory, 'change', () => applyPracticumTargetDefaults(rosterCategory, rosterTargetCohort, rosterAcademicYear, true));
+on(attendanceCategory, 'change', () => applyPracticumTargetDefaults(attendanceCategory, attendanceTargetCohort, attendanceAcademicYear, true));
+on(rosterTargetCohort, 'change', () => refreshAcademicYearFromTarget(rosterCategory, rosterTargetCohort, rosterAcademicYear));
+on(attendanceTargetCohort, 'change', () => refreshAcademicYearFromTarget(attendanceCategory, attendanceTargetCohort, attendanceAcademicYear));
 on(attendanceSearch, 'input', () => attendanceRecapRender());
 on(attendanceSessionFilter, 'change', () => attendanceRecapRender());
 on(attendanceExport, 'click', () => exportAttendanceCsv());
@@ -4075,6 +4153,7 @@ onSnapshot(attendanceRecordQuery, snapshot => {
 onSnapshot(doc(db, ACADEMIC_SETTINGS_COLLECTION, ACADEMIC_SETTINGS_DOC), snapshot => {
   academicSettings = snapshot.exists() ? snapshot.data() : {};
   renderAcademicSettingsForm();
+  syncAllPracticumTargetDefaults();
 }, err => {
   console.error('Firestore academic settings error:', err);
   if (academicSettingsSummary) {

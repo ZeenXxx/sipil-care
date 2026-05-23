@@ -14,11 +14,14 @@ import {
   ACADEMIC_SETTINGS_COLLECTION,
   ACADEMIC_SETTINGS_DOC,
   PRACTICUM_ROSTER_COLLECTION,
+  normalizeCohortYear,
   normalizeText,
+  sameCohort,
   semesterAccessLabel,
   semesterForCohort,
-  semesterForPracticumResource
-} from './academic-period.js?v=3';
+  semesterForPracticumResource,
+  targetCohortForPracticumResource
+} from './academic-period.js?v=4';
 
 const db = getFirestore(app);
 const SESSION_KEY = 'sipilcare_student_session';
@@ -210,12 +213,17 @@ const canAccessPracticumResource = (resource, session, settings, rosters = []) =
   if (source !== 'practicum') return { allowed: true };
   const activeSemester = semesterForCohort(session?.angkatan, settings);
   const resourceSemester = semesterForPracticumResource(resource);
+  const studentCohort = normalizeCohortYear(session?.angkatan);
+  const targetCohort = targetCohortForPracticumResource(resource);
   const rosterAccess = rosters.some(roster => {
     const resourceCategory = normalizeText(resource?.category);
     const resourceCourse = normalizeText(resource?.course || resource?.title);
     const rosterCategory = normalizeText(roster?.category);
     const rosterCourse = normalizeText(roster?.course);
-    return resourceCategory === rosterCategory || resourceCourse.includes(rosterCourse);
+    const rosterTarget = targetCohortForPracticumResource(roster);
+    const sameTarget = !targetCohort || !rosterTarget || sameCohort(targetCohort, rosterTarget);
+    const sameYear = !resource?.academicYear || !roster?.academicYear || resource.academicYear === roster.academicYear;
+    return sameTarget && sameYear && (resourceCategory === rosterCategory || resourceCourse.includes(rosterCourse));
   });
 
   if (!activeSemester) {
@@ -234,7 +242,15 @@ const canAccessPracticumResource = (resource, session, settings, rosters = []) =
     };
   }
 
-  if (resourceSemester !== activeSemester && !rosterAccess) {
+  if (targetCohort && !sameCohort(targetCohort, studentCohort) && !rosterAccess) {
+    return {
+      allowed: false,
+      title: 'Modul tersedia untuk angkatan lain',
+      description: `Modul ini ditujukan untuk angkatan ${targetCohort}. Akun kamu terdaftar sebagai angkatan ${studentCohort || '-'}.`
+    };
+  }
+
+  if (!targetCohort && resourceSemester !== activeSemester && !rosterAccess) {
     return {
       allowed: false,
       title: 'Modul tidak tersedia untuk semester aktif',
