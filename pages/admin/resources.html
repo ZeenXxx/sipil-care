@@ -134,7 +134,17 @@
       </section>
 
       <section id="practicum-studio" class="admin-card" data-admin-permission="practicum_studio">
-        <div class="admin-table-head"><h3>Praktikum &amp; Studio Management</h3><div><input class="control" id="practicumSearch" placeholder="Search"><select class="control" id="practicumFilter"><option value="All">All</option></select></div></div>
+        <div class="admin-table-head">
+          <div>
+            <h3>Praktikum &amp; Studio Management</h3>
+            <p class="small-text">Gunakan rapikan data lama untuk menyimpan target angkatan ke modul, roster, dan sesi lama.</p>
+          </div>
+          <div>
+            <input class="control" id="practicumSearch" placeholder="Search">
+            <select class="control" id="practicumFilter"><option value="All">All</option></select>
+            <button class="action-btn" id="practicumBackfillTargets" type="button">Rapikan Data Lama</button>
+          </div>
+        </div>
         <div class="table-wrap"><table><thead><tr><th>Judul</th><th>Kategori</th><th>Angkatan</th><th>Semester</th><th>Tipe</th><th>Tanggal</th><th>Aksi</th></tr></thead><tbody id="practicumTable"></tbody></table></div>
       </section>
 
@@ -182,6 +192,8 @@
             <input class="control" id="attendanceSearch" placeholder="Cari NIM, nama, kelas, modul">
             <select class="control" id="attendanceSessionFilter"><option value="All">Semua sesi</option></select>
             <button class="action-btn" id="attendanceExport" type="button">Export CSV</button>
+            <button class="action-btn" id="rosterExport" type="button">Backup Roster</button>
+            <button class="action-btn" id="sessionExport" type="button">Backup Sesi</button>
           </div>
         </div>
         <div class="student-activity-summary">
@@ -217,6 +229,6 @@
     <script src="../../js/student-config.js?v=20"></script>
     <script src="../../js/auth.js?v=30"></script>
     <script src="../../js/push-config.js?v=1"></script>
-    <script type="module" src="../../js/admin-panel.js?v=56"></script>
+    <script type="module" src="../../js/admin-panel.js?v=57"></script>
   </body>
 </html>

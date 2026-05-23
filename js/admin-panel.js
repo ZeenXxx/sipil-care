@@ -31,6 +31,7 @@ import {
   normalizeAcademicSettings,
   resolveAcademicPeriod,
   sameCohort,
+  semesterForPracticumResource,
   slugifyAcademic,
   targetCohortForPracticumResource,
   targetCohortForSemester
@@ -78,6 +79,7 @@ const practicumFile = document.getElementById('practicumFile');
 const practicumSearch = document.getElementById('practicumSearch');
 const practicumFilter = document.getElementById('practicumFilter');
 const practicumTable = document.getElementById('practicumTable');
+const practicumBackfillTargets = document.getElementById('practicumBackfillTargets');
 const practicumRosterForm = document.getElementById('practicumRosterForm');
 const rosterCategory = document.getElementById('rosterCategory');
 const rosterTargetCohort = document.getElementById('rosterTargetCohort');
@@ -99,6 +101,8 @@ const attendanceStatus = document.getElementById('attendanceStatus');
 const attendanceSearch = document.getElementById('attendanceSearch');
 const attendanceSessionFilter = document.getElementById('attendanceSessionFilter');
 const attendanceExport = document.getElementById('attendanceExport');
+const rosterExport = document.getElementById('rosterExport');
+const sessionExport = document.getElementById('sessionExport');
 const attendanceRecapTable = document.getElementById('attendanceRecapTable');
 const attendanceSessionTable = document.getElementById('attendanceSessionTable');
 const rosterTotalCount = document.getElementById('rosterTotalCount');
@@ -221,6 +225,8 @@ const adminSearch = document.getElementById('adminSearch');
 const adminFilter = document.getElementById('adminFilter');
 const adminStats = document.getElementById('adminStats');
 const dashboardHealthGrid = document.getElementById('dashboardHealthGrid');
+const practicumOverviewSummary = document.getElementById('practicumOverviewSummary');
+const practicumIssueList = document.getElementById('practicumIssueList');
 const adminPermissionTitle = document.getElementById('adminPermissionTitle');
 const adminPermissionSummary = document.getElementById('adminPermissionSummary');
 const adminPermissionChips = document.getElementById('adminPermissionChips');
@@ -634,6 +640,8 @@ const auditActionLabels = {
   CREATE_PRACTICUM: 'Tambah praktikum/studio',
   UPDATE_PRACTICUM: 'Edit praktikum/studio',
   DELETE_PRACTICUM: 'Hapus praktikum/studio',
+  BACKFILL_PRACTICUM_TARGETS: 'Rapikan target angkatan praktikum',
+  EXPORT_PRACTICUM_BACKUP: 'Export backup praktikum',
   IMPORT_PRACTICUM_ROSTER: 'Import praktikan',
   DELETE_PRACTICUM_ROSTER: 'Hapus praktikan',
   CREATE_ATTENDANCE_SESSION: 'Tambah sesi absen',
@@ -929,6 +937,65 @@ function renderDashboardHealth() {
     `${clientErrors.length} error browser lokal`
   ];
   dashboardHealthGrid.innerHTML = items.map(item => `<span>${escapeText(item)}</span>`).join('');
+}
+
+function practicumScopeItems(items) {
+  return items.filter(item => canAccessPracticumCategory(item.category));
+}
+
+function practicumNeedsTarget(item) {
+  return !targetCohortForPracticumResource(item);
+}
+
+function renderPracticumOverview() {
+  if (!practicumOverviewSummary && !practicumIssueList) return;
+  const scopedModules = practicumScopeItems(practicumModules);
+  const scopedRosters = practicumScopeItems(practicumRosters).filter(item => item.isActive !== false);
+  const scopedSessions = practicumScopeItems(practicumAttendanceSessions);
+  const openSessions = scopedSessions.filter(item => item.status !== 'closed');
+  const missingTargets = [
+    ...scopedModules.filter(practicumNeedsTarget).map(item => ({ type: 'Modul', label: item.title || item.category || item.docId })),
+    ...scopedRosters.filter(practicumNeedsTarget).map(item => ({ type: 'Roster', label: `${item.nim || '-'} ${item.course || item.category || ''}`.trim() })),
+    ...scopedSessions.filter(practicumNeedsTarget).map(item => ({ type: 'Sesi', label: attendanceSessionLabel(item) || item.docId }))
+  ];
+  const rosterKeys = new Set(scopedRosters.map(item => [item.category, targetCohortForPracticumResource(item), item.academicYear, item.classKey || slugifyAcademic(item.className)].join('|')));
+  const sessionsWithoutRoster = scopedSessions.filter(item => !rosterKeys.has([item.category, targetCohortForPracticumResource(item), item.academicYear, item.classKey || slugifyAcademic(item.className)].join('|')));
+  const cohorts = [...new Set([
+    ...scopedModules.map(targetCohortForPracticumResource),
+    ...scopedRosters.map(targetCohortForPracticumResource),
+    ...scopedSessions.map(targetCohortForPracticumResource)
+  ].filter(Boolean))].sort();
+
+  if (practicumOverviewSummary) {
+    practicumOverviewSummary.innerHTML = `
+      <article><span>Target angkatan</span><strong>${cohorts.length}</strong></article>
+      <article><span>Modul</span><strong>${scopedModules.length}</strong></article>
+      <article><span>Roster aktif</span><strong>${scopedRosters.length}</strong></article>
+      <article><span>Sesi aktif</span><strong>${openSessions.length}</strong></article>
+      <article><span>Perlu dirapikan</span><strong>${missingTargets.length}</strong></article>
+    `;
+  }
+
+  if (practicumIssueList) {
+    const issues = [
+      ...missingTargets.slice(0, 5).map(item => ({
+        title: `${item.type} belum punya target angkatan`,
+        detail: item.label || 'Data lama'
+      })),
+      ...sessionsWithoutRoster.slice(0, 5).map(item => ({
+        title: 'Sesi belum punya roster cocok',
+        detail: `${item.course || item.category || '-'} - Angkatan ${targetCohortForPracticumResource(item) || '-'} - Kelas ${item.className || '-'}`
+      }))
+    ];
+    practicumIssueList.innerHTML = issues.length
+      ? issues.map(item => `
+        <article class="client-error-item">
+          <strong>${escapeText(item.title)}</strong>
+          <small>${escapeText(item.detail)}</small>
+        </article>
+      `).join('')
+      : '<div class="empty">Data praktikum terlihat rapi. Tidak ada target angkatan atau roster yang perlu dicek cepat.</div>';
+  }
 }
 
 function renderAcademicSettingsForm() {
@@ -1294,6 +1361,7 @@ function stats() {
     <div class="admin-stat"><b>${auditLogs.length}</b><span>Audit Log</span></div>
   `;
   renderDashboardHealth();
+  renderPracticumOverview();
   renderAdminPermissionSummary();
   renderClientErrors();
 }
@@ -1411,6 +1479,51 @@ function matchesTargetCohort(item, targetAngkatan) {
   const target = normalizeCohortYear(targetAngkatan);
   const itemTarget = targetCohortForPracticumResource(item);
   return !target || !itemTarget || sameCohort(itemTarget, target);
+}
+
+function expectedAcademicYearFor(meta, targetAngkatan) {
+  return academicYearForCohortSemester(targetAngkatan, meta?.semester);
+}
+
+function confirmAcademicYearIfNeeded(inputYear, meta, targetAngkatan) {
+  const expected = expectedAcademicYearFor(meta, targetAngkatan);
+  if (!inputYear || !expected || inputYear === expected) return true;
+  return confirm(`Tahun akademik ${inputYear} tidak sesuai dengan angkatan ${targetAngkatan} semester ${meta.semester}. Rekomendasi sistem: ${expected}. Tetap simpan?`);
+}
+
+function buildPracticumBackfill(collectionName, items) {
+  const now = new Date().toISOString();
+  return items
+    .filter(item => item.docId)
+    .map(item => {
+      const targetAngkatan = targetCohortForPracticumResource(item);
+      const semester = semesterForPracticumResource(item);
+      if (!targetAngkatan || !semester) return null;
+      const payload = {};
+      if (!normalizeCohortYear(item.targetAngkatan || item.targetCohort || item.angkatanTarget)) payload.targetAngkatan = targetAngkatan;
+      if (!item.academicYear) payload.academicYear = expectedAcademicYearFor({ semester }, targetAngkatan);
+      if (!Object.keys(payload).length) return null;
+      return {
+        collectionName,
+        docId: item.docId,
+        payload: {
+          ...payload,
+          normalizedAt: now,
+          normalizedBy: currentAdmin().username
+        }
+      };
+    })
+    .filter(Boolean);
+}
+
+async function commitFirestoreUpdates(updates) {
+  for (let start = 0; start < updates.length; start += 450) {
+    const batch = writeBatch(db);
+    updates.slice(start, start + 450).forEach(item => {
+      batch.update(doc(db, item.collectionName, item.docId), item.payload);
+    });
+    await batch.commit();
+  }
 }
 
 function parsePracticumRosterRows(text, fallbackClassName) {
@@ -1583,6 +1696,18 @@ function attendanceSessionTableRender() {
 
 const csvEscape = value => `"${String(value ?? '').replace(/"/g, '""')}"`;
 
+function downloadCsv(filename, rows) {
+  const blob = new Blob([`\ufeff${rows.map(row => row.map(csvEscape).join(',')).join('\n')}`], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
 function exportAttendanceCsv() {
   const rows = attendanceRecapRows();
   const csvRows = [[
@@ -1610,13 +1735,89 @@ function exportAttendanceCsv() {
     session ? record ? 'Hadir' : 'Belum absen' : 'Roster',
     record ? formatDateTime(record.attendedAt || record.createdAt) : ''
   ]));
-  const blob = new Blob([csvRows.map(row => row.map(csvEscape).join(',')).join('\n')], { type: 'text/csv;charset=utf-8' });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = `rekap-absensi-praktikum-${Date.now()}.csv`;
-  link.click();
-  URL.revokeObjectURL(url);
+  downloadCsv(`rekap-absensi-praktikum-${Date.now()}.csv`, csvRows);
+}
+
+function exportRosterCsv() {
+  const rows = practicumScopeItems(practicumRosters)
+    .filter(item => item.isActive !== false)
+    .map(item => [
+      item.nim,
+      item.name,
+      item.group || '',
+      item.course || item.category,
+      item.category,
+      targetCohortForPracticumResource(item),
+      item.academicYear,
+      item.className,
+      item.importedAt,
+      item.importedBy
+    ]);
+  downloadCsv(`backup-roster-praktikum-${Date.now()}.csv`, [[
+    'NIM',
+    'Nama',
+    'Kelompok',
+    'Praktikum',
+    'Kategori',
+    'Angkatan Target',
+    'Tahun Akademik',
+    'Kelas',
+    'Diimport Pada',
+    'Diimport Oleh'
+  ], ...rows]);
+  writeAuditLog({
+    action: 'EXPORT_PRACTICUM_BACKUP',
+    targetType: 'practicum_roster',
+    targetTitle: 'Backup roster praktikum',
+    detail: `${rows.length} baris roster diexport.`
+  }).catch(error => console.warn('Audit export roster failed:', error));
+}
+
+function exportSessionCsv() {
+  const recordCounts = practicumAttendanceRecords.reduce((map, record) => {
+    map[record.sessionId] = (map[record.sessionId] || 0) + 1;
+    return map;
+  }, {});
+  const rows = practicumScopeItems(practicumAttendanceSessions).map(item => [
+    item.docId,
+    item.course || item.category,
+    item.category,
+    targetCohortForPracticumResource(item),
+    item.academicYear,
+    item.className,
+    item.moduleNumber,
+    item.moduleTitle,
+    item.date,
+    item.openAt,
+    item.closeAt,
+    item.status,
+    recordCounts[item.docId] || 0,
+    item.createdAt,
+    item.createdBy
+  ]);
+  downloadCsv(`backup-sesi-absen-praktikum-${Date.now()}.csv`, [[
+    'ID Sesi',
+    'Praktikum',
+    'Kategori',
+    'Angkatan Target',
+    'Tahun Akademik',
+    'Kelas',
+    'Modul',
+    'Judul Modul',
+    'Tanggal',
+    'Buka',
+    'Tutup',
+    'Status',
+    'Jumlah Record',
+    'Dibuat Pada',
+    'Dibuat Oleh'
+  ], ...rows]);
+  writeAuditLog({
+    action: 'EXPORT_PRACTICUM_BACKUP',
+    targetType: 'practicum_attendance_session',
+    targetTitle: 'Backup sesi absen',
+    detail: `${rows.length} sesi absen diexport.`
+  }).catch(error => console.warn('Audit export session failed:', error));
 }
 
 async function toggleAttendanceSession(sessionId) {
@@ -1687,6 +1888,39 @@ async function deleteAttendanceSession(sessionId) {
     detail: 'Sesi absen dan record hadirnya dihapus.'
   });
   toast('Sesi absen berhasil dihapus.');
+}
+
+async function backfillPracticumTargets() {
+  if (!requirePermission('practicum_studio', 'Rapikan Data Praktikum')) return;
+  const updates = [
+    ...buildPracticumBackfill('practicum_studio_modules', practicumScopeItems(practicumModules)),
+    ...buildPracticumBackfill(PRACTICUM_ROSTER_COLLECTION, practicumScopeItems(practicumRosters)),
+    ...buildPracticumBackfill(PRACTICUM_ATTENDANCE_SESSION_COLLECTION, practicumScopeItems(practicumAttendanceSessions)),
+    ...buildPracticumBackfill(PRACTICUM_ATTENDANCE_RECORD_COLLECTION, practicumScopeItems(practicumAttendanceRecords))
+  ];
+
+  if (!updates.length) {
+    toast('Data lama praktikum sudah rapi. Tidak ada yang perlu diperbarui.');
+    return;
+  }
+  if (!confirm(`Rapikan ${updates.length} data lama praktikum/studio di server?`)) return;
+
+  try {
+    if (practicumBackfillTargets) practicumBackfillTargets.disabled = true;
+    await commitFirestoreUpdates(updates);
+    await writeAuditLog({
+      action: 'BACKFILL_PRACTICUM_TARGETS',
+      targetType: 'practicum_studio',
+      targetTitle: 'Target angkatan praktikum',
+      detail: `${updates.length} dokumen praktikum/studio lama dirapikan.`
+    });
+    toast(`${updates.length} data lama berhasil dirapikan.`);
+  } catch (error) {
+    console.error('Backfill practicum targets error:', error);
+    toast('Gagal merapikan data lama praktikum.');
+  } finally {
+    if (practicumBackfillTargets) practicumBackfillTargets.disabled = false;
+  }
 }
 
 function videoFilters() {
@@ -2474,6 +2708,7 @@ on(practicumRosterForm, 'submit', async e => {
     toast('Isi tahun akademik, kelas, dan data praktikan dengan benar.');
     return;
   }
+  if (!confirmAcademicYearIfNeeded(academicYear, meta, targetAngkatan)) return;
   if (parsed.errors.length) {
     toast(`${parsed.errors[0]} Pastikan format: NIM Nama Kelompok.`);
     return;
@@ -2545,6 +2780,7 @@ on(attendanceSessionForm, 'submit', async e => {
     toast('Lengkapi praktikum, kelas, modul, tanggal, jam buka, dan jam tutup absen.');
     return;
   }
+  if (!confirmAcademicYearIfNeeded(academicYear, meta, targetAngkatan)) return;
 
   const rosterCount = practicumRosters.filter(item => item.isActive !== false && item.category === meta.category && matchesTargetCohort(item, targetAngkatan) && item.academicYear === academicYear && item.className === className).length;
   if (!rosterCount && !confirm('Belum ada data praktikan untuk kelas ini. Tetap buat sesi absen?')) return;
@@ -3807,6 +4043,7 @@ on(softwareSearch, 'input', () => softwareTableRender());
 on(softwareFilter, 'change', () => softwareTableRender());
 on(practicumSearch, 'input', () => practicumTableRender());
 on(practicumFilter, 'change', () => practicumTableRender());
+on(practicumBackfillTargets, 'click', () => backfillPracticumTargets());
 on(practicumCategory, 'change', () => applyPracticumTargetDefaults(practicumCategory, practicumTargetCohort, null, true));
 on(rosterCategory, 'change', () => applyPracticumTargetDefaults(rosterCategory, rosterTargetCohort, rosterAcademicYear, true));
 on(attendanceCategory, 'change', () => applyPracticumTargetDefaults(attendanceCategory, attendanceTargetCohort, attendanceAcademicYear, true));
@@ -3815,6 +4052,8 @@ on(attendanceTargetCohort, 'change', () => refreshAcademicYearFromTarget(attenda
 on(attendanceSearch, 'input', () => attendanceRecapRender());
 on(attendanceSessionFilter, 'change', () => attendanceRecapRender());
 on(attendanceExport, 'click', () => exportAttendanceCsv());
+on(rosterExport, 'click', () => exportRosterCsv());
+on(sessionExport, 'click', () => exportSessionCsv());
 on(videoSearch, 'input', () => videoTableRender());
 on(videoFilter, 'change', () => videoTableRender());
 on(announcementSearch, 'input', () => announcementTableRender());
@@ -4079,6 +4318,7 @@ onSnapshot(adminPracticumScopeQuery, snapshot => {
   practicumCourseOptions();
   practicumFilters();
   practicumTableRender();
+  renderPracticumOverview();
   attendanceRecapRender();
   attendanceSessionTableRender();
   updateAdminPresence();
@@ -4119,6 +4359,7 @@ onSnapshot(practicumRosterQuery, snapshot => {
   }));
   attendanceRecapRender();
   attendanceSessionTableRender();
+  renderPracticumOverview();
 }, err => {
   console.error('Firestore practicum roster error:', err);
   toast('Gagal memuat data praktikan.');
@@ -4132,6 +4373,7 @@ onSnapshot(attendanceSessionQuery, snapshot => {
   }));
   attendanceRecapRender();
   attendanceSessionTableRender();
+  renderPracticumOverview();
 }, err => {
   console.error('Firestore attendance session error:', err);
   toast('Gagal memuat sesi absen praktikum.');
@@ -4145,6 +4387,7 @@ onSnapshot(attendanceRecordQuery, snapshot => {
   }));
   attendanceRecapRender();
   attendanceSessionTableRender();
+  renderPracticumOverview();
 }, err => {
   console.error('Firestore attendance record error:', err);
   toast('Gagal memuat rekap absensi praktikum.');
@@ -4154,6 +4397,7 @@ onSnapshot(doc(db, ACADEMIC_SETTINGS_COLLECTION, ACADEMIC_SETTINGS_DOC), snapsho
   academicSettings = snapshot.exists() ? snapshot.data() : {};
   renderAcademicSettingsForm();
   syncAllPracticumTargetDefaults();
+  renderPracticumOverview();
 }, err => {
   console.error('Firestore academic settings error:', err);
   if (academicSettingsSummary) {

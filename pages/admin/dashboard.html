@@ -62,6 +62,7 @@
         </div>
         <nav class="dashboard-jump" aria-label="Navigasi dashboard">
           <a href="#student-activity">Mahasiswa Online</a>
+          <a href="#practicum-overview">Ringkasan Praktikum</a>
           <a href="#academic-settings">Kalender Akademik</a>
           <a href="#admin-activity">Admin Online</a>
           <a href="#client-error-log">Error Browser</a>
@@ -111,6 +112,20 @@
             <tbody id="studentActivityTable"></tbody>
           </table>
         </div>
+      </section>
+
+      <section id="practicum-overview" class="admin-card" data-admin-permission="dashboard,practicum_studio">
+        <div class="admin-table-head">
+          <div>
+            <h3>Ringkasan Praktikum &amp; Studio</h3>
+            <p class="small-text">Pantau target angkatan, modul, roster, sesi absen, dan data yang perlu dirapikan.</p>
+          </div>
+          <div>
+            <a class="action-btn" href="resources.html#practicum-attendance">Kelola Praktikum</a>
+          </div>
+        </div>
+        <div class="student-activity-summary" id="practicumOverviewSummary"></div>
+        <div class="client-error-list" id="practicumIssueList"></div>
       </section>
 
       <section id="academic-settings" class="admin-card" data-admin-permission="dashboard">
@@ -280,6 +295,6 @@
     <script src="../../js/student-config.js?v=20"></script>
     <script src="../../js/auth.js?v=30"></script>
     <script src="../../js/push-config.js?v=1"></script>
-    <script type="module" src="../../js/admin-panel.js?v=56"></script>
+    <script type="module" src="../../js/admin-panel.js?v=57"></script>
   </body>
 </html>
