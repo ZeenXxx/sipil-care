@@ -295,50 +295,11 @@
     const prefix = inPages || inTools ? "../" : "";
 
     if (!session) {
-      const login = document.createElement("div");
-      login.className = "student-login-choice";
+      const login = document.createElement("a");
+      login.className = "student-login-link";
       login.dataset.studentNavAction = "true";
-
-      const loginButton = document.createElement("button");
-      loginButton.className = "student-login-link";
-      loginButton.type = "button";
-      loginButton.setAttribute("aria-label", "Pilih jenis login");
-      loginButton.setAttribute("aria-expanded", "false");
-      loginButton.textContent = "Login";
-
-      const loginMenu = document.createElement("div");
-      loginMenu.className = "student-login-choice-menu";
-      loginMenu.innerHTML = `
-        <a href="${prefix}student-login.html?next=${encodeURIComponent(nextTarget)}">
-          <strong>Mahasiswa</strong>
-          <span>Masuk dengan NIM</span>
-        </a>
-        <a href="${prefix}login.html">
-          <strong>Admin</strong>
-          <span>Masuk pengelola</span>
-        </a>
-      `;
-
-      const closeLoginMenu = () => {
-        login.classList.remove("open");
-        loginButton.setAttribute("aria-expanded", "false");
-      };
-
-      loginButton.addEventListener("click", event => {
-        event.stopPropagation();
-        const open = !login.classList.contains("open");
-        login.classList.toggle("open", open);
-        loginButton.setAttribute("aria-expanded", String(open));
-      });
-      document.addEventListener("click", event => {
-        if (!login.contains(event.target)) closeLoginMenu();
-      });
-      document.addEventListener("keydown", event => {
-        if (event.key === "Escape") closeLoginMenu();
-      });
-
-      login.appendChild(loginButton);
-      login.appendChild(loginMenu);
+      login.href = `${prefix}student-login.html?next=${encodeURIComponent(nextTarget)}`;
+      login.textContent = "Login";
       nav.appendChild(login);
       return;
     }
