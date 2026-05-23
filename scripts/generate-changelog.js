@@ -138,7 +138,14 @@ const rules = [
     type: 'added',
     title: 'Ringkasan Sistem Admin',
     description: 'Dashboard admin kini menampilkan ringkasan status konten, pengguna online, log tersimpan, permission role aktif, serta catatan error browser lokal untuk membantu pengecekan cepat.',
-    match: (file, diff) => ['pages/admin/dashboard.html', 'js/admin-panel.js', 'css/admin.css'].includes(file) && (diff.includes('dashboardHealthGrid') || diff.includes('clientErrorList') || diff.includes('dashboard-overview'))
+    match: (file, diff) => ['pages/admin/dashboard.html', 'js/admin-panel.js'].includes(file) && (diff.includes('dashboardHealthGrid') || diff.includes('clientErrorList') || diff.includes('dashboard-overview'))
+  },
+  {
+    key: 'practicum-admin-forms',
+    type: 'improved',
+    title: 'Form Praktikum Lebih Ringkas',
+    description: 'Area Data Praktikan dan Sesi Absen di admin dirapikan agar aslab dapat import praktikan dan membuat sesi tanpa halaman upload menjadi terlalu panjang.',
+    match: (file, diff) => (file === 'pages/admin/resources.html' || file === 'css/admin.css') && (diff.includes('practicum-roster-compact-form') || diff.includes('attendance-session-compact-form'))
   },
   {
     key: 'student-access',
@@ -180,7 +187,7 @@ const rules = [
     type: 'improved',
     title: 'Tampilan Public Website',
     description: 'Tampilan halaman public diperhalus agar lebih responsif, konsisten, dan nyaman dibuka dari perangkat mobile.',
-    match: file => file === 'css/style.css' || file === 'index.html' || file.startsWith('pages/')
+    match: file => file === 'css/style.css' || file === 'index.html' || (file.startsWith('pages/') && !file.startsWith('pages/admin/'))
   },
   {
     key: 'backend-security',

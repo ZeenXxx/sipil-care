@@ -1,15 +1,35 @@
 [
   {
-    "id": "2026-05-23:admin-dashboard,admin-guide,public-interface",
+    "id": "2026-05-23:admin-dashboard,changelog,practicum-admin-forms",
     "date": "2026-05-23",
     "dateLabel": "23 Mei 2026",
     "generated": true,
-    "summary": "Dashboard Admin, Panduan Admin & Developer, Tampilan Public Website",
+    "summary": "Changelog Otomatis, Dashboard Admin, Form Praktikum Lebih Ringkas",
     "items": [
+      {
+        "type": "added",
+        "title": "Changelog Otomatis",
+        "description": "Riwayat update kini dibuat dari file yang berubah, lalu ditampilkan dengan bahasa yang lebih rapi dan mudah dipahami mahasiswa."
+      },
       {
         "type": "improved",
         "title": "Dashboard Admin",
         "description": "Dashboard admin ditingkatkan agar navigasi, tampilan mobile, ringkasan data, dan akses ke bagian log lebih nyaman digunakan."
+      },
+      {
+        "type": "improved",
+        "title": "Form Praktikum Lebih Ringkas",
+        "description": "Area Data Praktikan dan Sesi Absen di admin dirapikan agar aslab dapat import praktikan dan membuat sesi tanpa halaman upload menjadi terlalu panjang."
+      },
+      {
+        "type": "added",
+        "title": "Ringkasan Sistem Admin",
+        "description": "Dashboard admin kini menampilkan ringkasan status konten, pengguna online, log tersimpan, permission role aktif, serta catatan error browser lokal untuk membantu pengecekan cepat."
+      },
+      {
+        "type": "improved",
+        "title": "Tampilan Public Website",
+        "description": "Tampilan halaman public diperhalus agar lebih responsif, konsisten, dan nyaman dibuka dari perangkat mobile."
       },
       {
         "type": "added",
@@ -18,18 +38,8 @@
       },
       {
         "type": "improved",
-        "title": "Tampilan Public Website",
-        "description": "Tampilan halaman public diperhalus agar lebih responsif, konsisten, dan nyaman dibuka dari perangkat mobile."
-      },
-      {
-        "type": "improved",
         "title": "Bantuan & FAQ Mengambang",
         "description": "Akses Bantuan dan FAQ dipindahkan menjadi tombol mengambang agar navbar lebih ringkas, tetapi tetap mudah ditemukan mahasiswa."
-      },
-      {
-        "type": "added",
-        "title": "Ringkasan Sistem Admin",
-        "description": "Dashboard admin kini menampilkan ringkasan status konten, pengguna online, log tersimpan, permission role aktif, serta catatan error browser lokal untuk membantu pengecekan cepat."
       },
       {
         "type": "added",
