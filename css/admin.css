@@ -2213,13 +2213,13 @@ th  {
 
 .student-admin-entry  {
 
-  display: grid;
+  display: flex;
 
-  grid-template-columns: 1fr auto;
+  flex-direction: column;
 
   gap: 12px;
 
-  align-items: center;
+  align-items: stretch;
 
   margin-top: 16px;
 
@@ -2270,9 +2270,11 @@ th  {
 
   justify-content: center;
 
+  width: 100%;
+
   min-height: 40px;
 
-  padding: 0 12px;
+  padding: 0 14px;
 
   border-radius: 8px;
 

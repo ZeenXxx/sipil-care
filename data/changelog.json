@@ -1,20 +1,20 @@
 [
   {
-    "id": "2026-05-24:student-access",
+    "id": "2026-05-24:admin-dashboard,student-access",
     "date": "2026-05-24",
     "dateLabel": "24 Mei 2026",
     "generated": true,
-    "summary": "Akses dan Login Mahasiswa, Dashboard Admin, Identitas dan Deskripsi Situs",
+    "summary": "Dashboard Admin, Akses dan Login Mahasiswa, Identitas dan Deskripsi Situs",
     "items": [
-      {
-        "type": "improved",
-        "title": "Akses dan Login Mahasiswa",
-        "description": "Alur login, sesi akun, dan pengalaman mahasiswa diperbaiki agar akses lintas perangkat lebih stabil."
-      },
       {
         "type": "improved",
         "title": "Dashboard Admin",
         "description": "Dashboard admin ditingkatkan agar navigasi, tampilan mobile, ringkasan data, dan akses ke bagian log lebih nyaman digunakan."
+      },
+      {
+        "type": "improved",
+        "title": "Akses dan Login Mahasiswa",
+        "description": "Alur login, sesi akun, dan pengalaman mahasiswa diperbaiki agar akses lintas perangkat lebih stabil."
       },
       {
         "type": "improved",
