@@ -1,20 +1,30 @@
 [
   {
-    "id": "2026-05-23:admin-dashboard,admin-system-overview,floating-help,help-information,public-help-onboarding,public-interface",
+    "id": "2026-05-23:admin-dashboard,admin-guide,public-interface",
     "date": "2026-05-23",
     "dateLabel": "23 Mei 2026",
     "generated": true,
-    "summary": "Bantuan & FAQ Mengambang, Dashboard Admin, Ringkasan Sistem Admin",
+    "summary": "Dashboard Admin, Panduan Admin & Developer, Tampilan Public Website",
     "items": [
-      {
-        "type": "improved",
-        "title": "Bantuan & FAQ Mengambang",
-        "description": "Akses Bantuan dan FAQ dipindahkan menjadi tombol mengambang agar navbar lebih ringkas, tetapi tetap mudah ditemukan mahasiswa."
-      },
       {
         "type": "improved",
         "title": "Dashboard Admin",
         "description": "Dashboard admin ditingkatkan agar navigasi, tampilan mobile, ringkasan data, dan akses ke bagian log lebih nyaman digunakan."
+      },
+      {
+        "type": "added",
+        "title": "Panduan Admin & Developer",
+        "description": "Panel admin kini dilengkapi halaman panduan internal berisi alur kerja, role, permission, checklist developer, dan troubleshooting cepat."
+      },
+      {
+        "type": "improved",
+        "title": "Tampilan Public Website",
+        "description": "Tampilan halaman public diperhalus agar lebih responsif, konsisten, dan nyaman dibuka dari perangkat mobile."
+      },
+      {
+        "type": "improved",
+        "title": "Bantuan & FAQ Mengambang",
+        "description": "Akses Bantuan dan FAQ dipindahkan menjadi tombol mengambang agar navbar lebih ringkas, tetapi tetap mudah ditemukan mahasiswa."
       },
       {
         "type": "added",
@@ -30,11 +40,6 @@
         "type": "improved",
         "title": "FAQ Bisa Dibuka Tanpa Login",
         "description": "Halaman bantuan kini dapat dibuka sebelum login dan dilengkapi panduan mulai agar mahasiswa baru lebih cepat memahami akun, pencarian materi, dan pelaporan kendala."
-      },
-      {
-        "type": "improved",
-        "title": "Tampilan Public Website",
-        "description": "Tampilan halaman public diperhalus agar lebih responsif, konsisten, dan nyaman dibuka dari perangkat mobile."
       },
       {
         "type": "improved",

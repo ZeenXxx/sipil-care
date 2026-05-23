@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="../../css/style.css?v=25">
-    <link rel="stylesheet" href="../../css/admin.css?v=36">
+    <link rel="stylesheet" href="../../css/admin.css?v=37">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -41,12 +41,9 @@
           <span class="eyebrow">Akses</span>
           <h3>Role dan permission</h3>
           <p>Role menentukan halaman yang bisa dibuka. Permission menentukan aksi di dalam halaman tersebut.</p>
-          <ul class="guide-list">
-            <li><b>Developer</b> mengatur role, akun admin, akun mahasiswa, dan semua log.</li>
-            <li><b>Admin SIPIL CARE</b> memantau dashboard, upload konten, pemberitahuan, pesan, dan audit.</li>
-            <li><b>Aslab/Asdos</b> fokus pada Praktikum & Studio dan pesan mahasiswa.</li>
-            <li><b>Eksternal HMS</b> fokus pada pemberitahuan dan pesan.</li>
-          </ul>
+          <div class="guide-list" id="guideRoleSummary">
+            <div class="empty">Memuat role dan akun admin...</div>
+          </div>
         </article>
 
         <article class="admin-card guide-card">
@@ -90,6 +87,54 @@
             <h4>Balas pesan</h4>
             <p>Live chat dan pesan mahasiswa dipakai untuk kendala login, download, tools, dan akademik.</p>
           </article>
+        </div>
+      </section>
+
+      <section class="admin-card" data-admin-permission="practicum_studio">
+        <div class="admin-table-head">
+          <div>
+            <h3>Panduan Praktikum &amp; Studio</h3>
+            <p class="small-text">Urutan kerja untuk aslab/asdos saat menyiapkan modul, data praktikan, dan sesi absen.</p>
+          </div>
+          <div>
+            <a class="action-btn" href="resources.html#practicum-attendance">Buka Praktikum</a>
+          </div>
+        </div>
+        <div class="guide-steps guide-steps-three">
+          <article>
+            <span>01</span>
+            <h4>Upload modul</h4>
+            <p>Pilih kategori praktikum/studio, isi target angkatan, judul, deskripsi, author, tanggal, tipe file, dan link modul. Target angkatan wajib agar modul hanya tampil untuk angkatan yang benar.</p>
+          </article>
+          <article>
+            <span>02</span>
+            <h4>Import data praktikan</h4>
+            <p>Pilih praktikum, target angkatan, tahun akademik, dan kelas. Paste data dengan format NIM Nama Kelompok. Mahasiswa mengulang harus dimasukkan ke roster praktikum yang mereka ambil.</p>
+          </article>
+          <article>
+            <span>03</span>
+            <h4>Buat sesi absen</h4>
+            <p>Pilih praktikum dan kelas yang sama dengan roster, isi modul/pertemuan, judul kegiatan, tanggal, jam buka, jam tutup, dan kode absen opsional. Rekap hadir akan mengikuti roster resmi.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="admin-card">
+        <div class="admin-table-head">
+          <div>
+            <h3>Role &amp; Akses Admin Aktif</h3>
+            <p class="small-text">Daftar ini mengikuti role dan akun yang developer simpan di database.</p>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Role</th><th>Admin</th><th>Halaman</th><th>Permission</th><th>Scope Praktikum</th></tr>
+            </thead>
+            <tbody id="guideRoleTable">
+              <tr><td colspan="5">Memuat role dan akun admin...</td></tr>
+            </tbody>
+          </table>
         </div>
       </section>
 
@@ -167,6 +212,14 @@
             <summary>Pemberitahuan tidak tersimpan</summary>
             <p>Cek permission <b>announcements</b>, rules Firebase, koneksi storage foto, dan pastikan field wajib sudah terisi.</p>
           </details>
+          <details>
+            <summary>Data praktikan tidak muncul di rekap absen</summary>
+            <p>Pastikan target angkatan, tahun akademik, kelas, dan kategori praktikum pada roster sama dengan sesi absen. Jika data lama belum punya target angkatan, gunakan tombol <b>Rapikan Data Lama</b> di halaman Resources.</p>
+          </details>
+          <details>
+            <summary>Aslab melihat praktikum yang bukan scope-nya</summary>
+            <p>Cek akun admin di menu Akun Admin. Pastikan scope praktikum akun tersebut hanya mencentang praktikum yang memang dipegang oleh aslab tersebut.</p>
+          </details>
         </div>
       </section>
     </main>
@@ -175,6 +228,6 @@
     <script src="../../js/student-config.js?v=20"></script>
     <script src="../../js/auth.js?v=30"></script>
     <script src="../../js/push-config.js?v=1"></script>
-    <script type="module" src="../../js/admin-panel.js?v=57"></script>
+    <script type="module" src="../../js/admin-panel.js?v=58"></script>
   </body>
 </html>

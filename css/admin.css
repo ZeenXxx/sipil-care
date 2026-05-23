@@ -918,6 +918,7 @@ body.admin-page [hidden]  {
 }
 
 .guide-list li,
+.guide-list article,
 .guide-checklist label  {
 
     padding: 12px;
@@ -929,6 +930,24 @@ body.admin-page [hidden]  {
     background: #fff;
 
     color: #1b2f2b
+
+}
+
+.guide-list article b  {
+
+    display: block;
+
+    margin-bottom: 4px;
+
+    color: var(--primary);
+
+    font-size: 18px
+
+}
+
+.guide-list article span  {
+
+    color: var(--muted)
 
 }
 
@@ -949,6 +968,12 @@ body.admin-page [hidden]  {
     grid-template-columns: repeat(4, minmax(0, 1fr));
 
     gap: 14px
+
+}
+
+.guide-steps-three  {
+
+    grid-template-columns: repeat(3, minmax(0, 1fr))
 
 }
 
@@ -1035,6 +1060,16 @@ body.admin-page [hidden]  {
     margin: 10px 0 0;
 
     color: var(--muted)
+
+}
+
+.admin-row-divider  {
+
+    margin: 8px 0;
+
+    border: 0;
+
+    border-top: 1px solid var(--line)
 
 }
 

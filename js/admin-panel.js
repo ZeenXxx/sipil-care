@@ -227,6 +227,8 @@ const adminStats = document.getElementById('adminStats');
 const dashboardHealthGrid = document.getElementById('dashboardHealthGrid');
 const practicumOverviewSummary = document.getElementById('practicumOverviewSummary');
 const practicumIssueList = document.getElementById('practicumIssueList');
+const guideRoleSummary = document.getElementById('guideRoleSummary');
+const guideRoleTable = document.getElementById('guideRoleTable');
 const adminPermissionTitle = document.getElementById('adminPermissionTitle');
 const adminPermissionSummary = document.getElementById('adminPermissionSummary');
 const adminPermissionChips = document.getElementById('adminPermissionChips');
@@ -597,6 +599,11 @@ const adminPermissionOptions = [
   { value: 'log_delete', label: 'Hapus log dashboard' }
 ];
 
+const pageLabelMap = () => adminPageOptions.reduce((labels, item) => {
+  labels[item.value] = item.label;
+  return labels;
+}, {});
+
 const normalizeAdminRole = role => {
   const template = adminRoleTemplates[role?.role] || {};
   return {
@@ -904,6 +911,82 @@ function renderAdminPermissionSummary() {
     adminPermissionChips.innerHTML = permissions.length
       ? permissions.slice(0, 8).map(permission => `<span>${escapeText(labels[permission] || permission)}</span>`).join('')
       : '<span>Permission belum tersedia</span>';
+  }
+}
+
+function renderGuideRoleOverview() {
+  if (!guideRoleSummary && !guideRoleTable) return;
+  const admin = currentAdmin();
+  const permissionLabels = permissionLabelMap();
+  const pageLabels = pageLabelMap();
+  const labelPages = pages => pages.map(page => pageLabels[page] || page).join(', ') || '-';
+  const labelPermissions = permissions => permissions.map(permission => permissionLabels[permission] || permission).join(', ') || '-';
+  let roles = allAdminRoles()
+    .filter(role => canManageAdminAccounts() || role.role === admin.role)
+    .sort((a, b) => (a.role === 'developer' ? -1 : b.role === 'developer' ? 1 : a.roleLabel.localeCompare(b.roleLabel)));
+  if (!canManageAdminAccounts() && !roles.length) {
+    roles = [{
+      role: admin.role,
+      roleLabel: admin.roleLabel,
+      allowedPages: admin.allowedPages,
+      permissions: admin.permissions,
+      isActive: true,
+      isSystem: false
+    }];
+  }
+  const accounts = canManageAdminAccounts()
+    ? adminAccounts.map(normalizeAdminAccount)
+    : [{
+      username: admin.username,
+      name: admin.name,
+      role: admin.role,
+      roleLabel: admin.roleLabel,
+      allowedPages: admin.allowedPages,
+      permissions: admin.permissions,
+      practicumScopes: admin.practicumScopes,
+      isActive: true
+    }];
+  const activeAccounts = accounts.filter(account => account.isActive !== false);
+  const roleCount = roles.filter(role => role.isActive !== false).length;
+
+  if (guideRoleSummary) {
+    guideRoleSummary.innerHTML = `
+      <article>
+        <b>${canManageAdminAccounts() ? roleCount : admin.roleLabel}</b>
+        <span>${canManageAdminAccounts() ? 'role aktif tersimpan di database.' : `Role aktif akun ini: ${admin.role}.`}</span>
+      </article>
+      <article>
+        <b>${canManageAdminAccounts() ? activeAccounts.length : admin.allowedPages.length}</b>
+        <span>${canManageAdminAccounts() ? 'akun admin aktif terdaftar.' : 'halaman bisa dibuka oleh akun ini.'}</span>
+      </article>
+      <article>
+        <b>${canManageAdminAccounts() ? 'Otomatis' : 'Terbatas'}</b>
+        <span>${canManageAdminAccounts() ? 'Panduan mengikuti role dan akun yang developer tambah.' : 'Daftar semua akun hanya tampil untuk Developer.'}</span>
+      </article>
+    `;
+  }
+
+  if (guideRoleTable) {
+    guideRoleTable.innerHTML = roles.map(role => {
+      const roleAccounts = accounts.filter(account => account.role === role.role);
+      const roleScopes = [...new Set(roleAccounts.flatMap(account => normalizePracticumScopeList(account.practicumScopes)))];
+      const scopeText = role.permissions.includes('practicum_studio')
+        ? roleScopes.length
+          ? scopeLabel(roleScopes)
+          : roleAccounts.length ? scopeLabel(roleAccounts[0]?.practicumScopes || []) : 'Belum ada akun'
+        : 'Tidak terkait praktikum';
+      return `
+        <tr>
+          <td><b>${escapeText(role.roleLabel)}</b><br><span class="small-text">${escapeText(role.role)}${role.isActive ? '' : ' - Nonaktif'}</span></td>
+          <td>${roleAccounts.length
+            ? roleAccounts.map(account => `<b>${escapeText(account.name || account.username)}</b><br><span class="small-text">${escapeText(account.username)}${account.isActive ? '' : ' - Nonaktif'}</span>`).join('<hr class="admin-row-divider">')
+            : '<span class="small-text">Belum dipakai akun admin</span>'}</td>
+          <td>${escapeText(labelPages(role.allowedPages))}</td>
+          <td>${escapeText(labelPermissions(role.permissions))}</td>
+          <td>${escapeText(scopeText)}</td>
+        </tr>
+      `;
+    }).join('') || '<tr><td colspan="5">Belum ada role admin yang bisa ditampilkan.</td></tr>';
   }
 }
 
@@ -1363,6 +1446,7 @@ function stats() {
   renderDashboardHealth();
   renderPracticumOverview();
   renderAdminPermissionSummary();
+  renderGuideRoleOverview();
   renderClientErrors();
 }
 
@@ -4091,6 +4175,7 @@ renderAdminRoleOptions();
 syncNotificationButton();
 setupAdminMobileNav();
 applyAdminRoleUIAfterSession();
+renderGuideRoleOverview();
 
 const setActiveAdminNav = id => {
   adminNavLinks.forEach(link => {
@@ -4148,8 +4233,12 @@ async function loadStudentActivity(options = {}) {
 }
 
 async function loadAdminRoles(options = {}) {
-  if (!adminRoleTable && !adminAccountRole) return;
-  if (!canManageAdminAccounts()) return;
+  if (!adminRoleTable && !adminAccountRole && !guideRoleSummary && !guideRoleTable) return;
+  if (!canManageAdminAccounts()) {
+    adminRoles = fallbackAdminRoles();
+    renderGuideRoleOverview();
+    return;
+  }
 
   try {
     if (adminRoleRefresh) adminRoleRefresh.disabled = true;
@@ -4162,12 +4251,14 @@ async function loadAdminRoles(options = {}) {
     renderAdminRoleOptions();
     adminRoleTableRender();
     adminAccountTableRender();
+    renderGuideRoleOverview();
     if (options.manual) toast('Data role admin berhasil diperbarui.');
   } catch (error) {
     console.error('Load admin roles failed:', error);
     adminRoles = fallbackAdminRoles();
     renderAdminRoleOptions();
     adminRoleTableRender();
+    renderGuideRoleOverview();
     if (adminRoleTable) {
       adminRoleTable.insertAdjacentHTML('beforeend', '<tr><td colspan="5">RPC role admin belum tersedia. Jalankan SQL admin_roles di dokumentasi agar role baru bisa tersimpan di database.</td></tr>');
     }
@@ -4178,7 +4269,11 @@ async function loadAdminRoles(options = {}) {
 }
 
 async function loadAdminAccounts(options = {}) {
-  if (!adminAccountTable || !canManageAdminAccounts()) return;
+  if (!adminAccountTable && !guideRoleSummary && !guideRoleTable) return;
+  if (!canManageAdminAccounts()) {
+    renderGuideRoleOverview();
+    return;
+  }
   try {
     if (adminAccountRefresh) adminAccountRefresh.disabled = true;
     const supabase = await loadSupabaseClient();
@@ -4189,10 +4284,12 @@ async function loadAdminAccounts(options = {}) {
     if (error) throw error;
     adminAccounts = data || [];
     adminAccountTableRender();
+    renderGuideRoleOverview();
     if (options.manual) toast('Data akun admin berhasil diperbarui.');
   } catch (error) {
     console.error('Load admin accounts failed:', error);
-    adminAccountTable.innerHTML = '<tr><td colspan="7">Gagal memuat akun admin dari Supabase. Cek policy tabel admins.</td></tr>';
+    if (adminAccountTable) adminAccountTable.innerHTML = '<tr><td colspan="7">Gagal memuat akun admin dari Supabase. Cek policy tabel admins.</td></tr>';
+    renderGuideRoleOverview();
     if (options.manual) toast('Gagal memuat akun admin dari Supabase.');
   } finally {
     if (adminAccountRefresh) adminAccountRefresh.disabled = false;
@@ -4315,6 +4412,7 @@ onSnapshot(adminPracticumScopeQuery, snapshot => {
 
   applyAdminRoleUI();
   adminAccountTableRender();
+  renderGuideRoleOverview();
   practicumCourseOptions();
   practicumFilters();
   practicumTableRender();
