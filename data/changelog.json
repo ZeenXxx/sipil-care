@@ -1,11 +1,16 @@
 [
   {
-    "id": "2026-05-25:public-interface",
+    "id": "2026-05-25:civil-tools,public-interface",
     "date": "2026-05-25",
     "dateLabel": "25 Mei 2026",
     "generated": true,
-    "summary": "Tampilan Public Website, Dashboard Admin, Tools Teknik Sipil",
+    "summary": "Tools Teknik Sipil, Tampilan Public Website, Dashboard Admin",
     "items": [
+      {
+        "type": "improved",
+        "title": "Tools Teknik Sipil",
+        "description": "Tools akademik Teknik Sipil diperbarui untuk membantu perhitungan, analisis struktur, preliminary design, dan pengelolaan file."
+      },
       {
         "type": "improved",
         "title": "Tampilan Public Website",
@@ -15,11 +20,6 @@
         "type": "improved",
         "title": "Dashboard Admin",
         "description": "Dashboard admin ditingkatkan agar navigasi, tampilan mobile, ringkasan data, dan akses ke bagian log lebih nyaman digunakan."
-      },
-      {
-        "type": "improved",
-        "title": "Tools Teknik Sipil",
-        "description": "Tools akademik Teknik Sipil diperbarui untuk membantu perhitungan, analisis struktur, preliminary design, dan pengelolaan file."
       },
       {
         "type": "fixed",

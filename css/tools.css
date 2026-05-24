@@ -7,7 +7,7 @@ body { background: #f5f8f7; }
 .tools-hero-panel span { display: block; font-size: 72px; line-height: 1; font-weight: 900; color: #f0dd43; }
 .tools-hero-panel strong { display: block; margin-top: 8px; font-size: 24px; }
 .tools-hero-panel p { margin: 8px 0 0; color: rgba(255,255,255,.82); }
-.tools-tabs { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; margin-bottom: 22px; padding: 8px; border: 1px solid var(--line); border-radius: 8px; background: #fff; box-shadow: 0 10px 28px rgba(15,77,58,.08); }
+.tools-tabs { display: grid; grid-template-columns: repeat(auto-fit, minmax(128px, 1fr)); gap: 10px; margin-bottom: 22px; padding: 8px; border: 1px solid var(--line); border-radius: 8px; background: #fff; box-shadow: 0 10px 28px rgba(15,77,58,.08); }
 .tool-tab { border: 0; border-radius: 8px; padding: 13px 14px; background: transparent; color: var(--muted); font-weight: 900; cursor: pointer; transition: .2s; }
 .tool-tab:hover, .tool-tab.active { background: var(--primary); color: #fff; }
 .tool-panel { display: none; border: 1px solid var(--line); border-radius: 8px; background: #fff; padding: 28px; box-shadow: var(--shadow); }
@@ -29,7 +29,11 @@ body { background: #f5f8f7; }
 .result-card strong { display: block; margin: 10px 0; color: var(--primary); font-size: clamp(28px, 4vw, 48px); line-height: 1.08; overflow-wrap: anywhere; }
 .result-card p, .tool-note p, .image-preview p { margin: 0; color: var(--muted); }
 .tool-note h3 { margin: 0 0 10px; color: var(--primary); font-size: 24px; }
+.geo-preview pre { width: 100%; max-height: 220px; overflow: auto; margin: 14px 0 0; padding: 14px; border: 1px solid var(--line); border-radius: 8px; background: #fff; color: var(--ink); font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 13px; line-height: 1.55; white-space: pre; }
+.spectrum-summary-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 16px; }
+.spectrum-summary-grid span { padding: 12px; border: 1px solid var(--line); border-radius: 8px; background: #fff; color: var(--primary); font-weight: 900; overflow-wrap: anywhere; }
 .textarea { min-height: 230px; resize: vertical; }
+.compact-textarea { min-height: 120px; }
 .file-control { min-height: 52px; padding: 12px; background: #f9fcfb; }
 .file-list { display: grid; gap: 8px; min-height: 96px; margin: 2px 0 16px; padding: 14px; border: 1px dashed #bfd1cb; border-radius: 8px; background: #f9fcfb; }
 .file-list p { margin: 0; color: var(--muted); }
@@ -69,8 +73,8 @@ body { background: #f5f8f7; }
 .image-preview { min-height: 320px; display: grid; align-content: center; justify-items: center; gap: 16px; overflow-x: auto; overflow-y: hidden; }
 .image-preview img { width: 100%; height: auto; border: 1px solid var(--line); border-radius: 8px; background: #fff; }
 .download-link { display: inline-flex; align-items: center; justify-content: center; min-height: 42px; padding: 0 16px; border-radius: 8px; background: var(--primary); color: #fff; font-weight: 900; }
-@media (max-width: 860px) { .tools-hero-grid, .tool-layout { grid-template-columns: 1fr; } .tool-header { display: grid; } .tools-tabs { grid-template-columns: repeat(2, minmax(0, 1fr)); } .tool-panel { padding: 18px; } }
-@media (max-width: 520px) { .tools-tabs, .tool-grid-2, .tool-card .action-row { grid-template-columns: 1fr; } .tools-hero-panel span { font-size: 54px; } .tool-header > div { align-items: flex-start; } .tool-panel, .tool-card, .result-card, .tool-note, .image-preview { padding: 16px; } .download-link, .full-btn { width: 100%; } }
+@media (max-width: 860px) { .tools-hero-grid, .tool-layout { grid-template-columns: 1fr; } .tool-header { display: grid; } .tool-panel { padding: 18px; } }
+@media (max-width: 520px) { .tools-tabs, .tool-grid-2, .tool-card .action-row, .spectrum-summary-grid { grid-template-columns: 1fr; } .tools-hero-panel span { font-size: 54px; } .tool-header > div { align-items: flex-start; } .tool-panel, .tool-card, .result-card, .tool-note, .image-preview { padding: 16px; } .download-link, .full-btn { width: 100%; } }
 .pdf-image-results { width: 100%; display: grid; gap: 16px; align-content: start; }
 .pdf-image-item { display: grid; gap: 12px; padding: 14px; border: 1px solid var(--line); border-radius: 8px; background: #fff; }
 .pdf-image-item div { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
