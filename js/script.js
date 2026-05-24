@@ -68,7 +68,7 @@ const announcementCard = (item, index = 0) => {
     : `<p>${escapeText(description)}</p>`;
 
   return `
-    <article class="card announcement-card ${index === 0 ? 'featured-announcement' : ''}">
+    <article class="card announcement-card featured-announcement">
       <div class="announcement-media ${item.photoUrl ? 'has-image' : ''}">${image}</div>
       <div class="announcement-body">
         <div class="announcement-meta">
@@ -81,6 +81,49 @@ const announcementCard = (item, index = 0) => {
     </article>
   `;
 };
+
+const announcementCarousel = items => `
+  <div class="announcement-carousel-shell">
+    <button class="announcement-nav announcement-nav-prev" type="button" aria-label="Pemberitahuan sebelumnya" data-announcement-nav="prev">
+      <span aria-hidden="true">&#8249;</span>
+    </button>
+    <div class="announcement-viewport" data-announcement-viewport>
+      <div class="announcement-track">
+        ${items.map(announcementCard).join('')}
+      </div>
+    </div>
+    <button class="announcement-nav announcement-nav-next" type="button" aria-label="Pemberitahuan berikutnya" data-announcement-nav="next">
+      <span aria-hidden="true">&#8250;</span>
+    </button>
+  </div>
+`;
+
+function setupAnnouncementCarousel(target) {
+  const viewport = target.querySelector('[data-announcement-viewport]');
+  const prev = target.querySelector('[data-announcement-nav="prev"]');
+  const next = target.querySelector('[data-announcement-nav="next"]');
+  if (!viewport || !prev || !next) return;
+
+  const updateButtons = () => {
+    const maxScroll = Math.max(0, viewport.scrollWidth - viewport.clientWidth - 2);
+    const hasOverflow = maxScroll > 0;
+    prev.hidden = !hasOverflow;
+    next.hidden = !hasOverflow;
+    prev.disabled = viewport.scrollLeft <= 2;
+    next.disabled = viewport.scrollLeft >= maxScroll;
+  };
+
+  const move = direction => {
+    const distance = viewport.clientWidth * direction;
+    viewport.scrollBy({ left: distance, behavior: 'smooth' });
+  };
+
+  prev.addEventListener('click', () => move(-1));
+  next.addEventListener('click', () => move(1));
+  viewport.addEventListener('scroll', updateButtons, { passive: true });
+  window.addEventListener('resize', updateButtons);
+  updateButtons();
+}
 
 const fallbackAnnouncements = [
   {
@@ -137,10 +180,12 @@ async function loadAnnouncements() {
     const announcementsRef = query(collection(db, 'announcements'), orderBy('date', 'desc'));
     const snapshot = await getDocs(announcementsRef);
     const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    target.innerHTML = (data.length ? data : fallbackAnnouncements).slice(0, 3).map(announcementCard).join('');
+    target.innerHTML = announcementCarousel((data.length ? data : fallbackAnnouncements).slice(0, 5));
+    setupAnnouncementCarousel(target);
   } catch (err) {
     console.error('Firestore announcements fetch failed:', err);
-    target.innerHTML = fallbackAnnouncements.map(announcementCard).join('');
+    target.innerHTML = announcementCarousel(fallbackAnnouncements);
+    setupAnnouncementCarousel(target);
   }
 }
 
