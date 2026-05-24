@@ -1,11 +1,16 @@
 [
   {
-    "id": "2026-05-25:admin-dashboard",
+    "id": "2026-05-25:public-interface",
     "date": "2026-05-25",
     "dateLabel": "25 Mei 2026",
     "generated": true,
-    "summary": "Dashboard Admin, Tools Teknik Sipil, Backend dan Permission",
+    "summary": "Tampilan Public Website, Dashboard Admin, Tools Teknik Sipil",
     "items": [
+      {
+        "type": "improved",
+        "title": "Tampilan Public Website",
+        "description": "Tampilan halaman public diperhalus agar lebih responsif, konsisten, dan nyaman dibuka dari perangkat mobile."
+      },
       {
         "type": "improved",
         "title": "Dashboard Admin",

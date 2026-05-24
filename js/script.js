@@ -35,13 +35,27 @@ const videoCard = item => `
   </article>
 `;
 
-const announcementCard = item => {
+const parseDisplayDate = value => {
+  if (!value) return { label: 'Tanggal belum diatur', machine: '' };
+  if (typeof value.toDate === 'function') value = value.toDate();
+  const date = value instanceof Date ? value : new Date(value);
+  if (!Number.isNaN(date.getTime())) {
+    return {
+      label: date.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }),
+      machine: date.toISOString().slice(0, 10)
+    };
+  }
+  return { label: String(value), machine: '' };
+};
+
+const announcementCard = (item, index = 0) => {
   const description = String(item.description || '').trim();
   const hasLongDescription = description.length > 150;
   const excerpt = hasLongDescription ? `${description.slice(0, 150).trim()}...` : description;
+  const publishDate = parseDisplayDate(item.date || item.createdAt || item.updatedAt);
   const image = item.photoUrl
     ? `<img src="${escapeText(item.photoUrl)}" alt="${escapeText(item.title)}">`
-    : `<span>${escapeText((item.type || 'Info').slice(0, 2).toUpperCase())}</span>`;
+    : `<span aria-hidden="true">${escapeText((item.type || 'Info').slice(0, 2).toUpperCase())}</span>`;
   const descriptionMarkup = hasLongDescription
     ? `
       <p class="announcement-excerpt">${escapeText(excerpt)}</p>
@@ -53,12 +67,12 @@ const announcementCard = item => {
     : `<p>${escapeText(description)}</p>`;
 
   return `
-    <article class="card announcement-card">
+    <article class="card announcement-card ${index === 0 ? 'featured-announcement' : ''}">
       <div class="announcement-media ${item.photoUrl ? 'has-image' : ''}">${image}</div>
       <div class="announcement-body">
-        <div class="meta">
-          <span class="badge">${escapeText(item.type || 'Pemberitahuan')}</span>
-          <span class="badge">${escapeText(item.date || 'Update')}</span>
+        <div class="announcement-meta">
+          <span class="announcement-type">${escapeText(item.type || 'Pemberitahuan')}</span>
+          <time class="announcement-date" ${publishDate.machine ? `datetime="${escapeText(publishDate.machine)}"` : ''}>Dipublish ${escapeText(publishDate.label)}</time>
         </div>
         <h3>${escapeText(item.title)}</h3>
         ${descriptionMarkup}
