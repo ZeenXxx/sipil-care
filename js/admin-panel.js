@@ -731,6 +731,46 @@ async function writeAuditLog({ action, targetType, targetId = '', targetTitle = 
   }
 }
 
+async function notifyStudents({ title, body, url, tag, type = 'update', audience = {} }) {
+  try {
+    const response = await fetch(`${adminRootPrefix}api/push-notify`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        audienceType: 'students',
+        title,
+        body,
+        url,
+        tag,
+        type,
+        audience
+      })
+    });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok || result.ok === false) {
+      console.warn('Push notification skipped:', result.message || response.statusText);
+      if (result.code === 'firebase_service_account_missing') {
+        toast('Konten tersimpan. Notifikasi belum aktif karena service account Firebase belum diatur di Vercel.');
+      }
+      return result;
+    }
+    if (result.sent > 0) toast(`Notifikasi terkirim ke ${result.sent} device.`);
+    return result;
+  } catch (error) {
+    console.warn('Push notification request failed:', error);
+    return { ok: false, message: error.message };
+  }
+}
+
+const rosterNimsForSession = session => practicumRosters
+  .filter(item => item.isActive !== false
+    && item.category === session.category
+    && matchesTargetCohort(item, session.targetAngkatan || session.targetCohort)
+    && item.academicYear === session.academicYear
+    && (item.classKey || slugifyAcademic(item.className)) === (session.classKey || slugifyAcademic(session.className)))
+  .map(item => item.nim)
+  .filter(Boolean);
+
 const selectedPracticumMeta = () => {
   return selectedCourseFrom(practicumCategory);
 };
@@ -2670,6 +2710,13 @@ on(resourceForm, 'submit', async e => {
         targetTitle: data.title,
         detail: `Resource kategori ${data.category} ditambahkan.`
       });
+      notifyStudents({
+        title: 'Resource baru di SIPIL CARE',
+        body: `${data.title} sudah tersedia di Resources.`,
+        url: '/pages/resources.html',
+        tag: `resource-${created.id}`,
+        type: 'resource'
+      });
       toast('Resource berhasil diupload.');
     }
 
@@ -2727,6 +2774,13 @@ on(softwareForm, 'submit', async e => {
         targetTitle: data.title,
         detail: `Software kategori ${data.type} ditambahkan.`
       });
+      notifyStudents({
+        title: 'Software baru di SIPIL CARE',
+        body: `${data.title} sudah tersedia di Software.`,
+        url: '/pages/software.html',
+        tag: `software-${created.id}`,
+        type: 'software'
+      });
       toast('Software berhasil diupload.');
     }
 
@@ -2783,6 +2837,14 @@ on(practicumForm, 'submit', async e => {
         targetId: created.id,
         targetTitle: data.title,
         detail: `Modul ${data.category} untuk angkatan ${targetAngkatan} ditambahkan.`
+      });
+      notifyStudents({
+        title: 'Modul praktikum/studio baru',
+        body: `${data.title} untuk angkatan ${targetAngkatan} sudah tersedia.`,
+        url: '/pages/praktikum-studio.html',
+        tag: `practicum-${created.id}`,
+        type: 'practicum',
+        audience: { angkatan: targetAngkatan }
       });
       toast('Modul praktikum/studio berhasil diupload.');
     }
@@ -2922,6 +2984,17 @@ on(attendanceSessionForm, 'submit', async e => {
       targetTitle: `${payload.course} - ${payload.moduleNumber}`,
       detail: `Sesi absen ${payload.moduleNumber} ${payload.moduleTitle}, angkatan ${targetAngkatan}, kelas ${payload.className}, dibuat.`
     });
+    notifyStudents({
+      title: 'Sesi absen praktikum dibuka',
+      body: `${payload.course} ${payload.moduleNumber} - ${payload.moduleTitle}, kelas ${payload.className}.`,
+      url: '/pages/praktikum-studio.html',
+      tag: `attendance-${created.id}`,
+      type: 'attendance',
+      audience: {
+        angkatan: targetAngkatan,
+        nims: rosterNimsForSession({ ...payload, docId: created.id })
+      }
+    });
     attendanceModuleNumber.value = '';
     attendanceModuleTitle.value = '';
     attendanceCode.value = '';
@@ -2971,6 +3044,13 @@ on(videoForm, 'submit', async e => {
         targetId: created.id,
         targetTitle: data.title,
         detail: `Video kategori ${data.category} ditambahkan.`
+      });
+      notifyStudents({
+        title: 'Video baru di SIPIL CARE',
+        body: `${data.title} sudah tersedia di Videos.`,
+        url: '/pages/videos.html',
+        tag: `video-${created.id}`,
+        type: 'video'
       });
       toast('Video berhasil diupload.');
     }
@@ -3025,6 +3105,13 @@ on(announcementForm, 'submit', async e => {
         targetId: created.id,
         targetTitle: data.title,
         detail: `Pemberitahuan tipe ${data.type} ditambahkan.`
+      });
+      notifyStudents({
+        title: 'Pemberitahuan baru',
+        body: `${data.title} sudah dipublikasikan di SIPIL CARE.`,
+        url: '/index.html',
+        tag: `announcement-${created.id}`,
+        type: 'announcement'
       });
       toast('Pemberitahuan berhasil diupload.');
     }

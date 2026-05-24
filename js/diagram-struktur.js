@@ -29,12 +29,29 @@ const controls = {
   udlStartNode: $('#udlStartNode'),
   udlEndNode: $('#udlEndNode'),
   udlValue: $('#udlValue'),
+  presetModel: $('#presetModel'),
   diagramOutput: $('#diagramOutput')
 };
 
 const showMessage = (text, ok = false) => {
   message.textContent = text;
   message.classList.toggle('ok', ok);
+};
+
+const createNode = (id, x, support = 'free') => ({ id, x, support });
+const createPointLoad = (id, x, p, angle = 90) => {
+  const radians = (angle * Math.PI) / 180;
+  return {
+    id,
+    type: 'point',
+    direction: 'inclined',
+    x,
+    p,
+    angle,
+    fx: Math.abs(p * Math.cos(radians)) < 1e-7 ? 0 : p * Math.cos(radians),
+    fy: Math.abs(p * Math.sin(radians)) < 1e-7 ? 0 : p * Math.sin(radians),
+    label: `P${id}`
+  };
 };
 
 const getNode = id => state.nodes.find(node => node.id === Number(id));
@@ -59,6 +76,63 @@ const elementEnds = element => {
   const a = getNode(element.startNode);
   const b = getNode(element.endNode);
   return a.x <= b.x ? { left: a, right: b, length: b.x - a.x } : { left: b, right: a, length: a.x - b.x };
+};
+
+const presets = {
+  'overhang-two-side': {
+    message: 'Preset overhang dua sisi dimuat: support di dalam bentang dan ujung kiri-kanan bebas.',
+    nodes: [
+      createNode(1, 0),
+      createNode(2, 4, 'pin'),
+      createNode(3, 14),
+      createNode(4, 24, 'roller'),
+      createNode(5, 26)
+    ],
+    elements: [{ id: 1, startNode: 1, endNode: 5 }],
+    loads: [
+      createPointLoad(1, 0, 150),
+      createPointLoad(2, 14, 100),
+      createPointLoad(3, 26, 400)
+    ]
+  },
+  'cantilever-fixed-right': {
+    message: 'Preset kantilever kiri dimuat: ujung kiri bebas dan fixed di kanan.',
+    nodes: [
+      createNode(1, 0),
+      createNode(2, 3),
+      createNode(3, 6, 'fixed')
+    ],
+    elements: [{ id: 1, startNode: 1, endNode: 3 }],
+    loads: [
+      createPointLoad(1, 0, 30),
+      { id: 2, type: 'udl', startNode: 1, endNode: 2, w: 8, label: 'w2' }
+    ]
+  },
+  'cantilever-fixed-left': {
+    message: 'Preset kantilever kanan dimuat: fixed di kiri dan ujung kanan bebas.',
+    nodes: [
+      createNode(1, 0, 'fixed'),
+      createNode(2, 4),
+      createNode(3, 7)
+    ],
+    elements: [{ id: 1, startNode: 1, endNode: 3 }],
+    loads: [
+      createPointLoad(1, 7, 25),
+      { id: 2, type: 'udl', startNode: 1, endNode: 3, w: 6, label: 'w2' }
+    ]
+  },
+  'simple-span-udl': {
+    message: 'Preset balok sederhana dimuat: pin-roller dengan beban merata.',
+    nodes: [
+      createNode(1, 0, 'pin'),
+      createNode(2, 3),
+      createNode(3, 6, 'roller')
+    ],
+    elements: [{ id: 1, startNode: 1, endNode: 3 }],
+    loads: [
+      { id: 1, type: 'udl', startNode: 1, endNode: 3, w: 10, label: 'w1' }
+    ]
+  }
 };
 
 function analysisElements() {
@@ -1066,6 +1140,29 @@ function resetModel() {
   showMessage('Model direset. Tambahkan node sesuai panjang balok yang diinginkan.', true);
   refresh();
 }
+
+function loadPresetModel() {
+  const key = controls.presetModel?.value || '';
+  const preset = presets[key];
+  if (!preset) return showMessage('Pilih preset soal terlebih dahulu.');
+  if (state.nodes.length || state.elements.length || state.loads.length) {
+    const ok = confirm('Preset akan mengganti model yang sedang dibuat. Lanjutkan?');
+    if (!ok) return;
+  }
+  if (state.forceChart) state.forceChart.destroy();
+  state.forceChart = null;
+  state.nodes = preset.nodes.map(node => ({ ...node }));
+  state.elements = preset.elements.map(element => ({ ...element }));
+  state.loads = preset.loads.map(load => ({ ...load }));
+  state.nextNodeId = Math.max(...state.nodes.map(node => node.id), 0) + 1;
+  state.nextElementId = Math.max(...state.elements.map(element => Number(element.id) || 0), 0) + 1;
+  state.nextLoadId = Math.max(...state.loads.map(load => load.id), 0) + 1;
+  $('#reactionResults').innerHTML = '';
+  $('#forceTableBody').innerHTML = '<tr><td colspan="10">Belum ada hasil analisis.</td></tr>';
+  refresh();
+  showMessage(preset.message, true);
+}
+
 function refresh() {
   refreshSelects();
   renderSvg();
@@ -1079,6 +1176,7 @@ $('#addPointLoadBtn').addEventListener('click', addPointLoad);
 $('#addUdlBtn').addEventListener('click', addUdl);
 $('#analyzeBtn').addEventListener('click', analyze);
 $('#resetBtn').addEventListener('click', resetModel);
+$('#loadPresetBtn').addEventListener('click', loadPresetModel);
 controls.pointLoadTarget.addEventListener('change', refreshSelects);
 controls.diagramOutput.addEventListener('change', updateChartVisibility);
 

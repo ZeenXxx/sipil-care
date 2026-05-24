@@ -21,6 +21,8 @@ summary { cursor: pointer; color: var(--primary); font-weight: 900; }
 .form-grid label, .output-switch label { display: block; margin-bottom: 6px; color: var(--primary); font-size: 13px; font-weight: 900; }
 .span-2 { grid-column: 1 / -1; }
 .full-btn { width: 100%; margin-top: 10px; }
+.diagram-preset-card { display: grid; gap: 10px; margin: 14px 0 16px; padding: 12px; border: 1px solid rgba(217,197,41,.48); border-radius: 8px; background: #fffbe8; }
+.diagram-preset-card label { color: var(--primary); font-size: 13px; font-weight: 900; }
 .action-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 16px; }
 .model-message { margin-top: 12px; color: #8a4b00; font-weight: 800; }
 .model-message.ok { color: var(--primary); }

@@ -12,7 +12,7 @@
     <meta name="apple-mobile-web-app-title" content="SIPIL CARE">
     <link rel="stylesheet" href="../css/style.css?v=26">
     <link rel="stylesheet" href="../css/navbar.css?v=33">
-    <link rel="stylesheet" href="../css/diagram-struktur.css?v=6">
+    <link rel="stylesheet" href="../css/diagram-struktur.css?v=7">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -97,6 +97,18 @@
               <button class="btn btn-primary full-btn" id="addUdlBtn" type="button">Tambah beban merata</button>
             </details>
 
+            <div class="diagram-preset-card">
+              <label for="presetModel">Contoh model cepat</label>
+              <select class="control" id="presetModel">
+                <option value="">Pilih preset soal</option>
+                <option value="overhang-two-side">Overhang dua sisi seperti gambar</option>
+                <option value="cantilever-fixed-right">Kantilever kiri - fixed kanan</option>
+                <option value="cantilever-fixed-left">Kantilever kanan - fixed kiri</option>
+                <option value="simple-span-udl">Balok sederhana + beban merata</option>
+              </select>
+              <button class="btn btn-secondary full-btn" id="loadPresetBtn" type="button">Pakai preset</button>
+            </div>
+
             <div class="action-row">
               <button class="btn btn-primary" id="analyzeBtn" type="button">Hitung</button>
               <button class="btn btn-secondary" id="resetBtn" type="button">Reset</button>
@@ -137,7 +149,7 @@
     <div class="toast" id="toast"></div>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <script src="../js/navbar.js?v=28"></script>
-    <script src="../js/diagram-struktur.js?v=12"></script>
+    <script src="../js/diagram-struktur.js?v=13"></script>
       <script src="../js/pwa.js?v=2"></script>
       <script src="../js/push-config.js?v=1"></script>
       <script type="module" src="../js/pwa-push.js?v=2"></script>

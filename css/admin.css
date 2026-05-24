@@ -1685,6 +1685,20 @@ body.admin-page [hidden]  {
 
 }
 
+.admin-card  {
+
+    scroll-margin-top: 112px
+
+}
+
+.admin-main  {
+
+    min-width: 0;
+
+    overflow-x: hidden
+
+}
+
 .attendance-recap-scroll  {
 
     max-height: min(520px, 58vh);
@@ -2068,6 +2082,42 @@ th  {
 
 }
 
+    .admin-card  {
+
+        scroll-margin-top: 108px
+
+}
+
+    .table-wrap  {
+
+        max-height: min(620px, 68vh);
+
+        overflow: auto;
+
+        border: 1px solid var(--line);
+
+        background: #fff
+
+}
+
+    .table-wrap th  {
+
+        position: sticky;
+
+        top: 0;
+
+        z-index: 2;
+
+        background: #fff
+
+}
+
+    .control, .btn, .action-btn  {
+
+        min-height: 44px
+
+}
+
     body.admin-nav-open  {
 
         overflow: hidden
@@ -2099,6 +2149,26 @@ th  {
     .admin-main  {
 
         padding: 14px
+
+}
+
+    .admin-sidebar  {
+
+        min-height: 74px;
+
+        padding: 10px 12px
+
+}
+
+    .admin-nav  {
+
+        top: 86px;
+
+        left: 10px;
+
+        right: 10px;
+
+        max-height: calc(100vh - 104px)
 
 }
 
@@ -2149,7 +2219,21 @@ th  {
 
     .action-btn  {
 
-        margin: 0 4px 6px 0
+        margin: 0 4px 6px 0;
+
+        white-space: nowrap
+
+}
+
+    .table-wrap  {
+
+        max-height: min(520px, 62vh)
+
+}
+
+    th, td  {
+
+        padding: 12px 10px
 
 }
 
