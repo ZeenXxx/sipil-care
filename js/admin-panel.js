@@ -1844,10 +1844,68 @@ function attendanceSessionTableRender() {
   attendanceSessionTable.innerHTML = rows || '<tr><td colspan="7">Belum ada sesi absen untuk scope praktikum akun ini.</td></tr>';
 }
 
-const csvEscape = value => `"${String(value ?? '').replace(/"/g, '""')}"`;
+const excelSafeSheetName = value => String(value || 'Sheet1').replace(/[\\/?*[\]:]/g, ' ').slice(0, 31) || 'Sheet1';
+const excelEscape = value => String(value ?? '').replace(/[&<>"']/g, char => ({
+  '&': '&amp;',
+  '<': '&lt;',
+  '>': '&gt;',
+  '"': '&quot;',
+  "'": '&#39;'
+}[char]));
 
-function downloadCsv(filename, rows) {
-  const blob = new Blob([`\ufeff${rows.map(row => row.map(csvEscape).join(',')).join('\n')}`], { type: 'text/csv;charset=utf-8' });
+function downloadExcel(filename, { title, sheetName, headers, rows, absentPredicate }) {
+  const columnCount = Math.max(headers.length, ...rows.map(row => row.values.length));
+  const generatedAt = formatDateTime(new Date().toISOString());
+  const columnMeta = Array.from({ length: columnCount }, (_, index) => {
+    const maxLength = [headers[index] || '', ...rows.map(row => row.values[index] || '')]
+      .reduce((max, value) => Math.max(max, String(value ?? '').length), 0);
+    return Math.min(Math.max(maxLength * 7 + 28, 92), 260);
+  });
+  const headerCells = headers.map(value => `<th>${excelEscape(value)}</th>`).join('');
+  const bodyRows = rows.map(row => {
+    const rowClass = absentPredicate?.(row) ? ' class="absent-row"' : '';
+    const cells = Array.from({ length: columnCount }, (_, index) => (
+      `<td>${excelEscape(row.values[index] ?? '')}</td>`
+    )).join('');
+    return `<tr${rowClass}>${cells}</tr>`;
+  }).join('');
+  const cols = columnMeta.map(width => `<col style="width:${width}px">`).join('');
+  const html = `<!DOCTYPE html>
+<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+<head>
+  <meta charset="UTF-8">
+  <xml>
+    <x:ExcelWorkbook>
+      <x:ExcelWorksheets>
+        <x:ExcelWorksheet>
+          <x:Name>${excelEscape(excelSafeSheetName(sheetName || title))}</x:Name>
+          <x:WorksheetOptions><x:FreezePanes/><x:FrozenNoSplit/><x:SplitHorizontal>4</x:SplitHorizontal><x:TopRowBottomPane>4</x:TopRowBottomPane></x:WorksheetOptions>
+        </x:ExcelWorksheet>
+      </x:ExcelWorksheets>
+    </x:ExcelWorkbook>
+  </xml>
+  <style>
+    body { font-family: Calibri, Arial, sans-serif; }
+    table { border-collapse: collapse; }
+    .title td { background: #0f4d3a; color: #ffffff; font-size: 16pt; font-weight: 700; }
+    .meta td { background: #eef6f2; color: #35574d; font-weight: 700; }
+    th { background: #dbeee7; color: #003c30; font-weight: 700; text-align: center; }
+    th, td { border: 1px solid #b8d0c8; padding: 8px; mso-number-format: "\\@"; vertical-align: top; }
+    .absent-row td { background: #f8cccc; color: #991b1b; font-weight: 700; }
+  </style>
+</head>
+<body>
+  <table>
+    <colgroup>${cols}</colgroup>
+    <tr class="title"><td colspan="${columnCount}">${excelEscape(title)}</td></tr>
+    <tr class="meta"><td colspan="${columnCount}">Dibuat: ${excelEscape(generatedAt)}</td></tr>
+    <tr><td colspan="${columnCount}"></td></tr>
+    <tr>${headerCells}</tr>
+    ${bodyRows || `<tr><td colspan="${columnCount}">Belum ada data.</td></tr>`}
+  </table>
+</body>
+</html>`;
+  const blob = new Blob([html], { type: 'application/vnd.ms-excel;charset=utf-8' });
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;
@@ -1858,63 +1916,78 @@ function downloadCsv(filename, rows) {
   URL.revokeObjectURL(url);
 }
 
-function exportAttendanceCsv() {
+function exportAttendanceExcel() {
   const rows = attendanceRecapRows();
-  const csvRows = [[
-    'NIM',
-    'Nama',
-    'Kelas',
-    'Kelompok',
-    'Praktikum',
-    'Tahun Akademik',
-    'Angkatan Target',
-    'Modul',
-    'Judul Modul',
-    'Status',
-    'Waktu Absen'
-  ]].concat(rows.map(({ session, roster, record }) => [
-    roster.nim,
-    roster.name,
-    roster.className,
-    roster.group || '',
-    session?.course || roster.course || roster.category,
-    session?.academicYear || roster.academicYear,
-    targetCohortForPracticumResource(session || roster) || '',
-    session?.moduleNumber || '',
-    session?.moduleTitle || '',
-    session ? record ? 'Hadir' : 'Belum absen' : 'Roster',
-    record ? formatDateTime(record.attendedAt || record.createdAt) : ''
-  ]));
-  downloadCsv(`rekap-absensi-praktikum-${Date.now()}.csv`, csvRows);
+  downloadExcel(`rekap-absensi-praktikum-${Date.now()}.xls`, {
+    title: 'Rekap Absensi Praktikum',
+    sheetName: 'Rekap Absensi',
+    headers: [
+      'NIM',
+      'Nama',
+      'Kelas',
+      'Kelompok',
+      'Praktikum',
+      'Tahun Akademik',
+      'Angkatan Target',
+      'Modul',
+      'Judul Modul',
+      'Status',
+      'Waktu Absen'
+    ],
+    rows: rows.map(({ session, roster, record }) => ({
+      values: [
+        roster.nim,
+        roster.name,
+        roster.className,
+        roster.group || '',
+        session?.course || roster.course || roster.category,
+        session?.academicYear || roster.academicYear,
+        targetCohortForPracticumResource(session || roster) || '',
+        session?.moduleNumber || '',
+        session?.moduleTitle || '',
+        session ? record ? 'Hadir' : 'Tidak hadir' : 'Roster',
+        record ? formatDateTime(record.attendedAt || record.createdAt) : ''
+      ],
+      absent: Boolean(session && !record)
+    })),
+    absentPredicate: row => row.absent
+  });
 }
 
-function exportRosterCsv() {
+function exportRosterExcel() {
   const rows = practicumScopeItems(practicumRosters)
     .filter(item => item.isActive !== false)
-    .map(item => [
-      item.nim,
-      item.name,
-      item.group || '',
-      item.course || item.category,
-      item.category,
-      targetCohortForPracticumResource(item),
-      item.academicYear,
-      item.className,
-      item.importedAt,
-      item.importedBy
-    ]);
-  downloadCsv(`backup-roster-praktikum-${Date.now()}.csv`, [[
-    'NIM',
-    'Nama',
-    'Kelompok',
-    'Praktikum',
-    'Kategori',
-    'Angkatan Target',
-    'Tahun Akademik',
-    'Kelas',
-    'Diimport Pada',
-    'Diimport Oleh'
-  ], ...rows]);
+    .map(item => ({
+      values: [
+        item.nim,
+        item.name,
+        item.group || '',
+        item.course || item.category,
+        item.category,
+        targetCohortForPracticumResource(item),
+        item.academicYear,
+        item.className,
+        formatDateTime(item.importedAt),
+        item.importedBy
+      ]
+    }));
+  downloadExcel(`backup-roster-praktikum-${Date.now()}.xls`, {
+    title: 'Backup Roster Praktikum',
+    sheetName: 'Roster Praktikum',
+    headers: [
+      'NIM',
+      'Nama',
+      'Kelompok',
+      'Praktikum',
+      'Kategori',
+      'Angkatan Target',
+      'Tahun Akademik',
+      'Kelas',
+      'Diimport Pada',
+      'Diimport Oleh'
+    ],
+    rows
+  });
   writeAuditLog({
     action: 'EXPORT_PRACTICUM_BACKUP',
     targetType: 'practicum_roster',
@@ -1923,45 +1996,52 @@ function exportRosterCsv() {
   }).catch(error => console.warn('Audit export roster failed:', error));
 }
 
-function exportSessionCsv() {
+function exportSessionExcel() {
   const recordCounts = practicumAttendanceRecords.reduce((map, record) => {
     map[record.sessionId] = (map[record.sessionId] || 0) + 1;
     return map;
   }, {});
-  const rows = practicumScopeItems(practicumAttendanceSessions).map(item => [
-    item.docId,
-    item.course || item.category,
-    item.category,
-    targetCohortForPracticumResource(item),
-    item.academicYear,
-    item.className,
-    item.moduleNumber,
-    item.moduleTitle,
-    item.date,
-    item.openAt,
-    item.closeAt,
-    item.status,
-    recordCounts[item.docId] || 0,
-    item.createdAt,
-    item.createdBy
-  ]);
-  downloadCsv(`backup-sesi-absen-praktikum-${Date.now()}.csv`, [[
-    'ID Sesi',
-    'Praktikum',
-    'Kategori',
-    'Angkatan Target',
-    'Tahun Akademik',
-    'Kelas',
-    'Modul',
-    'Judul Modul',
-    'Tanggal',
-    'Buka',
-    'Tutup',
-    'Status',
-    'Jumlah Record',
-    'Dibuat Pada',
-    'Dibuat Oleh'
-  ], ...rows]);
+  const rows = practicumScopeItems(practicumAttendanceSessions).map(item => ({
+    values: [
+      item.docId,
+      item.course || item.category,
+      item.category,
+      targetCohortForPracticumResource(item),
+      item.academicYear,
+      item.className,
+      item.moduleNumber,
+      item.moduleTitle,
+      item.date,
+      item.openAt,
+      item.closeAt,
+      item.status === 'closed' ? 'Ditutup' : 'Aktif',
+      recordCounts[item.docId] || 0,
+      formatDateTime(item.createdAt),
+      item.createdBy
+    ]
+  }));
+  downloadExcel(`backup-sesi-absen-praktikum-${Date.now()}.xls`, {
+    title: 'Backup Sesi Absen Praktikum',
+    sheetName: 'Sesi Absen',
+    headers: [
+      'ID Sesi',
+      'Praktikum',
+      'Kategori',
+      'Angkatan Target',
+      'Tahun Akademik',
+      'Kelas',
+      'Modul',
+      'Judul Modul',
+      'Tanggal',
+      'Buka',
+      'Tutup',
+      'Status',
+      'Jumlah Record',
+      'Dibuat Pada',
+      'Dibuat Oleh'
+    ],
+    rows
+  });
   writeAuditLog({
     action: 'EXPORT_PRACTICUM_BACKUP',
     targetType: 'practicum_attendance_session',
@@ -4248,9 +4328,9 @@ on(rosterTargetCohort, 'change', () => refreshAcademicYearFromTarget(rosterCateg
 on(attendanceTargetCohort, 'change', () => refreshAcademicYearFromTarget(attendanceCategory, attendanceTargetCohort, attendanceAcademicYear));
 on(attendanceSearch, 'input', () => attendanceRecapRender());
 on(attendanceSessionFilter, 'change', () => attendanceRecapRender());
-on(attendanceExport, 'click', () => exportAttendanceCsv());
-on(rosterExport, 'click', () => exportRosterCsv());
-on(sessionExport, 'click', () => exportSessionCsv());
+on(attendanceExport, 'click', () => exportAttendanceExcel());
+on(rosterExport, 'click', () => exportRosterExcel());
+on(sessionExport, 'click', () => exportSessionExcel());
 on(videoSearch, 'input', () => videoTableRender());
 on(videoFilter, 'change', () => videoTableRender());
 on(announcementSearch, 'input', () => announcementTableRender());
