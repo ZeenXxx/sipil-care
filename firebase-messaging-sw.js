@@ -1,7 +1,7 @@
 importScripts('https://www.gstatic.com/firebasejs/12.13.0/firebase-app-compat.js');
 importScripts('https://www.gstatic.com/firebasejs/12.13.0/firebase-messaging-compat.js');
 
-const CACHE_NAME = 'sipilcare-pwa-v1';
+const CACHE_NAME = 'sipilcare-pwa-v2';
 const APP_SHELL = [
   '/',
   '/index.html',
@@ -16,6 +16,14 @@ const APP_SHELL = [
   '/assets/icons/pwa-512.png',
   '/manifest.webmanifest'
 ];
+const CACHEABLE_PATHS = [
+  '/css/',
+  '/js/',
+  '/assets/icons/',
+  '/assets/images/logo-hms.png',
+  '/manifest.webmanifest'
+];
+const HEAVY_EXTENSIONS = /\.(pdf|docx?|xlsx?|pptx?|zip|rar|7z|mp4|webm|mov|avi|mkv|png|jpe?g|gif|webp)$/i;
 
 firebase.initializeApp({
   apiKey: 'AIzaSyDm_PmGLGQ9NEnaeMZJiphEfFFVRZhJDBk',
@@ -77,6 +85,10 @@ self.addEventListener('fetch', event => {
     );
     return;
   }
+
+  const shouldCache = CACHEABLE_PATHS.some(path => requestUrl.pathname.startsWith(path))
+    && !HEAVY_EXTENSIONS.test(requestUrl.pathname);
+  if (!shouldCache) return;
 
   event.respondWith(
     caches.match(event.request).then(cached => cached || fetch(event.request).then(response => {

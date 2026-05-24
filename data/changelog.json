@@ -1,11 +1,16 @@
 [
   {
-    "id": "2026-05-24:admin-dashboard,admin-guide,backend-security,changelog,civil-tools,floating-help,help-information,public-help-onboarding,public-interface,resources-content,student-access",
+    "id": "2026-05-24:maintenance",
     "date": "2026-05-24",
     "dateLabel": "24 Mei 2026",
     "generated": true,
-    "summary": "Changelog Otomatis, Bantuan & FAQ Mengambang, Dashboard Admin",
+    "summary": "Pemeliharaan Website, Changelog Otomatis, Bantuan & FAQ Mengambang",
     "items": [
+      {
+        "type": "improved",
+        "title": "Pemeliharaan Website",
+        "description": "SIPIL CARE mendapatkan pembaruan teknis untuk menjaga stabilitas dan kenyamanan penggunaan."
+      },
       {
         "type": "added",
         "title": "Changelog Otomatis",

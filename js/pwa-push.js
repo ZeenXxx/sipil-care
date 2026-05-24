@@ -1,8 +1,3 @@
-import { app } from './firebase-config.js';
-import { getFirestore, doc, setDoc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
-import { getMessaging, getToken, deleteToken, onMessage, isSupported } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-messaging.js";
-
-const db = getFirestore(app);
 const SESSION_KEY = 'sipilcare_student_session';
 const TOKEN_ID_KEY = 'sipilcare_student_push_token_id';
 const PUSH_ENABLED_KEY = 'sipilcare_student_push_enabled';
@@ -10,6 +5,33 @@ const TOKEN_COLLECTION = 'student_push_tokens';
 const SESSION_TTL = 24 * 60 * 60 * 1000;
 const rootPrefix = location.pathname.includes('/pages/') || location.pathname.includes('/tools/') ? '../' : '';
 const vapidKey = window.SIPILCARE_PUSH_CONFIG?.vapidKey || '';
+
+let firebasePromise = null;
+let renderQueued = false;
+let foregroundBound = false;
+
+const loadFirebase = () => {
+  if (!firebasePromise) {
+    firebasePromise = Promise.all([
+      import('./firebase-config.js'),
+      import('https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js'),
+      import('https://www.gstatic.com/firebasejs/12.13.0/firebase-messaging.js')
+    ]).then(([config, firestore, messaging]) => ({
+      app: config.app,
+      db: firestore.getFirestore(config.app),
+      doc: firestore.doc,
+      setDoc: firestore.setDoc,
+      updateDoc: firestore.updateDoc,
+      serverTimestamp: firestore.serverTimestamp,
+      getMessaging: messaging.getMessaging,
+      getToken: messaging.getToken,
+      deleteToken: messaging.deleteToken,
+      onMessage: messaging.onMessage,
+      isSupported: messaging.isSupported
+    }));
+  }
+  return firebasePromise;
+};
 
 const readSession = () => {
   try {
@@ -44,18 +66,24 @@ const showToast = message => {
   setTimeout(() => toast.classList.remove('show'), 3200);
 };
 
+const hasBrowserPushSupport = () => (
+  'serviceWorker' in navigator
+  && 'Notification' in window
+  && 'PushManager' in window
+);
+
 const supportsNotifications = async () => {
-  if (!('serviceWorker' in navigator) || !('Notification' in window) || !('PushManager' in window)) return false;
+  if (!hasBrowserPushSupport()) return false;
   try {
-    return await isSupported();
+    const firebase = await loadFirebase();
+    return await firebase.isSupported();
   } catch {
     return false;
   }
 };
 
 const currentStatus = async () => {
-  const supported = await supportsNotifications();
-  if (!supported) return { supported: false, enabled: false, label: 'Notifikasi belum didukung browser ini.' };
+  if (!hasBrowserPushSupport()) return { supported: false, enabled: false, label: 'Notifikasi belum didukung browser ini.' };
   if (!vapidKey || vapidKey.includes('ISI_')) return { supported: false, enabled: false, label: 'VAPID key notifikasi belum tersedia.' };
   if (Notification.permission === 'denied') return { supported: true, enabled: false, label: 'Izin notifikasi diblokir di pengaturan browser.' };
   const enabled = localStorage.getItem(PUSH_ENABLED_KEY) === 'true' && Notification.permission === 'granted';
@@ -75,6 +103,10 @@ export async function enableStudentPushNotifications() {
     showToast(status.label);
     return false;
   }
+  if (!await supportsNotifications()) {
+    showToast('Notifikasi belum didukung browser ini.');
+    return false;
+  }
   const permission = await Notification.requestPermission();
   if (permission !== 'granted') {
     showToast('Izin notifikasi belum diberikan.');
@@ -82,12 +114,13 @@ export async function enableStudentPushNotifications() {
   }
 
   try {
+    const firebase = await loadFirebase();
     const registration = await registerWorker();
-    const messaging = getMessaging(app);
-    const token = await getToken(messaging, { vapidKey, serviceWorkerRegistration: registration });
+    const messaging = firebase.getMessaging(firebase.app);
+    const token = await firebase.getToken(messaging, { vapidKey, serviceWorkerRegistration: registration });
     if (!token) throw new Error('Token notifikasi kosong.');
     const docId = await tokenDocId(token);
-    await setDoc(doc(db, TOKEN_COLLECTION, docId), {
+    await firebase.setDoc(firebase.doc(firebase.db, TOKEN_COLLECTION, docId), {
       token,
       enabled: true,
       userType: 'student',
@@ -97,13 +130,14 @@ export async function enableStudentPushNotifications() {
       displayMode: displayMode(),
       lastPage: location.pathname,
       userAgent: navigator.userAgent.slice(0, 240),
-      updatedAt: serverTimestamp(),
-      createdAt: serverTimestamp()
+      updatedAt: firebase.serverTimestamp(),
+      createdAt: firebase.serverTimestamp()
     }, { merge: true });
     localStorage.setItem(TOKEN_ID_KEY, docId);
     localStorage.setItem(PUSH_ENABLED_KEY, 'true');
     showToast('Notifikasi SIPIL CARE aktif di perangkat ini.');
-    renderNotificationButton();
+    scheduleRenderNotificationButton();
+    bindForegroundMessages();
     return true;
   } catch (error) {
     console.error('Enable student push failed:', error);
@@ -115,37 +149,37 @@ export async function enableStudentPushNotifications() {
 export async function disableStudentPushNotifications() {
   const docId = localStorage.getItem(TOKEN_ID_KEY);
   try {
+    const firebase = await loadFirebase();
     if (docId) {
-      await updateDoc(doc(db, TOKEN_COLLECTION, docId), {
+      await firebase.updateDoc(firebase.doc(firebase.db, TOKEN_COLLECTION, docId), {
         enabled: false,
-        disabledAt: serverTimestamp(),
-        updatedAt: serverTimestamp()
+        disabledAt: firebase.serverTimestamp(),
+        updatedAt: firebase.serverTimestamp()
       }).catch(() => null);
     }
-    const supported = await supportsNotifications();
-    if (supported && vapidKey && Notification.permission === 'granted') {
+    if (await supportsNotifications() && vapidKey && Notification.permission === 'granted') {
       const registration = await registerWorker();
-      const messaging = getMessaging(app);
-      await getToken(messaging, { vapidKey, serviceWorkerRegistration: registration })
-        .then(token => token ? deleteToken(messaging) : false)
+      const messaging = firebase.getMessaging(firebase.app);
+      await firebase.getToken(messaging, { vapidKey, serviceWorkerRegistration: registration })
+        .then(token => token ? firebase.deleteToken(messaging) : false)
         .catch(() => false);
     }
   } finally {
     localStorage.removeItem(TOKEN_ID_KEY);
     localStorage.removeItem(PUSH_ENABLED_KEY);
     showToast('Notifikasi SIPIL CARE dimatikan di perangkat ini.');
-    renderNotificationButton();
+    scheduleRenderNotificationButton();
   }
 }
 
 const markCurrentTokenDisabled = () => {
   const docId = localStorage.getItem(TOKEN_ID_KEY);
   if (!docId) return;
-  updateDoc(doc(db, TOKEN_COLLECTION, docId), {
+  loadFirebase().then(firebase => firebase.updateDoc(firebase.doc(firebase.db, TOKEN_COLLECTION, docId), {
     enabled: false,
-    disabledAt: serverTimestamp(),
-    updatedAt: serverTimestamp()
-  }).catch(() => null);
+    disabledAt: firebase.serverTimestamp(),
+    updatedAt: firebase.serverTimestamp()
+  })).catch(() => null);
   localStorage.removeItem(TOKEN_ID_KEY);
   localStorage.removeItem(PUSH_ENABLED_KEY);
 };
@@ -177,33 +211,61 @@ async function renderNotificationButton() {
   button.disabled = !status.supported;
 }
 
+function scheduleRenderNotificationButton() {
+  if (renderQueued) return;
+  renderQueued = true;
+  const run = () => {
+    renderQueued = false;
+    renderNotificationButton();
+  };
+  if ('requestIdleCallback' in window) requestIdleCallback(run, { timeout: 1000 });
+  else setTimeout(run, 150);
+}
+
 async function bindForegroundMessages() {
-  if (!await supportsNotifications() || !vapidKey) return;
+  if (foregroundBound || localStorage.getItem(PUSH_ENABLED_KEY) !== 'true' || !hasBrowserPushSupport() || !vapidKey) return;
+  if (Notification.permission !== 'granted') return;
+  foregroundBound = true;
   try {
-    const messaging = getMessaging(app);
-    onMessage(messaging, payload => {
+    const firebase = await loadFirebase();
+    if (!await firebase.isSupported()) return;
+    const messaging = firebase.getMessaging(firebase.app);
+    firebase.onMessage(messaging, payload => {
       const notification = payload.notification || {};
-      if (Notification.permission === 'granted') {
-        new Notification(notification.title || 'Update SIPIL CARE', {
-          body: notification.body || 'Ada update baru di SIPIL CARE.',
-          icon: `${location.origin}/assets/images/logo-hms.png`,
-          badge: `${location.origin}/assets/images/logo-hms.png`,
-          data: { url: payload.data?.url || '/index.html' }
-        });
-      }
+      new Notification(notification.title || 'Update SIPIL CARE', {
+        body: notification.body || 'Ada update baru di SIPIL CARE.',
+        icon: `${location.origin}/assets/images/logo-hms.png`,
+        badge: `${location.origin}/assets/images/logo-hms.png`,
+        data: { url: payload.data?.url || '/index.html' }
+      });
     });
   } catch (error) {
+    foregroundBound = false;
     console.warn('Foreground push listener unavailable:', error);
   }
 }
 
-const observer = new MutationObserver(() => renderNotificationButton());
-observer.observe(document.documentElement, { childList: true, subtree: true });
 document.addEventListener('click', event => {
   if (event.target.closest('[data-student-logout]')) markCurrentTokenDisabled();
 }, true);
-renderNotificationButton();
-bindForegroundMessages();
+
+const startStudentPushUi = () => {
+  if (!readSession()) return;
+  scheduleRenderNotificationButton();
+  bindForegroundMessages();
+  const observer = new MutationObserver(() => {
+    if (document.querySelector('.student-account-menu') && !document.querySelector('[data-student-push-toggle]')) {
+      scheduleRenderNotificationButton();
+    }
+  });
+  observer.observe(document.body || document.documentElement, { childList: true, subtree: true });
+};
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', startStudentPushUi, { once: true });
+} else {
+  startStudentPushUi();
+}
 
 window.SIPILCARE_STUDENT_PUSH = {
   enable: enableStudentPushNotifications,
