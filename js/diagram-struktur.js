@@ -61,6 +61,32 @@ const elementEnds = element => {
   return a.x <= b.x ? { left: a, right: b, length: b.x - a.x } : { left: b, right: a, length: a.x - b.x };
 };
 
+function analysisElements() {
+  const segments = new Map();
+  state.elements.forEach(element => {
+    const ends = elementEnds(element);
+    const nodesOnElement = sortedNodes()
+      .filter(node => node.x >= ends.left.x - eps && node.x <= ends.right.x + eps)
+      .sort((a, b) => a.x - b.x || a.id - b.id);
+
+    for (let i = 0; i < nodesOnElement.length - 1; i += 1) {
+      const left = nodesOnElement[i];
+      const right = nodesOnElement[i + 1];
+      if (right.x - left.x < eps) continue;
+      const key = `${left.id}-${right.id}`;
+      if (!segments.has(key)) {
+        segments.set(key, {
+          id: `${element.id}.${i + 1}`,
+          parentId: element.id,
+          startNode: left.id,
+          endNode: right.id
+        });
+      }
+    }
+  });
+  return [...segments.values()];
+}
+
 function udlRange(load) {
   if (load.startNode && load.endNode) {
     const a = getNode(load.startNode);
@@ -377,13 +403,14 @@ function validateModel() {
     }
   }
 
+  const meshElements = analysisElements();
   const activeNodeIds = new Set();
-  state.elements.forEach(element => {
+  meshElements.forEach(element => {
     activeNodeIds.add(element.startNode);
     activeNodeIds.add(element.endNode);
   });
   const invalidSupport = state.nodes.find(node => node.support !== 'free' && !activeNodeIds.has(node.id));
-  if (invalidSupport) throw new Error(`Support ${nodeLabel(invalidSupport)} harus berada pada node ujung element. Split element pada node tersebut terlebih dahulu.`);
+  if (invalidSupport) throw new Error(`Support ${nodeLabel(invalidSupport)} harus berada pada node yang dilalui element balok.`);
 
   const fixed = state.nodes.filter(node => node.support === 'fixed');
   const verticalSupports = state.nodes.filter(node => ['pin', 'roller', 'fixed'].includes(node.support));
@@ -477,8 +504,9 @@ function solveLinearSystem(matrix, vector) {
 }
 
 function solveReactions(model, loads) {
+  const meshElements = analysisElements();
   const activeNodeIds = new Set();
-  state.elements.forEach(element => {
+  meshElements.forEach(element => {
     activeNodeIds.add(element.startNode);
     activeNodeIds.add(element.endNode);
   });
@@ -489,7 +517,7 @@ function solveReactions(model, loads) {
   const force = Array(dofCount).fill(0);
   const ei = 1;
 
-  state.elements.forEach(element => {
+  meshElements.forEach(element => {
     const ends = elementEnds(element);
     const leftIndex = nodeIndex.get(ends.left.id);
     const rightIndex = nodeIndex.get(ends.right.id);
@@ -512,7 +540,7 @@ function solveReactions(model, loads) {
       if (nodeAtLoad) {
         force[nodeIndex.get(nodeAtLoad.id) * 2] -= pointFy(load);
       } else {
-        const element = state.elements.find(item => {
+        const element = meshElements.find(item => {
           const ends = elementEnds(item);
           return load.x > ends.left.x + eps && load.x < ends.right.x - eps;
         });
@@ -521,7 +549,7 @@ function solveReactions(model, loads) {
       }
     }
     if (load.type === 'udl') {
-      state.elements.forEach(element => addEquivalentUdl(force, element, load.a, load.b, load.w, nodeIndex));
+      meshElements.forEach(element => addEquivalentUdl(force, element, load.a, load.b, load.w, nodeIndex));
     }
   });
 
@@ -632,11 +660,12 @@ function sampleBeam(loads, reactions) {
 }
 
 function buildElementTable(loads, reactions) {
-  return state.elements.map(element => {
+  return analysisElements().map(element => {
     const ends = elementEnds(element);
     const mid = (ends.left.x + ends.right.x) / 2;
     return {
       id: element.id,
+      label: element.parentId ? `E${element.parentId}.${String(element.id).split('.').pop()}` : `E${element.id}`,
       start: ends.left.x,
       end: ends.right.x,
       nStart: axialAt(ends.left.x + 1e-6, loads, reactions),
@@ -662,7 +691,7 @@ function renderSummary(reactions, samples) {
   $('#reactionResults').innerHTML = reactionCards + mmaxCard;
 }
 function renderTable(rows) {
-  $('#forceTableBody').innerHTML = rows.map(row => `<tr><td>E${row.id}</td><td>${fmt(row.start)} m</td><td>${fmt(row.end)} m</td><td>${fmt(row.nStart)} kN</td><td>${fmt(row.nEnd)} kN</td><td>${fmt(row.vStart)} kN</td><td>${fmt(row.vEnd)} kN</td><td>${fmt(row.mStart)} kNm</td><td>${fmt(row.mMid)} kNm</td><td>${fmt(row.mEnd)} kNm</td></tr>`).join('');
+  $('#forceTableBody').innerHTML = rows.map(row => `<tr><td>${row.label || `E${row.id}`}</td><td>${fmt(row.start)} m</td><td>${fmt(row.end)} m</td><td>${fmt(row.nStart)} kN</td><td>${fmt(row.nEnd)} kN</td><td>${fmt(row.vStart)} kN</td><td>${fmt(row.vEnd)} kN</td><td>${fmt(row.mStart)} kNm</td><td>${fmt(row.mMid)} kNm</td><td>${fmt(row.mEnd)} kNm</td></tr>`).join('');
 }
 
 const valueLabelPlugin = {

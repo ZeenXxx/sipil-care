@@ -1,11 +1,16 @@
 [
   {
-    "id": "2026-05-24:admin-dashboard,admin-guide,changelog,civil-tools,floating-help,help-information,public-help-onboarding,public-interface,resources-content,site-identity,student-access",
+    "id": "2026-05-24:civil-tools",
     "date": "2026-05-24",
     "dateLabel": "24 Mei 2026",
     "generated": true,
-    "summary": "Identitas dan Deskripsi Situs, Changelog Otomatis, Bantuan & FAQ Mengambang",
+    "summary": "Tools Teknik Sipil, Identitas dan Deskripsi Situs, Changelog Otomatis",
     "items": [
+      {
+        "type": "improved",
+        "title": "Tools Teknik Sipil",
+        "description": "Tools akademik Teknik Sipil diperbarui untuk membantu perhitungan, analisis struktur, preliminary design, dan pengelolaan file."
+      },
       {
         "type": "improved",
         "title": "Identitas dan Deskripsi Situs",
@@ -35,11 +40,6 @@
         "type": "improved",
         "title": "Akses dan Login Mahasiswa",
         "description": "Alur login, sesi akun, dan pengalaman mahasiswa diperbaiki agar akses lintas perangkat lebih stabil."
-      },
-      {
-        "type": "improved",
-        "title": "Tools Teknik Sipil",
-        "description": "Tools akademik Teknik Sipil diperbarui untuk membantu perhitungan, analisis struktur, preliminary design, dan pengelolaan file."
       },
       {
         "type": "improved",
