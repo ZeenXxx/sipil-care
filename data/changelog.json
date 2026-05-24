@@ -1,15 +1,15 @@
 [
   {
-    "id": "2026-05-24:maintenance",
+    "id": "2026-05-24:admin-dashboard,admin-guide,changelog,civil-tools,floating-help,help-information,public-help-onboarding,public-interface,resources-content,site-identity,student-access",
     "date": "2026-05-24",
     "dateLabel": "24 Mei 2026",
     "generated": true,
-    "summary": "Pemeliharaan Website, Changelog Otomatis, Bantuan & FAQ Mengambang",
+    "summary": "Identitas dan Deskripsi Situs, Changelog Otomatis, Bantuan & FAQ Mengambang",
     "items": [
       {
         "type": "improved",
-        "title": "Pemeliharaan Website",
-        "description": "SIPIL CARE mendapatkan pembaruan teknis untuk menjaga stabilitas dan kenyamanan penggunaan."
+        "title": "Identitas dan Deskripsi Situs",
+        "description": "Deskripsi SIPIL CARE, logo HMS, favicon, metadata sosial, dan data terstruktur diperbarui agar identitas website lebih jelas di browser serta hasil pencarian Google."
       },
       {
         "type": "added",
@@ -62,14 +62,14 @@
         "description": "Tampilan halaman public diperhalus agar lebih responsif, konsisten, dan nyaman dibuka dari perangkat mobile."
       },
       {
+        "type": "improved",
+        "title": "Pemeliharaan Website",
+        "description": "SIPIL CARE mendapatkan pembaruan teknis untuk menjaga stabilitas dan kenyamanan penggunaan."
+      },
+      {
         "type": "fixed",
         "title": "Backend dan Permission",
         "description": "Dokumentasi serta fungsi backend terkait akun, role, permission, dan sesi admin diperbaiki agar sistem lebih aman dan konsisten."
-      },
-      {
-        "type": "improved",
-        "title": "Identitas dan Deskripsi Situs",
-        "description": "Deskripsi SIPIL CARE, logo HMS, favicon, metadata sosial, dan data terstruktur diperbarui agar identitas website lebih jelas di browser serta hasil pencarian Google."
       }
     ]
   },

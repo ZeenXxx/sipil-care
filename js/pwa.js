@@ -8,6 +8,15 @@
   const isiOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
   let deferredPrompt = null;
 
+  const lockPortrait = async () => {
+    if (!isStandalone() || !screen.orientation?.lock) return;
+    try {
+      await screen.orientation.lock('portrait-primary');
+    } catch {
+      screen.orientation.lock('portrait').catch(() => null);
+    }
+  };
+
   const showInstallHint = () => {
     if (document.querySelector('.pwa-install-hint') || isStandalone()) return;
     const hint = document.createElement('div');
@@ -39,6 +48,7 @@
       navigator.serviceWorker.register(`${rootPrefix}firebase-messaging-sw.js`, { scope: rootPrefix || './' }).catch(error => {
         console.warn('SIPIL CARE PWA registration failed:', error);
       });
+      lockPortrait();
     });
   }
 
@@ -55,6 +65,7 @@
 
   window.SIPILCARE_PWA = {
     isStandalone,
-    showInstallHint
+    showInstallHint,
+    lockPortrait
   };
 })();

@@ -1,7 +1,7 @@
 importScripts('https://www.gstatic.com/firebasejs/12.13.0/firebase-app-compat.js');
 importScripts('https://www.gstatic.com/firebasejs/12.13.0/firebase-messaging-compat.js');
 
-const CACHE_NAME = 'sipilcare-pwa-v2';
+const CACHE_NAME = 'sipilcare-pwa-v3';
 const APP_SHELL = [
   '/',
   '/index.html',
@@ -12,6 +12,7 @@ const APP_SHELL = [
   '/css/style.css?v=26',
   '/css/navbar.css?v=33',
   '/assets/images/logo-hms.png',
+  '/assets/icons/pwa-180.png',
   '/assets/icons/pwa-192.png',
   '/assets/icons/pwa-512.png',
   '/manifest.webmanifest'
