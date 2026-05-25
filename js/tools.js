@@ -75,11 +75,19 @@ document.getElementById('convertBtn').addEventListener('click', convert);
 const kmlFileInput = document.getElementById('kmlKmzFile');
 const kmlPreview = document.getElementById('kmlCsvPreview');
 const kmlUseTerrainAltInput = document.getElementById('kmlUseTerrainAlt');
+let latestKmlResult = null;
 const numberText = value => {
   const number = Number(value);
   if (!Number.isFinite(number)) return '0';
   return String(Number(number.toFixed(9))).replace(/\.0+$/, '');
 };
+const kmlSettingsKey = file => JSON.stringify({
+  name: file?.name || '',
+  size: file?.size || 0,
+  lastModified: file?.lastModified || 0,
+  defaultAlt: document.getElementById('kmlAltDefault')?.value || '0',
+  terrain: Boolean(kmlUseTerrainAltInput?.checked)
+});
 const readKmlText = async file => {
   const ext = file.name.split('.').pop().toLowerCase();
   if (ext === 'kml') return file.text();
@@ -134,29 +142,55 @@ const fetchTerrainElevations = async rows => {
   if (!targets.length) return { rows, filled: 0 };
   const updatedRows = rows.map(row => [...row]);
   let filled = 0;
-  for (let start = 0; start < targets.length; start += 80) {
-    const batch = targets.slice(start, start + 80);
-    const latitudes = batch.map(item => numberText(item.row[0])).join(',');
-    const longitudes = batch.map(item => numberText(item.row[1])).join(',');
-    const url = 'https://api.open-meteo.com/v1/elevation?latitude=' + encodeURIComponent(latitudes) + '&longitude=' + encodeURIComponent(longitudes);
-    const response = await fetch(url);
-    if (!response.ok) throw new Error('ELEVATION_FAILED');
-    const payload = await response.json();
-    const elevations = Array.isArray(payload.elevation) ? payload.elevation : [];
-    elevations.forEach((alt, offset) => {
-      const target = batch[offset];
+
+  const applyElevations = elevations => {
+    (elevations || []).forEach((alt, offset) => {
+      const target = targets[offset];
       const elevation = Number(alt);
       if (target && Number.isFinite(elevation)) {
         updatedRows[target.index][2] = elevation;
         filled += 1;
       }
     });
+  };
+
+  const fetchFromProxy = async () => {
+    const response = await fetch('/api/elevation', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ points: targets.map(item => [item.row[0], item.row[1]]) })
+    });
+    const payload = await response.json();
+    if (!response.ok || !payload.ok) throw new Error(payload.message || 'ELEVATION_FAILED');
+    applyElevations(payload.elevations);
+  };
+
+  const fetchDirect = async () => {
+    for (let start = 0; start < targets.length; start += 80) {
+      const batch = targets.slice(start, start + 80);
+      const latitudes = batch.map(item => numberText(item.row[0])).join(',');
+      const longitudes = batch.map(item => numberText(item.row[1])).join(',');
+      const url = 'https://api.open-meteo.com/v1/elevation?latitude=' + encodeURIComponent(latitudes) + '&longitude=' + encodeURIComponent(longitudes);
+      const response = await fetch(url);
+      if (!response.ok) throw new Error('ELEVATION_FAILED');
+      const payload = await response.json();
+      applyElevations(Array.isArray(payload.elevation) ? payload.elevation : []);
+    }
+  };
+
+  try {
+    await fetchFromProxy();
+  } catch (error) {
+    console.warn('Elevation proxy failed, trying direct API:', error);
+    await fetchDirect();
   }
   return { rows: updatedRows, filled };
 };
 const getCivil3dRows = async () => {
   const file = kmlFileInput?.files?.[0];
   if (!file) throw new Error('NO_KML_FILE');
+  const settingsKey = kmlSettingsKey(file);
+  if (latestKmlResult?.settingsKey === settingsKey) return latestKmlResult;
   const defaultAlt = Number(document.getElementById('kmlAltDefault')?.value || 0);
   let rows = parseKmlCoordinates(await readKmlText(file), Number.isFinite(defaultAlt) ? defaultAlt : 0);
   if (!rows.length) throw new Error('NO_COORDINATES');
@@ -166,7 +200,8 @@ const getCivil3dRows = async () => {
     rows = result.rows;
     filled = result.filled;
   }
-  return { file, rows, filled };
+  latestKmlResult = { file, rows, filled, settingsKey };
+  return latestKmlResult;
 };
 const renderKmlPreview = (rows, filled = 0) => {
   const previewRows = rows.slice(0, 8).map(row => row.map(numberText).join(',')).join('\n');
