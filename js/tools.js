@@ -94,7 +94,12 @@ const parseKmlCoordinates = (text, defaultAlt = 0) => {
   const parser = new DOMParser();
   const xml = parser.parseFromString(text, 'application/xml');
   if (xml.querySelector('parsererror')) throw new Error('INVALID_KML');
-  const rows = [];
+  const coordinateRows = [];
+  const trackRows = [];
+  const pushRow = (target, lon, lat, alt) => {
+    const safeAlt = Number.isFinite(alt) ? alt : Number(defaultAlt);
+    if (Number.isFinite(lat) && Number.isFinite(lon)) target.push([lat, lon, Number.isFinite(safeAlt) ? safeAlt : 0]);
+  };
   xml.querySelectorAll('coordinates').forEach(node => {
     String(node.textContent || '').trim().split(/\s+/).forEach(chunk => {
       const parts = chunk.split(',').map(part => part.trim());
@@ -102,16 +107,24 @@ const parseKmlCoordinates = (text, defaultAlt = 0) => {
       const lon = Number(parts[0]);
       const lat = Number(parts[1]);
       const alt = parts[2] === undefined || parts[2] === '' ? Number(defaultAlt) : Number(parts[2]);
-      if (Number.isFinite(lat) && Number.isFinite(lon)) rows.push([lat, lon, Number.isFinite(alt) ? alt : Number(defaultAlt)]);
+      pushRow(coordinateRows, lon, lat, alt);
     });
   });
-  xml.querySelectorAll('gx\\:coord, coord').forEach(node => {
+  const trackNodes = [
+    ...xml.querySelectorAll('gx\\:coord, coord'),
+    ...Array.from(xml.getElementsByTagNameNS('*', 'coord')),
+    ...Array.from(xml.getElementsByTagName('gx:coord'))
+  ];
+  [...new Set(trackNodes)].forEach(node => {
     const parts = String(node.textContent || '').trim().split(/\s+/).map(Number);
     if (parts.length < 2) return;
     const [lon, lat, alt = defaultAlt] = parts;
-    if (Number.isFinite(lat) && Number.isFinite(lon)) rows.push([lat, lon, Number.isFinite(alt) ? alt : Number(defaultAlt)]);
+    pushRow(trackRows, lon, lat, alt);
   });
-  return rows;
+  const hasRealAltitude = rows => rows.some(row => Math.abs(Number(row[2])) > 1e-9);
+  if (hasRealAltitude(trackRows)) return trackRows;
+  if (hasRealAltitude(coordinateRows)) return coordinateRows;
+  return coordinateRows.length ? coordinateRows : trackRows;
 };
 const getCivil3dRows = async () => {
   const file = kmlFileInput?.files?.[0];
