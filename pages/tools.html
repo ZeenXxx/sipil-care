@@ -12,7 +12,7 @@
     <meta name="apple-mobile-web-app-title" content="SIPIL CARE">
     <link rel="stylesheet" href="../css/style.css?v=26">
     <link rel="stylesheet" href="../css/navbar.css?v=33">
-    <link rel="stylesheet" href="../css/tools.css?v=8">
+    <link rel="stylesheet" href="../css/tools.css?v=9">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -67,9 +67,10 @@
               <div class="card tool-card">
                 <label for="kmlKmzFile">Pilih file KML atau KMZ</label><input class="control file-control" id="kmlKmzFile" type="file" accept=".kml,.kmz,application/vnd.google-earth.kml+xml,application/vnd.google-earth.kmz">
                 <label for="kmlAltDefault">ALT default jika kosong</label><input class="control" id="kmlAltDefault" type="number" inputmode="decimal" value="0">
+                <label class="inline-check" for="kmlUseTerrainAlt"><input id="kmlUseTerrainAlt" type="checkbox" checked> Ambil elevasi terrain otomatis jika ALT di file 0/kosong</label>
                 <div class="tool-grid-2"><button class="btn btn-primary full-btn" type="button" id="kmlCsvBtn">Download CSV Civil 3D</button><button class="btn btn-secondary full-btn" type="button" id="kmlPreviewBtn">Preview data</button></div>
               </div>
-              <div class="tool-note geo-preview" id="kmlCsvPreview"><h3>Format output</h3><p>Baris CSV dibuat seperti contoh: <b>latitude,longitude,altitude</b>. Tidak ada header agar langsung bersih untuk import point Civil 3D.</p><pre>-7.665294,110.595746,229.331</pre></div>
+              <div class="tool-note geo-preview" id="kmlCsvPreview"><h3>Format output</h3><p>Baris CSV dibuat seperti contoh: <b>latitude,longitude,altitude</b>. Jika KMZ tidak menyimpan ALT asli, elevasi terrain akan diisi otomatis dari LAT/LONG.</p><pre>-7.665294,110.595746,229.331</pre></div>
             </div>
           </section>
           <section class="tool-panel" id="tool-spectrum">
@@ -140,7 +141,7 @@
     <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="../js/navbar.js?v=29"></script>
-    <script src="../js/tools.js?v=11"></script>
+    <script src="../js/tools.js?v=12"></script>
       <script src="../js/pwa.js?v=2"></script>
       <script src="../js/push-config.js?v=1"></script>
       <script type="module" src="../js/pwa-push.js?v=2"></script>

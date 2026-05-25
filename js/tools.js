@@ -74,6 +74,7 @@ document.getElementById('convertBtn').addEventListener('click', convert);
 
 const kmlFileInput = document.getElementById('kmlKmzFile');
 const kmlPreview = document.getElementById('kmlCsvPreview');
+const kmlUseTerrainAltInput = document.getElementById('kmlUseTerrainAlt');
 const numberText = value => {
   const number = Number(value);
   if (!Number.isFinite(number)) return '0';
@@ -126,45 +127,81 @@ const parseKmlCoordinates = (text, defaultAlt = 0) => {
   if (hasRealAltitude(coordinateRows)) return coordinateRows;
   return coordinateRows.length ? coordinateRows : trackRows;
 };
+const fetchTerrainElevations = async rows => {
+  const targets = rows
+    .map((row, index) => ({ row, index }))
+    .filter(item => Math.abs(Number(item.row[2])) <= 1e-9);
+  if (!targets.length) return { rows, filled: 0 };
+  const updatedRows = rows.map(row => [...row]);
+  let filled = 0;
+  for (let start = 0; start < targets.length; start += 80) {
+    const batch = targets.slice(start, start + 80);
+    const latitudes = batch.map(item => numberText(item.row[0])).join(',');
+    const longitudes = batch.map(item => numberText(item.row[1])).join(',');
+    const url = 'https://api.open-meteo.com/v1/elevation?latitude=' + encodeURIComponent(latitudes) + '&longitude=' + encodeURIComponent(longitudes);
+    const response = await fetch(url);
+    if (!response.ok) throw new Error('ELEVATION_FAILED');
+    const payload = await response.json();
+    const elevations = Array.isArray(payload.elevation) ? payload.elevation : [];
+    elevations.forEach((alt, offset) => {
+      const target = batch[offset];
+      const elevation = Number(alt);
+      if (target && Number.isFinite(elevation)) {
+        updatedRows[target.index][2] = elevation;
+        filled += 1;
+      }
+    });
+  }
+  return { rows: updatedRows, filled };
+};
 const getCivil3dRows = async () => {
   const file = kmlFileInput?.files?.[0];
   if (!file) throw new Error('NO_KML_FILE');
   const defaultAlt = Number(document.getElementById('kmlAltDefault')?.value || 0);
-  const rows = parseKmlCoordinates(await readKmlText(file), Number.isFinite(defaultAlt) ? defaultAlt : 0);
+  let rows = parseKmlCoordinates(await readKmlText(file), Number.isFinite(defaultAlt) ? defaultAlt : 0);
   if (!rows.length) throw new Error('NO_COORDINATES');
-  return { file, rows };
+  let filled = 0;
+  if (kmlUseTerrainAltInput?.checked) {
+    const result = await fetchTerrainElevations(rows);
+    rows = result.rows;
+    filled = result.filled;
+  }
+  return { file, rows, filled };
 };
-const renderKmlPreview = rows => {
+const renderKmlPreview = (rows, filled = 0) => {
   const previewRows = rows.slice(0, 8).map(row => row.map(numberText).join(',')).join('\n');
-  kmlPreview.innerHTML = '<h3>Preview CSV Civil 3D</h3><p>' + rows.length + ' titik ditemukan. Output memakai urutan LAT,LONG,ALT tanpa header.</p><pre>' + previewRows + (rows.length > 8 ? '\n...' : '') + '</pre>';
+  const filledText = filled ? ' ' + filled + ' ALT 0/kosong diisi dari elevasi terrain.' : '';
+  kmlPreview.innerHTML = '<h3>Preview CSV Civil 3D</h3><p>' + rows.length + ' titik ditemukan. Output memakai urutan LAT,LONG,ALT tanpa header.' + filledText + '</p><pre>' + previewRows + (rows.length > 8 ? '\n...' : '') + '</pre>';
 };
 document.getElementById('kmlPreviewBtn')?.addEventListener('click', async () => {
   try {
-    const { rows } = await getCivil3dRows();
-    renderKmlPreview(rows);
-    showToast(rows.length + ' titik berhasil dibaca.');
+    const { rows, filled } = await getCivil3dRows();
+    renderKmlPreview(rows, filled);
+    showToast(rows.length + ' titik berhasil dibaca' + (filled ? ', ' + filled + ' ALT diisi otomatis.' : '.') );
   } catch (error) {
     console.error(error);
     if (error.message === 'NO_KML_FILE') return showToast('Pilih file KML atau KMZ terlebih dahulu.');
     if (error.message === 'ZIP_NOT_READY') return showToast('Library KMZ belum siap. Coba ulang beberapa detik lagi.');
     if (error.message === 'KML_NOT_FOUND') return showToast('KMZ tidak berisi file KML.');
     if (error.message === 'NO_COORDINATES') return showToast('Tidak ada koordinat LAT LONG ALT yang bisa dibaca.');
+    if (error.message === 'ELEVATION_FAILED') return showToast('Gagal mengambil elevasi terrain. Coba ulang atau matikan opsi elevasi otomatis.');
     showToast('Gagal membaca file KML/KMZ.');
   }
 });
 document.getElementById('kmlCsvBtn')?.addEventListener('click', async () => {
   try {
-    const { file, rows } = await getCivil3dRows();
+    const { file, rows, filled } = await getCivil3dRows();
     const csv = rows.map(row => row.map(numberText).join(',')).join('\r\n');
     downloadBlob(new Blob([csv], { type: 'text/csv;charset=utf-8' }), slug(file.name.replace(/\.(kml|kmz)$/i, '')) + '-civil3d.csv');
-    renderKmlPreview(rows);
-    showToast('CSV Civil 3D berhasil dibuat.');
+    renderKmlPreview(rows, filled);
+    showToast('CSV Civil 3D berhasil dibuat' + (filled ? ' dengan ALT terrain.' : '.') );
   } catch (error) {
     console.error(error);
     if (error.message === 'NO_KML_FILE') return showToast('Pilih file KML atau KMZ terlebih dahulu.');
     if (error.message === 'ZIP_NOT_READY') return showToast('Library KMZ belum siap. Coba ulang beberapa detik lagi.');
     if (error.message === 'KML_NOT_FOUND') return showToast('KMZ tidak berisi file KML.');
     if (error.message === 'NO_COORDINATES') return showToast('Tidak ada koordinat LAT LONG ALT yang bisa dibaca.');
+    if (error.message === 'ELEVATION_FAILED') return showToast('Gagal mengambil elevasi terrain. Coba ulang atau matikan opsi elevasi otomatis.');
     showToast('Gagal membuat CSV Civil 3D.');
   }
 });

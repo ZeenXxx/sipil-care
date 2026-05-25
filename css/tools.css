@@ -20,6 +20,8 @@ body { background: #f5f8f7; }
 .tool-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(300px, .85fr); gap: 22px; align-items: stretch; }
 .tool-card { padding: 22px; box-shadow: none; }
 .tool-card label { display: block; margin: 0 0 8px; color: var(--primary); font-size: 14px; font-weight: 900; }
+.tool-card .inline-check { display: flex; align-items: flex-start; gap: 10px; margin: -2px 0 16px; padding: 12px; border: 1px solid var(--line); border-radius: 8px; background: #f9fcfb; color: var(--ink); line-height: 1.45; }
+.tool-card .inline-check input { width: 18px; height: 18px; margin: 1px 0 0; flex: 0 0 auto; accent-color: var(--primary); }
 .tool-card .control { width: 100%; max-width: 100%; margin-bottom: 16px; }
 .tool-grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
 .full-btn { width: 100%; }

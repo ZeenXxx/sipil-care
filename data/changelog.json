@@ -1,15 +1,20 @@
 [
   {
-    "id": "2026-05-26:civil-tools",
+    "id": "2026-05-26:civil-tools,public-interface",
     "date": "2026-05-26",
     "dateLabel": "26 Mei 2026",
     "generated": true,
-    "summary": "Tools Teknik Sipil",
+    "summary": "Tools Teknik Sipil, Tampilan Public Website",
     "items": [
       {
         "type": "improved",
         "title": "Tools Teknik Sipil",
         "description": "Tools akademik Teknik Sipil diperbarui untuk membantu perhitungan, analisis struktur, preliminary design, dan pengelolaan file."
+      },
+      {
+        "type": "improved",
+        "title": "Tampilan Public Website",
+        "description": "Tampilan halaman public diperhalus agar lebih responsif, konsisten, dan nyaman dibuka dari perangkat mobile."
       }
     ]
   },
