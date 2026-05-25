@@ -12,7 +12,23 @@ const numberText = value => {
   return String(Number(number.toFixed(9))).replace(/\.0+$/, '');
 };
 
-const fetchBatch = async points => {
+const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+const fetchElevationApiEu = async points => {
+  const elevations = [];
+  for (let start = 0; start < points.length; start += 250) {
+    const batch = points.slice(start, start + 250);
+    const pts = '[' + batch.map(point => `[${numberText(point[0])},${numberText(point[1])}]`).join(',') + ']';
+    const response = await fetch(`https://www.elevation-api.eu/v1/elevation?pts=${pts}`);
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok || !Array.isArray(data.elevations)) throw new Error(data.error || data.message || `Elevation API EU gagal (${response.status}).`);
+    elevations.push(...data.elevations.map(Number));
+    if (start + 250 < points.length) await sleep(140);
+  }
+  return elevations;
+};
+
+const fetchOpenMeteoBatch = async points => {
   const latitudes = points.map(point => numberText(point[0])).join(',');
   const longitudes = points.map(point => numberText(point[1])).join(',');
   const url = `https://api.open-meteo.com/v1/elevation?latitude=${encodeURIComponent(latitudes)}&longitude=${encodeURIComponent(longitudes)}`;
@@ -20,6 +36,15 @@ const fetchBatch = async points => {
   const data = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error(data.reason || data.error || `Elevation API gagal (${response.status}).`);
   return Array.isArray(data.elevation) ? data.elevation.map(Number) : [];
+};
+
+const fetchOpenMeteo = async points => {
+  const elevations = [];
+  for (let start = 0; start < points.length; start += 80) {
+    elevations.push(...await fetchOpenMeteoBatch(points.slice(start, start + 80)));
+    if (start + 80 < points.length) await sleep(1100);
+  }
+  return elevations;
 };
 
 module.exports = async (req, res) => {
@@ -55,9 +80,13 @@ module.exports = async (req, res) => {
       return;
     }
 
-    const chunks = [];
-    for (let start = 0; start < cleanPoints.length; start += 80) chunks.push(cleanPoints.slice(start, start + 80));
-    const elevations = (await Promise.all(chunks.map(fetchBatch))).flat();
+    let elevations = [];
+    try {
+      elevations = await fetchElevationApiEu(cleanPoints);
+    } catch (primaryError) {
+      console.warn('Primary elevation source failed, trying Open-Meteo:', primaryError);
+      elevations = await fetchOpenMeteo(cleanPoints);
+    }
 
     json(res, 200, { ok: true, elevations });
   } catch (error) {

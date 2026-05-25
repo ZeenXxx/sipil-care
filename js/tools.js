@@ -75,6 +75,7 @@ document.getElementById('convertBtn').addEventListener('click', convert);
 const kmlFileInput = document.getElementById('kmlKmzFile');
 const kmlPreview = document.getElementById('kmlCsvPreview');
 const kmlUseTerrainAltInput = document.getElementById('kmlUseTerrainAlt');
+const kmlIncludeIndexInput = document.getElementById('kmlIncludeIndex');
 let latestKmlResult = null;
 const numberText = value => {
   const number = Number(value);
@@ -86,8 +87,13 @@ const kmlSettingsKey = file => JSON.stringify({
   size: file?.size || 0,
   lastModified: file?.lastModified || 0,
   defaultAlt: document.getElementById('kmlAltDefault')?.value || '0',
-  terrain: Boolean(kmlUseTerrainAltInput?.checked)
+  terrain: Boolean(kmlUseTerrainAltInput?.checked),
+  includeIndex: Boolean(kmlIncludeIndexInput?.checked)
 });
+const kmlCsvLine = (row, index) => {
+  const values = row.map(numberText);
+  return (kmlIncludeIndexInput?.checked ? [String(index + 1), ...values] : values).join(',');
+};
 const readKmlText = async file => {
   const ext = file.name.split('.').pop().toLowerCase();
   if (ext === 'kml') return file.text();
@@ -204,8 +210,8 @@ const getCivil3dRows = async () => {
   return latestKmlResult;
 };
 const renderKmlPreview = (rows, filled = 0) => {
-  const previewRows = rows.slice(0, 8).map(row => row.map(numberText).join(',')).join('\n');
-  const filledText = filled ? ' ' + filled + ' ALT 0/kosong diisi dari elevasi terrain.' : '';
+  const previewRows = rows.slice(0, 8).map((row, index) => kmlCsvLine(row, index)).join('\n');
+  const filledText = filled ? ' ' + filled + ' ALT 0/kosong diisi dari DEM elevasi.' : '';
   kmlPreview.innerHTML = '<h3>Preview CSV Civil 3D</h3><p>' + rows.length + ' titik ditemukan. Output memakai urutan LAT,LONG,ALT tanpa header.' + filledText + '</p><pre>' + previewRows + (rows.length > 8 ? '\n...' : '') + '</pre>';
 };
 document.getElementById('kmlPreviewBtn')?.addEventListener('click', async () => {
@@ -226,7 +232,7 @@ document.getElementById('kmlPreviewBtn')?.addEventListener('click', async () => 
 document.getElementById('kmlCsvBtn')?.addEventListener('click', async () => {
   try {
     const { file, rows, filled } = await getCivil3dRows();
-    const csv = rows.map(row => row.map(numberText).join(',')).join('\r\n');
+    const csv = rows.map((row, index) => kmlCsvLine(row, index)).join('\r\n');
     downloadBlob(new Blob([csv], { type: 'text/csv;charset=utf-8' }), slug(file.name.replace(/\.(kml|kmz)$/i, '')) + '-civil3d.csv');
     renderKmlPreview(rows, filled);
     showToast('CSV Civil 3D berhasil dibuat' + (filled ? ' dengan ALT terrain.' : '.') );

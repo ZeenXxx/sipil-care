@@ -1,10 +1,10 @@
 [
   {
-    "id": "2026-05-26:backend-security,civil-tools",
+    "id": "2026-05-26:backend-security,civil-tools,public-interface",
     "date": "2026-05-26",
     "dateLabel": "26 Mei 2026",
     "generated": true,
-    "summary": "Tools Teknik Sipil, Backend dan Permission, Tampilan Public Website",
+    "summary": "Tools Teknik Sipil, Tampilan Public Website, Backend dan Permission",
     "items": [
       {
         "type": "improved",
@@ -12,14 +12,14 @@
         "description": "Tools akademik Teknik Sipil diperbarui untuk membantu perhitungan, analisis struktur, preliminary design, dan pengelolaan file."
       },
       {
-        "type": "fixed",
-        "title": "Backend dan Permission",
-        "description": "Dokumentasi serta fungsi backend terkait akun, role, permission, dan sesi admin diperbaiki agar sistem lebih aman dan konsisten."
-      },
-      {
         "type": "improved",
         "title": "Tampilan Public Website",
         "description": "Tampilan halaman public diperhalus agar lebih responsif, konsisten, dan nyaman dibuka dari perangkat mobile."
+      },
+      {
+        "type": "fixed",
+        "title": "Backend dan Permission",
+        "description": "Dokumentasi serta fungsi backend terkait akun, role, permission, dan sesi admin diperbaiki agar sistem lebih aman dan konsisten."
       }
     ]
   },
