@@ -1440,46 +1440,40 @@ button, input, select, textarea  {
     overflow-wrap: anywhere
 }
 
-.announcement-excerpt  {
-    margin-bottom: -4px
-}
-
 .announcement-fade  {
-    color: var(--gold);
+    color: var(--muted);
     font-weight: 900
 }
 
-.announcement-details  {
-    color: var(--muted)
+.announcement-caption,
+.announcement-caption-full  {
+    color: var(--muted);
+    line-height: 1.65;
+    overflow-wrap: anywhere
 }
 
-.announcement-details summary  {
-    width: max-content;
-    max-width: 100%;
+.announcement-caption summary  {
+    display: inline;
     cursor: pointer;
-    color: var(--primary);
-    font-weight: 900;
-    list-style: none;
-    padding: 4px 0 0
+    color: var(--muted);
+    list-style: none
 }
 
-.announcement-details summary::-webkit-details-marker  {
+.announcement-caption summary::-webkit-details-marker  {
     display: none
 }
 
-.announcement-details summary:after  {
-    content: " +";
+.announcement-caption summary b  {
     color: var(--gold)
 }
 
-.announcement-details[open] summary:after  {
-    content: " -"
+.announcement-caption[open] summary  {
+    display: none
 }
 
-.announcement-details p  {
-    margin-top: 8px;
-    padding-top: 0;
-    border-top: 0;
+.announcement-caption p,
+.announcement-caption-full  {
+    margin: 0;
     white-space: pre-line
 }
 

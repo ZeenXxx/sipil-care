@@ -52,7 +52,6 @@ const announcementCard = (item, index = 0) => {
   const description = String(item.description || '').trim();
   const hasLongDescription = description.length > 150;
   const excerpt = hasLongDescription ? description.slice(0, 150).trim() : description;
-  const continuation = hasLongDescription ? description.slice(150).trim() : '';
   const publishDate = parseDisplayDate(item.date || item.createdAt || item.updatedAt);
   const image = item.photoUrl
     ? `<button class="announcement-image-button" type="button" data-announcement-image="${escapeText(item.photoUrl)}" data-announcement-title="${escapeText(item.title)}" aria-label="Buka foto ${escapeText(item.title)}">
@@ -62,13 +61,12 @@ const announcementCard = (item, index = 0) => {
     : `<span aria-hidden="true">${escapeText((item.type || 'Info').slice(0, 2).toUpperCase())}</span>`;
   const descriptionMarkup = hasLongDescription
     ? `
-      <p class="announcement-excerpt">${escapeText(excerpt)}<span class="announcement-fade">...</span></p>
-      <details class="announcement-details">
-        <summary>Baca selengkapnya</summary>
-        <p>${escapeText(continuation)}</p>
+      <details class="announcement-caption">
+        <summary><span>${escapeText(excerpt)}<span class="announcement-fade">...</span> <b>selengkapnya</b></span></summary>
+        <p>${escapeText(description)}</p>
       </details>
     `
-    : `<p>${escapeText(description)}</p>`;
+    : `<p class="announcement-caption-full">${escapeText(description)}</p>`;
 
   return `
     <article class="card announcement-card featured-announcement">
