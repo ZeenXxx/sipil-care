@@ -59,6 +59,7 @@ const conversionResult = document.getElementById('conversionResult');
 const populateOptions = select => { select.innerHTML = Object.entries(conversions).map(([key, item]) => '<option value="' + key + '">' + item.label + '</option>').join(''); };
 const populateUnits = () => { const selected = conversions[conversionType.value]; const options = Object.keys(selected.units).map(unit => '<option>' + unit + '</option>').join(''); fromUnit.innerHTML = options; toUnit.innerHTML = options; if (toUnit.options[1]) toUnit.value = toUnit.options[1].value; };
 const formatNumber = number => new Intl.NumberFormat('id-ID', { maximumFractionDigits: 6 }).format(number);
+const formatInputNumber = number => String(Number(number.toFixed(6))).replace(',', '.');
 const convert = () => {
   const selected = conversions[conversionType.value];
   const value = Number(conversionValue.value);
@@ -248,6 +249,69 @@ document.getElementById('kmlCsvBtn')?.addEventListener('click', async () => {
 });
 
 const spectrumInputIds = ['spectrumLocation', 'spectrumSs', 'spectrumS1', 'spectrumFa', 'spectrumFv', 'spectrumTL', 'spectrumStep', 'spectrumTmax'];
+const spectrumSiteClassInput = document.getElementById('spectrumSiteClass');
+const spectrumSiteTables = {
+  fa: {
+    x: [0.25, 0.5, 0.75, 1, 1.25, 1.5],
+    SA: [0.8, 0.8, 0.8, 0.8, 0.8, 0.8],
+    SB: [0.9, 0.9, 0.9, 0.9, 0.9, 0.9],
+    SC: [1.3, 1.3, 1.2, 1.2, 1.2, 1.2],
+    SD: [1.6, 1.4, 1.2, 1.1, 1, 1],
+    SE: [2.4, 1.7, 1.3, 1.1, 0.9, 0.8]
+  },
+  fv: {
+    x: [0.1, 0.2, 0.3, 0.4, 0.5, 0.6],
+    SA: [0.8, 0.8, 0.8, 0.8, 0.8, 0.8],
+    SB: [0.8, 0.8, 0.8, 0.8, 0.8, 0.8],
+    SC: [1.5, 1.5, 1.5, 1.5, 1.5, 1.4],
+    SD: [2.4, 2.2, 2, 1.9, 1.8, 1.7],
+    SE: [4.2, 3.3, 2.8, 2.4, 2.2, 2]
+  }
+};
+const interpolateSpectrumFactor = (value, points, values) => {
+  if (value <= points[0]) return values[0];
+  if (value >= points[points.length - 1]) return values[values.length - 1];
+  for (let i = 0; i < points.length - 1; i += 1) {
+    const x1 = points[i];
+    const x2 = points[i + 1];
+    if (value >= x1 && value <= x2) {
+      const ratio = (value - x1) / (x2 - x1);
+      return values[i] + ratio * (values[i + 1] - values[i]);
+    }
+  }
+  return values[values.length - 1];
+};
+const siteClassFactors = (siteClass, ss, s1) => {
+  if (!siteClass || siteClass === 'manual') return null;
+  if (siteClass === 'SF') throw new Error('SITE_SPECIFIC_REQUIRED');
+  const faValues = spectrumSiteTables.fa[siteClass];
+  const fvValues = spectrumSiteTables.fv[siteClass];
+  if (!faValues || !fvValues) return null;
+  return {
+    fa: interpolateSpectrumFactor(ss, spectrumSiteTables.fa.x, faValues),
+    fv: interpolateSpectrumFactor(s1, spectrumSiteTables.fv.x, fvValues)
+  };
+};
+const syncSpectrumFactorInputs = (fa, fv, readonly = true) => {
+  const faInput = document.getElementById('spectrumFa');
+  const fvInput = document.getElementById('spectrumFv');
+  if (faInput) {
+    faInput.value = Number.isFinite(fa) ? formatInputNumber(fa) : faInput.value;
+    faInput.readOnly = readonly;
+  }
+  if (fvInput) {
+    fvInput.value = Number.isFinite(fv) ? formatInputNumber(fv) : fvInput.value;
+    fvInput.readOnly = readonly;
+  }
+};
+const updateSpectrumFactorMode = () => {
+  const siteClass = spectrumSiteClassInput?.value || 'SE';
+  const manual = siteClass === 'manual';
+  const faInput = document.getElementById('spectrumFa');
+  const fvInput = document.getElementById('spectrumFv');
+  if (faInput) faInput.readOnly = !manual;
+  if (fvInput) fvInput.readOnly = !manual;
+};
 const getNumericInput = (id, fallback = null) => {
   const raw = document.getElementById(id)?.value;
   if (raw === '' || raw === undefined || raw === null) return fallback;
@@ -275,9 +339,18 @@ const parseSpectrumText = () => {
   let count = 0;
   if (setInputValue('spectrumSs', findParameter(normalized, ['Ss', 'S_s']))) count += 1;
   if (setInputValue('spectrumS1', findParameter(normalized, ['S1', 'S_1']))) count += 1;
-  if (setInputValue('spectrumFa', findParameter(normalized, ['Fa', 'F_a']))) count += 1;
-  if (setInputValue('spectrumFv', findParameter(normalized, ['Fv', 'F_v']))) count += 1;
+  const hasManualFa = setInputValue('spectrumFa', findParameter(normalized, ['Fa', 'F_a']));
+  const hasManualFv = setInputValue('spectrumFv', findParameter(normalized, ['Fv', 'F_v']));
+  if (hasManualFa) count += 1;
+  if (hasManualFv) count += 1;
   if (setInputValue('spectrumTL', findParameter(normalized, ['TL', 'T_L']))) count += 1;
+  const siteClassMatch = normalized.match(/(?:kelas\s*situs|site\s*class|kelas)\s*(?:=|:)?\s*(SA|SB|SC|SD|SE|SF)\b/i);
+  if (siteClassMatch && spectrumSiteClassInput) {
+    spectrumSiteClassInput.value = siteClassMatch[1].toUpperCase();
+    count += 1;
+  } else if ((hasManualFa || hasManualFv) && spectrumSiteClassInput) {
+    spectrumSiteClassInput.value = 'manual';
+  }
   const locationMatch = normalized.match(/(?:lokasi|location|kota|kabupaten)\s*(?:=|:)?\s*([^\n\r,;]+)/i);
   if (locationMatch && setInputValue('spectrumLocation', locationMatch[1].trim())) count += 1;
   renderSpectrumPreview();
@@ -286,40 +359,57 @@ const parseSpectrumText = () => {
 const calculateSpectrum = () => {
   const ss = getNumericInput('spectrumSs');
   const s1 = getNumericInput('spectrumS1');
-  const fa = getNumericInput('spectrumFa', 1);
-  const fv = getNumericInput('spectrumFv', 1);
+  const siteClass = spectrumSiteClassInput?.value || 'SE';
+  const autoFactors = siteClassFactors(siteClass, ss, s1);
+  const fa = autoFactors ? autoFactors.fa : getNumericInput('spectrumFa');
+  const fv = autoFactors ? autoFactors.fv : getNumericInput('spectrumFv');
   const tl = getNumericInput('spectrumTL', 6);
   const step = getNumericInput('spectrumStep', 0.05);
   const tMax = getNumericInput('spectrumTmax', 10);
   if (![ss, s1, fa, fv, tl, step, tMax].every(Number.isFinite) || ss <= 0 || s1 <= 0 || fa <= 0 || fv <= 0 || tl <= 0 || step <= 0 || tMax <= 0) throw new Error('INVALID_SPECTRUM_INPUT');
+  if (autoFactors) syncSpectrumFactorInputs(fa, fv, true);
+  else updateSpectrumFactorMode();
   const sms = fa * ss;
   const sm1 = fv * s1;
   const sds = (2 / 3) * sms;
   const sd1 = (2 / 3) * sm1;
   const t0 = 0.2 * sd1 / sds;
   const ts = sd1 / sds;
-  const periods = new Set([0, t0, ts, tl, tMax]);
-  for (let t = step; t <= tMax + 1e-9; t += step) periods.add(Number(t.toFixed(6)));
   const saAt = t => {
     if (t <= t0) return sds * (0.4 + 0.6 * (t / t0));
     if (t <= ts) return sds;
     if (t <= tl) return sd1 / t;
     return sd1 * tl / (t * t);
   };
-  const rows = [...periods].filter(t => t >= 0 && t <= tMax).sort((a, b) => a - b).map(t => [Number(t.toFixed(4)), Number(saAt(t).toFixed(6))]);
-  return { ss, s1, fa, fv, tl, step, tMax, sms, sm1, sds, sd1, t0, ts, rows };
+  const rows = [];
+  for (let t = 0; t <= tMax + 1e-9; t += step) {
+    const period = Number(t.toFixed(6));
+    rows.push([Number(period.toFixed(4)), Number(saAt(period).toFixed(6))]);
+  }
+  const finalPeriod = Number(tMax.toFixed(6));
+  if (!rows.length || rows[rows.length - 1][0] !== Number(finalPeriod.toFixed(4))) rows.push([Number(finalPeriod.toFixed(4)), Number(saAt(finalPeriod).toFixed(6))]);
+  return { ss, s1, siteClass, fa, fv, tl, step, tMax, sms, sm1, sds, sd1, t0, ts, rows };
 };
 const renderSpectrumPreview = () => {
   const target = document.getElementById('spectrumPreview');
   if (!target) return;
   try {
     const result = calculateSpectrum();
-    target.innerHTML = '<h3>Ringkasan spektrum</h3><p>Excel akan berisi sheet ETABS_IMPORT dengan dua kolom: periode T dan Sa(g), serta sheet metadata parameter RSA/Web RSA.</p><div class="spectrum-summary-grid"><span>SDS: ' + formatNumber(result.sds) + ' g</span><span>SD1: ' + formatNumber(result.sd1) + ' g</span><span>T0: ' + formatNumber(result.t0) + ' s</span><span>Ts: ' + formatNumber(result.ts) + ' s</span></div>';
-  } catch {
-    target.innerHTML = '<h3>Ringkasan spektrum</h3><p>Isi minimal Ss dan S1 dari RSA/Web RSA. Fa dan Fv boleh dikosongkan sementara jika belum ada data kelas situs.</p><div class="spectrum-summary-grid"><span>SDS: -</span><span>SD1: -</span><span>T0: -</span><span>Ts: -</span></div>';
+    const siteText = result.siteClass === 'manual' ? 'Manual Fa/Fv' : 'Kelas situs ' + result.siteClass;
+    target.innerHTML = '<h3>Ringkasan spektrum</h3><p>' + siteText + ' memakai Fa = ' + formatNumber(result.fa) + ' dan Fv = ' + formatNumber(result.fv) + '. Excel berisi interval T tetap tanpa header untuk import ETABS.</p><div class="spectrum-summary-grid"><span>SDS: ' + formatNumber(result.sds) + ' g</span><span>SD1: ' + formatNumber(result.sd1) + ' g</span><span>T0: ' + formatNumber(result.t0) + ' s</span><span>Ts: ' + formatNumber(result.ts) + ' s</span></div>';
+  } catch (error) {
+    const note = error.message === 'SITE_SPECIFIC_REQUIRED'
+      ? 'Kelas situs SF membutuhkan analisis respons spesifik situs. Pilih Manual Fa/Fv jika sudah memiliki nilai faktor dari hasil analisis.'
+      : 'Isi Ss, S1, TL, interval T, T maksimum, dan kelas situs. Jika memilih Manual Fa/Fv, isi Fa dan Fv sendiri.';
+    target.innerHTML = '<h3>Ringkasan spektrum</h3><p>' + note + '</p><div class="spectrum-summary-grid"><span>SDS: -</span><span>SD1: -</span><span>T0: -</span><span>Ts: -</span></div>';
   }
 };
 spectrumInputIds.forEach(id => document.getElementById(id)?.addEventListener('input', renderSpectrumPreview));
+spectrumSiteClassInput?.addEventListener('change', () => {
+  updateSpectrumFactorMode();
+  renderSpectrumPreview();
+});
+updateSpectrumFactorMode();
 document.getElementById('spectrumParseBtn')?.addEventListener('click', parseSpectrumText);
 renderSpectrumPreview();
 document.getElementById('spectrumBtn')?.addEventListener('click', () => {
@@ -335,6 +425,7 @@ document.getElementById('spectrumBtn')?.addEventListener('click', () => {
       ['Lokasi', locationName],
       ['Ss (g)', result.ss],
       ['S1 (g)', result.s1],
+      ['Kelas situs', result.siteClass === 'manual' ? 'Manual Fa/Fv' : result.siteClass],
       ['Fa', result.fa],
       ['Fv', result.fv],
       ['SMS (g)', result.sms],
@@ -352,6 +443,7 @@ document.getElementById('spectrumBtn')?.addEventListener('click', () => {
     showToast('Excel response spectrum ETABS berhasil dibuat.');
   } catch (error) {
     console.error(error);
+    if (error.message === 'SITE_SPECIFIC_REQUIRED') return showToast('Kelas situs SF perlu analisis spesifik situs. Pilih Manual Fa/Fv jika sudah ada nilainya.');
     showToast('Isi Ss, S1, TL, interval T, dan T maksimum dengan angka valid.');
   }
 });

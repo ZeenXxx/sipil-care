@@ -80,14 +80,24 @@
               <div class="card tool-card">
                 <label for="spectrumLocation">Lokasi</label><input class="control" id="spectrumLocation" type="text" placeholder="Contoh: Cimahi / Bandung">
                 <div class="tool-grid-2"><div><label for="spectrumSs">Ss (g)</label><input class="control" id="spectrumSs" type="number" step="0.0001" inputmode="decimal" placeholder="Contoh: 1.05"></div><div><label for="spectrumS1">S1 (g)</label><input class="control" id="spectrumS1" type="number" step="0.0001" inputmode="decimal" placeholder="Contoh: 0.45"></div></div>
-                <div class="tool-grid-2"><div><label for="spectrumFa">Fa</label><input class="control" id="spectrumFa" type="number" step="0.0001" inputmode="decimal" placeholder="Opsional"></div><div><label for="spectrumFv">Fv</label><input class="control" id="spectrumFv" type="number" step="0.0001" inputmode="decimal" placeholder="Opsional"></div></div>
+                <label for="spectrumSiteClass">Kelas situs SNI 1726:2019</label>
+                <select class="control" id="spectrumSiteClass">
+                  <option value="SE">SE - tanah lunak</option>
+                  <option value="SA">SA - batuan keras</option>
+                  <option value="SB">SB - batuan</option>
+                  <option value="SC">SC - tanah keras/sangat padat</option>
+                  <option value="SD">SD - tanah sedang</option>
+                  <option value="SF">SF - perlu respons spesifik situs</option>
+                  <option value="manual">Manual Fa/Fv</option>
+                </select>
+                <div class="tool-grid-2"><div><label for="spectrumFa">Fa</label><input class="control" id="spectrumFa" type="number" step="0.0001" inputmode="decimal" placeholder="Otomatis dari kelas situs"></div><div><label for="spectrumFv">Fv</label><input class="control" id="spectrumFv" type="number" step="0.0001" inputmode="decimal" placeholder="Otomatis dari kelas situs"></div></div>
                 <div class="tool-grid-2"><div><label for="spectrumTL">TL (detik)</label><input class="control" id="spectrumTL" type="number" step="0.1" inputmode="decimal" value="6"></div><div><label for="spectrumStep">Interval T (detik)</label><input class="control" id="spectrumStep" type="number" step="0.01" inputmode="decimal" value="0.05"></div></div>
                 <label for="spectrumTmax">T maksimum (detik)</label><input class="control" id="spectrumTmax" type="number" step="0.5" inputmode="decimal" value="10">
                 <label for="spectrumPaste">Paste data RSA/Web RSA (opsional)</label><textarea class="control textarea compact-textarea" id="spectrumPaste" placeholder="Tempel teks hasil RSA/Web RSA yang memuat lokasi, Ss, S1, Fa, Fv, atau TL..."></textarea>
                 <button class="btn btn-secondary full-btn" type="button" id="spectrumParseBtn">Ambil parameter dari teks</button>
                 <button class="btn btn-primary full-btn" type="button" id="spectrumBtn">Download Excel ETABS</button>
               </div>
-              <div class="tool-note spectrum-preview" id="spectrumPreview"><h3>Ringkasan spektrum</h3><p>Isi Ss dan S1 dari RSA/Web RSA. Jika Fa/Fv kosong, sistem memakai 1.00 sehingga bisa tetap dibuat cepat, lalu dapat Anda sesuaikan jika nilai kelas situs sudah ada.</p><div class="spectrum-summary-grid"><span>SDS: -</span><span>SD1: -</span><span>T0: -</span><span>Ts: -</span></div></div>
+              <div class="tool-note spectrum-preview" id="spectrumPreview"><h3>Ringkasan spektrum</h3><p>Isi Ss, S1, TL, dan kelas situs. Fa/Fv akan dihitung otomatis dari tabel kelas situs SNI 1726:2019, atau pilih Manual Fa/Fv jika sudah punya nilai sendiri.</p><div class="spectrum-summary-grid"><span>SDS: -</span><span>SD1: -</span><span>T0: -</span><span>Ts: -</span></div></div>
             </div>
           </section>
           <section class="tool-panel" id="tool-export">
@@ -142,7 +152,7 @@
     <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="../js/navbar.js?v=29"></script>
-    <script src="../js/tools.js?v=14"></script>
+    <script src="../js/tools.js?v=15"></script>
       <script src="../js/pwa.js?v=2"></script>
       <script src="../js/push-config.js?v=1"></script>
       <script type="module" src="../js/pwa-push.js?v=2"></script>
