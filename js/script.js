@@ -55,7 +55,10 @@ const announcementCard = (item, index = 0) => {
   const continuation = hasLongDescription ? description.slice(150).trim() : '';
   const publishDate = parseDisplayDate(item.date || item.createdAt || item.updatedAt);
   const image = item.photoUrl
-    ? `<img src="${escapeText(item.photoUrl)}" alt="${escapeText(item.title)}">`
+    ? `<button class="announcement-image-button" type="button" data-announcement-image="${escapeText(item.photoUrl)}" data-announcement-title="${escapeText(item.title)}" aria-label="Buka foto ${escapeText(item.title)}">
+        <img src="${escapeText(item.photoUrl)}" alt="${escapeText(item.title)}">
+        <span>Lihat foto</span>
+      </button>`
     : `<span aria-hidden="true">${escapeText((item.type || 'Info').slice(0, 2).toUpperCase())}</span>`;
   const descriptionMarkup = hasLongDescription
     ? `
@@ -81,6 +84,97 @@ const announcementCard = (item, index = 0) => {
     </article>
   `;
 };
+
+const photoFileName = title => {
+  const cleanTitle = String(title || 'pemberitahuan')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '') || 'pemberitahuan';
+  return `${cleanTitle}-sipil-care.jpg`;
+};
+
+function ensureAnnouncementPhotoModal() {
+  let modal = document.getElementById('announcementPhotoModal');
+  if (modal) return modal;
+
+  modal = document.createElement('div');
+  modal.id = 'announcementPhotoModal';
+  modal.className = 'announcement-photo-modal';
+  modal.hidden = true;
+  modal.innerHTML = `
+    <div class="announcement-photo-backdrop" data-announcement-close></div>
+    <div class="announcement-photo-dialog" role="dialog" aria-modal="true" aria-labelledby="announcementPhotoTitle">
+      <div class="announcement-photo-toolbar">
+        <h3 id="announcementPhotoTitle">Foto Pemberitahuan</h3>
+        <button type="button" class="announcement-photo-close" data-announcement-close aria-label="Tutup foto">&times;</button>
+      </div>
+      <div class="announcement-photo-frame">
+        <img alt="" data-announcement-photo>
+      </div>
+      <div class="announcement-photo-actions">
+        <button type="button" class="btn btn-primary" data-announcement-download>Download Foto</button>
+        <a class="btn btn-secondary" href="#" target="_blank" rel="noopener" data-announcement-open>Buka Tab</a>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+  return modal;
+}
+
+function closeAnnouncementPhotoModal() {
+  const modal = document.getElementById('announcementPhotoModal');
+  if (!modal) return;
+  modal.hidden = true;
+  document.body.classList.remove('photo-modal-open');
+  const img = modal.querySelector('[data-announcement-photo]');
+  if (img) img.removeAttribute('src');
+}
+
+function openAnnouncementPhotoModal(url, title) {
+  const modal = ensureAnnouncementPhotoModal();
+  const img = modal.querySelector('[data-announcement-photo]');
+  const heading = modal.querySelector('#announcementPhotoTitle');
+  const openLink = modal.querySelector('[data-announcement-open]');
+  const downloadButton = modal.querySelector('[data-announcement-download]');
+  if (img) {
+    img.src = url;
+    img.alt = title || 'Foto pemberitahuan';
+  }
+  if (heading) heading.textContent = title || 'Foto Pemberitahuan';
+  if (openLink) openLink.href = url;
+  if (downloadButton) {
+    downloadButton.dataset.url = url;
+    downloadButton.dataset.title = title || 'pemberitahuan';
+  }
+  modal.hidden = false;
+  document.body.classList.add('photo-modal-open');
+}
+
+async function downloadAnnouncementPhoto(url, title) {
+  const filename = photoFileName(title);
+  try {
+    const response = await fetch(url, { mode: 'cors' });
+    if (!response.ok) throw new Error('Download gagal.');
+    const blob = await response.blob();
+    const objectUrl = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = objectUrl;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1200);
+  } catch (err) {
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    link.target = '_blank';
+    link.rel = 'noopener';
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  }
+}
 
 const announcementCarousel = items => `
   <div class="announcement-carousel-shell">
@@ -124,6 +218,29 @@ function setupAnnouncementCarousel(target) {
   window.addEventListener('resize', updateButtons);
   updateButtons();
 }
+
+document.addEventListener('click', event => {
+  const imageButton = event.target.closest('[data-announcement-image]');
+  if (imageButton) {
+    event.preventDefault();
+    openAnnouncementPhotoModal(imageButton.dataset.announcementImage, imageButton.dataset.announcementTitle);
+    return;
+  }
+
+  if (event.target.closest('[data-announcement-close]')) {
+    closeAnnouncementPhotoModal();
+    return;
+  }
+
+  const downloadButton = event.target.closest('[data-announcement-download]');
+  if (downloadButton) {
+    downloadAnnouncementPhoto(downloadButton.dataset.url, downloadButton.dataset.title);
+  }
+});
+
+document.addEventListener('keydown', event => {
+  if (event.key === 'Escape') closeAnnouncementPhotoModal();
+});
 
 const fallbackAnnouncements = [
   {
