@@ -63,7 +63,7 @@ const announcementCard = (item, index = 0) => {
     ? `
       <details class="announcement-caption">
         <summary><span>${escapeText(excerpt)}<span class="announcement-fade">...</span> <b>selengkapnya</b></span></summary>
-        <p>${escapeText(description)}</p>
+        <p>${escapeText(description)} <button class="announcement-collapse" type="button" data-announcement-collapse>lebih sedikit</button></p>
       </details>
     `
     : `<p class="announcement-caption-full">${escapeText(description)}</p>`;
@@ -218,6 +218,13 @@ function setupAnnouncementCarousel(target) {
 }
 
 document.addEventListener('click', event => {
+  const collapseButton = event.target.closest('[data-announcement-collapse]');
+  if (collapseButton) {
+    const caption = collapseButton.closest('.announcement-caption');
+    if (caption) caption.open = false;
+    return;
+  }
+
   const imageButton = event.target.closest('[data-announcement-image]');
   if (imageButton) {
     event.preventDefault();

@@ -1477,6 +1477,17 @@ button, input, select, textarea  {
     white-space: pre-line
 }
 
+.announcement-collapse  {
+    display: inline;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--gold);
+    font: inherit;
+    font-weight: 900;
+    cursor: pointer
+}
+
 .cta-card  {
     text-align: center
 }
