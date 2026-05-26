@@ -250,6 +250,13 @@ document.getElementById('kmlCsvBtn')?.addEventListener('click', async () => {
 
 const spectrumInputIds = ['spectrumLocation', 'spectrumSs', 'spectrumS1', 'spectrumFa', 'spectrumFv', 'spectrumTL', 'spectrumStep', 'spectrumTmax'];
 const spectrumSiteClassInput = document.getElementById('spectrumSiteClass');
+const spectrumTxtBtn = document.getElementById('spectrumTxtBtn');
+const spectrumChartBtn = document.getElementById('spectrumChartBtn');
+let latestSpectrumResult = null;
+const setSpectrumDownloadsEnabled = enabled => {
+  if (spectrumTxtBtn) spectrumTxtBtn.disabled = !enabled;
+  if (spectrumChartBtn) spectrumChartBtn.disabled = !enabled;
+};
 const spectrumSiteTables = {
   fa: {
     x: [0.25, 0.5, 0.75, 1, 1.25, 1.5],
@@ -353,6 +360,8 @@ const parseSpectrumText = () => {
   }
   const locationMatch = normalized.match(/(?:lokasi|location|kota|kabupaten)\s*(?:=|:)?\s*([^\n\r,;]+)/i);
   if (locationMatch && setInputValue('spectrumLocation', locationMatch[1].trim())) count += 1;
+  latestSpectrumResult = null;
+  setSpectrumDownloadsEnabled(false);
   renderSpectrumPreview();
   showToast(count ? count + ' parameter berhasil diambil dari teks.' : 'Belum ada parameter yang terbaca dari teks.');
 };
@@ -390,13 +399,107 @@ const calculateSpectrum = () => {
   if (!rows.length || rows[rows.length - 1][0] !== Number(finalPeriod.toFixed(4))) rows.push([Number(finalPeriod.toFixed(4)), Number(saAt(finalPeriod).toFixed(6))]);
   return { ss, s1, siteClass, fa, fv, tl, step, tMax, sms, sm1, sds, sd1, t0, ts, rows };
 };
+const spectrumTxtNumber = (value, digits) => Number(value).toFixed(digits);
+const spectrumTxtContent = result => result.rows
+  .map(row => spectrumTxtNumber(row[0], 3) + '\t' + spectrumTxtNumber(row[1], 5))
+  .join('\r\n');
+const spectrumTableHtml = rows => rows.map(row => (
+  '<tr><td>' + spectrumTxtNumber(row[0], 3) + '</td><td>' + spectrumTxtNumber(row[1], 5) + '</td></tr>'
+)).join('');
+const drawSpectrumChart = (canvas, result) => {
+  if (!canvas || !result?.rows?.length) return;
+  const ratio = window.devicePixelRatio || 1;
+  const width = Math.max(720, canvas.clientWidth || 900);
+  const height = 420;
+  canvas.width = width * ratio;
+  canvas.height = height * ratio;
+  canvas.style.height = height + 'px';
+  const ctx = canvas.getContext('2d');
+  ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+  ctx.clearRect(0, 0, width, height);
+
+  const padding = { left: 68, right: 24, top: 38, bottom: 58 };
+  const plotWidth = width - padding.left - padding.right;
+  const plotHeight = height - padding.top - padding.bottom;
+  const maxT = Math.max(...result.rows.map(row => row[0]), result.tMax);
+  const maxSaRaw = Math.max(...result.rows.map(row => row[1]), result.sds);
+  const maxSa = Math.max(0.1, Math.ceil(maxSaRaw * 10) / 10);
+  const x = t => padding.left + (t / maxT) * plotWidth;
+  const y = sa => padding.top + plotHeight - (sa / maxSa) * plotHeight;
+
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, width, height);
+  ctx.strokeStyle = '#d9e5e0';
+  ctx.lineWidth = 1;
+  ctx.font = '12px Inter, Arial, sans-serif';
+  ctx.fillStyle = '#63736d';
+  ctx.textAlign = 'right';
+  ctx.textBaseline = 'middle';
+  for (let i = 0; i <= 5; i += 1) {
+    const sa = (maxSa / 5) * i;
+    const py = y(sa);
+    ctx.beginPath();
+    ctx.moveTo(padding.left, py);
+    ctx.lineTo(width - padding.right, py);
+    ctx.stroke();
+    ctx.fillText(spectrumTxtNumber(sa, 2), padding.left - 10, py);
+  }
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'top';
+  const xTicks = Math.min(6, Math.max(2, Math.round(maxT)));
+  for (let i = 0; i <= xTicks; i += 1) {
+    const t = (maxT / xTicks) * i;
+    const px = x(t);
+    ctx.beginPath();
+    ctx.moveTo(px, padding.top);
+    ctx.lineTo(px, padding.top + plotHeight);
+    ctx.stroke();
+    ctx.fillText(spectrumTxtNumber(t, 1), px, padding.top + plotHeight + 12);
+  }
+
+  ctx.strokeStyle = '#0f4d3a';
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  result.rows.forEach((row, index) => {
+    const px = x(row[0]);
+    const py = y(row[1]);
+    if (index === 0) ctx.moveTo(px, py);
+    else ctx.lineTo(px, py);
+  });
+  ctx.stroke();
+
+  ctx.fillStyle = '#0f4d3a';
+  ctx.font = '700 16px Inter, Arial, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'top';
+  ctx.fillText('Grafik Respons Spektrum', padding.left, 12);
+  ctx.font = '12px Inter, Arial, sans-serif';
+  ctx.fillStyle = '#63736d';
+  ctx.fillText('Sa (g)', 16, padding.top - 8);
+  ctx.textAlign = 'center';
+  ctx.fillText('T (detik)', padding.left + plotWidth / 2, height - 26);
+};
+const renderSpectrumResult = result => {
+  const target = document.getElementById('spectrumPreview');
+  if (!target) return;
+  const siteText = result.siteClass === 'manual' ? 'Manual Fa/Fv' : 'Kelas situs ' + result.siteClass;
+  target.innerHTML =
+    '<h3>Hasil respons spektrum</h3>' +
+    '<p>' + siteText + ' memakai Fa = ' + formatNumber(result.fa) + ' dan Fv = ' + formatNumber(result.fv) + '. TXT memakai dua kolom tanpa header: T dan Sa(g), dipisahkan tab agar siap import SAP/ETABS.</p>' +
+    '<div class="spectrum-summary-grid"><span>SDS: ' + formatNumber(result.sds) + ' g</span><span>SD1: ' + formatNumber(result.sd1) + ' g</span><span>T0: ' + formatNumber(result.t0) + ' s</span><span>Ts: ' + formatNumber(result.ts) + ' s</span></div>' +
+    '<div class="spectrum-output">' +
+      '<div class="spectrum-chart-wrap"><canvas id="spectrumChart" width="900" height="420" aria-label="Grafik respons spektrum"></canvas></div>' +
+      '<div class="spectrum-table-wrap"><table class="spectrum-table"><thead><tr><th>T (detik)</th><th>Sa (g)</th></tr></thead><tbody>' + spectrumTableHtml(result.rows) + '</tbody></table></div>' +
+    '</div>';
+  requestAnimationFrame(() => drawSpectrumChart(document.getElementById('spectrumChart'), result));
+};
 const renderSpectrumPreview = () => {
   const target = document.getElementById('spectrumPreview');
   if (!target) return;
   try {
     const result = calculateSpectrum();
     const siteText = result.siteClass === 'manual' ? 'Manual Fa/Fv' : 'Kelas situs ' + result.siteClass;
-    target.innerHTML = '<h3>Ringkasan spektrum</h3><p>' + siteText + ' memakai Fa = ' + formatNumber(result.fa) + ' dan Fv = ' + formatNumber(result.fv) + '. Excel berisi interval T tetap tanpa header untuk import ETABS.</p><div class="spectrum-summary-grid"><span>SDS: ' + formatNumber(result.sds) + ' g</span><span>SD1: ' + formatNumber(result.sd1) + ' g</span><span>T0: ' + formatNumber(result.t0) + ' s</span><span>Ts: ' + formatNumber(result.ts) + ' s</span></div>';
+    target.innerHTML = '<h3>Ringkasan spektrum</h3><p>' + siteText + ' memakai Fa = ' + formatNumber(result.fa) + ' dan Fv = ' + formatNumber(result.fv) + '. Klik Hitung Spektrum untuk menampilkan tabel data dan grafik.</p><div class="spectrum-summary-grid"><span>SDS: ' + formatNumber(result.sds) + ' g</span><span>SD1: ' + formatNumber(result.sd1) + ' g</span><span>T0: ' + formatNumber(result.t0) + ' s</span><span>Ts: ' + formatNumber(result.ts) + ' s</span></div>';
   } catch (error) {
     const note = error.message === 'SITE_SPECIFIC_REQUIRED'
       ? 'Kelas situs SF membutuhkan analisis respons spesifik situs. Pilih Manual Fa/Fv jika sudah memiliki nilai faktor dari hasil analisis.'
@@ -404,48 +507,51 @@ const renderSpectrumPreview = () => {
     target.innerHTML = '<h3>Ringkasan spektrum</h3><p>' + note + '</p><div class="spectrum-summary-grid"><span>SDS: -</span><span>SD1: -</span><span>T0: -</span><span>Ts: -</span></div>';
   }
 };
-spectrumInputIds.forEach(id => document.getElementById(id)?.addEventListener('input', renderSpectrumPreview));
+const invalidateSpectrumResult = () => {
+  latestSpectrumResult = null;
+  setSpectrumDownloadsEnabled(false);
+  renderSpectrumPreview();
+};
+spectrumInputIds.forEach(id => document.getElementById(id)?.addEventListener('input', invalidateSpectrumResult));
 spectrumSiteClassInput?.addEventListener('change', () => {
   updateSpectrumFactorMode();
-  renderSpectrumPreview();
+  invalidateSpectrumResult();
 });
 updateSpectrumFactorMode();
 document.getElementById('spectrumParseBtn')?.addEventListener('click', parseSpectrumText);
 renderSpectrumPreview();
 document.getElementById('spectrumBtn')?.addEventListener('click', () => {
-  if (!window.XLSX) return showToast('Library Excel belum siap. Coba ulang beberapa detik lagi.');
   try {
     const result = calculateSpectrum();
-    const locationName = document.getElementById('spectrumLocation')?.value.trim() || 'Lokasi RSA';
-    const wb = window.XLSX.utils.book_new();
-    const importSheet = window.XLSX.utils.aoa_to_sheet(result.rows);
-    window.XLSX.utils.book_append_sheet(wb, importSheet, 'ETABS_IMPORT');
-    const metadata = [
-      ['SIPIL CARE Response Spectrum ETABS'],
-      ['Lokasi', locationName],
-      ['Ss (g)', result.ss],
-      ['S1 (g)', result.s1],
-      ['Kelas situs', result.siteClass === 'manual' ? 'Manual Fa/Fv' : result.siteClass],
-      ['Fa', result.fa],
-      ['Fv', result.fv],
-      ['SMS (g)', result.sms],
-      ['SM1 (g)', result.sm1],
-      ['SDS (g)', result.sds],
-      ['SD1 (g)', result.sd1],
-      ['T0 (s)', result.t0],
-      ['Ts (s)', result.ts],
-      ['TL (s)', result.tl],
-      ['Catatan', 'Sheet ETABS_IMPORT sengaja tanpa header: kolom A = T (sec), kolom B = Sa (g).']
-    ];
-    const metadataSheet = window.XLSX.utils.aoa_to_sheet(metadata);
-    window.XLSX.utils.book_append_sheet(wb, metadataSheet, 'Metadata');
-    window.XLSX.writeFile(wb, slug(locationName) + '-response-spectrum-etabs.xlsx');
-    showToast('Excel response spectrum ETABS berhasil dibuat.');
+    latestSpectrumResult = result;
+    renderSpectrumResult(result);
+    setSpectrumDownloadsEnabled(true);
+    showToast('Tabel dan grafik respons spektrum berhasil dihitung.');
   } catch (error) {
     console.error(error);
     if (error.message === 'SITE_SPECIFIC_REQUIRED') return showToast('Kelas situs SF perlu analisis spesifik situs. Pilih Manual Fa/Fv jika sudah ada nilainya.');
     showToast('Isi Ss, S1, TL, interval T, dan T maksimum dengan angka valid.');
   }
+});
+spectrumTxtBtn?.addEventListener('click', () => {
+  if (!latestSpectrumResult) return showToast('Klik Hitung Spektrum terlebih dahulu.');
+  const locationName = document.getElementById('spectrumLocation')?.value.trim() || 'response-spectrum';
+  const blob = new Blob([spectrumTxtContent(latestSpectrumResult)], { type: 'text/plain;charset=utf-8' });
+  downloadBlob(blob, slug(locationName) + '-response-spectrum.txt');
+  showToast('TXT respons spektrum berhasil dibuat.');
+});
+spectrumChartBtn?.addEventListener('click', () => {
+  if (!latestSpectrumResult) return showToast('Klik Hitung Spektrum terlebih dahulu.');
+  const canvas = document.getElementById('spectrumChart');
+  if (!canvas) return showToast('Grafik belum tersedia. Klik Hitung Spektrum terlebih dahulu.');
+  const locationName = document.getElementById('spectrumLocation')?.value.trim() || 'response-spectrum';
+  const link = document.createElement('a');
+  link.href = canvas.toDataURL('image/png');
+  link.download = slug(locationName) + '-response-spectrum.png';
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  showToast('Grafik respons spektrum berhasil didownload.');
 });
 
 document.getElementById('exportForm').addEventListener('submit', event => {

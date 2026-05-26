@@ -34,6 +34,16 @@ body { background: #f5f8f7; }
 .geo-preview pre { width: 100%; max-height: 220px; overflow: auto; margin: 14px 0 0; padding: 14px; border: 1px solid var(--line); border-radius: 8px; background: #fff; color: var(--ink); font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 13px; line-height: 1.55; white-space: pre; }
 .spectrum-summary-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 16px; }
 .spectrum-summary-grid span { padding: 12px; border: 1px solid var(--line); border-radius: 8px; background: #fff; color: var(--primary); font-weight: 900; overflow-wrap: anywhere; }
+.spectrum-download-actions { margin-top: 10px; }
+.spectrum-download-actions .btn:disabled { opacity: .48; cursor: not-allowed; }
+.spectrum-output { display: grid; gap: 16px; margin-top: 18px; }
+.spectrum-chart-wrap { overflow: hidden; border: 1px solid var(--line); border-radius: 8px; background: #fff; }
+.spectrum-chart-wrap canvas { display: block; width: 100%; height: auto; min-height: 260px; }
+.spectrum-table-wrap { max-height: 360px; overflow: auto; border: 1px solid var(--line); border-radius: 8px; background: #fff; }
+.spectrum-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.spectrum-table th, .spectrum-table td { padding: 9px 12px; border-bottom: 1px solid var(--line); text-align: right; font-variant-numeric: tabular-nums; }
+.spectrum-table th { position: sticky; top: 0; z-index: 1; background: #f4faf7; color: var(--primary); font-weight: 900; text-transform: uppercase; letter-spacing: 0; }
+.spectrum-table th:first-child, .spectrum-table td:first-child { text-align: left; }
 .textarea { min-height: 230px; resize: vertical; }
 .compact-textarea { min-height: 120px; }
 .file-control { min-height: 52px; padding: 12px; background: #f9fcfb; }

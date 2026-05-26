@@ -12,7 +12,7 @@
     <meta name="apple-mobile-web-app-title" content="SIPIL CARE">
     <link rel="stylesheet" href="../css/style.css?v=26">
     <link rel="stylesheet" href="../css/navbar.css?v=33">
-    <link rel="stylesheet" href="../css/tools.css?v=9">
+    <link rel="stylesheet" href="../css/tools.css?v=10">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -75,7 +75,7 @@
             </div>
           </section>
           <section class="tool-panel" id="tool-spectrum">
-            <div class="tool-header"><div><span class="tool-code">RS</span><h2>Response spectrum ETABS</h2></div><p>Masukkan parameter dari RSA/Web RSA, lalu export Excel berisi periode dan Sa(g) untuk import fungsi response spectrum di ETABS.</p></div>
+            <div class="tool-header"><div><span class="tool-code">RS</span><h2>Response spectrum ETABS</h2></div><p>Masukkan parameter dari RSA/Web RSA, hitung tabel dan grafik, lalu download TXT siap import ke SAP/ETABS atau grafik PNG secara terpisah.</p></div>
             <div class="tool-layout">
               <div class="card tool-card">
                 <label for="spectrumLocation">Lokasi</label><input class="control" id="spectrumLocation" type="text" placeholder="Contoh: Cimahi / Bandung">
@@ -95,9 +95,13 @@
                 <label for="spectrumTmax">T maksimum (detik)</label><input class="control" id="spectrumTmax" type="number" step="0.5" inputmode="decimal" value="10">
                 <label for="spectrumPaste">Paste data RSA/Web RSA (opsional)</label><textarea class="control textarea compact-textarea" id="spectrumPaste" placeholder="Tempel teks hasil RSA/Web RSA yang memuat lokasi, Ss, S1, Fa, Fv, atau TL..."></textarea>
                 <button class="btn btn-secondary full-btn" type="button" id="spectrumParseBtn">Ambil parameter dari teks</button>
-                <button class="btn btn-primary full-btn" type="button" id="spectrumBtn">Download Excel ETABS</button>
+                <button class="btn btn-primary full-btn" type="button" id="spectrumBtn">Hitung Spektrum</button>
+                <div class="action-row spectrum-download-actions">
+                  <button class="btn btn-secondary full-btn" type="button" id="spectrumTxtBtn" disabled>Download TXT</button>
+                  <button class="btn btn-secondary full-btn" type="button" id="spectrumChartBtn" disabled>Download Grafik</button>
+                </div>
               </div>
-              <div class="tool-note spectrum-preview" id="spectrumPreview"><h3>Ringkasan spektrum</h3><p>Isi Ss, S1, TL, dan kelas situs. Fa/Fv akan dihitung otomatis dari tabel kelas situs SNI 1726:2019, atau pilih Manual Fa/Fv jika sudah punya nilai sendiri.</p><div class="spectrum-summary-grid"><span>SDS: -</span><span>SD1: -</span><span>T0: -</span><span>Ts: -</span></div></div>
+              <div class="tool-note spectrum-preview" id="spectrumPreview"><h3>Ringkasan spektrum</h3><p>Isi Ss, S1, TL, dan kelas situs. Klik Hitung Spektrum untuk menampilkan tabel data dan grafik respons spektrum.</p><div class="spectrum-summary-grid"><span>SDS: -</span><span>SD1: -</span><span>T0: -</span><span>Ts: -</span></div></div>
             </div>
           </section>
           <section class="tool-panel" id="tool-export">
@@ -150,9 +154,8 @@
     <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="../js/navbar.js?v=29"></script>
-    <script src="../js/tools.js?v=15"></script>
+    <script src="../js/tools.js?v=16"></script>
       <script src="../js/pwa.js?v=2"></script>
       <script src="../js/push-config.js?v=1"></script>
       <script type="module" src="../js/pwa-push.js?v=2"></script>
