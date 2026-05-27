@@ -1,5 +1,34 @@
 [
   {
+    "id": "2026-05-28:admin-dashboard,admin-system-overview,civil-tools,public-interface",
+    "date": "2026-05-28",
+    "dateLabel": "28 Mei 2026",
+    "generated": true,
+    "summary": "Dashboard Admin, Ringkasan Sistem Admin, Tools Teknik Sipil",
+    "items": [
+      {
+        "type": "improved",
+        "title": "Dashboard Admin",
+        "description": "Dashboard admin ditingkatkan agar navigasi, tampilan mobile, ringkasan data, dan akses ke bagian log lebih nyaman digunakan."
+      },
+      {
+        "type": "added",
+        "title": "Ringkasan Sistem Admin",
+        "description": "Dashboard admin kini menampilkan ringkasan status konten, pengguna online, log tersimpan, permission role aktif, serta catatan error browser lokal untuk membantu pengecekan cepat."
+      },
+      {
+        "type": "improved",
+        "title": "Tools Teknik Sipil",
+        "description": "Tools akademik Teknik Sipil diperbarui untuk membantu perhitungan, analisis struktur, preliminary design, dan pengelolaan file."
+      },
+      {
+        "type": "improved",
+        "title": "Tampilan Public Website",
+        "description": "Tampilan halaman public diperhalus agar lebih responsif, konsisten, dan nyaman dibuka dari perangkat mobile."
+      }
+    ]
+  },
+  {
     "id": "2026-05-27:civil-tools,public-interface",
     "date": "2026-05-27",
     "dateLabel": "27 Mei 2026",

@@ -225,6 +225,8 @@ const adminSearch = document.getElementById('adminSearch');
 const adminFilter = document.getElementById('adminFilter');
 const adminStats = document.getElementById('adminStats');
 const dashboardHealthGrid = document.getElementById('dashboardHealthGrid');
+const backupContentData = document.getElementById('backupContentData');
+const backupAccountData = document.getElementById('backupAccountData');
 const practicumOverviewSummary = document.getElementById('practicumOverviewSummary');
 const practicumIssueList = document.getElementById('practicumIssueList');
 const guideRoleSummary = document.getElementById('guideRoleSummary');
@@ -704,7 +706,8 @@ const auditActionLabels = {
   UPDATE_STUDENT_ACCOUNT: 'Update akun mahasiswa',
   DELETE_STUDENT_ACCOUNT: 'Hapus akun mahasiswa',
   RESET_STUDENT_ACCOUNT: 'Reset akun mahasiswa',
-  UPDATE_ACADEMIC_SETTINGS: 'Update kalender akademik'
+  UPDATE_ACADEMIC_SETTINGS: 'Update kalender akademik',
+  EXPORT_DEVELOPER_BACKUP: 'Export backup developer'
 };
 
 async function writeAuditLog({ action, targetType, targetId = '', targetTitle = '', detail = '', metadata = {} }) {
@@ -921,6 +924,18 @@ const toast = message => {
   toastEl.textContent = message;
   toastEl.classList.add('show');
   setTimeout(() => toastEl.classList.remove('show'), 2800);
+};
+
+const downloadJson = (filename, data) => {
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
 };
 
 const parseDateValue = value => {
@@ -2048,6 +2063,54 @@ function exportSessionExcel() {
     targetTitle: 'Backup sesi absen',
     detail: `${rows.length} sesi absen diexport.`
   }).catch(error => console.warn('Audit export session failed:', error));
+}
+
+function exportDeveloperBackup(type) {
+  if (currentAdmin().role !== 'developer') {
+    toast('Backup lengkap hanya tersedia untuk developer.');
+    return;
+  }
+
+  const base = {
+    exportedAt: new Date().toISOString(),
+    exportedBy: currentAdmin().username,
+    version: 1,
+    type
+  };
+
+  const payload = type === 'accounts'
+    ? {
+      ...base,
+      adminRoles,
+      adminAccounts,
+      adminPracticumScopes,
+      studentCohorts,
+      studentAccounts,
+      studentActivity: students,
+      adminActivity: adminActivities,
+      resourceAccessLogs: accessLogs,
+      auditLogs
+    }
+    : {
+      ...base,
+      resources,
+      practicumModules,
+      practicumRosters,
+      practicumAttendanceSessions,
+      practicumAttendanceRecords,
+      videos,
+      announcements,
+      academicSettings
+    };
+
+  downloadJson(`sipil-care-${type}-backup-${Date.now()}.json`, payload);
+  writeAuditLog({
+    action: 'EXPORT_DEVELOPER_BACKUP',
+    targetType: 'backup',
+    targetTitle: type === 'accounts' ? 'Backup akun dan log' : 'Backup konten dan praktikum',
+    detail: `Developer mengunduh backup ${type}.`
+  }).catch(error => console.warn('Audit backup failed:', error));
+  toast('Backup JSON berhasil dibuat.');
 }
 
 async function toggleAttendanceSession(sessionId) {
@@ -4331,6 +4394,8 @@ on(attendanceSessionFilter, 'change', () => attendanceRecapRender());
 on(attendanceExport, 'click', () => exportAttendanceExcel());
 on(rosterExport, 'click', () => exportRosterExcel());
 on(sessionExport, 'click', () => exportSessionExcel());
+on(backupContentData, 'click', () => exportDeveloperBackup('content-practicum'));
+on(backupAccountData, 'click', () => exportDeveloperBackup('accounts-logs'));
 on(videoSearch, 'input', () => videoTableRender());
 on(videoFilter, 'change', () => videoTableRender());
 on(announcementSearch, 'input', () => announcementTableRender());

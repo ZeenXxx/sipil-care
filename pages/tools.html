@@ -12,7 +12,7 @@
     <meta name="apple-mobile-web-app-title" content="SIPIL CARE">
     <link rel="stylesheet" href="../css/style.css?v=26">
     <link rel="stylesheet" href="../css/navbar.css?v=33">
-    <link rel="stylesheet" href="../css/tools.css?v=10">
+    <link rel="stylesheet" href="../css/tools.css?v=11">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -69,15 +69,26 @@
                 <label for="kmlAltDefault">ALT default jika kosong</label><input class="control" id="kmlAltDefault" type="number" inputmode="decimal" value="0">
                 <label class="inline-check" for="kmlUseTerrainAlt"><input id="kmlUseTerrainAlt" type="checkbox" checked> Tambahkan elevasi DEM otomatis jika ALT di file 0/kosong</label>
                 <label class="inline-check" for="kmlIncludeIndex"><input id="kmlIncludeIndex" type="checkbox" checked> Sertakan nomor titik seperti format CSV GPSVisualizer/TCX</label>
-                <label for="kmlOutputFormat">Format output</label>
-                <select class="control" id="kmlOutputFormat">
-                  <option value="plla">PLLA - Point, Latitude, Longitude, Altitude</option>
-                  <option value="penz">PENZ - Point, Easting, Northing, Z</option>
-                  <option value="pnez">PNEZ - Point, Northing, Easting, Z</option>
-                </select>
+                <div class="tool-grid-2 kml-format-grid">
+                  <div>
+                    <label for="kmlOutputFormat">Format output</label>
+                    <select class="control" id="kmlOutputFormat">
+                      <option value="plla">PLLA - Point, Latitude, Longitude, Altitude</option>
+                      <option value="penz">PENZ - Point, Easting, Northing, Z</option>
+                      <option value="pnez">PNEZ - Point, Northing, Easting, Z</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label for="kmlCoordinateMode">Sistem koordinat PENZ/PNEZ</label>
+                    <select class="control" id="kmlCoordinateMode">
+                      <option value="geographic">Google Earth / Civil 3D Lat-Long</option>
+                      <option value="utm">UTM WGS84 meter otomatis</option>
+                    </select>
+                  </div>
+                </div>
                 <div class="tool-grid-2"><button class="btn btn-primary full-btn" type="button" id="kmlCsvBtn">Download CSV Civil 3D</button><button class="btn btn-secondary full-btn" type="button" id="kmlPreviewBtn">Preview data</button></div>
               </div>
-              <div class="tool-note geo-preview" id="kmlCsvPreview"><h3>Format output</h3><p>Pilih PLLA untuk latitude/longitude, atau PENZ/PNEZ untuk koordinat UTM WGS84 otomatis dari titik Google Earth.</p><pre>1,-7.665294,110.595746,229.331</pre></div>
+              <div class="tool-note geo-preview" id="kmlCsvPreview"><h3>Format output</h3><p>Default PENZ/PNEZ memakai koordinat Google Earth: Easting = Longitude dan Northing = Latitude, sehingga titik tetap mengikuti lokasi aslinya pada drawing Civil 3D berbasis lat-long. Pilih UTM hanya jika drawing Civil 3D sudah memakai zona UTM yang sama.</p><pre>1,-7.665294,110.595746,229.331</pre></div>
             </div>
           </section>
           <section class="tool-panel" id="tool-spectrum">
@@ -161,7 +172,7 @@
     <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
     <script src="../js/navbar.js?v=29"></script>
-    <script src="../js/tools.js?v=17"></script>
+    <script src="../js/tools.js?v=18"></script>
       <script src="../js/pwa.js?v=2"></script>
       <script src="../js/push-config.js?v=1"></script>
       <script type="module" src="../js/pwa-push.js?v=2"></script>

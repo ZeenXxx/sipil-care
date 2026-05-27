@@ -10,7 +10,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-title" content="SIPIL CARE">
     <link rel="stylesheet" href="../../css/style.css?v=26">
-    <link rel="stylesheet" href="../../css/admin.css?v=43">
+    <link rel="stylesheet" href="../../css/admin.css?v=45">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -179,6 +179,23 @@
         <div class="client-error-list" id="clientErrorList"></div>
       </section>
 
+      <section id="developer-backup" class="admin-card" data-developer-only="true">
+        <div class="admin-table-head">
+          <div>
+            <h3>Backup Data Developer</h3>
+            <p class="small-text">Export cadangan JSON dari data yang sudah tersinkron di dashboard. Simpan sebelum perubahan besar pada akun, praktikum, resource, atau log.</p>
+          </div>
+          <div>
+            <button class="action-btn" id="backupContentData" type="button">Backup Konten &amp; Praktikum</button>
+            <button class="action-btn" id="backupAccountData" type="button">Backup Akun &amp; Log</button>
+          </div>
+        </div>
+        <div class="backup-summary-grid">
+          <article><strong>Konten</strong><span>Resource, software, video, pemberitahuan, modul praktikum, roster, sesi, dan record absen.</span></article>
+          <article><strong>Akun &amp; log</strong><span>Role admin, akun admin, akun mahasiswa, aktivitas online, history akses, dan audit log.</span></article>
+        </div>
+      </section>
+
       <section id="admin-activity" class="admin-card" data-admin-permission="dashboard">
         <div class="admin-table-head">
           <div>
@@ -301,7 +318,7 @@
     <script src="../../js/student-config.js?v=20"></script>
     <script src="../../js/auth.js?v=30"></script>
     <script src="../../js/push-config.js?v=1"></script>
-    <script type="module" src="../../js/admin-panel.js?v=59"></script>
+    <script type="module" src="../../js/admin-panel.js?v=61"></script>
       <script src="../../js/pwa.js?v=2"></script>
   </body>
 </html>

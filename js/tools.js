@@ -78,6 +78,7 @@ const kmlPreview = document.getElementById('kmlCsvPreview');
 const kmlUseTerrainAltInput = document.getElementById('kmlUseTerrainAlt');
 const kmlIncludeIndexInput = document.getElementById('kmlIncludeIndex');
 const kmlOutputFormatInput = document.getElementById('kmlOutputFormat');
+const kmlCoordinateModeInput = document.getElementById('kmlCoordinateMode');
 let latestKmlResult = null;
 const numberText = value => {
   const number = Number(value);
@@ -115,7 +116,48 @@ const latLonToUtm = (lat, lon) => {
   const easting = k0 * n * (aa + (1 - t + c) * Math.pow(aa, 3) / 6 + (5 - 18 * t + t * t + 72 * c - 58 * ePrimeSq) * Math.pow(aa, 5) / 120) + 500000;
   let northing = k0 * (m + n * tanLat * (aa * aa / 2 + (5 - t + 9 * c + 4 * c * c) * Math.pow(aa, 4) / 24 + (61 - 58 * t + t * t + 600 * c - 330 * ePrimeSq) * Math.pow(aa, 6) / 720));
   if (lat < 0) northing += 10000000;
-  return { easting, northing, zone };
+  return { easting, northing, zone, hemisphere: lat < 0 ? 'S' : 'N' };
+};
+const kmlCoordinateMode = () => kmlCoordinateModeInput?.value || 'geographic';
+const kmlFormatLabel = (format, includePoint = Boolean(kmlIncludeIndexInput?.checked)) => {
+  const labels = {
+    plla: includePoint ? 'Point, Latitude, Longitude, Altitude' : 'Latitude, Longitude, Altitude',
+    penz: includePoint ? 'Point, Easting, Northing, Z' : 'Easting, Northing, Z',
+    pnez: includePoint ? 'Point, Northing, Easting, Z' : 'Northing, Easting, Z'
+  };
+  return labels[format] || labels.plla;
+};
+const kmlProjectedValues = row => {
+  const format = kmlOutputFormatInput?.value || 'plla';
+  const mode = kmlCoordinateMode();
+  const lat = Number(row[0]);
+  const lon = Number(row[1]);
+  const z = metricText(row[2]);
+  if (mode === 'utm') {
+    const utm = latLonToUtm(lat, lon);
+    return {
+      values: format === 'penz'
+        ? [metricText(utm.easting), metricText(utm.northing), z]
+        : [metricText(utm.northing), metricText(utm.easting), z],
+      zone: `${utm.zone}${utm.hemisphere}`
+    };
+  }
+  return {
+    values: format === 'penz'
+      ? [numberText(lon), numberText(lat), z]
+      : [numberText(lat), numberText(lon), z],
+    zone: 'Lat-Long'
+  };
+};
+const kmlZoneSummary = rows => {
+  const format = kmlOutputFormatInput?.value || 'plla';
+  if (format === 'plla' || kmlCoordinateMode() !== 'utm') return '';
+  const zones = [...new Set(rows.map(row => {
+    const utm = latLonToUtm(Number(row[0]), Number(row[1]));
+    return `${utm.zone}${utm.hemisphere}`;
+  }))];
+  if (!zones.length) return '';
+  return ` Zona UTM terdeteksi: ${zones.slice(0, 5).join(', ')}${zones.length > 5 ? ', ...' : ''}.`;
 };
 const kmlSettingsKey = file => JSON.stringify({
   name: file?.name || '',
@@ -124,16 +166,14 @@ const kmlSettingsKey = file => JSON.stringify({
   defaultAlt: document.getElementById('kmlAltDefault')?.value || '0',
   terrain: Boolean(kmlUseTerrainAltInput?.checked),
   includeIndex: Boolean(kmlIncludeIndexInput?.checked),
-  format: kmlOutputFormatInput?.value || 'plla'
+  format: kmlOutputFormatInput?.value || 'plla',
+  coordinateMode: kmlCoordinateMode()
 });
 const kmlCsvLine = (row, index) => {
   const format = kmlOutputFormatInput?.value || 'plla';
   const point = String(index + 1);
   if (format === 'penz' || format === 'pnez') {
-    const utm = latLonToUtm(Number(row[0]), Number(row[1]));
-    const values = format === 'penz'
-      ? [metricText(utm.easting), metricText(utm.northing), metricText(row[2])]
-      : [metricText(utm.northing), metricText(utm.easting), metricText(row[2])];
+    const { values } = kmlProjectedValues(row);
     return (kmlIncludeIndexInput?.checked ? [point, ...values] : values).join(',');
   }
   const values = row.map(numberText);
@@ -258,13 +298,14 @@ const renderKmlPreview = (rows, filled = 0) => {
   const previewRows = rows.slice(0, 8).map((row, index) => kmlCsvLine(row, index)).join('\n');
   const filledText = filled ? ' ' + filled + ' ALT 0/kosong diisi dari DEM elevasi.' : '';
   const format = kmlOutputFormatInput?.value || 'plla';
-  const formatText = {
-    plla: kmlIncludeIndexInput?.checked ? 'Point, Latitude, Longitude, Altitude' : 'Latitude, Longitude, Altitude',
-    penz: kmlIncludeIndexInput?.checked ? 'Point, Easting, Northing, Z' : 'Easting, Northing, Z',
-    pnez: kmlIncludeIndexInput?.checked ? 'Point, Northing, Easting, Z' : 'Northing, Easting, Z'
-  }[format];
-  const utmText = format === 'plla' ? '' : ' Koordinat Easting/Northing memakai UTM WGS84 otomatis dari longitude/latitude.';
-  kmlPreview.innerHTML = '<h3>Preview CSV Civil 3D</h3><p>' + rows.length + ' titik ditemukan. Output: ' + formatText + ' tanpa header.' + utmText + filledText + '</p><pre>' + previewRows + (rows.length > 8 ? '\n...' : '') + '</pre>';
+  const mode = kmlCoordinateMode();
+  const formatText = kmlFormatLabel(format);
+  const coordinateText = format === 'plla'
+    ? 'Koordinat tetap Latitude/Longitude asli dari Google Earth.'
+    : mode === 'utm'
+      ? 'Easting/Northing dikonversi ke UTM WGS84 meter. Pastikan drawing Civil 3D memakai zona UTM yang sama.'
+      : 'Easting memakai Longitude dan Northing memakai Latitude agar lokasi sama dengan hasil Google Earth/GPSVisualizer pada drawing lat-long.';
+  kmlPreview.innerHTML = '<h3>Preview CSV Civil 3D</h3><p>' + rows.length + ' titik ditemukan. Output: ' + formatText + ' tanpa header. ' + coordinateText + kmlZoneSummary(rows) + filledText + '</p><pre>' + previewRows + (rows.length > 8 ? '\n...' : '') + '</pre>';
 };
 document.getElementById('kmlPreviewBtn')?.addEventListener('click', async () => {
   try {
