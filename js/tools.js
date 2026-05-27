@@ -77,11 +77,45 @@ const kmlFileInput = document.getElementById('kmlKmzFile');
 const kmlPreview = document.getElementById('kmlCsvPreview');
 const kmlUseTerrainAltInput = document.getElementById('kmlUseTerrainAlt');
 const kmlIncludeIndexInput = document.getElementById('kmlIncludeIndex');
+const kmlOutputFormatInput = document.getElementById('kmlOutputFormat');
 let latestKmlResult = null;
 const numberText = value => {
   const number = Number(value);
   if (!Number.isFinite(number)) return '0';
   return String(Number(number.toFixed(9))).replace(/\.0+$/, '');
+};
+const metricText = value => {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return '0';
+  return String(Number(number.toFixed(3)));
+};
+const latLonToUtm = (lat, lon) => {
+  const a = 6378137;
+  const f = 1 / 298.257223563;
+  const k0 = 0.9996;
+  const eSq = f * (2 - f);
+  const ePrimeSq = eSq / (1 - eSq);
+  const zone = Math.floor((lon + 180) / 6) + 1;
+  const latRad = lat * Math.PI / 180;
+  const lonRad = lon * Math.PI / 180;
+  const lonOriginRad = ((zone - 1) * 6 - 180 + 3) * Math.PI / 180;
+  const sinLat = Math.sin(latRad);
+  const cosLat = Math.cos(latRad);
+  const tanLat = Math.tan(latRad);
+  const n = a / Math.sqrt(1 - eSq * sinLat * sinLat);
+  const t = tanLat * tanLat;
+  const c = ePrimeSq * cosLat * cosLat;
+  const aa = cosLat * (lonRad - lonOriginRad);
+  const m = a * (
+    (1 - eSq / 4 - 3 * eSq * eSq / 64 - 5 * eSq * eSq * eSq / 256) * latRad
+    - (3 * eSq / 8 + 3 * eSq * eSq / 32 + 45 * eSq * eSq * eSq / 1024) * Math.sin(2 * latRad)
+    + (15 * eSq * eSq / 256 + 45 * eSq * eSq * eSq / 1024) * Math.sin(4 * latRad)
+    - (35 * eSq * eSq * eSq / 3072) * Math.sin(6 * latRad)
+  );
+  const easting = k0 * n * (aa + (1 - t + c) * Math.pow(aa, 3) / 6 + (5 - 18 * t + t * t + 72 * c - 58 * ePrimeSq) * Math.pow(aa, 5) / 120) + 500000;
+  let northing = k0 * (m + n * tanLat * (aa * aa / 2 + (5 - t + 9 * c + 4 * c * c) * Math.pow(aa, 4) / 24 + (61 - 58 * t + t * t + 600 * c - 330 * ePrimeSq) * Math.pow(aa, 6) / 720));
+  if (lat < 0) northing += 10000000;
+  return { easting, northing, zone };
 };
 const kmlSettingsKey = file => JSON.stringify({
   name: file?.name || '',
@@ -89,9 +123,19 @@ const kmlSettingsKey = file => JSON.stringify({
   lastModified: file?.lastModified || 0,
   defaultAlt: document.getElementById('kmlAltDefault')?.value || '0',
   terrain: Boolean(kmlUseTerrainAltInput?.checked),
-  includeIndex: Boolean(kmlIncludeIndexInput?.checked)
+  includeIndex: Boolean(kmlIncludeIndexInput?.checked),
+  format: kmlOutputFormatInput?.value || 'plla'
 });
 const kmlCsvLine = (row, index) => {
+  const format = kmlOutputFormatInput?.value || 'plla';
+  const point = String(index + 1);
+  if (format === 'penz' || format === 'pnez') {
+    const utm = latLonToUtm(Number(row[0]), Number(row[1]));
+    const values = format === 'penz'
+      ? [metricText(utm.easting), metricText(utm.northing), metricText(row[2])]
+      : [metricText(utm.northing), metricText(utm.easting), metricText(row[2])];
+    return (kmlIncludeIndexInput?.checked ? [point, ...values] : values).join(',');
+  }
   const values = row.map(numberText);
   return (kmlIncludeIndexInput?.checked ? [String(index + 1), ...values] : values).join(',');
 };
@@ -213,7 +257,14 @@ const getCivil3dRows = async () => {
 const renderKmlPreview = (rows, filled = 0) => {
   const previewRows = rows.slice(0, 8).map((row, index) => kmlCsvLine(row, index)).join('\n');
   const filledText = filled ? ' ' + filled + ' ALT 0/kosong diisi dari DEM elevasi.' : '';
-  kmlPreview.innerHTML = '<h3>Preview CSV Civil 3D</h3><p>' + rows.length + ' titik ditemukan. Output memakai urutan LAT,LONG,ALT tanpa header.' + filledText + '</p><pre>' + previewRows + (rows.length > 8 ? '\n...' : '') + '</pre>';
+  const format = kmlOutputFormatInput?.value || 'plla';
+  const formatText = {
+    plla: kmlIncludeIndexInput?.checked ? 'Point, Latitude, Longitude, Altitude' : 'Latitude, Longitude, Altitude',
+    penz: kmlIncludeIndexInput?.checked ? 'Point, Easting, Northing, Z' : 'Easting, Northing, Z',
+    pnez: kmlIncludeIndexInput?.checked ? 'Point, Northing, Easting, Z' : 'Northing, Easting, Z'
+  }[format];
+  const utmText = format === 'plla' ? '' : ' Koordinat Easting/Northing memakai UTM WGS84 otomatis dari longitude/latitude.';
+  kmlPreview.innerHTML = '<h3>Preview CSV Civil 3D</h3><p>' + rows.length + ' titik ditemukan. Output: ' + formatText + ' tanpa header.' + utmText + filledText + '</p><pre>' + previewRows + (rows.length > 8 ? '\n...' : '') + '</pre>';
 };
 document.getElementById('kmlPreviewBtn')?.addEventListener('click', async () => {
   try {
@@ -234,7 +285,8 @@ document.getElementById('kmlCsvBtn')?.addEventListener('click', async () => {
   try {
     const { file, rows, filled } = await getCivil3dRows();
     const csv = rows.map((row, index) => kmlCsvLine(row, index)).join('\r\n');
-    downloadBlob(new Blob([csv], { type: 'text/csv;charset=utf-8' }), slug(file.name.replace(/\.(kml|kmz)$/i, '')) + '-civil3d.csv');
+    const format = kmlOutputFormatInput?.value || 'plla';
+    downloadBlob(new Blob([csv], { type: 'text/csv;charset=utf-8' }), slug(file.name.replace(/\.(kml|kmz)$/i, '')) + '-' + format + '-civil3d.csv');
     renderKmlPreview(rows, filled);
     showToast('CSV Civil 3D berhasil dibuat' + (filled ? ' dengan ALT terrain.' : '.') );
   } catch (error) {
