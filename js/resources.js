@@ -26,12 +26,30 @@ const escapeText = value => String(value || '').replace(/[&<>"']/g, char => ({ '
 const slugify = value => String(value || '').toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'resource';
 const accessId = item => encodeURIComponent(item.id || item.slug || slugify(item.title));
 const accessUrl = item => `access.html?id=${accessId(item)}`;
+const BOOKMARK_KEY = 'sipilcare_student_bookmarks';
 const showToast = message => {
   const toast = document.getElementById('toast');
   if (!toast) return;
   toast.textContent = message;
   toast.classList.add('show');
   setTimeout(() => toast.classList.remove('show'), 3000);
+};
+const readBookmarks = () => {
+  try { return JSON.parse(localStorage.getItem(BOOKMARK_KEY) || '[]'); } catch { return []; }
+};
+const writeBookmarks = items => localStorage.setItem(BOOKMARK_KEY, JSON.stringify(items.slice(0, 100)));
+const bookmarkId = item => `resource:${item.id || item.slug || slugify(item.title)}`;
+const isBookmarked = item => readBookmarks().some(saved => saved.id === bookmarkId(item));
+const toggleBookmark = item => {
+  const id = bookmarkId(item);
+  const saved = readBookmarks();
+  const exists = saved.some(row => row.id === id);
+  const next = exists
+    ? saved.filter(row => row.id !== id)
+    : [{ id, type: 'Resource', title: item.title, category: item.category, url: accessUrl(item), savedAt: new Date().toISOString() }, ...saved];
+  writeBookmarks(next);
+  showToast(exists ? 'Resource dihapus dari simpanan.' : 'Resource disimpan.');
+  render();
 };
 
 const truncateText = (text, len = 80) => {
@@ -49,12 +67,13 @@ const getThumbnailDisplay = (thumb) => {
 
 const card = i => {
   const url = accessUrl(i);
-  return `<article class="card resource-card"><div class="icon">${escapeText(getThumbnailDisplay(i.thumbnail))}</div><div class="meta"><span class="badge">${escapeText(i.category)}</span><span class="badge">${escapeText(i.type)}</span><span class="badge">${escapeText(i.date)}</span></div><h3>${escapeText(i.title)}</h3><p>${escapeText(truncateText(i.description, 120))}</p><small>Author: ${escapeText(i.author)}</small><div class="actions"><a class="btn btn-primary" href="${url}">Akses File</a><button class="btn btn-ghost" data-access-url="${url}">Salin Link</button></div></article>`;
+  return `<article class="card resource-card"><div class="icon">${escapeText(getThumbnailDisplay(i.thumbnail))}</div><div class="meta"><span class="badge">${escapeText(i.category)}</span><span class="badge">${escapeText(i.type)}</span><span class="badge">${escapeText(i.date)}</span></div><h3>${escapeText(i.title)}</h3><p>${escapeText(truncateText(i.description, 120))}</p><small>Author: ${escapeText(i.author)}</small><div class="actions"><a class="btn btn-primary" href="${url}">Akses File</a><button class="btn btn-ghost" data-access-url="${url}">Salin Link</button><button class="btn btn-ghost" data-bookmark-resource="${escapeText(i.id || i.slug || slugify(i.title))}">${isBookmarked(i) ? 'Tersimpan' : 'Simpan'}</button></div></article>`;
 };
 const filtered = () => {
   const q = (resourceSearch?.value || '').toLowerCase();
   const type = typeFilter?.value || 'All';
   return resources.filter(i =>
+    (i.status || 'published') === 'published' &&
     (current === 'All' || i.category === current) &&
     (type === 'All' || i.type === type) &&
     [i.title, i.description, i.category, i.author].join(' ').toLowerCase().includes(q)
@@ -181,6 +200,12 @@ function bindCopyButtons(root) {
       }
     });
   });
+  root.querySelectorAll('[data-bookmark-resource]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const item = resources.find(resource => String(resource.id || resource.slug || slugify(resource.title)) === String(btn.dataset.bookmarkResource));
+      if (item) toggleBookmark(item);
+    });
+  });
 }
 
 const params = new URLSearchParams(location.search);
@@ -203,7 +228,7 @@ function normalizeResources(items) {
 function loadResourcesFromFirestore() {
   const resourcesQuery = query(collection(db, 'resources'), orderBy('date', 'desc'));
   onSnapshot(resourcesQuery, snapshot => {
-    resources = normalizeResources(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    resources = normalizeResources(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })).filter(item => (item.status || 'published') === 'published'));
     renderFilters();
     render();
     const f = document.getElementById('featuredResources');

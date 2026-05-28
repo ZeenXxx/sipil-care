@@ -10,7 +10,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-title" content="SIPIL CARE">
     <link rel="stylesheet" href="../../css/style.css?v=26">
-    <link rel="stylesheet" href="../../css/admin.css?v=45">
+    <link rel="stylesheet" href="../../css/admin.css?v=46">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -55,6 +55,11 @@
           <input class="control" id="resourceAuthor" placeholder="Author" required>
           <input class="control" id="resourceDate" type="date" required>
           <input class="control" id="resourceThumb" placeholder="Thumbnail label">
+          <select class="control" id="resourceStatus">
+            <option value="published">Publish sekarang</option>
+            <option value="draft">Simpan sebagai draft</option>
+            <option value="archived">Arsipkan</option>
+          </select>
           <select class="control" id="resourceType">
             <option>PDF</option>
             <option>DOCX</option>
@@ -89,6 +94,11 @@
           <input class="control" id="practicumAuthor" placeholder="Author" required>
           <input class="control" id="practicumDate" type="date" required>
           <input class="control" id="practicumThumb" placeholder="Thumbnail label">
+          <select class="control" id="practicumStatus">
+            <option value="published">Publish sekarang</option>
+            <option value="draft">Simpan sebagai draft</option>
+            <option value="archived">Arsipkan</option>
+          </select>
           <select class="control" id="practicumType">
             <option>PDF</option>
             <option>DOCX</option>
@@ -116,6 +126,11 @@
           <input class="control" id="softwareAuthor" placeholder="Author" required>
           <input class="control" id="softwareDate" type="date" required>
           <input class="control" id="softwareThumb" placeholder="Thumbnail label">
+          <select class="control" id="softwareStatus">
+            <option value="published">Publish sekarang</option>
+            <option value="draft">Simpan sebagai draft</option>
+            <option value="archived">Arsipkan</option>
+          </select>
           <input class="control" id="softwareFile" placeholder="Link file software" required>
           <label class="small-text">Masuk ke Software Management.</label>
           <button id="submitSoftwareBtn" class="btn btn-primary" type="submit">Simpan Software</button>
@@ -129,6 +144,11 @@
           <input class="control" id="videoCategoryInput" placeholder="Kategori" required>
           <input class="control" id="videoChannel" placeholder="Channel YouTube" required>
           <input class="control" id="videoYoutube" placeholder="Link YouTube" required>
+          <select class="control" id="videoStatus">
+            <option value="published">Publish sekarang</option>
+            <option value="draft">Simpan sebagai draft</option>
+            <option value="archived">Arsipkan</option>
+          </select>
           <label class="small-text">Masuk ke Video Management.</label>
           <button class="btn btn-primary" type="submit">Simpan Video</button>
         </form>
@@ -136,7 +156,7 @@
 
       <section id="resources" class="admin-card" data-admin-permission="resources">
         <div class="admin-table-head"><h3>Resource Management</h3><div><input class="control" id="adminSearch" placeholder="Search"><select class="control" id="adminFilter"><option value="All">All</option></select></div></div>
-        <div class="table-wrap"><table><thead><tr><th>Judul</th><th>Kategori</th><th>Tipe</th><th>Tanggal</th><th>Aksi</th></tr></thead><tbody id="resourceTable"></tbody></table></div>
+        <div class="table-wrap"><table><thead><tr><th>Judul</th><th>Kategori</th><th>Tipe</th><th>Status</th><th>Tanggal</th><th>Aksi</th></tr></thead><tbody id="resourceTable"></tbody></table></div>
       </section>
 
       <section id="practicum-studio" class="admin-card" data-admin-permission="practicum_studio">
@@ -151,7 +171,7 @@
             <button class="action-btn" id="practicumBackfillTargets" type="button">Rapikan Data Lama</button>
           </div>
         </div>
-        <div class="table-wrap"><table><thead><tr><th>Judul</th><th>Kategori</th><th>Angkatan</th><th>Semester</th><th>Tipe</th><th>Tanggal</th><th>Aksi</th></tr></thead><tbody id="practicumTable"></tbody></table></div>
+        <div class="table-wrap"><table><thead><tr><th>Judul</th><th>Kategori</th><th>Angkatan</th><th>Semester</th><th>Tipe</th><th>Status</th><th>Tanggal</th><th>Aksi</th></tr></thead><tbody id="practicumTable"></tbody></table></div>
       </section>
 
       <section id="practicum-attendance" class="admin-panel-grid" data-admin-permission="practicum_studio">
@@ -222,12 +242,12 @@
 
       <section id="software" class="admin-card" data-admin-permission="software">
         <div class="admin-table-head"><h3>Software Management</h3><div><input class="control" id="softwareSearch" placeholder="Search"><select class="control" id="softwareFilter"><option value="All">All</option></select></div></div>
-        <div class="table-wrap"><table><thead><tr><th>Judul</th><th>Kategori</th><th>Tipe</th><th>Tanggal</th><th>Aksi</th></tr></thead><tbody id="softwareTable"></tbody></table></div>
+        <div class="table-wrap"><table><thead><tr><th>Judul</th><th>Kategori</th><th>Tipe</th><th>Status</th><th>Tanggal</th><th>Aksi</th></tr></thead><tbody id="softwareTable"></tbody></table></div>
       </section>
 
       <section id="videos" class="admin-card" data-admin-permission="videos">
         <div class="admin-table-head"><h3>Video Management</h3><div><input class="control" id="videoSearch" placeholder="Search"><select class="control" id="videoFilter"><option value="All">All</option></select></div></div>
-        <div class="table-wrap"><table><thead><tr><th>Judul</th><th>Kategori</th><th>Channel</th><th>Aksi</th></tr></thead><tbody id="videoTable"></tbody></table></div>
+        <div class="table-wrap"><table><thead><tr><th>Judul</th><th>Kategori</th><th>Channel</th><th>Status</th><th>Aksi</th></tr></thead><tbody id="videoTable"></tbody></table></div>
       </section>
     </main>
 
@@ -235,7 +255,7 @@
     <script src="../../js/student-config.js?v=20"></script>
     <script src="../../js/auth.js?v=30"></script>
     <script src="../../js/push-config.js?v=1"></script>
-    <script type="module" src="../../js/admin-panel.js?v=61"></script>
+    <script type="module" src="../../js/admin-panel.js?v=62"></script>
       <script src="../../js/pwa.js?v=2"></script>
   </body>
 </html>

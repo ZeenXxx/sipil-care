@@ -6,6 +6,53 @@
 
 }
 
+.badge.status-published {
+  background: #eaf8ef;
+  color: #0f6b43;
+}
+
+.badge.status-draft {
+  background: #fff6d8;
+  color: #8a5a00;
+}
+
+.badge.status-archived {
+  background: #f1f3f5;
+  color: #5d6872;
+}
+
+.admin-restore-box {
+  display: grid;
+  gap: 12px;
+  margin-top: 18px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--soft);
+}
+
+.admin-restore-box h4 {
+  margin: 0 0 4px;
+  color: var(--primary);
+}
+
+.backup-restore-preview {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.backup-restore-preview span {
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: #fff;
+  border: 1px solid var(--line);
+  color: var(--primary);
+  font-weight: 800;
+}
+
 .login-shell  {
   
     min-height: 100vh;

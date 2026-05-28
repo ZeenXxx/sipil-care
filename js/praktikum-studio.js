@@ -28,6 +28,7 @@ const search = document.getElementById('practicumSearch');
 const semesterFilter = document.getElementById('semesterFilter');
 const semesterTabs = document.getElementById('semesterTabs');
 const semesterGrid = document.getElementById('semesterGrid');
+const BOOKMARK_KEY = 'sipilcare_student_bookmarks';
 
 const courses = PRACTICUM_COURSES;
 const courseKeys = courses.map(item => item.title.toLowerCase());
@@ -49,6 +50,23 @@ const showToast = message => {
   toast.textContent = message;
   toast.classList.add('show');
   setTimeout(() => toast.classList.remove('show'), 3000);
+};
+const readBookmarks = () => {
+  try { return JSON.parse(localStorage.getItem(BOOKMARK_KEY) || '[]'); } catch { return []; }
+};
+const writeBookmarks = items => localStorage.setItem(BOOKMARK_KEY, JSON.stringify(items.slice(0, 100)));
+const bookmarkId = item => `practicum:${item.id || item.slug || slugify(item.title)}`;
+const isBookmarked = item => readBookmarks().some(saved => saved.id === bookmarkId(item));
+const toggleBookmark = item => {
+  const id = bookmarkId(item);
+  const saved = readBookmarks();
+  const exists = saved.some(row => row.id === id);
+  const next = exists
+    ? saved.filter(row => row.id !== id)
+    : [{ id, type: 'Praktikum & Studio', title: item.title, category: item.category, url: accessUrl(item), savedAt: new Date().toISOString() }, ...saved];
+  writeBookmarks(next);
+  showToast(exists ? 'Modul dihapus dari simpanan.' : 'Modul disimpan.');
+  render();
 };
 
 const readStudentSession = () => {
@@ -86,7 +104,7 @@ const canStudentSeeModule = (item, currentSession, activeSemester, rosters) => {
 
 function resourceCard(item) {
   const url = accessUrl(item);
-  return `<article class="module-item"><strong>${escapeText(item.title)}</strong><p>${escapeText(item.description || 'Modul pembelajaran dari admin HMS/PENDPROF.')}</p><div class="meta"><span class="badge">${escapeText(item.type || 'PDF')}</span><span class="badge">${escapeText(item.date || 'Update')}</span></div><div class="actions"><a class="btn btn-primary" href="${url}">Akses Modul</a><button class="btn btn-ghost" data-access-url="${url}" type="button">Salin Link</button></div></article>`;
+  return `<article class="module-item"><strong>${escapeText(item.title)}</strong><p>${escapeText(item.description || 'Modul pembelajaran dari admin HMS/PENDPROF.')}</p><div class="meta"><span class="badge">${escapeText(item.type || 'PDF')}</span><span class="badge">${escapeText(item.date || 'Update')}</span></div><div class="actions"><a class="btn btn-primary" href="${url}">Akses Modul</a><button class="btn btn-ghost" data-access-url="${url}" type="button">Salin Link</button><button class="btn btn-ghost" data-bookmark-practicum="${escapeText(item.id || item.slug || slugify(item.title))}" type="button">${isBookmarked(item) ? 'Tersimpan' : 'Simpan'}</button></div></article>`;
 }
 
 const rosterForCourse = course => studentRosters.filter(roster => roster.isActive !== false && matchesPracticumCourse(roster, course));
@@ -137,6 +155,12 @@ function bindCopyButtons() {
       } catch {
         showToast('Tidak bisa menyalin otomatis. Salin link dari tombol Akses Modul.');
       }
+    });
+  });
+  semesterGrid.querySelectorAll('[data-bookmark-practicum]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const item = modules.find(module => String(module.id || module.slug || slugify(module.title)) === String(btn.dataset.bookmarkPracticum));
+      if (item) toggleBookmark(item);
     });
   });
 }
@@ -272,7 +296,7 @@ onSnapshot(academicSettingsRef, snapshot => {
 
 const modulesQuery = query(collection(db, 'practicum_studio_modules'), orderBy('date', 'desc'));
 onSnapshot(modulesQuery, snapshot => {
-  modules = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })).filter(item => courseKeys.some(key => normalize([item.category, item.course, item.title, item.type].join(' ')).includes(key)));
+  modules = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })).filter(item => (item.status || 'published') === 'published' && courseKeys.some(key => normalize([item.category, item.course, item.title, item.type].join(' ')).includes(key)));
   render();
 }, error => {
   console.error('Praktikum/studio resources failed:', error);

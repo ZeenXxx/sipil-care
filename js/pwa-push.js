@@ -1,6 +1,7 @@
 const SESSION_KEY = 'sipilcare_student_session';
 const TOKEN_ID_KEY = 'sipilcare_student_push_token_id';
 const PUSH_ENABLED_KEY = 'sipilcare_student_push_enabled';
+const PUSH_PREF_KEY = 'sipilcare_student_push_categories';
 const TOKEN_COLLECTION = 'student_push_tokens';
 const SESSION_TTL = 24 * 60 * 60 * 1000;
 const rootPrefix = location.pathname.includes('/pages/') || location.pathname.includes('/tools/') ? '../' : '';
@@ -9,6 +10,15 @@ const vapidKey = window.SIPILCARE_PUSH_CONFIG?.vapidKey || '';
 let firebasePromise = null;
 let renderQueued = false;
 let foregroundBound = false;
+const DEFAULT_CATEGORIES = ['announcement', 'resources', 'practicum_studio', 'software', 'videos', 'attendance'];
+const CATEGORY_LABELS = {
+  announcement: 'Pemberitahuan',
+  resources: 'Resources',
+  practicum_studio: 'Praktikum & Studio',
+  software: 'Software',
+  videos: 'Video',
+  attendance: 'Absensi'
+};
 
 const loadFirebase = () => {
   if (!firebasePromise) {
@@ -64,6 +74,30 @@ const showToast = message => {
   toast.textContent = message;
   toast.classList.add('show');
   setTimeout(() => toast.classList.remove('show'), 3200);
+};
+
+const readCategories = () => {
+  try {
+    const saved = JSON.parse(localStorage.getItem(PUSH_PREF_KEY) || 'null');
+    return Array.isArray(saved) && saved.length ? saved.filter(item => DEFAULT_CATEGORIES.includes(item)) : DEFAULT_CATEGORIES;
+  } catch {
+    return DEFAULT_CATEGORIES;
+  }
+};
+
+const writeCategories = categories => {
+  const clean = categories.filter(item => DEFAULT_CATEGORIES.includes(item));
+  localStorage.setItem(PUSH_PREF_KEY, JSON.stringify(clean.length ? clean : DEFAULT_CATEGORIES));
+};
+
+const syncTokenCategories = async () => {
+  const docId = localStorage.getItem(TOKEN_ID_KEY);
+  if (!docId) return;
+  const firebase = await loadFirebase();
+  await firebase.updateDoc(firebase.doc(firebase.db, TOKEN_COLLECTION, docId), {
+    categories: readCategories(),
+    updatedAt: firebase.serverTimestamp()
+  }).catch(() => null);
 };
 
 const hasBrowserPushSupport = () => (
@@ -127,6 +161,7 @@ export async function enableStudentPushNotifications() {
       nim: session.nim,
       name: session.name || '',
       angkatan: String(session.angkatan || ''),
+      categories: readCategories(),
       displayMode: displayMode(),
       lastPage: location.pathname,
       userAgent: navigator.userAgent.slice(0, 240),
@@ -209,6 +244,38 @@ async function renderNotificationButton() {
   button.textContent = status.enabled ? 'Matikan Notifikasi' : 'Aktifkan Notifikasi';
   button.title = status.label;
   button.disabled = !status.supported;
+  renderPreferencePanel(menu, status.enabled);
+}
+
+function renderPreferencePanel(menu, enabled) {
+  let panel = menu.querySelector('[data-student-push-preferences]');
+  if (!panel) {
+    panel = document.createElement('div');
+    panel.className = 'student-push-preferences';
+    panel.dataset.studentPushPreferences = 'true';
+    const logout = menu.querySelector('[data-student-logout]');
+    menu.insertBefore(panel, logout || null);
+  }
+  const selected = new Set(readCategories());
+  panel.innerHTML = `
+    <strong>Notifikasi yang diterima</strong>
+    <div class="student-push-options">
+      ${DEFAULT_CATEGORIES.map(category => `
+        <label>
+          <input type="checkbox" value="${category}" ${selected.has(category) ? 'checked' : ''} ${enabled ? '' : 'disabled'}>
+          <span>${CATEGORY_LABELS[category]}</span>
+        </label>
+      `).join('')}
+    </div>
+  `;
+  panel.querySelectorAll('input[type="checkbox"]').forEach(input => {
+    input.addEventListener('change', () => {
+      const next = [...panel.querySelectorAll('input[type="checkbox"]:checked')].map(item => item.value);
+      writeCategories(next);
+      syncTokenCategories();
+      showToast('Preferensi notifikasi disimpan.');
+    });
+  });
 }
 
 function scheduleRenderNotificationButton() {

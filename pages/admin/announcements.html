@@ -10,7 +10,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-title" content="SIPIL CARE">
     <link rel="stylesheet" href="../../css/style.css?v=26">
-    <link rel="stylesheet" href="../../css/admin.css?v=45">
+    <link rel="stylesheet" href="../../css/admin.css?v=46">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -52,6 +52,11 @@
             <option>Akademik</option>
             <option>PENDPROF HMS</option>
           </select>
+          <select class="control" id="announcementStatus">
+            <option value="published">Publish sekarang</option>
+            <option value="draft">Simpan sebagai draft</option>
+            <option value="archived">Arsipkan</option>
+          </select>
           <input class="control" id="announcementDate" type="date" required>
           <textarea class="control textarea" id="announcementDescription" placeholder="Isi pemberitahuan" required></textarea>
           <input class="control" id="announcementImage" type="file" accept="image/*">
@@ -70,7 +75,7 @@
         </div>
         <div class="table-wrap">
           <table>
-            <thead><tr><th>Judul</th><th>Tipe</th><th>Tanggal</th><th>Foto</th><th>Aksi</th></tr></thead>
+            <thead><tr><th>Judul</th><th>Tipe</th><th>Status</th><th>Tanggal</th><th>Foto</th><th>Aksi</th></tr></thead>
             <tbody id="announcementTable"></tbody>
           </table>
         </div>
@@ -81,7 +86,7 @@
     <script src="../../js/student-config.js?v=20"></script>
     <script src="../../js/auth.js?v=30"></script>
     <script src="../../js/push-config.js?v=1"></script>
-    <script type="module" src="../../js/admin-panel.js?v=61"></script>
+    <script type="module" src="../../js/admin-panel.js?v=62"></script>
       <script src="../../js/pwa.js?v=2"></script>
   </body>
 </html>

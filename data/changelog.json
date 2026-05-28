@@ -1,20 +1,25 @@
 [
   {
-    "id": "2026-05-28:admin-dashboard,admin-system-overview,civil-tools,public-interface",
+    "id": "2026-05-28:admin-dashboard,backend-security,civil-tools,navbar-controls,public-interface,resources-content,student-access",
     "date": "2026-05-28",
     "dateLabel": "28 Mei 2026",
     "generated": true,
-    "summary": "Dashboard Admin, Ringkasan Sistem Admin, Tools Teknik Sipil",
+    "summary": "Kontrol Navbar Dirapikan, Dashboard Admin, Akses dan Login Mahasiswa",
     "items": [
+      {
+        "type": "improved",
+        "title": "Kontrol Navbar Dirapikan",
+        "description": "Posisi tombol pencarian dan mode tampilan dirapikan agar sejajar dengan menu utama dan lebih nyaman digunakan di desktop maupun mobile."
+      },
       {
         "type": "improved",
         "title": "Dashboard Admin",
         "description": "Dashboard admin ditingkatkan agar navigasi, tampilan mobile, ringkasan data, dan akses ke bagian log lebih nyaman digunakan."
       },
       {
-        "type": "added",
-        "title": "Ringkasan Sistem Admin",
-        "description": "Dashboard admin kini menampilkan ringkasan status konten, pengguna online, log tersimpan, permission role aktif, serta catatan error browser lokal untuk membantu pengecekan cepat."
+        "type": "improved",
+        "title": "Akses dan Login Mahasiswa",
+        "description": "Alur login, sesi akun, dan pengalaman mahasiswa diperbaiki agar akses lintas perangkat lebih stabil."
       },
       {
         "type": "improved",
@@ -23,8 +28,23 @@
       },
       {
         "type": "improved",
+        "title": "Resource dan Materi Akademik",
+        "description": "Halaman materi, praktikum, studio, software, video, dan akses file diperbarui agar konten akademik lebih mudah ditemukan dan digunakan."
+      },
+      {
+        "type": "improved",
         "title": "Tampilan Public Website",
         "description": "Tampilan halaman public diperhalus agar lebih responsif, konsisten, dan nyaman dibuka dari perangkat mobile."
+      },
+      {
+        "type": "fixed",
+        "title": "Backend dan Permission",
+        "description": "Dokumentasi serta fungsi backend terkait akun, role, permission, dan sesi admin diperbaiki agar sistem lebih aman dan konsisten."
+      },
+      {
+        "type": "added",
+        "title": "Ringkasan Sistem Admin",
+        "description": "Dashboard admin kini menampilkan ringkasan status konten, pengguna online, log tersimpan, permission role aktif, serta catatan error browser lokal untuk membantu pengecekan cepat."
       }
     ]
   },

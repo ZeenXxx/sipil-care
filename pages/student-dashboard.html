@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8">
+    <script>!function(){var t=localStorage.getItem("sipilcare_theme");(t==="dark"||(t===null&&window.matchMedia("(prefers-color-scheme: dark)").matches))&&document.documentElement.classList.add("dark")}();</script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="../assets/icons/pwa-192.png" type="image/png" sizes="192x192">
+    <link rel="apple-touch-icon" href="../assets/icons/pwa-180.png">
+    <meta name="theme-color" content="#0f4d3a">
+    <link rel="manifest" href="../manifest.webmanifest?v=2">
+    <meta name="description" content="Dashboard pribadi mahasiswa SIPIL CARE untuk melihat materi tersimpan, aktivitas akses, dan pintasan akademik.">
+    <link rel="canonical" href="https://sipil-care.vercel.app/pages/student-dashboard.html">
+    <meta property="og:title" content="Dashboard Mahasiswa - SIPIL CARE">
+    <meta property="og:description" content="Dashboard pribadi mahasiswa SIPIL CARE.">
+    <meta property="og:image" content="https://sipil-care.vercel.app/assets/icons/pwa-512.png">
+    <link rel="stylesheet" href="../css/style.css?v=26">
+    <link rel="stylesheet" href="../css/navbar.css?v=34">
+    <link rel="stylesheet" href="../css/resources.css?v=3">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <title>Dashboard Mahasiswa - SIPIL CARE</title>
+    <script src="../js/student-config.js?v=20"></script>
+    <script src="../js/student-auth.js?v=36"></script>
+  </head>
+  <body>
+    <header class="navbar">
+      <a class="brand" href="../index.html"><img src="../assets/images/logo-hms.png" alt="Logo HMS"><span><strong>SIPIL CARE</strong><small>Center for Academic, Resource &amp; Education</small></span></a>
+      <button class="menu-toggle" type="button" aria-label="Toggle navigation" aria-expanded="false"><span></span></button>
+      <nav class="nav-links"><a href="../index.html">Home</a><a href="resources.html">Resources</a><a href="praktikum-studio.html">Praktikum &amp; Studio</a><a href="videos.html">Videos</a><a href="tools.html">Tools</a><a href="about.html">About</a><a href="developer.html">Developer</a><a href="contact.html">Contact</a></nav>
+    </header>
+
+    <main>
+      <section class="page-head student-dashboard-head">
+        <div class="container">
+          <span class="eyebrow">Dashboard mahasiswa</span>
+          <h1>Ruang belajar pribadi</h1>
+          <p class="lead">Pantau materi yang disimpan, aktivitas akses terakhir, dan pintasan penting sesuai akun mahasiswa.</p>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="container student-dashboard-grid">
+          <aside class="student-dashboard-profile" id="studentDashboardProfile"></aside>
+          <section class="student-dashboard-main">
+            <div class="student-dashboard-summary" id="studentDashboardSummary"></div>
+            <article class="student-dashboard-card">
+              <div class="section-title compact-title">
+                <span class="eyebrow">Simpanan</span>
+                <h2>Materi tersimpan</h2>
+              </div>
+              <div class="student-bookmark-list" id="studentBookmarkList"></div>
+            </article>
+            <article class="student-dashboard-card">
+              <div class="section-title compact-title">
+                <span class="eyebrow">Aktivitas</span>
+                <h2>Riwayat akses terbaru</h2>
+              </div>
+              <div class="student-activity-list" id="studentRecentActivity"></div>
+            </article>
+          </section>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="footer-grid">
+        <div><a class="footer-brand" href="../index.html"><img src="../assets/images/logo-hms.png" alt="Logo HMS"><span>SIPIL CARE</span></a><p>Platform Digital Akademik Mahasiswa Teknik Sipil UNJANI - HIMPUNAN MAHASISWA SIPIL UNJANI.</p></div>
+        <div><h3>Navigasi</h3><a href="resources.html">Resources</a><a href="praktikum-studio.html">Praktikum &amp; Studio</a><a href="videos.html">Videos</a><a href="tools.html">Tools</a></div>
+        <div><h3>Akun</h3><a href="student-dashboard.html">Dashboard Saya</a><a href="../student-login.html?mode=change">Ubah Password</a><a href="changelog.html">Changelog</a></div>
+        <div><h3>HMS Unjani</h3><p>Kampus UNJANI<br>Academic Resource Platform<br>2026</p></div>
+      </div>
+      <div class="footer-bottom"><span>&copy; 2026 PENDPROF HMS - HMS UNJANI</span><span>Built for civil engineering students.</span></div>
+    </footer>
+    <div class="toast" id="toast"></div>
+    <script src="../js/navbar.js?v=30"></script>
+    <script type="module" src="../js/student-dashboard.js?v=1"></script>
+    <script src="../js/pwa.js?v=2"></script>
+    <script src="../js/push-config.js?v=1"></script>
+    <script type="module" src="../js/pwa-push.js?v=3"></script>
+  </body>
+</html>

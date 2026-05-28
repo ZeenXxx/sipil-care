@@ -11,14 +11,14 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-title" content="SIPIL CARE">
     <link rel="stylesheet" href="../css/style.css?v=26">
-    <link rel="stylesheet" href="../css/navbar.css?v=33">
-    <link rel="stylesheet" href="../css/tools.css?v=11">
+    <link rel="stylesheet" href="../css/navbar.css?v=34">
+    <link rel="stylesheet" href="../css/tools.css?v=12">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <title>Tools - SIPIL CARE</title>
     <script src="../js/student-config.js?v=18"></script>
-    <script src="../js/student-auth.js?v=35"></script>
+    <script src="../js/student-auth.js?v=36"></script>
   </head>
   <body>
     <header class="navbar">
@@ -39,6 +39,19 @@
             <div class="structural-tool-link"><div><strong>Structural Diagram Analyzer</strong><span>Analisis balok 1D: reaksi tumpuan, SFD, BMD, dan tabel gaya dalam.</span></div><a class="btn btn-primary" href="../tools/diagram-struktur.html">Buka Analyzer</a></div>
             <div class="structural-tool-link"><div><strong>Preliminary Design SNI 2847:2019</strong><span>Estimasi awal kolom, balok, pelat satu/dua arah, dan dinding geser lengkap dengan pasal, rumus, dan tabel ringkas.</span></div><a class="btn btn-primary" href="../tools/preliminary-design.html">Buka Preliminary</a></div>
             <div class="structural-tool-link"><div><strong>Kalkulator Tulangan Balok</strong><span>Hitung tulangan lentur dan sengkang balok dari Mu, Vu, dimensi, f'c, dan fy sesuai rujukan SNI 2847:2019.</span></div><a class="btn btn-primary" href="../tools/tulangan-balok.html">Buka Kalkulator</a></div>
+          </div>
+          <div class="tool-verification-panel">
+            <div>
+              <span class="eyebrow">Verifikasi hasil</span>
+              <h2>Checklist sebelum data dipakai</h2>
+              <p>Tools teknis tetap perlu dicocokkan dengan satu contoh manual atau output software pembanding sebelum dipakai untuk tugas final.</p>
+            </div>
+            <ul>
+              <li>Response spectrum menampilkan Fa, Fv, SDS, SD1, T0, Ts, dan grafik sebelum download TXT.</li>
+              <li>KML/KMZ menampilkan preview koordinat dan pilihan format PLLA, PENZ, atau PNEZ sebelum download CSV.</li>
+              <li>Analyzer struktur memberi tabel reaksi, SFD, BMD, dan diagram sebagai kontrol visual.</li>
+              <li>PDF/JPG tools memproses file di browser sehingga data tugas tidak diupload ke server.</li>
+            </ul>
           </div>
           <div class="tools-tabs" role="tablist" aria-label="Tools navigation">
             <button class="tool-tab active" type="button" data-tool-tab="converter">Converter</button>
@@ -171,10 +184,10 @@
     <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
-    <script src="../js/navbar.js?v=29"></script>
+    <script src="../js/navbar.js?v=30"></script>
     <script src="../js/tools.js?v=18"></script>
       <script src="../js/pwa.js?v=2"></script>
       <script src="../js/push-config.js?v=1"></script>
-      <script type="module" src="../js/pwa-push.js?v=2"></script>
+      <script type="module" src="../js/pwa-push.js?v=3"></script>
   </body>
 </html>

@@ -13,6 +13,7 @@ import {
 const db = getFirestore(app);
 const SESSION_KEY = 'sipilcare_student_session';
 const SESSION_TTL = 24 * 60 * 60 * 1000;
+const BOOKMARK_KEY = 'sipilcare_student_bookmarks';
 
 let videos = [];
 const videoGrid = document.getElementById('videoGrid');
@@ -41,6 +42,30 @@ const getHost = url => {
 	}
 };
 const slugify = value => String(value || '').toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'video';
+const showToast = message => {
+	const toast = document.getElementById('toast');
+	if (!toast) return;
+	toast.textContent = message;
+	toast.classList.add('show');
+	setTimeout(() => toast.classList.remove('show'), 3000);
+};
+const readBookmarks = () => {
+	try { return JSON.parse(localStorage.getItem(BOOKMARK_KEY) || '[]'); } catch { return []; }
+};
+const writeBookmarks = items => localStorage.setItem(BOOKMARK_KEY, JSON.stringify(items.slice(0, 100)));
+const bookmarkId = item => `video:${item.id || slugify(item.title)}`;
+const isBookmarked = item => readBookmarks().some(saved => saved.id === bookmarkId(item));
+const toggleBookmark = item => {
+	const id = bookmarkId(item);
+	const saved = readBookmarks();
+	const exists = saved.some(row => row.id === id);
+	const next = exists
+		? saved.filter(row => row.id !== id)
+		: [{ id, type: 'Video', title: item.title, category: item.category, url: item.youtube, savedAt: new Date().toISOString() }, ...saved];
+	writeBookmarks(next);
+	showToast(exists ? 'Video dihapus dari simpanan.' : 'Video disimpan.');
+	render();
+};
 const normalizeVideos = items => items.map((item, index) => ({
 	...item,
 	id: item.id || item.slug || slugify(item.title || `video-${index + 1}`)
@@ -66,12 +91,12 @@ const logVideoAccess = async video => {
 		accessedAt: serverTimestamp()
 	});
 };
-const card = v => `<article class="card video-card"><div class="thumb">${v.thumbnail}</div><div class="video-body"><div class="meta"><span class="badge">${v.category}</span><span class="badge">Channel: ${channelLabel(v)}</span></div><h3>${v.title}</h3><p>${v.description}</p><br><a class="btn btn-primary" href="${v.youtube}" target="_blank" rel="noopener" data-video-id="${v.id}">Watch</a></div></article>`;
+const card = v => `<article class="card video-card"><div class="thumb">${v.thumbnail}</div><div class="video-body"><div class="meta"><span class="badge">${v.category}</span><span class="badge">Channel: ${channelLabel(v)}</span></div><h3>${v.title}</h3><p>${v.description}</p><br><div class="actions"><a class="btn btn-primary" href="${v.youtube}" target="_blank" rel="noopener" data-video-id="${v.id}">Watch</a><button class="btn btn-ghost" type="button" data-bookmark-video="${v.id}">${isBookmarked(v) ? 'Tersimpan' : 'Simpan'}</button></div></div></article>`;
 
 function render() {
 	const q = (videoSearch?.value || '').toLowerCase();
 	const cat = videoCategory?.value || 'All';
-	const d = videos.filter(v => (cat === 'All' || v.category === cat) && [v.title, v.description, v.category].join(' ').toLowerCase().includes(q));
+	const d = videos.filter(v => (v.status || 'published') === 'published' && (cat === 'All' || v.category === cat) && [v.title, v.description, v.category].join(' ').toLowerCase().includes(q));
 	if (videoGrid) videoGrid.innerHTML = d.map(card).join('') || '<div class="card empty">Video tidak ditemukan.</div>';
 }
 
@@ -99,7 +124,7 @@ async function loadLocalFallback() {
 try {
 	const videosQuery = query(collection(db, 'videos'), orderBy('title'));
 	onSnapshot(videosQuery, snapshot => {
-		videos = normalizeVideos(snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })));
+		videos = normalizeVideos(snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })).filter(item => (item.status || 'published') === 'published'));
 		// ensure deterministic ordering: by title already
 		updateUI();
 	}, err => {
@@ -114,6 +139,12 @@ try {
 videoSearch?.addEventListener('input', render);
 videoCategory?.addEventListener('change', render);
 document.addEventListener('click', event => {
+	const bookmarkButton = event.target.closest('[data-bookmark-video]');
+	if (bookmarkButton) {
+		const videoItem = videos.find(item => item.id === bookmarkButton.dataset.bookmarkVideo);
+		if (videoItem) toggleBookmark(videoItem);
+		return;
+	}
 	const link = event.target.closest('[data-video-id]');
 	if (!link) return;
 	const video = videos.find(item => item.id === link.dataset.videoId);

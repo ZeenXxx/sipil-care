@@ -50,6 +50,7 @@ const resourceDescription = document.getElementById('resourceDescription');
 const resourceAuthor = document.getElementById('resourceAuthor');
 const resourceDate = document.getElementById('resourceDate');
 const resourceThumb = document.getElementById('resourceThumb');
+const resourceStatus = document.getElementById('resourceStatus');
 const resourceType = document.getElementById('resourceType');
 const resourceFile = document.getElementById('resourceFile');
 
@@ -60,6 +61,7 @@ const softwareDescription = document.getElementById('softwareDescription');
 const softwareAuthor = document.getElementById('softwareAuthor');
 const softwareDate = document.getElementById('softwareDate');
 const softwareThumb = document.getElementById('softwareThumb');
+const softwareStatus = document.getElementById('softwareStatus');
 const softwareFile = document.getElementById('softwareFile');
 const softwareSearch = document.getElementById('softwareSearch');
 const softwareFilter = document.getElementById('softwareFilter');
@@ -74,6 +76,7 @@ const practicumDescription = document.getElementById('practicumDescription');
 const practicumAuthor = document.getElementById('practicumAuthor');
 const practicumDate = document.getElementById('practicumDate');
 const practicumThumb = document.getElementById('practicumThumb');
+const practicumStatus = document.getElementById('practicumStatus');
 const practicumType = document.getElementById('practicumType');
 const practicumFile = document.getElementById('practicumFile');
 const practicumSearch = document.getElementById('practicumSearch');
@@ -116,6 +119,7 @@ const videoDescription = document.getElementById('videoDescription');
 const videoCategoryInput = document.getElementById('videoCategoryInput');
 const videoChannel = document.getElementById('videoChannel');
 const videoYoutube = document.getElementById('videoYoutube');
+const videoStatus = document.getElementById('videoStatus');
 const videoSearch = document.getElementById('videoSearch');
 const videoFilter = document.getElementById('videoFilter');
 const videoTable = document.getElementById('videoTable');
@@ -126,6 +130,7 @@ const announcementPhotoUrl = document.getElementById('announcementPhotoUrl');
 const announcementPhotoPath = document.getElementById('announcementPhotoPath');
 const announcementTitle = document.getElementById('announcementTitle');
 const announcementType = document.getElementById('announcementType');
+const announcementStatus = document.getElementById('announcementStatus');
 const announcementDate = document.getElementById('announcementDate');
 const announcementDescription = document.getElementById('announcementDescription');
 const announcementImage = document.getElementById('announcementImage');
@@ -227,6 +232,9 @@ const adminStats = document.getElementById('adminStats');
 const dashboardHealthGrid = document.getElementById('dashboardHealthGrid');
 const backupContentData = document.getElementById('backupContentData');
 const backupAccountData = document.getElementById('backupAccountData');
+const restoreBackupFile = document.getElementById('restoreBackupFile');
+const restoreBackupPreview = document.getElementById('restoreBackupPreview');
+const restoreBackupBtn = document.getElementById('restoreBackupBtn');
 const practicumOverviewSummary = document.getElementById('practicumOverviewSummary');
 const practicumIssueList = document.getElementById('practicumIssueList');
 const guideRoleSummary = document.getElementById('guideRoleSummary');
@@ -243,6 +251,10 @@ const academicYearStart = document.getElementById('academicYearStart');
 const academicTerm = document.getElementById('academicTerm');
 const academicOverrideNote = document.getElementById('academicOverrideNote');
 const academicSettingsSummary = document.getElementById('academicSettingsSummary');
+const maintenanceForm = document.getElementById('maintenanceForm');
+const maintenanceEnabled = document.getElementById('maintenanceEnabled');
+const maintenanceTitle = document.getElementById('maintenanceTitle');
+const maintenanceMessage = document.getElementById('maintenanceMessage');
 const toastEl = document.getElementById('toast');
 const submitButton = resourceForm?.querySelector('button[type="submit"]');
 const adminSidebar = document.querySelector('.admin-sidebar');
@@ -269,7 +281,9 @@ let adminPracticumScopes = {};
 let studentAccounts = [];
 let studentCohorts = [];
 let academicSettings = {};
+let maintenanceSettings = {};
 let studentBulkPreviewRows = [];
+let pendingBackupRestore = null;
 let editingDocId = null;
 let editingVideoDocId = null;
 let editingSoftwareDocId = null;
@@ -286,6 +300,8 @@ const ADMIN_AUDIT_COLLECTION = 'admin_audit_logs';
 const ADMIN_ACTIVITY_COLLECTION = 'admin_activity';
 const RESOURCE_ACCESS_LOG_COLLECTION = 'resource_access_logs';
 const ACADEMIC_SETTINGS_PATH = `${ACADEMIC_SETTINGS_COLLECTION}/${ACADEMIC_SETTINGS_DOC}`;
+const SITE_SETTINGS_COLLECTION = 'site_settings';
+const MAINTENANCE_DOC = 'maintenance';
 const STUDENT_ONLINE_WINDOW = 2 * 60 * 1000;
 const ADMIN_ONLINE_WINDOW = 2 * 60 * 1000;
 const ADMIN_LOGIN_TRACKED_KEY = 'sipilcare_admin_login_tracked';
@@ -707,8 +723,23 @@ const auditActionLabels = {
   DELETE_STUDENT_ACCOUNT: 'Hapus akun mahasiswa',
   RESET_STUDENT_ACCOUNT: 'Reset akun mahasiswa',
   UPDATE_ACADEMIC_SETTINGS: 'Update kalender akademik',
-  EXPORT_DEVELOPER_BACKUP: 'Export backup developer'
+  EXPORT_DEVELOPER_BACKUP: 'Export backup developer',
+  RESTORE_DEVELOPER_BACKUP: 'Restore backup developer',
+  UPDATE_MAINTENANCE_MODE: 'Update maintenance mode'
 };
+
+const CONTENT_STATUS_LABELS = {
+  published: 'Published',
+  draft: 'Draft',
+  archived: 'Arsip'
+};
+
+const normalizeContentStatus = value => ['published', 'draft', 'archived'].includes(value) ? value : 'published';
+const statusBadge = value => {
+  const status = normalizeContentStatus(value);
+  return `<span class="badge status-${status}">${CONTENT_STATUS_LABELS[status]}</span>`;
+};
+const selectedStatus = select => normalizeContentStatus(select?.value || 'published');
 
 async function writeAuditLog({ action, targetType, targetId = '', targetTitle = '', detail = '', metadata = {} }) {
   try {
@@ -1197,6 +1228,13 @@ function renderAcademicSettingsForm() {
   }
 }
 
+function renderMaintenanceForm() {
+  if (!maintenanceForm) return;
+  if (maintenanceEnabled) maintenanceEnabled.checked = maintenanceSettings.enabled === true;
+  if (maintenanceTitle) maintenanceTitle.value = maintenanceSettings.title || 'SIPIL CARE sedang diperbarui';
+  if (maintenanceMessage) maintenanceMessage.value = maintenanceSettings.message || 'Kami sedang melakukan perbaikan sistem. Silakan coba beberapa saat lagi.';
+}
+
 const sha256 = async value => {
   const data = new TextEncoder().encode(value);
   const hash = await crypto.subtle.digest('SHA-256', data);
@@ -1566,12 +1604,13 @@ function practicumTableRender() {
         <td>${escapeText(targetCohortForPracticumResource(item) || 'Legacy')}</td>
         <td>Semester ${escapeText(item.semester || '-')}</td>
         <td>${escapeText(item.kind === 'P' ? 'Praktikum' : 'Studio')} / ${escapeText(item.type || 'PDF')}</td>
+        <td>${statusBadge(item.status)}</td>
         <td>${escapeText(item.date)}</td>
         <td><button class="action-btn" data-edit="${item.docId}">Edit</button><button class="action-btn danger" data-del="${item.docId}">Delete</button></td>
       </tr>
     `)
     .join('');
-  if (practicumTable) practicumTable.innerHTML = rows || '<tr><td colspan="7">Belum ada modul praktikum/studio.</td></tr>';
+  if (practicumTable) practicumTable.innerHTML = rows || '<tr><td colspan="8">Belum ada modul praktikum/studio.</td></tr>';
 }
 
 function practicumCourseOptions() {
@@ -2078,7 +2117,8 @@ function exportDeveloperBackup(type) {
     type
   };
 
-  const payload = type === 'accounts'
+  const isAccountBackup = type === 'accounts' || type === 'accounts-logs';
+  const payload = isAccountBackup
     ? {
       ...base,
       adminRoles,
@@ -2107,10 +2147,112 @@ function exportDeveloperBackup(type) {
   writeAuditLog({
     action: 'EXPORT_DEVELOPER_BACKUP',
     targetType: 'backup',
-    targetTitle: type === 'accounts' ? 'Backup akun dan log' : 'Backup konten dan praktikum',
+    targetTitle: isAccountBackup ? 'Backup akun dan log' : 'Backup konten dan praktikum',
     detail: `Developer mengunduh backup ${type}.`
   }).catch(error => console.warn('Audit backup failed:', error));
   toast('Backup JSON berhasil dibuat.');
+}
+
+const restoreCollections = [
+  { key: 'resources', collectionName: 'resources' },
+  { key: 'practicumModules', collectionName: 'practicum_studio_modules' },
+  { key: 'practicumRosters', collectionName: PRACTICUM_ROSTER_COLLECTION },
+  { key: 'practicumAttendanceSessions', collectionName: PRACTICUM_ATTENDANCE_SESSION_COLLECTION },
+  { key: 'practicumAttendanceRecords', collectionName: PRACTICUM_ATTENDANCE_RECORD_COLLECTION },
+  { key: 'videos', collectionName: 'videos' },
+  { key: 'announcements', collectionName: 'announcements' },
+  { key: 'studentActivity', collectionName: 'student_activity_backup' },
+  { key: 'adminActivity', collectionName: ADMIN_ACTIVITY_COLLECTION },
+  { key: 'resourceAccessLogs', collectionName: RESOURCE_ACCESS_LOG_COLLECTION },
+  { key: 'auditLogs', collectionName: ADMIN_AUDIT_COLLECTION }
+];
+
+const cleanBackupItem = item => {
+  const { docId, id, ...data } = item || {};
+  return data;
+};
+
+const backupItemId = item => String(item?.docId || item?.id || '').trim();
+
+function summarizeBackupPayload(payload) {
+  if (!payload || typeof payload !== 'object') return [];
+  return restoreCollections
+    .map(item => ({ ...item, count: Array.isArray(payload[item.key]) ? payload[item.key].length : 0 }))
+    .filter(item => item.count > 0);
+}
+
+function updateBackupRestorePreview(payload) {
+  if (!restoreBackupPreview) return;
+  const summary = summarizeBackupPayload(payload);
+  if (!summary.length) {
+    restoreBackupPreview.textContent = 'File JSON terbaca, tetapi tidak ada koleksi yang bisa direstore.';
+    return;
+  }
+  restoreBackupPreview.innerHTML = summary.map(item => `<span>${escapeText(item.key)}: ${item.count}</span>`).join('');
+}
+
+async function readBackupJson(file) {
+  const text = await file.text();
+  const payload = JSON.parse(text);
+  if (!payload || typeof payload !== 'object') throw new Error('Format backup tidak valid.');
+  return payload;
+}
+
+async function restoreDeveloperBackup() {
+  if (currentAdmin().role !== 'developer') {
+    toast('Restore hanya tersedia untuk developer.');
+    return;
+  }
+  const payload = pendingBackupRestore;
+  const summary = summarizeBackupPayload(payload);
+  if (!summary.length) {
+    toast('Tidak ada data backup yang bisa direstore.');
+    return;
+  }
+  const total = summary.reduce((sum, item) => sum + item.count, 0);
+  if (!confirm(`Restore ${total} dokumen ke server Firestore? Data dengan ID yang sama akan ditimpa.`)) return;
+
+  try {
+    if (restoreBackupBtn) restoreBackupBtn.disabled = true;
+    let batch = writeBatch(db);
+    let batchCount = 0;
+    let restored = 0;
+    const commit = async () => {
+      if (!batchCount) return;
+      await batch.commit();
+      batch = writeBatch(db);
+      batchCount = 0;
+    };
+
+    for (const config of restoreCollections) {
+      const rows = Array.isArray(payload[config.key]) ? payload[config.key] : [];
+      for (const item of rows) {
+        const id = backupItemId(item);
+        if (!id) continue;
+        batch.set(doc(db, config.collectionName, id), cleanBackupItem(item), { merge: true });
+        batchCount++;
+        restored++;
+        if (batchCount >= 430) await commit();
+      }
+    }
+    await commit();
+
+    if (payload.academicSettings && typeof payload.academicSettings === 'object') {
+      await setDoc(doc(db, ACADEMIC_SETTINGS_COLLECTION, ACADEMIC_SETTINGS_DOC), payload.academicSettings, { merge: true });
+    }
+    await writeAuditLog({
+      action: 'RESTORE_DEVELOPER_BACKUP',
+      targetType: 'backup',
+      targetTitle: 'Restore backup JSON',
+      detail: `${restored} dokumen direstore ke server.`
+    });
+    toast(`Restore selesai. ${restored} dokumen diproses.`);
+  } catch (error) {
+    console.error('Restore backup failed:', error);
+    toast(error.message || 'Gagal restore backup.');
+  } finally {
+    if (restoreBackupBtn) restoreBackupBtn.disabled = false;
+  }
 }
 
 async function toggleAttendanceSession(sessionId) {
@@ -2241,12 +2383,13 @@ function table() {
         <td>${escapeText(r.title)}</td>
         <td>${escapeText(r.category)}</td>
         <td>${escapeText(r.type)}</td>
+        <td>${statusBadge(r.status)}</td>
         <td>${escapeText(r.date)}</td>
         <td><button class="action-btn" data-edit="${r.docId}">Edit</button><button class="action-btn danger" data-del="${r.docId}">Delete</button></td>
       </tr>
     `)
     .join('');
-  resourceTable.innerHTML = rows || '<tr><td colspan="5">Tidak ada resource.</td></tr>';
+  resourceTable.innerHTML = rows || '<tr><td colspan="6">Tidak ada resource.</td></tr>';
 }
 
 function softwareTableRender() {
@@ -2261,12 +2404,13 @@ function softwareTableRender() {
         <td>${escapeText(r.title)}</td>
         <td>${escapeText(r.category)}</td>
         <td>${escapeText(r.type || r.element || 'Software')}</td>
+        <td>${statusBadge(r.status)}</td>
         <td>${escapeText(r.date)}</td>
         <td><button class="action-btn" data-edit="${r.docId}">Edit</button><button class="action-btn danger" data-del="${r.docId}">Delete</button></td>
       </tr>
     `)
     .join('');
-  if (softwareTable) softwareTable.innerHTML = rows || '<tr><td colspan="5">Tidak ada software.</td></tr>';
+  if (softwareTable) softwareTable.innerHTML = rows || '<tr><td colspan="6">Tidak ada software.</td></tr>';
 }
 
 function videoTableRender() {
@@ -2280,11 +2424,12 @@ function videoTableRender() {
         <td>${escapeText(v.title)}</td>
         <td>${escapeText(v.category)}</td>
         <td>${escapeText(v.channel || v.duration || 'Channel')}</td>
+        <td>${statusBadge(v.status)}</td>
         <td><button class="action-btn" data-edit="${v.docId}">Edit</button><button class="action-btn danger" data-del="${v.docId}">Delete</button></td>
       </tr>
     `)
     .join('');
-  if (videoTable) videoTable.innerHTML = rows || '<tr><td colspan="4">Tidak ada video.</td></tr>';
+  if (videoTable) videoTable.innerHTML = rows || '<tr><td colspan="5">Tidak ada video.</td></tr>';
 }
 
 function announcementTableRender() {
@@ -2297,13 +2442,14 @@ function announcementTableRender() {
       <tr>
         <td>${escapeText(item.title)}</td>
         <td>${escapeText(item.type)}</td>
+        <td>${statusBadge(item.status)}</td>
         <td>${escapeText(item.date)}</td>
         <td>${item.photoUrl ? '<span class="badge">Ada foto</span>' : '<span class="badge">Tanpa foto</span>'}</td>
         <td><button class="action-btn" data-edit="${item.docId}">Edit</button><button class="action-btn danger" data-del="${item.docId}">Delete</button></td>
       </tr>
     `)
     .join('');
-  if (announcementTable) announcementTable.innerHTML = rows || '<tr><td colspan="5">Belum ada pemberitahuan.</td></tr>';
+  if (announcementTable) announcementTable.innerHTML = rows || '<tr><td colspan="6">Belum ada pemberitahuan.</td></tr>';
 }
 
 function messageTableRender() {
@@ -2776,6 +2922,7 @@ const resetForm = () => {
   resourceForm.reset();
   editingDocId = null;
   if (resourceId) resourceId.value = '';
+  if (resourceStatus) resourceStatus.value = 'published';
   if (submitButton) submitButton.textContent = 'Simpan Resource';
 };
 
@@ -2783,6 +2930,7 @@ const resetSoftwareForm = () => {
   if (!softwareForm) return;
   softwareForm.reset();
   editingSoftwareDocId = null;
+  if (softwareStatus) softwareStatus.value = 'published';
   const btn = softwareForm.querySelector('button[type="submit"]');
   if (btn) btn.textContent = 'Simpan Software';
 };
@@ -2793,6 +2941,7 @@ const resetPracticumForm = () => {
   practicumForm.reset();
   if (practicumId) practicumId.value = '';
   if (practicumTargetCohort) practicumTargetCohort.value = '';
+  if (practicumStatus) practicumStatus.value = 'published';
   applyPracticumTargetDefaults(practicumCategory, practicumTargetCohort, null, true);
   editingPracticumDocId = null;
   const btn = practicumForm.querySelector('button[type="submit"]');
@@ -2801,6 +2950,7 @@ const resetPracticumForm = () => {
 const resetVideoForm = () => {
   if (!videoForm) return;
   videoForm.reset();
+  if (videoStatus) videoStatus.value = 'published';
   editingVideoDocId = null;
 };
 
@@ -2810,6 +2960,7 @@ const resetAnnouncementForm = () => {
   if (announcementId) announcementId.value = '';
   if (announcementPhotoUrl) announcementPhotoUrl.value = '';
   if (announcementPhotoPath) announcementPhotoPath.value = '';
+  if (announcementStatus) announcementStatus.value = 'published';
   editingAnnouncementDocId = null;
   const btn = announcementForm.querySelector('button[type="submit"]');
   if (btn) btn.textContent = 'Simpan Pemberitahuan';
@@ -2830,6 +2981,7 @@ on(resourceForm, 'submit', async e => {
       author: resourceAuthor.value.trim(),
       date: resourceDate.value,
       thumbnail: resourceThumb.value.trim() || resourceCategory.value.slice(0, 2).toUpperCase(),
+      status: selectedStatus(resourceStatus),
       type: resourceType.value,
       file: resourceFile.value.trim()
     };
@@ -2853,13 +3005,15 @@ on(resourceForm, 'submit', async e => {
         targetTitle: data.title,
         detail: `Resource kategori ${data.category} ditambahkan.`
       });
-      notifyStudents({
-        title: 'Resource baru di SIPIL CARE',
-        body: `${data.title} sudah tersedia di Resources.`,
-        url: '/pages/resources.html',
-        tag: `resource-${created.id}`,
-        type: 'resource'
-      });
+      if (data.status === 'published') {
+        notifyStudents({
+          title: 'Resource baru di SIPIL CARE',
+          body: `${data.title} sudah tersedia di Resources.`,
+          url: '/pages/resources.html',
+          tag: `resource-${created.id}`,
+          type: 'resources'
+        });
+      }
       toast('Resource berhasil diupload.');
     }
 
@@ -2895,6 +3049,7 @@ on(softwareForm, 'submit', async e => {
       author: softwareAuthor.value.trim(),
       date: softwareDate.value,
       thumbnail: softwareThumb.value.trim() || 'SW',
+      status: selectedStatus(softwareStatus),
       file: softwareFile.value.trim()
     };
 
@@ -2917,13 +3072,15 @@ on(softwareForm, 'submit', async e => {
         targetTitle: data.title,
         detail: `Software kategori ${data.type} ditambahkan.`
       });
-      notifyStudents({
-        title: 'Software baru di SIPIL CARE',
-        body: `${data.title} sudah tersedia di Software.`,
-        url: '/pages/software.html',
-        tag: `software-${created.id}`,
-        type: 'software'
-      });
+      if (data.status === 'published') {
+        notifyStudents({
+          title: 'Software baru di SIPIL CARE',
+          body: `${data.title} sudah tersedia di Software.`,
+          url: '/pages/software.html',
+          tag: `software-${created.id}`,
+          type: 'software'
+        });
+      }
       toast('Software berhasil diupload.');
     }
 
@@ -2958,6 +3115,7 @@ on(practicumForm, 'submit', async e => {
       author: practicumAuthor.value.trim(),
       date: practicumDate.value,
       thumbnail: practicumThumb.value.trim() || meta.kind,
+      status: selectedStatus(practicumStatus),
       type: practicumType.value,
       file: practicumFile.value.trim()
     };
@@ -2981,14 +3139,16 @@ on(practicumForm, 'submit', async e => {
         targetTitle: data.title,
         detail: `Modul ${data.category} untuk angkatan ${targetAngkatan} ditambahkan.`
       });
-      notifyStudents({
-        title: 'Modul praktikum/studio baru',
-        body: `${data.title} untuk angkatan ${targetAngkatan} sudah tersedia.`,
-        url: '/pages/praktikum-studio.html',
-        tag: `practicum-${created.id}`,
-        type: 'practicum',
-        audience: { angkatan: targetAngkatan }
-      });
+      if (data.status === 'published') {
+        notifyStudents({
+          title: 'Modul praktikum/studio baru',
+          body: `${data.title} untuk angkatan ${targetAngkatan} sudah tersedia.`,
+          url: '/pages/praktikum-studio.html',
+          tag: `practicum-${created.id}`,
+          type: 'practicum_studio',
+          audience: { angkatan: targetAngkatan }
+        });
+      }
       toast('Modul praktikum/studio berhasil diupload.');
     }
 
@@ -3166,7 +3326,8 @@ on(videoForm, 'submit', async e => {
       category: videoCategoryInput.value.trim(),
       channel: videoChannel.value.trim(),
       duration: videoChannel.value.trim(),
-      youtube: videoYoutube.value.trim()
+      youtube: videoYoutube.value.trim(),
+      status: selectedStatus(videoStatus)
     };
 
     if (editingVideoDocId) {
@@ -3188,13 +3349,15 @@ on(videoForm, 'submit', async e => {
         targetTitle: data.title,
         detail: `Video kategori ${data.category} ditambahkan.`
       });
-      notifyStudents({
-        title: 'Video baru di SIPIL CARE',
-        body: `${data.title} sudah tersedia di Videos.`,
-        url: '/pages/videos.html',
-        tag: `video-${created.id}`,
-        type: 'video'
-      });
+      if (data.status === 'published') {
+        notifyStudents({
+          title: 'Video baru di SIPIL CARE',
+          body: `${data.title} sudah tersedia di Videos.`,
+          url: '/pages/videos.html',
+          tag: `video-${created.id}`,
+          type: 'videos'
+        });
+      }
       toast('Video berhasil diupload.');
     }
 
@@ -3224,6 +3387,7 @@ on(announcementForm, 'submit', async e => {
       description: announcementDescription.value.trim(),
       photoUrl: uploaded.photoUrl || '',
       photoPath: uploaded.photoPath || '',
+      status: selectedStatus(announcementStatus),
       updatedAt: new Date().toISOString()
     };
 
@@ -3249,13 +3413,15 @@ on(announcementForm, 'submit', async e => {
         targetTitle: data.title,
         detail: `Pemberitahuan tipe ${data.type} ditambahkan.`
       });
-      notifyStudents({
-        title: 'Pemberitahuan baru',
-        body: `${data.title} sudah dipublikasikan di SIPIL CARE.`,
-        url: '/index.html',
-        tag: `announcement-${created.id}`,
-        type: 'announcement'
-      });
+      if (data.status === 'published') {
+        notifyStudents({
+          title: 'Pemberitahuan baru',
+          body: `${data.title} sudah dipublikasikan di SIPIL CARE.`,
+          url: '/index.html',
+          tag: `announcement-${created.id}`,
+          type: 'announcement'
+        });
+      }
       toast('Pemberitahuan berhasil diupload.');
     }
 
@@ -3303,6 +3469,7 @@ on(resourceTable, 'click', async e => {
       resourceAuthor.value = resource.author;
       resourceDate.value = resource.date;
       resourceThumb.value = resource.thumbnail;
+      if (resourceStatus) resourceStatus.value = normalizeContentStatus(resource.status);
       resourceType.value = resource.type;
       resourceFile.value = resource.file;
       editingDocId = docId;
@@ -3346,6 +3513,7 @@ on(softwareTable, 'click', async e => {
       softwareAuthor.value = item.author;
       softwareDate.value = item.date;
       softwareThumb.value = item.thumbnail;
+      if (softwareStatus) softwareStatus.value = normalizeContentStatus(item.status);
       softwareFile.value = item.file;
       editingSoftwareDocId = docId;
       softwareForm.scrollIntoView({ behavior: 'smooth' });
@@ -3398,6 +3566,7 @@ on(practicumTable, 'click', async e => {
       practicumAuthor.value = item.author || '';
       practicumDate.value = item.date || '';
       practicumThumb.value = item.thumbnail || '';
+      if (practicumStatus) practicumStatus.value = normalizeContentStatus(item.status);
       practicumType.value = item.type || 'PDF';
       practicumFile.value = item.file || '';
       editingPracticumDocId = docId;
@@ -3524,6 +3693,7 @@ on(videoTable, 'click', async e => {
       videoCategoryInput.value = video.category;
       videoChannel.value = video.channel || video.duration || '';
       videoYoutube.value = video.youtube;
+      if (videoStatus) videoStatus.value = normalizeContentStatus(video.status);
       editingVideoDocId = docId;
       videoForm.scrollIntoView({ behavior: 'smooth' });
     }
@@ -3562,6 +3732,7 @@ on(announcementTable, 'click', async e => {
       announcementTitle.value = item.title || '';
       announcementType.value = item.type || 'Info HMS';
       announcementDate.value = item.date || '';
+      if (announcementStatus) announcementStatus.value = normalizeContentStatus(item.status);
       announcementDescription.value = item.description || '';
       announcementPhotoUrl.value = item.photoUrl || '';
       announcementPhotoPath.value = item.photoPath || '';
@@ -4371,6 +4542,42 @@ on(academicSettingsForm, 'submit', async e => {
   }
 });
 
+on(maintenanceForm, 'submit', async e => {
+  e.preventDefault();
+  if (currentAdmin().role !== 'developer') {
+    toast('Maintenance mode hanya bisa diatur developer.');
+    return;
+  }
+
+  const payload = {
+    enabled: maintenanceEnabled?.checked === true,
+    title: String(maintenanceTitle?.value || 'SIPIL CARE sedang diperbarui').trim(),
+    message: String(maintenanceMessage?.value || 'Kami sedang melakukan perbaikan sistem. Silakan coba beberapa saat lagi.').trim(),
+    updatedAt: new Date().toISOString(),
+    updatedBy: currentAdmin().username
+  };
+
+  try {
+    const submit = maintenanceForm.querySelector('button[type="submit"]');
+    if (submit) submit.disabled = true;
+    await setDoc(doc(db, SITE_SETTINGS_COLLECTION, MAINTENANCE_DOC), payload, { merge: true });
+    await writeAuditLog({
+      action: 'UPDATE_MAINTENANCE_MODE',
+      targetType: 'site_settings',
+      targetId: `${SITE_SETTINGS_COLLECTION}/${MAINTENANCE_DOC}`,
+      targetTitle: 'Maintenance mode',
+      detail: payload.enabled ? 'Maintenance mode diaktifkan.' : 'Maintenance mode dimatikan.'
+    });
+    toast('Pengaturan maintenance berhasil disimpan.');
+  } catch (error) {
+    console.error('Save maintenance settings error:', error);
+    toast('Gagal menyimpan maintenance mode.');
+  } finally {
+    const submit = maintenanceForm.querySelector('button[type="submit"]');
+    if (submit) submit.disabled = false;
+  }
+});
+
 on(studentEditCancel, 'click', () => resetStudentEditForm());
 on(studentAccountSearch, 'input', () => studentAccountTableRender());
 on(studentAccountCohortFilter, 'change', () => studentAccountTableRender());
@@ -4396,6 +4603,25 @@ on(rosterExport, 'click', () => exportRosterExcel());
 on(sessionExport, 'click', () => exportSessionExcel());
 on(backupContentData, 'click', () => exportDeveloperBackup('content-practicum'));
 on(backupAccountData, 'click', () => exportDeveloperBackup('accounts-logs'));
+on(restoreBackupFile, 'change', async () => {
+  const file = restoreBackupFile.files?.[0];
+  pendingBackupRestore = null;
+  if (restoreBackupBtn) restoreBackupBtn.disabled = true;
+  if (!file) {
+    if (restoreBackupPreview) restoreBackupPreview.textContent = 'Belum ada file backup dipilih.';
+    return;
+  }
+  try {
+    pendingBackupRestore = await readBackupJson(file);
+    updateBackupRestorePreview(pendingBackupRestore);
+    if (restoreBackupBtn) restoreBackupBtn.disabled = summarizeBackupPayload(pendingBackupRestore).length === 0;
+  } catch (error) {
+    console.error('Read backup JSON failed:', error);
+    if (restoreBackupPreview) restoreBackupPreview.textContent = error.message || 'File backup tidak valid.';
+    toast('File backup tidak valid.');
+  }
+});
+on(restoreBackupBtn, 'click', () => restoreDeveloperBackup());
 on(videoSearch, 'input', () => videoTableRender());
 on(videoFilter, 'change', () => videoTableRender());
 on(announcementSearch, 'input', () => announcementTableRender());
@@ -4759,6 +4985,13 @@ onSnapshot(doc(db, ACADEMIC_SETTINGS_COLLECTION, ACADEMIC_SETTINGS_DOC), snapsho
   if (academicSettingsSummary) {
     academicSettingsSummary.innerHTML = '<article><strong>Gagal memuat kalender akademik.</strong><small>Coba refresh dashboard admin.</small></article>';
   }
+});
+
+onSnapshot(doc(db, SITE_SETTINGS_COLLECTION, MAINTENANCE_DOC), snapshot => {
+  maintenanceSettings = snapshot.exists() ? snapshot.data() : {};
+  renderMaintenanceForm();
+}, err => {
+  console.error('Firestore maintenance settings error:', err);
 });
 
 const videosQuery = query(collection(db, 'videos'), orderBy('title'));

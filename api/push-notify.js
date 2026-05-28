@@ -70,6 +70,7 @@ const valueOf = value => {
   if ('booleanValue' in value) return value.booleanValue;
   if ('integerValue' in value) return Number(value.integerValue);
   if ('doubleValue' in value) return Number(value.doubleValue);
+  if ('arrayValue' in value) return (value.arrayValue.values || []).map(valueOf);
   return '';
 };
 
@@ -103,12 +104,13 @@ const firestoreRunQuery = async ({ projectId, token, collectionId }) => {
   return data.map(item => firestoreDocumentFields(item.document)).filter(item => item.token);
 };
 
-const filterRecipients = (recipients, audience = {}) => {
+const filterRecipients = (recipients, audience = {}, notificationType = 'update') => {
   const nims = new Set((audience.nims || []).map(item => String(item)));
   const angkatan = audience.angkatan ? String(audience.angkatan) : '';
   return recipients.filter(item => {
     if (nims.size && !nims.has(String(item.nim || ''))) return false;
     if (!nims.size && angkatan && String(item.angkatan || '') !== angkatan) return false;
+    if (Array.isArray(item.categories) && item.categories.length && !item.categories.includes(notificationType)) return false;
     return true;
   });
 };
@@ -188,7 +190,7 @@ module.exports = async (req, res) => {
       token,
       collectionId: TOKEN_COLLECTIONS[audienceType]
     });
-    const recipients = filterRecipients(allRecipients, body.audience || {});
+    const recipients = filterRecipients(allRecipients, body.audience || {}, body.type || 'update');
     if (!recipients.length) {
       json(res, 200, { ok: true, sent: 0, failed: 0, message: 'Tidak ada perangkat tujuan yang sudah mengaktifkan notifikasi.' });
       return;

@@ -3,7 +3,16 @@ const navLinks = document.querySelector('.nav-links');
 const pathName = location.pathname.replace(/\\/g, '/');
 const isPagesPath = pathName.includes('/pages/') && !pathName.includes('/pages/admin/');
 const isToolsPath = pathName.includes('/tools/');
+const siteRootPrefix = (isPagesPath || isToolsPath) ? '../' : '';
+const siteRootUrl = new URL(siteRootPrefix || './', location.href);
 const CLIENT_ERROR_KEY = 'sipilcare_client_errors';
+const escapeHtml = value => String(value || '').replace(/[&<>"']/g, char => ({
+  '&': '&amp;',
+  '<': '&lt;',
+  '>': '&gt;',
+  '"': '&quot;',
+  "'": '&#39;'
+}[char]));
 
 const saveClientError = payload => {
   try {
@@ -39,6 +48,58 @@ window.addEventListener('unhandledrejection', event => {
     stack: event.reason?.stack
   });
 });
+
+const shouldSkipMaintenance = () => {
+  const path = location.pathname.toLowerCase();
+  return path.includes('/pages/admin/')
+    || path.endsWith('/login.html')
+    || path.endsWith('/student-login.html')
+    || path.includes('panel-hms-sipil-2026');
+};
+
+const renderMaintenanceOverlay = settings => {
+  if (document.querySelector('.maintenance-overlay')) return;
+  const overlay = document.createElement('div');
+  overlay.className = 'maintenance-overlay';
+  overlay.innerHTML = `
+    <section class="maintenance-dialog" role="dialog" aria-modal="true">
+      <img src="${siteRootPrefix}assets/images/logo-hms.png" alt="Logo HMS">
+      <span>Maintenance Mode</span>
+      <h1>${escapeHtml(settings.title || 'SIPIL CARE sedang diperbarui')}</h1>
+      <p>${escapeHtml(settings.message || 'Kami sedang melakukan perbaikan sistem. Silakan coba beberapa saat lagi.')}</p>
+    </section>
+  `;
+  document.body.appendChild(overlay);
+  document.documentElement.classList.add('maintenance-active');
+};
+
+const checkMaintenanceMode = async () => {
+  if (shouldSkipMaintenance()) return;
+  try {
+    const [{ app }, firestore] = await Promise.all([
+      import(new URL('js/firebase-config.js', siteRootUrl).href),
+      import('https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js')
+    ]);
+    const snapshot = await firestore.getDoc(firestore.doc(firestore.getFirestore(app), 'site_settings', 'maintenance'));
+    const settings = snapshot.exists() ? snapshot.data() : {};
+    if (settings.enabled === true) renderMaintenanceOverlay(settings);
+  } catch (error) {
+    try {
+      const response = await fetch(new URL('data/maintenance.json', siteRootUrl).href, { cache: 'no-store' });
+      if (!response.ok) return;
+      const settings = await response.json();
+      if (settings.enabled === true) renderMaintenanceOverlay(settings);
+    } catch {
+      saveClientError({
+        type: 'maintenance',
+        message: error.message || 'Maintenance check failed',
+        source: 'navbar.js'
+      });
+    }
+  }
+};
+
+checkMaintenanceMode();
 
 const resolveSitePath = path => {
   if (/^https?:\/\//i.test(path) || path.startsWith('#')) return path;

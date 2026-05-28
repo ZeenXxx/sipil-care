@@ -276,7 +276,7 @@ async function loadHomeVideos() {
   try {
     const videosRef = query(collection(db, 'videos'), orderBy('title'));
     const snapshot = await getDocs(videosRef);
-    const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })).filter(item => (item.status || 'published') === 'published');
     if (countTarget) countTarget.textContent = data.length;
     target.innerHTML = data.slice(0, 3).map(videoCard).join('') || '<div class="empty span-2">Belum ada video.</div>';
   } catch (err) {
@@ -301,7 +301,7 @@ async function loadAnnouncements() {
   try {
     const announcementsRef = query(collection(db, 'announcements'), orderBy('date', 'desc'));
     const snapshot = await getDocs(announcementsRef);
-    const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })).filter(item => (item.status || 'published') === 'published');
     target.innerHTML = announcementCarousel((data.length ? data : fallbackAnnouncements).slice(0, 5));
     setupAnnouncementCarousel(target);
   } catch (err) {

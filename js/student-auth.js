@@ -397,6 +397,11 @@
       location.href = `${prefix}student-login.html?mode=change&next=${encodeURIComponent(nextTarget)}`;
     });
 
+    const dashboardLink = document.createElement("a");
+    dashboardLink.className = "student-account-action";
+    dashboardLink.href = `${prefix}pages/student-dashboard.html`;
+    dashboardLink.textContent = "Dashboard Saya";
+
     const logout = document.createElement("button");
     logout.className = "student-account-action danger";
     logout.type = "button";
@@ -433,6 +438,7 @@
       if (event.key === "Escape") closeAccountMenu();
     });
 
+    menu.appendChild(dashboardLink);
     menu.appendChild(passwordButton);
     menu.appendChild(logout);
     account.appendChild(accountButton);

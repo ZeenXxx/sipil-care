@@ -10,7 +10,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-title" content="SIPIL CARE">
     <link rel="stylesheet" href="../../css/style.css?v=26">
-    <link rel="stylesheet" href="../../css/admin.css?v=45">
+    <link rel="stylesheet" href="../../css/admin.css?v=46">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -194,6 +194,33 @@
           <article><strong>Konten</strong><span>Resource, software, video, pemberitahuan, modul praktikum, roster, sesi, dan record absen.</span></article>
           <article><strong>Akun &amp; log</strong><span>Role admin, akun admin, akun mahasiswa, aktivitas online, history akses, dan audit log.</span></article>
         </div>
+        <div class="admin-restore-box">
+          <div>
+            <h4>Restore backup JSON</h4>
+            <p class="small-text">Khusus developer. File backup konten dapat dikembalikan ke Firestore jika data tidak sengaja terhapus.</p>
+          </div>
+          <input class="control file-control" id="restoreBackupFile" type="file" accept="application/json,.json">
+          <div class="backup-restore-preview" id="restoreBackupPreview">Belum ada file backup dipilih.</div>
+          <button class="action-btn danger" id="restoreBackupBtn" type="button" disabled>Restore ke Server</button>
+        </div>
+      </section>
+
+      <section id="maintenance-settings" class="admin-card" data-developer-only="true">
+        <div class="admin-table-head">
+          <div>
+            <h3>Maintenance Mode</h3>
+            <p class="small-text">Aktifkan saat ada perbaikan besar agar mahasiswa melihat halaman informasi sementara.</p>
+          </div>
+        </div>
+        <form class="academic-settings-form" id="maintenanceForm">
+          <label class="admin-mini-check academic-override-check">
+            <input id="maintenanceEnabled" type="checkbox">
+            <span>Aktifkan maintenance mode</span>
+          </label>
+          <input class="control" id="maintenanceTitle" placeholder="Judul maintenance" value="SIPIL CARE sedang diperbarui">
+          <textarea class="control textarea" id="maintenanceMessage" placeholder="Pesan yang tampil untuk mahasiswa">Kami sedang melakukan perbaikan sistem. Silakan coba beberapa saat lagi.</textarea>
+          <button class="btn btn-primary" type="submit">Simpan Maintenance</button>
+        </form>
       </section>
 
       <section id="admin-activity" class="admin-card" data-admin-permission="dashboard">
@@ -318,7 +345,7 @@
     <script src="../../js/student-config.js?v=20"></script>
     <script src="../../js/auth.js?v=30"></script>
     <script src="../../js/push-config.js?v=1"></script>
-    <script type="module" src="../../js/admin-panel.js?v=61"></script>
+    <script type="module" src="../../js/admin-panel.js?v=62"></script>
       <script src="../../js/pwa.js?v=2"></script>
   </body>
 </html>
