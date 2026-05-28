@@ -51,11 +51,28 @@ const path = location.pathname;
 const inAdminPages = path.includes('/pages/admin/') || path.includes('\\pages\\admin\\');
 const inPagesFolder = path.includes('/pages/') || path.includes('\\pages\\');
 const rootPrefix = inAdminPages ? '../../' : inPagesFolder ? '../' : '';
-const loginPagePath = `${rootPrefix}pages/admin-panel.html`;
+const cleanRoute = value => {
+  const clean = String(value || '')
+    .replace(/(^|\/)index\.html(?=([?#]|$))/g, '$1')
+    .replace(/\.html(?=([?#]|$))/g, '');
+  return clean || './';
+};
+const adminPageName = value => {
+  const page = String(value || '').split('/').pop() || 'dashboard';
+  return page.endsWith('.html') ? page : `${page}.html`;
+};
+const adminPagePath = page => cleanRoute(`${rootPrefix}pages/admin/${page || 'dashboard.html'}`);
+const loginPagePath = cleanRoute(`${rootPrefix}login.html`);
 const username = document.getElementById('username');
 const password = document.getElementById('password');
 
 const setupPasswordToggles = (root = document) => {
+  root.querySelectorAll('a[href]').forEach(link => {
+    const href = link.getAttribute('href') || '';
+    if (!href || href.startsWith('#') || /^(https?:|mailto:|tel:|javascript:)/i.test(href)) return;
+    const cleanHref = cleanRoute(href);
+    if (cleanHref !== href) link.setAttribute('href', cleanHref);
+  });
   root.querySelectorAll('[data-password-toggle]').forEach(button => {
     if (button.dataset.passwordToggleReady === 'true') return;
     const input = button.closest('.password-field')?.querySelector('input');
@@ -138,8 +155,8 @@ function clearAdminSession() {
   localStorage.removeItem('sipilcare_admin_login_tracked');
 }
 
-const currentAdminPage = () => path.split('/').pop() || 'dashboard.html';
-const firstAllowedPath = profile => `${rootPrefix}pages/admin/${normalizeAdminProfile(profile).allowedPages[0] || 'dashboard.html'}`;
+const currentAdminPage = () => adminPageName(path);
+const firstAllowedPath = profile => adminPagePath(normalizeAdminProfile(profile).allowedPages[0] || 'dashboard.html');
 const canAccessCurrentAdminPage = profile => {
   if (!inAdminPages) return true;
   const page = currentAdminPage();
@@ -282,8 +299,10 @@ const validateAdminSession = async () => {
 };
 
 const guardAdminPage = async () => {
-  const needsAdmin = path.includes('panel-hms-sipil-2026.html') || inAdminPages;
-  const onLoginPage = path.includes('admin-panel.html') || path.includes('login.html');
+  const route = path.split('/').pop() || 'index';
+  const routeName = route.replace(/\.html$/, '');
+  const needsAdmin = path.includes('panel-hms-sipil-2026') || inAdminPages;
+  const onLoginPage = routeName === 'admin-panel' || routeName === 'login';
   if (!needsAdmin && !onLoginPage) return;
 
   try {

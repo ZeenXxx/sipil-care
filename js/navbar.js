@@ -6,6 +6,16 @@ const isToolsPath = pathName.includes('/tools/');
 const siteRootPrefix = (isPagesPath || isToolsPath) ? '../' : '';
 const siteRootUrl = new URL(siteRootPrefix || './', location.href);
 const CLIENT_ERROR_KEY = 'sipilcare_client_errors';
+const cleanInternalUrl = value => {
+  const clean = String(value || '')
+    .replace(/(^|\/)index\.html(?=([?#]|$))/g, '$1')
+    .replace(/\.html(?=([?#]|$))/g, '');
+  return clean || './';
+};
+const pageName = value => {
+  const page = String(value || '').split('/').pop() || 'index';
+  return page.endsWith('.html') ? page : `${page}.html`;
+};
 const escapeHtml = value => String(value || '').replace(/[&<>"']/g, char => ({
   '&': '&amp;',
   '<': '&lt;',
@@ -64,7 +74,9 @@ const shouldSkipMaintenance = () => {
   const path = location.pathname.toLowerCase();
   return path.includes('/pages/admin/')
     || path.endsWith('/login.html')
+    || path.endsWith('/login')
     || path.endsWith('/student-login.html')
+    || path.endsWith('/student-login')
     || path.includes('panel-hms-sipil-2026');
 };
 
@@ -114,18 +126,29 @@ checkMaintenanceMode();
 
 const resolveSitePath = path => {
   if (/^https?:\/\//i.test(path) || path.startsWith('#')) return path;
+  let resolved = path;
   if (path.startsWith('pages/')) {
-    if (isPagesPath) return path.replace(/^pages\//, '');
-    if (isToolsPath) return `../${path}`;
-    return path;
+    if (isPagesPath) resolved = path.replace(/^pages\//, '');
+    else if (isToolsPath) resolved = `../${path}`;
+    return cleanInternalUrl(resolved);
   }
   if (path.startsWith('tools/')) {
-    if (isToolsPath) return path.replace(/^tools\//, '');
-    if (isPagesPath) return `../${path}`;
-    return path;
+    if (isToolsPath) resolved = path.replace(/^tools\//, '');
+    else if (isPagesPath) resolved = `../${path}`;
+    return cleanInternalUrl(resolved);
   }
-  if (path === 'index.html') return (isPagesPath || isToolsPath) ? '../index.html' : 'index.html';
-  return (isPagesPath || isToolsPath) ? `../${path}` : path;
+  if (path === 'index.html') return (isPagesPath || isToolsPath) ? '../' : './';
+  resolved = (isPagesPath || isToolsPath) ? `../${path}` : path;
+  return cleanInternalUrl(resolved);
+};
+
+const cleanDocumentLinks = (root = document) => {
+  root.querySelectorAll('a[href]').forEach(link => {
+    const href = link.getAttribute('href') || '';
+    if (!href || href.startsWith('#') || /^(https?:|mailto:|tel:|javascript:)/i.test(href)) return;
+    const cleanHref = cleanInternalUrl(href);
+    if (cleanHref !== href) link.setAttribute('href', cleanHref);
+  });
 };
 
 const closeMenu = () => {
@@ -141,18 +164,19 @@ const closeMenu = () => {
 };
 
 const isCurrentNavUrl = url => {
-  const current = location.pathname.split('/').pop() || 'index.html';
+  const current = pageName(location.pathname);
   const [cleanUrl, query = ''] = String(url || '').split('#')[0].split('?');
+  const linkPage = pageName(cleanUrl);
   const currentParams = new URLSearchParams(location.search);
   const linkParams = new URLSearchParams(query);
   const linkCategory = linkParams.get('category');
   const currentCategory = currentParams.get('category');
-  if (cleanUrl.endsWith('resources.html') && current === 'resources.html') {
+  if (linkPage === 'resources.html' && current === 'resources.html') {
     if (linkCategory) return currentCategory === linkCategory;
     return !currentCategory;
   }
-  if (cleanUrl.endsWith(current)) return true;
-  if (pathName.includes('/tools/') && cleanUrl.endsWith('tools.html')) return true;
+  if (linkPage === current) return true;
+  if (pathName.includes('/tools/') && linkPage === 'tools.html') return true;
   return false;
 };
 
@@ -252,7 +276,7 @@ if (menuToggle && navLinks) {
 
 function createFloatingSocials() {
   const path = location.pathname.toLowerCase();
-  const blockedPages = ['admin', 'panel-hms', 'login.html'];
+  const blockedPages = ['admin', 'panel-hms', 'login.html', '/login'];
   if (blockedPages.some(page => path.includes(page))) return;
   if (document.querySelector('.floating-socials')) return;
 
@@ -292,7 +316,7 @@ createFloatingSocials();
 
 function createFloatingHelp() {
   const path = location.pathname.toLowerCase();
-  const blockedPages = ['admin', 'panel-hms', 'login.html'];
+  const blockedPages = ['admin', 'panel-hms', 'login.html', '/login'];
   if (blockedPages.some(page => path.includes(page))) return;
   if (document.querySelector('.floating-help')) return;
 
@@ -309,7 +333,7 @@ createFloatingHelp();
 
 function createGlobalSearch() {
   const navbar = document.querySelector('.navbar');
-  const blockedPages = ['admin', 'panel-hms', 'login.html'];
+  const blockedPages = ['admin', 'panel-hms', 'login.html', '/login'];
   if (!navbar || document.querySelector('.global-search-toggle') || blockedPages.some(page => pathName.toLowerCase().includes(page))) return;
 
   const staticItems = [
@@ -489,6 +513,7 @@ function createGlobalSearch() {
 }
 
 createGlobalSearch();
+cleanDocumentLinks();
 
 // ===== DARK MODE TOGGLE =====
 (function() {

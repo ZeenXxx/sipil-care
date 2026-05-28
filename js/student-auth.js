@@ -5,7 +5,17 @@
   const SESSION_TTL = 24 * 60 * 60 * 1000;
   const ACTIVITY_SYNC_INTERVAL = 60 * 1000;
   const ACTIVITY_SYNC_KEY = "sipilcare_student_activity_sync";
-  const currentPage = location.pathname.split("/").pop() || "index.html";
+  const cleanRoute = (value) => {
+    const clean = String(value || "")
+      .replace(/(^|\/)index\.html(?=([?#]|$))/g, "$1")
+      .replace(/\.html(?=([?#]|$))/g, "");
+    return clean || "./";
+  };
+  const pageName = (value, fallback = "index.html") => {
+    const page = String(value || "").split("/").pop() || fallback.replace(".html", "");
+    return page.endsWith(".html") ? page : `${page}.html`;
+  };
+  const currentPage = pageName(location.pathname);
   const isStudentLogin = currentPage === "student-login.html";
   const isAdminLogin = currentPage === "login.html";
   const isAdminPanel = currentPage === "panel-hms-sipil-2026.html";
@@ -35,7 +45,7 @@
   }[char]));
   const escapeInitial = (value) => escapeHtml(String(value || "U").trim().slice(0, 1).toUpperCase() || "U");
   const isValidNim = (nim) => /^[0-9]{8,14}$/.test(nim);
-  const nextUrl = () => new URLSearchParams(location.search).get("next") || "index.html";
+  const nextUrl = () => cleanRoute(new URLSearchParams(location.search).get("next") || "index.html");
   const queryMode = () => new URLSearchParams(location.search).get("mode") || "login";
   const getGreetingHour = () => {
     try {
@@ -164,7 +174,7 @@
 
     try {
       const db = await getSupabase();
-      const page = location.pathname.split("/").pop() || "index.html";
+      const page = pageName(location.pathname);
       const payload = {
         last_seen_at: new Date(now).toISOString(),
         last_page: page,
@@ -195,7 +205,7 @@
           const inPages = location.pathname.includes("/pages/");
           const inTools = location.pathname.includes("/tools/");
           const prefix = inPages || inTools ? "../" : "";
-          location.replace(prefix + "student-login.html");
+          location.replace(cleanRoute(prefix + "student-login.html"));
         }
         return;
       }
@@ -287,7 +297,7 @@
     const nav = document.querySelector(".nav-links");
     if (!nav || nav.querySelector("[data-student-nav-action]")) return;
     const session = readSession();
-    const currentFile = location.pathname.split("/").pop() || "index.html";
+    const currentFile = pageName(location.pathname);
     const currentPath = currentFile + location.search + location.hash;
     const inPages = location.pathname.includes("/pages/");
     const inTools = location.pathname.includes("/tools/");
@@ -298,7 +308,7 @@
       const login = document.createElement("a");
       login.className = "student-login-link";
       login.dataset.studentNavAction = "true";
-      login.href = `${prefix}student-login.html?next=${encodeURIComponent(nextTarget)}`;
+      login.href = cleanRoute(`${prefix}student-login.html?next=${encodeURIComponent(nextTarget)}`);
       login.textContent = "Login";
       nav.appendChild(login);
       return;
@@ -385,7 +395,7 @@
       const menuBadge = menu.querySelector("#studentNotifBadgeMenu");
       if (menuBadge) menuBadge.hidden = true;
       closeAccountMenu();
-      const homeUrl = `${prefix}index.html#pemberitahuan`;
+      const homeUrl = cleanRoute(`${prefix}index.html#pemberitahuan`);
       location.href = homeUrl;
     });
 
@@ -394,12 +404,12 @@
     passwordButton.type = "button";
     passwordButton.textContent = "Ubah Password";
     passwordButton.addEventListener("click", () => {
-      location.href = `${prefix}student-login.html?mode=change&next=${encodeURIComponent(nextTarget)}`;
+      location.href = cleanRoute(`${prefix}student-login.html?mode=change&next=${encodeURIComponent(nextTarget)}`);
     });
 
     const dashboardLink = document.createElement("a");
     dashboardLink.className = "student-account-action";
-    dashboardLink.href = `${prefix}pages/student-dashboard.html`;
+    dashboardLink.href = cleanRoute(`${prefix}pages/student-dashboard.html`);
     dashboardLink.textContent = "Dashboard Saya";
 
     const logout = document.createElement("button");
@@ -409,7 +419,7 @@
     logout.textContent = "Logout";
     logout.addEventListener("click", () => {
       clearSession();
-      location.href = prefix + "student-login.html";
+      location.href = cleanRoute(prefix + "student-login.html");
     });
 
     const closeAccountMenu = () => {
@@ -457,14 +467,14 @@
 
   if (!isStudentLogin && !isAdminLogin && !isAdminPanel) {
     if (!readSession() && !isHomePage && !isPublicHelpPage) {
-      const currentFile = location.pathname.split("/").pop() || "index.html";
+      const currentFile = pageName(location.pathname);
       const currentPath = currentFile + location.search + location.hash;
       const inPages = location.pathname.includes("/pages/");
       const inTools = location.pathname.includes("/tools/");
       const nextTarget = inPages ? "pages/" + currentPath : inTools ? "tools/" + currentPath : currentPath;
       const next = encodeURIComponent(nextTarget);
       const prefix = inPages || inTools ? "../" : "";
-      location.replace(prefix + "student-login.html?next=" + next);
+      location.replace(cleanRoute(prefix + "student-login.html?next=" + next));
       return;
     }
 

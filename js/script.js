@@ -30,7 +30,7 @@ const videoCard = item => `
       <p>${escapeText(item.description)}</p>
       <div class="actions">
         <a class="btn btn-primary" href="${escapeText(item.youtube || '#')}" target="_blank" rel="noopener">Watch</a>
-        <a class="btn btn-ghost" href="pages/videos.html">More Videos</a>
+        <a class="btn btn-ghost" href="pages/videos">More Videos</a>
       </div>
     </div>
   </article>

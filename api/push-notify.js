@@ -124,7 +124,7 @@ const filterRecipients = (recipients, audience = {}, notificationType = 'update'
 };
 
 const sendMessage = async ({ projectId, token, recipient, notification }) => {
-  const url = notification.url || '/index.html';
+  const url = String(notification.url || '/').replace(/\.html(?=([?#]|$))/g, '');
   const response = await fetch(`https://fcm.googleapis.com/v1/projects/${projectId}/messages:send`, {
     method: 'POST',
     headers: {
@@ -211,7 +211,7 @@ module.exports = async (req, res) => {
       notification: {
         title,
         body: message,
-        url: body.url || '/index.html',
+        url: body.url || '/',
         tag: body.tag,
         type: body.type
       }

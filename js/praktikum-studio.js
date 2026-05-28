@@ -42,7 +42,7 @@ const escapeText = value => String(value || '').replace(/[&<>"']/g, char => ({ '
 const normalize = normalizeText;
 const slugify = value => String(value || '').toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'module';
 const accessId = item => encodeURIComponent(item.id || item.slug || slugify(item.title));
-const accessUrl = item => `access.html?source=practicum&id=${accessId(item)}`;
+const accessUrl = item => `access?source=practicum&id=${accessId(item)}`;
 const attendanceRecordId = (sessionId, nim) => `${sessionId}_${nim}`;
 const showToast = message => {
   const toast = document.getElementById('toast');

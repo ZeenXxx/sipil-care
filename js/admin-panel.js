@@ -430,6 +430,20 @@ const requirePermission = (permission, label) => {
   return false;
 };
 
+const cleanAdminRoute = value => String(value || '').replace(/\.html(?=([?#]|$))/g, '');
+const normalizeAdminPageName = value => {
+  const page = String(value || '').split('/').pop() || 'dashboard';
+  return page.endsWith('.html') ? page : `${page}.html`;
+};
+const cleanAdminDocumentLinks = (root = document) => {
+  root.querySelectorAll('a[href]').forEach(link => {
+    const href = link.getAttribute('href') || '';
+    if (!href || href.startsWith('#') || /^(https?:|mailto:|tel:|javascript:)/i.test(href)) return;
+    const cleanHref = cleanAdminRoute(href);
+    if (cleanHref !== href) link.setAttribute('href', cleanHref);
+  });
+};
+
 const navHashPermissions = {
   'student-activity': 'dashboard',
   'platform-analytics': 'dashboard',
@@ -454,7 +468,8 @@ const canSeeAdminNavLink = link => {
   if (admin.role === 'developer') return true;
 
   const href = link.getAttribute('href') || '';
-  const page = href.split('#')[0] || location.pathname.split('/').pop();
+  const rawPage = href.split('#')[0] || location.pathname.split('/').pop();
+  const page = rawPage ? normalizeAdminPageName(rawPage) : '';
   const hash = href.includes('#') ? href.split('#')[1] : '';
   const pageAllowed = page ? admin.allowedPages.includes(page) : true;
   const pagePermission = navPagePermissions[page];
@@ -475,6 +490,7 @@ const applyRoleVisibilityToLink = link => {
 
 const applyAdminRoleUI = () => {
   const admin = currentAdmin();
+  cleanAdminDocumentLinks();
   document.documentElement.dataset.adminRole = admin.role;
   document.querySelectorAll('.admin-brand small').forEach(item => {
     item.textContent = `${admin.roleLabel} Panel`;
@@ -595,6 +611,7 @@ const canManageAdminAccounts = () => currentAdmin().role === 'developer' || hasP
 const canManageStudentAccounts = () => currentAdmin().role === 'developer' || hasPermission('student_accounts');
 const canDeleteDashboardLogs = () => currentAdmin().role === 'developer' || hasPermission('log_delete');
 const canAccessAdminPage = (page = location.pathname.split('/').pop() || 'dashboard.html') => {
+  page = normalizeAdminPageName(page);
   const admin = currentAdmin();
   if (admin.role === 'developer') return true;
   const allowed = admin.allowedPages.includes(page);
@@ -605,10 +622,10 @@ const canAccessAdminPage = (page = location.pathname.split('/').pop() || 'dashbo
 };
 const firstAllowedAdminPage = () => ADMIN_ALL_PAGES.find(page => canAccessAdminPage(page)) || ADMIN_GUIDE_PAGE;
 const enforceAdminPageAccess = () => {
-  const page = location.pathname.split('/').pop() || 'dashboard.html';
+  const page = normalizeAdminPageName(location.pathname.split('/').pop() || 'dashboard.html');
   if (!location.pathname.includes('/pages/admin/')) return;
   if (!canAccessAdminPage(page)) {
-    location.replace(firstAllowedAdminPage());
+    location.replace(cleanAdminRoute(firstAllowedAdminPage()));
     return;
   }
   const hash = location.hash.replace('#', '');
@@ -3232,7 +3249,7 @@ on(resourceForm, 'submit', async e => {
         notifyStudents({
           title: 'Resource baru di SIPIL CARE',
           body: `${data.title} sudah tersedia di Resources.`,
-          url: '/pages/resources.html',
+          url: '/pages/resources',
           tag: `resource-${created.id}`,
           type: 'resources'
         });
@@ -3299,7 +3316,7 @@ on(softwareForm, 'submit', async e => {
         notifyStudents({
           title: 'Software baru di SIPIL CARE',
           body: `${data.title} sudah tersedia di Software.`,
-          url: '/pages/software.html',
+          url: '/pages/software',
           tag: `software-${created.id}`,
           type: 'software'
         });
@@ -3366,7 +3383,7 @@ on(practicumForm, 'submit', async e => {
         notifyStudents({
           title: 'Modul praktikum/studio baru',
           body: `${data.title} untuk angkatan ${targetAngkatan} sudah tersedia.`,
-          url: '/pages/praktikum-studio.html',
+          url: '/pages/praktikum-studio',
           tag: `practicum-${created.id}`,
           type: 'practicum_studio',
           audience: { angkatan: targetAngkatan }
@@ -3513,7 +3530,7 @@ on(attendanceSessionForm, 'submit', async e => {
     notifyStudents({
       title: 'Sesi absen praktikum dibuka',
       body: `${payload.course} ${payload.moduleNumber} - ${payload.moduleTitle}, kelas ${payload.className}.`,
-      url: '/pages/praktikum-studio.html',
+      url: '/pages/praktikum-studio',
       tag: `attendance-${created.id}`,
       type: 'attendance',
       audience: {
@@ -3576,7 +3593,7 @@ on(videoForm, 'submit', async e => {
         notifyStudents({
           title: 'Video baru di SIPIL CARE',
           body: `${data.title} sudah tersedia di Videos.`,
-          url: '/pages/videos.html',
+          url: '/pages/videos',
           tag: `video-${created.id}`,
           type: 'videos'
         });
@@ -3640,7 +3657,7 @@ on(announcementForm, 'submit', async e => {
         notifyStudents({
           title: 'Pemberitahuan baru',
           body: `${data.title} sudah dipublikasikan di SIPIL CARE.`,
-          url: '/index.html',
+          url: '/',
           tag: `announcement-${created.id}`,
           type: 'announcement'
         });

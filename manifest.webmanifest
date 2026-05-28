@@ -3,7 +3,7 @@
   "short_name": "SIPIL CARE",
   "description": "Platform Digital Akademik Mahasiswa Teknik Sipil UNJANI - HIMPUNAN MAHASISWA SIPIL UNJANI",
   "id": "/",
-  "start_url": "/index.html?source=pwa",
+  "start_url": "/?source=pwa",
   "scope": "/",
   "display": "standalone",
   "display_override": ["window-controls-overlay", "standalone", "minimal-ui", "browser"],
@@ -31,19 +31,19 @@
     {
       "name": "Resources",
       "short_name": "Materi",
-      "url": "/pages/resources.html",
+      "url": "/pages/resources",
       "icons": [{ "src": "/assets/icons/pwa-192.png", "sizes": "192x192" }]
     },
     {
       "name": "Praktikum & Studio",
       "short_name": "Praktikum",
-      "url": "/pages/praktikum-studio.html",
+      "url": "/pages/praktikum-studio",
       "icons": [{ "src": "/assets/icons/pwa-192.png", "sizes": "192x192" }]
     },
     {
       "name": "Tools",
       "short_name": "Tools",
-      "url": "/pages/tools.html",
+      "url": "/pages/tools",
       "icons": [{ "src": "/assets/icons/pwa-192.png", "sizes": "192x192" }]
     }
   ]

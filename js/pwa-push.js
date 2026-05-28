@@ -303,7 +303,7 @@ async function bindForegroundMessages() {
         body: notification.body || 'Ada update baru di SIPIL CARE.',
         icon: `${location.origin}/assets/images/logo-hms.png`,
         badge: `${location.origin}/assets/images/logo-hms.png`,
-        data: { url: payload.data?.url || '/index.html' }
+        data: { url: payload.data?.url || '/' }
       });
     });
   } catch (error) {

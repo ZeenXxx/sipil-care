@@ -61,7 +61,7 @@ function renderLoggedOut() {
     profileTarget.innerHTML = `
       <h2>Belum login</h2>
       <p>Login sebagai mahasiswa untuk membuka dashboard pribadi.</p>
-      <a class="btn btn-primary" href="../student-login.html?next=pages%2Fstudent-dashboard.html">Login Mahasiswa</a>
+      <a class="btn btn-primary" href="../student-login?next=pages%2Fstudent-dashboard">Login Mahasiswa</a>
     `;
   }
   if (summaryTarget) summaryTarget.innerHTML = '';
@@ -77,8 +77,8 @@ function renderProfile(session, bookmarks) {
     <h2>${escapeText(session.name || 'Mahasiswa SIPIL CARE')}</h2>
     <p>NIM ${escapeText(session.nim)}${session.angkatan ? ` &middot; Angkatan ${escapeText(session.angkatan)}` : ''}</p>
     <div class="student-profile-actions">
-      <a class="btn btn-primary" href="praktikum-studio.html">Praktikum Saya</a>
-      <a class="btn btn-secondary" href="resources.html">Cari Materi</a>
+      <a class="btn btn-primary" href="praktikum-studio">Praktikum Saya</a>
+      <a class="btn btn-secondary" href="resources">Cari Materi</a>
     </div>
   `;
   if (summaryTarget) {

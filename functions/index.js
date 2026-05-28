@@ -109,7 +109,7 @@ exports.notifyAdminOnLiveChat = onDocumentCreated('live_chat_messages/{messageId
     recipients: await getAdminPushTokens(),
     title: 'Live chat baru - SIPIL CARE',
     body,
-    url: '/panel-hms-sipil-2026.html#live-chat-admin',
+    url: '/panel-hms-sipil-2026#live-chat-admin',
     tag: String(message.threadId || 'sipilcare-live-chat')
   });
 });
@@ -122,7 +122,7 @@ exports.notifyStudentsOnResourceCreated = onDocumentCreated('resources/{resource
     recipients: await getStudentPushTokens(),
     title: isSoftware ? 'Software baru tersedia' : 'Resource baru tersedia',
     body: `${item.title || 'Materi baru'} sudah bisa diakses di SIPIL CARE.`,
-    url: isSoftware ? '/pages/software.html' : '/pages/resources.html',
+    url: isSoftware ? '/pages/software' : '/pages/resources',
     tag: `resource-${event.params.resourceId}`
   });
 });
@@ -138,7 +138,7 @@ exports.notifyStudentsOnPracticumModuleCreated = onDocumentCreated('practicum_st
     }),
     title: 'Modul praktikum/studio baru',
     body: `${item.title || item.course || 'Modul baru'} sudah tersedia untuk ${item.course || item.category || 'praktikum/studio'}.`,
-    url: '/pages/praktikum-studio.html',
+    url: '/pages/praktikum-studio',
     tag: `practicum-module-${event.params.moduleId}`
   });
 });
@@ -154,7 +154,7 @@ exports.notifyStudentsOnAttendanceSessionCreated = onDocumentCreated('practicum_
     }),
     title: 'Sesi absen praktikum dibuka',
     body: `${item.moduleNumber || 'Sesi'} - ${item.moduleTitle || item.course || 'Praktikum'} kelas ${item.className || '-'} sudah dibuat.`,
-    url: '/pages/praktikum-studio.html',
+    url: '/pages/praktikum-studio',
     tag: `attendance-session-${event.params.sessionId}`
   });
 });
@@ -166,7 +166,7 @@ exports.notifyStudentsOnVideoCreated = onDocumentCreated('videos/{videoId}', asy
     recipients: await getStudentPushTokens(),
     title: 'Video baru tersedia',
     body: `${item.title || 'Video baru'} sudah bisa ditonton di SIPIL CARE.`,
-    url: '/pages/videos.html',
+    url: '/pages/videos',
     tag: `video-${event.params.videoId}`
   });
 });
@@ -178,7 +178,7 @@ exports.notifyStudentsOnAnnouncementCreated = onDocumentCreated('announcements/{
     recipients: await getStudentPushTokens(),
     title: item.type || 'Pemberitahuan HMS',
     body: item.title || 'Ada pemberitahuan baru di SIPIL CARE.',
-    url: '/index.html',
+    url: '/',
     tag: `announcement-${event.params.announcementId}`
   });
 });

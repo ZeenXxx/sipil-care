@@ -25,7 +25,7 @@ const per = 9;
 const escapeText = value => String(value || '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
 const slugify = value => String(value || '').toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'resource';
 const accessId = item => encodeURIComponent(item.id || item.slug || slugify(item.title));
-const accessUrl = item => `access.html?id=${accessId(item)}`;
+const accessUrl = item => `access?id=${accessId(item)}`;
 const BOOKMARK_KEY = 'sipilcare_student_bookmarks';
 const showToast = message => {
   const toast = document.getElementById('toast');
