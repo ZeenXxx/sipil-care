@@ -110,7 +110,15 @@ const filterRecipients = (recipients, audience = {}, notificationType = 'update'
   return recipients.filter(item => {
     if (nims.size && !nims.has(String(item.nim || ''))) return false;
     if (!nims.size && angkatan && String(item.angkatan || '') !== angkatan) return false;
-    if (Array.isArray(item.categories) && item.categories.length && !item.categories.includes(notificationType)) return false;
+    if (Array.isArray(item.categories) && item.categories.length) {
+      const aliases = {
+        resource: 'resources',
+        video: 'videos',
+        practicum: 'practicum_studio'
+      };
+      const normalizedType = aliases[notificationType] || notificationType;
+      if (!item.categories.includes(normalizedType)) return false;
+    }
     return true;
   });
 };

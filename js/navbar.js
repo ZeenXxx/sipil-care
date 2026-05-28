@@ -26,6 +26,17 @@ const saveClientError = payload => {
       time: new Date().toISOString()
     };
     localStorage.setItem(CLIENT_ERROR_KEY, JSON.stringify([entry, ...errors].slice(0, 30)));
+    if (navigator.onLine) {
+      fetch(new URL('api/client-error', siteRootUrl).href, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...entry,
+          userAgent: navigator.userAgent
+        }),
+        keepalive: true
+      }).catch(() => null);
+    }
   } catch {
     // localStorage can be unavailable in strict browser privacy modes.
   }

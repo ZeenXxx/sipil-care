@@ -234,6 +234,7 @@ const backupContentData = document.getElementById('backupContentData');
 const backupAccountData = document.getElementById('backupAccountData');
 const restoreBackupFile = document.getElementById('restoreBackupFile');
 const restoreBackupPreview = document.getElementById('restoreBackupPreview');
+const restoreBackupOptions = document.getElementById('restoreBackupOptions');
 const restoreBackupBtn = document.getElementById('restoreBackupBtn');
 const practicumOverviewSummary = document.getElementById('practicumOverviewSummary');
 const practicumIssueList = document.getElementById('practicumIssueList');
@@ -275,6 +276,7 @@ let students = [];
 let adminActivities = [];
 let auditLogs = [];
 let accessLogs = [];
+let serverClientErrors = [];
 let adminAccounts = [];
 let adminRoles = [];
 let adminPracticumScopes = {};
@@ -299,6 +301,7 @@ const ADMIN_PUSH_TOKEN_ID_KEY = 'sipilcare_admin_push_token_id';
 const ADMIN_AUDIT_COLLECTION = 'admin_audit_logs';
 const ADMIN_ACTIVITY_COLLECTION = 'admin_activity';
 const RESOURCE_ACCESS_LOG_COLLECTION = 'resource_access_logs';
+const CLIENT_ERROR_LOG_COLLECTION = 'client_error_logs';
 const ACADEMIC_SETTINGS_PATH = `${ACADEMIC_SETTINGS_COLLECTION}/${ACADEMIC_SETTINGS_DOC}`;
 const SITE_SETTINGS_COLLECTION = 'site_settings';
 const MAINTENANCE_DOC = 'maintenance';
@@ -1104,12 +1107,16 @@ function renderGuideRoleOverview() {
 
 function renderClientErrors() {
   if (!clientErrorList) return;
-  const errors = readClientErrors().slice(0, 8);
+  const localErrors = readClientErrors().map(item => ({ ...item, origin: 'Device ini' }));
+  const remoteErrors = serverClientErrors.map(item => ({ ...item, origin: 'Server' }));
+  const errors = [...remoteErrors, ...localErrors]
+    .sort((a, b) => String(b.createdAt || b.time || '').localeCompare(String(a.createdAt || a.time || '')))
+    .slice(0, 12);
   clientErrorList.innerHTML = errors.length
     ? errors.map(item => `
       <article class="client-error-item">
         <strong>${escapeText(item.message || item.type || 'Error browser')}</strong>
-        <small>${escapeText(item.page || location.pathname)} - ${escapeText(formatDateTime(item.time))}</small>
+        <small>${escapeText(item.origin || 'Log')} - ${escapeText(item.page || location.pathname)} - ${escapeText(formatDateTime(item.createdAt || item.time))}</small>
         <code>${escapeText(item.source || item.stack || '-')}</code>
       </article>
     `).join('')
@@ -1129,7 +1136,8 @@ function renderDashboardHealth() {
     `${students.filter(isStudentOnline).length} mahasiswa online`,
     `${adminActivities.filter(isAdminOnline).length} admin online`,
     `${accessLogs.length + auditLogs.length} log dashboard`,
-    `${clientErrors.length} error browser lokal`
+    `${clientErrors.length} error browser lokal`,
+    `${serverClientErrors.length} error server`
   ];
   dashboardHealthGrid.innerHTML = items.map(item => `<span>${escapeText(item)}</span>`).join('');
 }
@@ -2154,17 +2162,17 @@ function exportDeveloperBackup(type) {
 }
 
 const restoreCollections = [
-  { key: 'resources', collectionName: 'resources' },
-  { key: 'practicumModules', collectionName: 'practicum_studio_modules' },
-  { key: 'practicumRosters', collectionName: PRACTICUM_ROSTER_COLLECTION },
-  { key: 'practicumAttendanceSessions', collectionName: PRACTICUM_ATTENDANCE_SESSION_COLLECTION },
-  { key: 'practicumAttendanceRecords', collectionName: PRACTICUM_ATTENDANCE_RECORD_COLLECTION },
-  { key: 'videos', collectionName: 'videos' },
-  { key: 'announcements', collectionName: 'announcements' },
-  { key: 'studentActivity', collectionName: 'student_activity_backup' },
-  { key: 'adminActivity', collectionName: ADMIN_ACTIVITY_COLLECTION },
-  { key: 'resourceAccessLogs', collectionName: RESOURCE_ACCESS_LOG_COLLECTION },
-  { key: 'auditLogs', collectionName: ADMIN_AUDIT_COLLECTION }
+  { key: 'resources', label: 'Resource & Software', collectionName: 'resources' },
+  { key: 'practicumModules', label: 'Modul Praktikum/Studio', collectionName: 'practicum_studio_modules' },
+  { key: 'practicumRosters', label: 'Data Praktikan', collectionName: PRACTICUM_ROSTER_COLLECTION },
+  { key: 'practicumAttendanceSessions', label: 'Sesi Absensi', collectionName: PRACTICUM_ATTENDANCE_SESSION_COLLECTION },
+  { key: 'practicumAttendanceRecords', label: 'Record Absensi', collectionName: PRACTICUM_ATTENDANCE_RECORD_COLLECTION },
+  { key: 'videos', label: 'Video', collectionName: 'videos' },
+  { key: 'announcements', label: 'Pemberitahuan', collectionName: 'announcements' },
+  { key: 'studentActivity', label: 'Backup Aktivitas Mahasiswa', collectionName: 'student_activity_backup' },
+  { key: 'adminActivity', label: 'Admin Online', collectionName: ADMIN_ACTIVITY_COLLECTION },
+  { key: 'resourceAccessLogs', label: 'History Akses', collectionName: RESOURCE_ACCESS_LOG_COLLECTION },
+  { key: 'auditLogs', label: 'Audit Log', collectionName: ADMIN_AUDIT_COLLECTION }
 ];
 
 const cleanBackupItem = item => {
@@ -2184,12 +2192,25 @@ function summarizeBackupPayload(payload) {
 function updateBackupRestorePreview(payload) {
   if (!restoreBackupPreview) return;
   const summary = summarizeBackupPayload(payload);
+  if (restoreBackupOptions) restoreBackupOptions.innerHTML = '';
   if (!summary.length) {
     restoreBackupPreview.textContent = 'File JSON terbaca, tetapi tidak ada koleksi yang bisa direstore.';
     return;
   }
-  restoreBackupPreview.innerHTML = summary.map(item => `<span>${escapeText(item.key)}: ${item.count}</span>`).join('');
+  restoreBackupPreview.innerHTML = summary.map(item => `<span>${escapeText(item.label)}: ${item.count}</span>`).join('');
+  if (restoreBackupOptions) {
+    restoreBackupOptions.innerHTML = summary.map(item => `
+      <label class="admin-mini-check">
+        <input type="checkbox" value="${escapeText(item.key)}" checked data-restore-collection>
+        <span>${escapeText(item.label)} (${item.count})</span>
+      </label>
+    `).join('');
+  }
 }
+
+const selectedRestoreKeys = () => restoreBackupOptions
+  ? [...restoreBackupOptions.querySelectorAll('[data-restore-collection]:checked')].map(input => input.value)
+  : summarizeBackupPayload(pendingBackupRestore).map(item => item.key);
 
 async function readBackupJson(file) {
   const text = await file.text();
@@ -2204,13 +2225,15 @@ async function restoreDeveloperBackup() {
     return;
   }
   const payload = pendingBackupRestore;
-  const summary = summarizeBackupPayload(payload);
+  const keys = new Set(selectedRestoreKeys());
+  const summary = summarizeBackupPayload(payload).filter(item => keys.has(item.key));
   if (!summary.length) {
-    toast('Tidak ada data backup yang bisa direstore.');
+    toast('Pilih minimal satu koleksi backup yang akan direstore.');
     return;
   }
   const total = summary.reduce((sum, item) => sum + item.count, 0);
-  if (!confirm(`Restore ${total} dokumen ke server Firestore? Data dengan ID yang sama akan ditimpa.`)) return;
+  const collectionLabels = summary.map(item => `${item.label} (${item.count})`).join(', ');
+  if (!confirm(`Restore ${total} dokumen ke server Firestore?\n\nKoleksi: ${collectionLabels}\n\nData dengan ID yang sama akan ditimpa.`)) return;
 
   try {
     if (restoreBackupBtn) restoreBackupBtn.disabled = true;
@@ -2225,6 +2248,7 @@ async function restoreDeveloperBackup() {
     };
 
     for (const config of restoreCollections) {
+      if (!keys.has(config.key)) continue;
       const rows = Array.isArray(payload[config.key]) ? payload[config.key] : [];
       for (const item of rows) {
         const id = backupItemId(item);
@@ -4652,7 +4676,7 @@ on(clientErrorClear, 'click', () => {
   localStorage.removeItem(CLIENT_ERROR_KEY);
   renderClientErrors();
   renderDashboardHealth();
-  toast('Catatan error browser dibersihkan.');
+  toast('Catatan error lokal dibersihkan. Log server tetap tersimpan untuk audit developer.');
 });
 renderAdminRoleChecklist();
 renderAdminRoleOptions();
@@ -5079,4 +5103,16 @@ onSnapshot(auditQuery, snapshot => {
 }, err => {
   console.error('Firestore audit log error:', err);
   if (auditTable) auditTable.innerHTML = '<tr><td colspan="6">Gagal memuat audit log admin.</td></tr>';
+});
+
+const clientErrorQuery = query(collection(db, CLIENT_ERROR_LOG_COLLECTION), orderBy('createdAt', 'desc'));
+onSnapshot(clientErrorQuery, snapshot => {
+  serverClientErrors = snapshot.docs.slice(0, 30).map(documentSnapshot => ({
+    docId: documentSnapshot.id,
+    ...documentSnapshot.data()
+  }));
+  renderClientErrors();
+  renderDashboardHealth();
+}, err => {
+  console.error('Firestore client error log failed:', err);
 });

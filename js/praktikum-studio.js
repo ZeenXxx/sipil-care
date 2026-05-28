@@ -1,5 +1,5 @@
 import { app } from './firebase-config.js';
-import { getFirestore, collection, doc, query, orderBy, where, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
+import { getFirestore, collection, doc, query, orderBy, where, onSnapshot, setDoc, getDocs } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
 import {
   ACADEMIC_SETTINGS_COLLECTION,
   ACADEMIC_SETTINGS_DOC,
@@ -294,8 +294,17 @@ onSnapshot(academicSettingsRef, snapshot => {
   render();
 });
 
-const modulesQuery = query(collection(db, 'practicum_studio_modules'), orderBy('date', 'desc'));
+const modulesQuery = query(collection(db, 'practicum_studio_modules'), where('status', '==', 'published'), orderBy('date', 'desc'));
 onSnapshot(modulesQuery, snapshot => {
+  if (snapshot.empty) {
+    getDocs(query(collection(db, 'practicum_studio_modules'), orderBy('date', 'desc')))
+      .then(fallbackSnapshot => {
+        modules = fallbackSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })).filter(item => (item.status || 'published') === 'published' && courseKeys.some(key => normalize([item.category, item.course, item.title, item.type].join(' ')).includes(key)));
+        render();
+      })
+      .catch(error => console.warn('Practicum legacy fallback failed:', error));
+    return;
+  }
   modules = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })).filter(item => (item.status || 'published') === 'published' && courseKeys.some(key => normalize([item.category, item.course, item.title, item.type].join(' ')).includes(key)));
   render();
 }, error => {

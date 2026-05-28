@@ -226,8 +226,18 @@ function normalizeResources(items) {
 }
 
 function loadResourcesFromFirestore() {
-  const resourcesQuery = query(collection(db, 'resources'), orderBy('date', 'desc'));
+  const resourcesQuery = query(collection(db, 'resources'), where('status', '==', 'published'), orderBy('date', 'desc'));
   onSnapshot(resourcesQuery, snapshot => {
+    if (snapshot.empty) {
+      getDocs(query(collection(db, 'resources'), orderBy('date', 'desc')))
+        .then(fallbackSnapshot => {
+          resources = normalizeResources(fallbackSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })).filter(item => (item.status || 'published') === 'published'));
+          renderFilters();
+          render();
+        })
+        .catch(error => console.warn('Resource legacy fallback failed:', error));
+      return;
+    }
     resources = normalizeResources(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })).filter(item => (item.status || 'published') === 'published'));
     renderFilters();
     render();

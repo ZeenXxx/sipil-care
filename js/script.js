@@ -4,7 +4,8 @@ import {
   collection,
   query,
   orderBy,
-  getDocs
+  getDocs,
+  where
 } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
 
 const db = getFirestore(app);
@@ -274,8 +275,9 @@ async function loadHomeVideos() {
   if (!target) return;
 
   try {
-    const videosRef = query(collection(db, 'videos'), orderBy('title'));
-    const snapshot = await getDocs(videosRef);
+    const videosRef = query(collection(db, 'videos'), where('status', '==', 'published'), orderBy('title'));
+    let snapshot = await getDocs(videosRef);
+    if (snapshot.empty) snapshot = await getDocs(query(collection(db, 'videos'), orderBy('title')));
     const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })).filter(item => (item.status || 'published') === 'published');
     if (countTarget) countTarget.textContent = data.length;
     target.innerHTML = data.slice(0, 3).map(videoCard).join('') || '<div class="empty span-2">Belum ada video.</div>';
@@ -299,8 +301,9 @@ async function loadAnnouncements() {
   if (!target) return;
 
   try {
-    const announcementsRef = query(collection(db, 'announcements'), orderBy('date', 'desc'));
-    const snapshot = await getDocs(announcementsRef);
+    const announcementsRef = query(collection(db, 'announcements'), where('status', '==', 'published'), orderBy('date', 'desc'));
+    let snapshot = await getDocs(announcementsRef);
+    if (snapshot.empty) snapshot = await getDocs(query(collection(db, 'announcements'), orderBy('date', 'desc')));
     const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })).filter(item => (item.status || 'published') === 'published');
     target.innerHTML = announcementCarousel((data.length ? data : fallbackAnnouncements).slice(0, 5));
     setupAnnouncementCarousel(target);

@@ -4,6 +4,7 @@ import {
 	collection,
 	query,
 	orderBy,
+	where,
 	onSnapshot,
 	getDocs,
 	addDoc,
@@ -122,8 +123,17 @@ async function loadLocalFallback() {
 
 // Try Firestore first, then fallback to local JSON
 try {
-	const videosQuery = query(collection(db, 'videos'), orderBy('title'));
+	const videosQuery = query(collection(db, 'videos'), where('status', '==', 'published'), orderBy('title'));
 	onSnapshot(videosQuery, snapshot => {
+		if (snapshot.empty) {
+			getDocs(query(collection(db, 'videos'), orderBy('title')))
+				.then(fallbackSnapshot => {
+					videos = normalizeVideos(fallbackSnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })).filter(item => (item.status || 'published') === 'published'));
+					updateUI();
+				})
+				.catch(error => console.warn('Video legacy fallback failed:', error));
+			return;
+		}
 		videos = normalizeVideos(snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })).filter(item => (item.status || 'published') === 'published'));
 		// ensure deterministic ordering: by title already
 		updateUI();

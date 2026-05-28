@@ -100,6 +100,31 @@ body { background: #f5f8f7; }
   .tool-verification-panel {
     grid-template-columns: 1fr;
   }
+
+  .tool-layout,
+  .tools-hero-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .tool-header {
+    display: grid;
+  }
+
+  .tool-card .action-row,
+  .tool-grid-2 {
+    grid-template-columns: 1fr;
+  }
+
+  .tools-tabs {
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+  }
+
+  .tool-tab {
+    min-width: 180px;
+    scroll-snap-align: start;
+  }
 }
 
 .file-order-controls {

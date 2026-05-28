@@ -53,6 +53,56 @@
   font-weight: 800;
 }
 
+.backup-restore-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px;
+}
+
+.backup-restore-options .admin-mini-check {
+  background: #fff;
+}
+
+@media (max-width: 900px) {
+  .admin-main {
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+
+  .admin-table-head {
+    align-items: stretch;
+  }
+
+  .admin-table-head > div:last-child {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .admin-table-head .control,
+  .admin-table-head .action-btn {
+    width: 100%;
+  }
+
+  .table-wrap {
+    max-height: min(62vh, 620px);
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .table-wrap table {
+    min-width: 820px;
+  }
+
+  .admin-card {
+    padding: 18px;
+  }
+
+  .backup-restore-options {
+    grid-template-columns: 1fr;
+  }
+}
+
 .login-shell  {
   
     min-height: 100vh;
