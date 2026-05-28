@@ -243,6 +243,13 @@ const guideRoleTable = document.getElementById('guideRoleTable');
 const adminPermissionTitle = document.getElementById('adminPermissionTitle');
 const adminPermissionSummary = document.getElementById('adminPermissionSummary');
 const adminPermissionChips = document.getElementById('adminPermissionChips');
+const analyticsPeriod = document.getElementById('analyticsPeriod');
+const analyticsRefresh = document.getElementById('analyticsRefresh');
+const analyticsMetrics = document.getElementById('analyticsMetrics');
+const analyticsTrend = document.getElementById('analyticsTrend');
+const analyticsTopContent = document.getElementById('analyticsTopContent');
+const analyticsCohorts = document.getElementById('analyticsCohorts');
+const analyticsInsights = document.getElementById('analyticsInsights');
 const clientErrorList = document.getElementById('clientErrorList');
 const clientErrorRefresh = document.getElementById('clientErrorRefresh');
 const clientErrorClear = document.getElementById('clientErrorClear');
@@ -425,6 +432,7 @@ const requirePermission = (permission, label) => {
 
 const navHashPermissions = {
   'student-activity': 'dashboard',
+  'platform-analytics': 'dashboard',
   'academic-settings': 'dashboard',
   'admin-activity': 'dashboard',
   'client-error-log': 'dashboard',
@@ -1003,6 +1011,46 @@ const formatRelativeTime = value => {
   return `${Math.floor(diff / 86400000)} hari lalu`;
 };
 
+const selectedAnalyticsStartDate = () => {
+  const value = analyticsPeriod?.value || '30';
+  if (value === 'all') return null;
+  const days = Number(value) || 30;
+  return new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+};
+
+const inAnalyticsPeriod = value => {
+  const start = selectedAnalyticsStartDate();
+  if (!start) return true;
+  const date = parseDateValue(value);
+  return Boolean(date && date >= start);
+};
+
+const analyticsNumber = value => new Intl.NumberFormat('id-ID').format(Number(value || 0));
+
+const percentOf = (value, max) => {
+  if (!max) return 0;
+  return Math.max(4, Math.min(100, Math.round((Number(value || 0) / max) * 100)));
+};
+
+const incrementMap = (map, key, amount = 1) => {
+  const label = key || '-';
+  map[label] = (map[label] || 0) + amount;
+  return map;
+};
+
+const sortedEntries = map => Object.entries(map)
+  .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'id-ID'));
+
+const contentTypeForLog = item => item.contentType
+  || (item.source === 'videos' ? 'video' : item.category === 'Software' ? 'software' : item.source || 'resource');
+
+const logTime = item => item.accessedAt || item.createdAt || item.time;
+
+const dateKey = value => {
+  const date = parseDateValue(value);
+  return date ? date.toISOString().slice(0, 10) : '';
+};
+
 const permissionLabelMap = () => adminPermissionOptions.reduce((labels, item) => {
   labels[item.value] = item.label;
   return labels;
@@ -1140,6 +1188,150 @@ function renderDashboardHealth() {
     `${serverClientErrors.length} error server`
   ];
   dashboardHealthGrid.innerHTML = items.map(item => `<span>${escapeText(item)}</span>`).join('');
+}
+
+function renderAnalyticsMetrics(metrics) {
+  if (!analyticsMetrics) return;
+  const cards = [
+    {
+      label: 'Mahasiswa aktif',
+      value: metrics.activeStudents,
+      note: `${metrics.studentOnline} sedang online`
+    },
+    {
+      label: 'Akses konten',
+      value: metrics.accessTotal,
+      note: `${metrics.downloadTotal} download`
+    },
+    {
+      label: 'View video',
+      value: metrics.videoViews,
+      note: `${metrics.videoContent} video tersedia`
+    },
+    {
+      label: 'Pesan belum dibalas',
+      value: metrics.newMessages,
+      note: `${metrics.liveThreads} thread live chat`
+    },
+    {
+      label: 'Error browser',
+      value: metrics.errorTotal,
+      note: `${metrics.serverErrors} dari server`
+    },
+    {
+      label: 'Sesi praktikum aktif',
+      value: metrics.openSessions,
+      note: `${metrics.attendanceRecords} record hadir`
+    }
+  ];
+  analyticsMetrics.innerHTML = cards.map(card => `
+    <article>
+      <span>${escapeText(card.label)}</span>
+      <strong>${analyticsNumber(card.value)}</strong>
+      <small>${escapeText(card.note)}</small>
+    </article>
+  `).join('');
+}
+
+function renderAnalyticsTrend(logs) {
+  if (!analyticsTrend) return;
+  const days = [...Array(7)].map((_, index) => {
+    const date = new Date();
+    date.setDate(date.getDate() - (6 - index));
+    const key = date.toISOString().slice(0, 10);
+    return {
+      key,
+      label: date.toLocaleDateString('id-ID', { weekday: 'short' }),
+      count: logs.filter(item => dateKey(logTime(item)) === key).length
+    };
+  });
+  const max = Math.max(...days.map(item => item.count), 1);
+  analyticsTrend.innerHTML = days.map(item => `
+    <div class="analytics-bar-item">
+      <span>${escapeText(item.label)}</span>
+      <div class="analytics-bar-track"><i style="width:${percentOf(item.count, max)}%"></i></div>
+      <b>${analyticsNumber(item.count)}</b>
+    </div>
+  `).join('');
+}
+
+function renderAnalyticsRank(container, entries, emptyText) {
+  if (!container) return;
+  const max = Math.max(...entries.map(item => item[1]), 1);
+  container.innerHTML = entries.length
+    ? entries.slice(0, 6).map(([label, count], index) => `
+      <article>
+        <b>${String(index + 1).padStart(2, '0')}</b>
+        <div>
+          <strong>${escapeText(label)}</strong>
+          <span><i style="width:${percentOf(count, max)}%"></i></span>
+        </div>
+        <em>${analyticsNumber(count)}</em>
+      </article>
+    `).join('')
+    : `<div class="empty">${escapeText(emptyText)}</div>`;
+}
+
+function renderAnalyticsInsights(metrics, topContent, topCohorts) {
+  if (!analyticsInsights) return;
+  const insights = [];
+  if (!metrics.accessTotal) insights.push('Belum ada aktivitas akses pada periode ini.');
+  else insights.push(`${analyticsNumber(metrics.accessTotal)} aktivitas akses tercatat pada periode terpilih.`);
+  if (topContent[0]) insights.push(`Konten paling aktif: ${topContent[0][0]} (${analyticsNumber(topContent[0][1])} akses).`);
+  if (topCohorts[0]) insights.push(`Angkatan paling aktif: ${topCohorts[0][0]} (${analyticsNumber(topCohorts[0][1])} mahasiswa aktif).`);
+  if (metrics.errorTotal > 0) insights.push(`${analyticsNumber(metrics.errorTotal)} error browser perlu dipantau agar pengalaman mahasiswa tetap mulus.`);
+  if (metrics.newMessages > 0) insights.push(`${analyticsNumber(metrics.newMessages)} pesan mahasiswa belum dibalas.`);
+  if (metrics.openSessions > 0) insights.push(`${analyticsNumber(metrics.openSessions)} sesi praktikum sedang aktif.`);
+  if (!metrics.unpublishedContent) insights.push('Semua konten utama sudah berada pada status published atau tidak ada draft aktif.');
+  else insights.push(`${analyticsNumber(metrics.unpublishedContent)} konten masih draft/arsip dan tidak tampil untuk mahasiswa.`);
+
+  analyticsInsights.innerHTML = insights.map(item => `<p>${escapeText(item)}</p>`).join('');
+}
+
+function renderDashboardAnalytics() {
+  if (!analyticsMetrics && !analyticsTrend && !analyticsTopContent && !analyticsCohorts && !analyticsInsights) return;
+  const periodAccessLogs = accessLogs.filter(item => inAnalyticsPeriod(logTime(item)));
+  const localErrors = readClientErrors();
+  const periodErrors = [...serverClientErrors, ...localErrors].filter(item => inAnalyticsPeriod(item.createdAt || item.time));
+  const activeStudents = students.filter(item => inAnalyticsPeriod(item.last_seen_at));
+  const openSessions = practicumScopeItems(practicumAttendanceSessions).filter(item => item.status !== 'closed');
+  const liveThreads = new Set(liveChatMessages.map(item => item.threadId || item.nim || item.docId).filter(Boolean)).size;
+  const contentCount = resources.length + practicumModules.length + videos.length + announcements.length;
+  const publishedContent = [
+    ...resources,
+    ...practicumModules,
+    ...videos,
+    ...announcements
+  ].filter(item => normalizeContentStatus(item.status) === 'published').length;
+  const metrics = {
+    activeStudents: activeStudents.length,
+    studentOnline: students.filter(isStudentOnline).length,
+    accessTotal: periodAccessLogs.length,
+    downloadTotal: periodAccessLogs.filter(item => (item.action || 'download') === 'download').length,
+    videoViews: periodAccessLogs.filter(item => contentTypeForLog(item) === 'video' || item.action === 'view_video').length,
+    videoContent: videos.length,
+    newMessages: contactMessages.filter(item => item.status !== 'answered').length,
+    liveThreads,
+    errorTotal: periodErrors.length,
+    serverErrors: serverClientErrors.filter(item => inAnalyticsPeriod(item.createdAt || item.time)).length,
+    openSessions: openSessions.length,
+    attendanceRecords: practicumAttendanceRecords.filter(item => inAnalyticsPeriod(item.attendedAt || item.createdAt)).length,
+    unpublishedContent: Math.max(0, contentCount - publishedContent)
+  };
+
+  const contentMap = periodAccessLogs.reduce((map, item) => {
+    const title = item.resourceTitle || item.title || item.resourceId || accessTypeLabels[contentTypeForLog(item)] || 'Konten tanpa judul';
+    return incrementMap(map, title);
+  }, {});
+  const cohortMap = activeStudents.reduce((map, item) => incrementMap(map, item.angkatan || 'Tidak ada angkatan'), {});
+  const topContent = sortedEntries(contentMap);
+  const topCohorts = sortedEntries(cohortMap);
+
+  renderAnalyticsMetrics(metrics);
+  renderAnalyticsTrend(periodAccessLogs);
+  renderAnalyticsRank(analyticsTopContent, topContent, 'Belum ada konten yang dibuka pada periode ini.');
+  renderAnalyticsRank(analyticsCohorts, topCohorts, 'Belum ada mahasiswa aktif pada periode ini.');
+  renderAnalyticsInsights(metrics, topContent, topCohorts);
 }
 
 function practicumScopeItems(items) {
@@ -1575,6 +1767,7 @@ function stats() {
   renderAdminPermissionSummary();
   renderGuideRoleOverview();
   renderClientErrors();
+  renderDashboardAnalytics();
 }
 
 function filters() {
@@ -2989,6 +3182,12 @@ const resetAnnouncementForm = () => {
   const btn = announcementForm.querySelector('button[type="submit"]');
   if (btn) btn.textContent = 'Simpan Pemberitahuan';
 };
+
+on(analyticsPeriod, 'change', renderDashboardAnalytics);
+on(analyticsRefresh, 'click', () => {
+  renderDashboardAnalytics();
+  toast('Analytics dashboard diperbarui.');
+});
 
 on(resourceForm, 'submit', async e => {
   e.preventDefault();

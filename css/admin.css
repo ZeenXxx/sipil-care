@@ -103,6 +103,12 @@
   }
 }
 
+@media (max-width: 1200px) and (min-width: 901px) {
+  .analytics-metrics {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
 .login-shell  {
   
     min-height: 100vh;
@@ -788,6 +794,211 @@ body.admin-page [hidden]  {
     background: var(--primary);
 
     color: #fff
+
+}
+
+.analytics-metrics  {
+
+    display: grid;
+
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+
+    gap: 12px;
+
+    margin-top: 18px
+
+}
+
+.analytics-metrics article,
+.analytics-panel  {
+
+    border: 1px solid var(--line);
+
+    border-radius: 8px;
+
+    background: #fff;
+
+    box-shadow: 0 10px 26px rgba(15, 77, 58, .07)
+
+}
+
+.analytics-metrics article  {
+
+    display: grid;
+
+    gap: 6px;
+
+    padding: 16px
+
+}
+
+.analytics-metrics span,
+.analytics-metrics small  {
+
+    color: var(--muted);
+
+    font-size: 12px;
+
+    font-weight: 800
+
+}
+
+.analytics-metrics strong  {
+
+    color: var(--primary);
+
+    font-size: 30px;
+
+    line-height: 1
+
+}
+
+.analytics-grid  {
+
+    display: grid;
+
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+
+    gap: 14px;
+
+    margin-top: 14px
+
+}
+
+.analytics-panel  {
+
+    display: grid;
+
+    gap: 14px;
+
+    padding: 18px;
+
+    min-width: 0
+
+}
+
+.analytics-panel h4  {
+
+    margin: 6px 0 0;
+
+    color: var(--primary);
+
+    font-size: 20px
+
+}
+
+.analytics-bars,
+.analytics-rank,
+.analytics-insights  {
+
+    display: grid;
+
+    gap: 10px
+
+}
+
+.analytics-bar-item,
+.analytics-rank article  {
+
+    display: grid;
+
+    align-items: center;
+
+    gap: 10px
+
+}
+
+.analytics-bar-item  {
+
+    grid-template-columns: 52px minmax(0, 1fr) 42px
+
+}
+
+.analytics-bar-item span,
+.analytics-rank b,
+.analytics-rank em  {
+
+    color: var(--muted);
+
+    font-size: 12px;
+
+    font-style: normal;
+
+    font-weight: 900
+
+}
+
+.analytics-bar-track,
+.analytics-rank span  {
+
+    position: relative;
+
+    height: 9px;
+
+    overflow: hidden;
+
+    border-radius: 999px;
+
+    background: #edf4f1
+
+}
+
+.analytics-bar-track i,
+.analytics-rank span i  {
+
+    position: absolute;
+
+    inset: 0 auto 0 0;
+
+    display: block;
+
+    border-radius: inherit;
+
+    background: linear-gradient(90deg, #0f4d3a, #f1d22b)
+
+}
+
+.analytics-rank article  {
+
+    grid-template-columns: 34px minmax(0, 1fr) auto;
+
+    padding: 10px;
+
+    border: 1px solid var(--line);
+
+    border-radius: 8px;
+
+    background: #f8fbfa
+
+}
+
+.analytics-rank strong  {
+
+    display: block;
+
+    margin-bottom: 8px;
+
+    color: var(--primary);
+
+    font-size: 14px
+
+}
+
+.analytics-insights p  {
+
+    margin: 0;
+
+    padding: 12px;
+
+    border: 1px solid var(--line);
+
+    border-radius: 8px;
+
+    background: #f8fbfa;
+
+    color: #314942;
+
+    line-height: 1.55
 
 }
 
@@ -2206,7 +2417,7 @@ th  {
 
 }
 
-    .admin-stats, .admin-panel-grid, .student-activity-summary, .cohort-list, .dashboard-overview, .admin-guide-grid, .guide-steps, .academic-settings-grid, .academic-settings-summary, .admin-inline-grid, .backup-summary-grid  {
+    .admin-stats, .admin-panel-grid, .student-activity-summary, .cohort-list, .dashboard-overview, .admin-guide-grid, .guide-steps, .academic-settings-grid, .academic-settings-summary, .admin-inline-grid, .backup-summary-grid, .analytics-metrics, .analytics-grid  {
   
         grid-template-columns: 1fr
     

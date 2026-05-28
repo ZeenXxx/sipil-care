@@ -10,7 +10,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-title" content="SIPIL CARE">
     <link rel="stylesheet" href="../../css/style.css?v=26">
-    <link rel="stylesheet" href="../../css/admin.css?v=47">
+    <link rel="stylesheet" href="../../css/admin.css?v=48">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -67,6 +67,7 @@
           <a href="student-accounts.html" data-student-account-only="true">Atur Mahasiswa</a>
         </div>
         <nav class="dashboard-jump" aria-label="Navigasi dashboard">
+          <a href="#platform-analytics" data-admin-permission="dashboard">Analytics</a>
           <a href="#student-activity" data-admin-permission="dashboard">Mahasiswa Online</a>
           <a href="#practicum-overview">Ringkasan Praktikum</a>
           <a href="#academic-settings" data-admin-permission="dashboard">Kalender Akademik</a>
@@ -75,6 +76,55 @@
           <a href="#access-history" data-admin-permission="audit">History Akses</a>
           <a href="#audit-log" data-admin-permission="audit">Audit Log</a>
         </nav>
+      </section>
+
+      <section id="platform-analytics" class="admin-card" data-admin-permission="dashboard">
+        <div class="admin-table-head">
+          <div>
+            <h3>Analytics Platform</h3>
+            <p class="small-text">Pantau aktivitas mahasiswa, konten paling sering dibuka, tren akses, dan kondisi sistem SIPIL CARE.</p>
+          </div>
+          <div>
+            <select class="control" id="analyticsPeriod">
+              <option value="7">7 hari terakhir</option>
+              <option value="30" selected>30 hari terakhir</option>
+              <option value="90">90 hari terakhir</option>
+              <option value="all">Semua waktu</option>
+            </select>
+            <button class="action-btn" id="analyticsRefresh" type="button">Refresh</button>
+          </div>
+        </div>
+        <div class="analytics-metrics" id="analyticsMetrics"></div>
+        <div class="analytics-grid">
+          <article class="analytics-panel">
+            <div>
+              <span class="eyebrow">Tren akses</span>
+              <h4>Aktivitas 7 hari</h4>
+            </div>
+            <div class="analytics-bars" id="analyticsTrend"></div>
+          </article>
+          <article class="analytics-panel">
+            <div>
+              <span class="eyebrow">Konten</span>
+              <h4>Paling sering dibuka</h4>
+            </div>
+            <div class="analytics-rank" id="analyticsTopContent"></div>
+          </article>
+          <article class="analytics-panel">
+            <div>
+              <span class="eyebrow">Mahasiswa</span>
+              <h4>Aktivitas per angkatan</h4>
+            </div>
+            <div class="analytics-rank" id="analyticsCohorts"></div>
+          </article>
+          <article class="analytics-panel">
+            <div>
+              <span class="eyebrow">Sistem</span>
+              <h4>Insight operasional</h4>
+            </div>
+            <div class="analytics-insights" id="analyticsInsights"></div>
+          </article>
+        </div>
       </section>
 
       <section id="student-activity" class="admin-card" data-admin-permission="dashboard">
@@ -346,7 +396,7 @@
     <script src="../../js/student-config.js?v=20"></script>
     <script src="../../js/auth.js?v=30"></script>
     <script src="../../js/push-config.js?v=1"></script>
-    <script type="module" src="../../js/admin-panel.js?v=63"></script>
+    <script type="module" src="../../js/admin-panel.js?v=64"></script>
       <script src="../../js/pwa.js?v=2"></script>
   </body>
 </html>
