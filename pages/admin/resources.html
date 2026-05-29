@@ -187,7 +187,7 @@
         </form>
 
         <form class="admin-card" id="attendanceSessionForm">
-          <h3>Buat Sesi Absen</h3>
+          <h3 id="attendanceSessionFormTitle">Buat Sesi Absen</h3>
           <select class="control" id="attendanceCategory"></select>
           <input class="control" id="attendanceTargetCohort" placeholder="Target angkatan, contoh 2025" required>
           <input class="control" id="attendanceAcademicYear" placeholder="Tahun akademik, contoh 2025/2026" required>
@@ -210,7 +210,8 @@
             <option value="open">Aktif</option>
             <option value="closed">Ditutup</option>
           </select>
-          <button class="btn btn-primary" type="submit">Simpan Sesi Absen</button>
+          <button class="btn btn-primary" id="attendanceSessionSubmit" type="submit">Simpan Sesi Absen</button>
+          <button class="action-btn" id="attendanceSessionCancelEdit" type="button" hidden>Batal Edit</button>
         </form>
       </section>
 
@@ -261,7 +262,7 @@
     <script src="../../js/student-config.js?v=20"></script>
     <script src="../../js/auth.js?v=31"></script>
     <script src="../../js/push-config.js?v=1"></script>
-    <script type="module" src="../../js/admin-panel.js?v=66"></script>
+    <script type="module" src="../../js/admin-panel.js?v=67"></script>
       <script src="../../js/pwa.js?v=2"></script>
   </body>
 </html>

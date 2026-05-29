@@ -90,6 +90,7 @@ const rosterAcademicYear = document.getElementById('rosterAcademicYear');
 const rosterClassName = document.getElementById('rosterClassName');
 const rosterRows = document.getElementById('rosterRows');
 const attendanceSessionForm = document.getElementById('attendanceSessionForm');
+const attendanceSessionFormTitle = document.getElementById('attendanceSessionFormTitle');
 const attendanceCategory = document.getElementById('attendanceCategory');
 const attendanceTargetCohort = document.getElementById('attendanceTargetCohort');
 const attendanceAcademicYear = document.getElementById('attendanceAcademicYear');
@@ -104,6 +105,8 @@ const attendanceOpenAt = document.getElementById('attendanceOpenAt');
 const attendanceCloseAt = document.getElementById('attendanceCloseAt');
 const attendanceCode = document.getElementById('attendanceCode');
 const attendanceStatus = document.getElementById('attendanceStatus');
+const attendanceSessionSubmit = document.getElementById('attendanceSessionSubmit');
+const attendanceSessionCancelEdit = document.getElementById('attendanceSessionCancelEdit');
 const attendanceSearch = document.getElementById('attendanceSearch');
 const attendanceSessionFilter = document.getElementById('attendanceSessionFilter');
 const attendanceExport = document.getElementById('attendanceExport');
@@ -278,6 +281,7 @@ let practicumModules = [];
 let practicumRosters = [];
 let practicumAttendanceSessions = [];
 let practicumAttendanceRecords = [];
+let editingAttendanceSessionId = '';
 let videos = [];
 let announcements = [];
 let contactMessages = [];
@@ -1927,12 +1931,22 @@ function syncAttendanceClassOptions() {
   const targetAngkatan = selectedTargetCohort(attendanceTargetCohort, meta);
   const academicYear = String(attendanceAcademicYear?.value || '').trim();
   const classEntries = attendanceClassEntriesForTarget(meta, targetAngkatan, academicYear);
+  const editing = Boolean(editingAttendanceSessionId);
   const allMode = (attendanceClassMode?.value || 'all') === 'all';
 
   if (attendanceClassOptions) {
     attendanceClassOptions.innerHTML = classEntries.map(item => `<option value="${escapeText(item.className)}"></option>`).join('');
   }
 
+  if (editing) {
+    if (attendanceClassMode) attendanceClassMode.disabled = true;
+    attendanceClassName.disabled = true;
+    attendanceClassName.required = false;
+    if (attendanceClassHint) attendanceClassHint.textContent = 'Mode edit hanya mengubah jadwal, status, kode, dan keterangan modul. Record mahasiswa yang sudah absen tetap tersimpan.';
+    return;
+  }
+
+  if (attendanceClassMode) attendanceClassMode.disabled = false;
   attendanceClassName.disabled = allMode;
   attendanceClassName.required = !allMode;
   if (allMode) attendanceClassName.value = '';
@@ -1953,6 +1967,64 @@ function matchesTargetCohort(item, targetAngkatan) {
   const target = normalizeCohortYear(targetAngkatan);
   const itemTarget = targetCohortForPracticumResource(item);
   return !target || !itemTarget || sameCohort(itemTarget, target);
+}
+
+function setAttendanceIdentityDisabled(disabled) {
+  [attendanceCategory, attendanceTargetCohort, attendanceAcademicYear, attendanceClassMode, attendanceClassName].forEach(input => {
+    if (input) input.disabled = disabled;
+  });
+}
+
+function resetAttendanceSessionForm() {
+  editingAttendanceSessionId = '';
+  if (attendanceSessionFormTitle) attendanceSessionFormTitle.textContent = 'Buat Sesi Absen';
+  if (attendanceSessionSubmit) attendanceSessionSubmit.textContent = 'Simpan Sesi Absen';
+  if (attendanceSessionCancelEdit) attendanceSessionCancelEdit.hidden = true;
+  setAttendanceIdentityDisabled(false);
+  if (attendanceClassMode) attendanceClassMode.value = 'all';
+  if (attendanceClassName) attendanceClassName.value = '';
+  if (attendanceModuleNumber) attendanceModuleNumber.value = '';
+  if (attendanceModuleTitle) attendanceModuleTitle.value = '';
+  if (attendanceDate) attendanceDate.value = '';
+  if (attendanceOpenAt) attendanceOpenAt.value = '';
+  if (attendanceCloseAt) attendanceCloseAt.value = '';
+  if (attendanceCode) attendanceCode.value = '';
+  if (attendanceStatus) attendanceStatus.value = 'open';
+  syncAttendanceClassOptions();
+}
+
+function editAttendanceSession(sessionId) {
+  const session = practicumAttendanceSessions.find(item => item.docId === sessionId);
+  if (!session) {
+    toast('Sesi absen tidak ditemukan.');
+    return;
+  }
+  if (!canAccessPracticumCategory(session.category)) {
+    toast('Akun ini tidak memiliki akses ke sesi absen tersebut.');
+    return;
+  }
+
+  editingAttendanceSessionId = sessionId;
+  if (attendanceSessionFormTitle) attendanceSessionFormTitle.textContent = 'Edit Sesi Absen';
+  if (attendanceSessionSubmit) attendanceSessionSubmit.textContent = 'Update Sesi Absen';
+  if (attendanceSessionCancelEdit) attendanceSessionCancelEdit.hidden = false;
+
+  if (attendanceCategory) attendanceCategory.value = session.category || '';
+  if (attendanceTargetCohort) attendanceTargetCohort.value = targetCohortForPracticumResource(session) || '';
+  if (attendanceAcademicYear) attendanceAcademicYear.value = session.academicYear || '';
+  if (attendanceClassMode) attendanceClassMode.value = 'single';
+  if (attendanceClassName) attendanceClassName.value = session.className || '';
+  if (attendanceModuleNumber) attendanceModuleNumber.value = session.moduleNumber || '';
+  if (attendanceModuleTitle) attendanceModuleTitle.value = session.moduleTitle || '';
+  if (attendanceDate) attendanceDate.value = session.date || '';
+  if (attendanceOpenAt) attendanceOpenAt.value = session.openAt || '';
+  if (attendanceCloseAt) attendanceCloseAt.value = session.closeAt || '';
+  if (attendanceCode) attendanceCode.value = session.code || '';
+  if (attendanceStatus) attendanceStatus.value = session.status || 'open';
+
+  setAttendanceIdentityDisabled(true);
+  syncAttendanceClassOptions();
+  attendanceSessionForm?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 function expectedAcademicYearFor(meta, targetAngkatan) {
@@ -2131,6 +2203,7 @@ function attendanceRecapRender() {
         <td>${escapeText(record ? formatDateTime(record.attendedAt || record.createdAt) : '-')}</td>
         <td>
           ${session ? `<button class="action-btn" data-toggle-attendance="${escapeText(session.docId)}" type="button">${session.status === 'closed' ? 'Aktifkan' : 'Tutup'}</button>
+          <button class="action-btn" data-edit-attendance-session="${escapeText(session.docId)}" type="button">Edit Sesi</button>
           <button class="action-btn danger" data-del-attendance-session="${escapeText(session.docId)}" type="button">Hapus Sesi</button>` : ''}
           <button class="action-btn danger" data-del-roster="${escapeText(roster.docId)}" type="button">Hapus Praktikan</button>
         </td>
@@ -2158,6 +2231,7 @@ function attendanceSessionTableRender() {
         <td><span class="badge">${escapeText(session.status === 'closed' ? 'Ditutup' : 'Aktif')}</span></td>
         <td>${recordCounts[session.docId] || 0} record</td>
         <td>
+          <button class="action-btn" data-edit-attendance-session="${escapeText(session.docId)}" type="button">Edit</button>
           <button class="action-btn" data-toggle-attendance-session="${escapeText(session.docId)}" type="button">${session.status === 'closed' ? 'Aktifkan' : 'Tutup'}</button>
           <button class="action-btn" data-reset-attendance-session="${escapeText(session.docId)}" type="button">Reset Absen</button>
           <button class="action-btn danger" data-delete-attendance-session="${escapeText(session.docId)}" type="button">Hapus Sesi</button>
@@ -3550,6 +3624,52 @@ on(attendanceSessionForm, 'submit', async e => {
   }
   if (!confirmAcademicYearIfNeeded(academicYear, meta, targetAngkatan)) return;
 
+  if (editingAttendanceSessionId) {
+    const session = practicumAttendanceSessions.find(item => item.docId === editingAttendanceSessionId);
+    if (!session) {
+      toast('Sesi absen tidak ditemukan.');
+      resetAttendanceSessionForm();
+      return;
+    }
+    if (!canAccessPracticumCategory(session.category)) {
+      toast('Akun ini tidak memiliki akses ke sesi absen tersebut.');
+      return;
+    }
+
+    try {
+      const submit = attendanceSessionForm.querySelector('button[type="submit"]');
+      if (submit) submit.disabled = true;
+      const payload = {
+        moduleNumber,
+        moduleTitle,
+        date,
+        openAt,
+        closeAt,
+        code: String(attendanceCode?.value || '').trim(),
+        status: attendanceStatus?.value || 'open',
+        updatedAt: new Date().toISOString(),
+        updatedBy: currentAdmin().username
+      };
+      await updateDoc(doc(db, PRACTICUM_ATTENDANCE_SESSION_COLLECTION, editingAttendanceSessionId), payload);
+      await writeAuditLog({
+        action: 'EDIT_ATTENDANCE_SESSION',
+        targetType: 'practicum_attendance_session',
+        targetId: editingAttendanceSessionId,
+        targetTitle: attendanceSessionLabel({ ...session, ...payload }),
+        detail: `Sesi absen ${session.className || '-'} diperbarui. Record hadir mahasiswa tetap tersimpan.`
+      });
+      resetAttendanceSessionForm();
+      toast('Sesi absen berhasil diperbarui. Record mahasiswa yang sudah absen tetap tersimpan.');
+    } catch (error) {
+      console.error('Edit attendance session error:', error);
+      toast('Gagal memperbarui sesi absen.');
+    } finally {
+      const submit = attendanceSessionForm.querySelector('button[type="submit"]');
+      if (submit) submit.disabled = false;
+    }
+    return;
+  }
+
   const classEntries = classMode === 'all'
     ? attendanceClassEntriesForTarget(meta, targetAngkatan, academicYear)
     : [{ className, classKey: slugifyAcademic(className) }];
@@ -3907,7 +4027,7 @@ on(practicumTable, 'click', async e => {
 
 on(attendanceRecapTable, 'click', async e => {
   const rosterId = e.target.dataset.delRoster;
-  const sessionId = e.target.dataset.delAttendanceSession || e.target.dataset.toggleAttendance;
+  const sessionId = e.target.dataset.editAttendanceSession || e.target.dataset.delAttendanceSession || e.target.dataset.toggleAttendance;
   if (!rosterId && !sessionId) return;
   if (!requirePermission('practicum_studio', 'Absensi Praktikum')) return;
 
@@ -3935,6 +4055,11 @@ on(attendanceRecapTable, 'click', async e => {
     return;
   }
 
+  if (e.target.dataset.editAttendanceSession) {
+    editAttendanceSession(sessionId);
+    return;
+  }
+
   if (e.target.dataset.toggleAttendance) {
     try {
       await toggleAttendanceSession(sessionId);
@@ -3957,15 +4082,19 @@ on(attendanceRecapTable, 'click', async e => {
 });
 
 on(attendanceSessionTable, 'click', async e => {
-  const button = e.target.closest('[data-toggle-attendance-session], [data-reset-attendance-session], [data-delete-attendance-session]');
+  const button = e.target.closest('[data-edit-attendance-session], [data-toggle-attendance-session], [data-reset-attendance-session], [data-delete-attendance-session]');
   if (!button) return;
   if (!requirePermission('practicum_studio', 'Sesi Absen')) return;
 
-  const sessionId = button.dataset.toggleAttendanceSession || button.dataset.resetAttendanceSession || button.dataset.deleteAttendanceSession;
+  const sessionId = button.dataset.editAttendanceSession || button.dataset.toggleAttendanceSession || button.dataset.resetAttendanceSession || button.dataset.deleteAttendanceSession;
   if (!sessionId) return;
 
   try {
     button.disabled = true;
+    if (button.dataset.editAttendanceSession) {
+      editAttendanceSession(sessionId);
+      return;
+    }
     if (button.dataset.toggleAttendanceSession) {
       await toggleAttendanceSession(sessionId);
       return;
@@ -4930,6 +5059,7 @@ on(attendanceTargetCohort, 'change', () => refreshAcademicYearFromTarget(attenda
 on(attendanceAcademicYear, 'input', () => syncAttendanceClassOptions());
 on(attendanceAcademicYear, 'change', () => syncAttendanceClassOptions());
 on(attendanceClassMode, 'change', () => syncAttendanceClassOptions());
+on(attendanceSessionCancelEdit, 'click', () => resetAttendanceSessionForm());
 on(attendanceSearch, 'input', () => attendanceRecapRender());
 on(attendanceSessionFilter, 'change', () => attendanceRecapRender());
 on(attendanceExport, 'click', () => exportAttendanceExcel());
