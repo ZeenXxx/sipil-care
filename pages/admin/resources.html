@@ -191,7 +191,13 @@
           <select class="control" id="attendanceCategory"></select>
           <input class="control" id="attendanceTargetCohort" placeholder="Target angkatan, contoh 2025" required>
           <input class="control" id="attendanceAcademicYear" placeholder="Tahun akademik, contoh 2025/2026" required>
-          <input class="control" id="attendanceClassName" placeholder="Kelas praktikum, contoh A / B / Reguler" required>
+          <select class="control" id="attendanceClassMode">
+            <option value="all">Semua kelas dari data praktikan</option>
+            <option value="single">Satu kelas saja</option>
+          </select>
+          <input class="control" id="attendanceClassName" list="attendanceClassOptions" placeholder="Kelas praktikum, contoh A / B / Reguler">
+          <datalist id="attendanceClassOptions"></datalist>
+          <label class="small-text" id="attendanceClassHint">Mode semua kelas akan membuat sesi otomatis untuk seluruh kelas yang ada di data praktikan.</label>
           <input class="control" id="attendanceModuleNumber" placeholder="Modul / pertemuan ke, contoh Modul 3" required>
           <input class="control" id="attendanceModuleTitle" placeholder="Judul modul / kegiatan" required>
           <div class="admin-inline-grid">
@@ -255,7 +261,7 @@
     <script src="../../js/student-config.js?v=20"></script>
     <script src="../../js/auth.js?v=31"></script>
     <script src="../../js/push-config.js?v=1"></script>
-    <script type="module" src="../../js/admin-panel.js?v=65"></script>
+    <script type="module" src="../../js/admin-panel.js?v=66"></script>
       <script src="../../js/pwa.js?v=2"></script>
   </body>
 </html>
