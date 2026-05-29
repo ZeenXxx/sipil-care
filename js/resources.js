@@ -226,18 +226,8 @@ function normalizeResources(items) {
 }
 
 function loadResourcesFromFirestore() {
-  const resourcesQuery = query(collection(db, 'resources'), where('status', '==', 'published'), orderBy('date', 'desc'));
+  const resourcesQuery = query(collection(db, 'resources'), orderBy('date', 'desc'));
   onSnapshot(resourcesQuery, snapshot => {
-    if (snapshot.empty) {
-      getDocs(query(collection(db, 'resources'), orderBy('date', 'desc')))
-        .then(fallbackSnapshot => {
-          resources = normalizeResources(fallbackSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })).filter(item => (item.status || 'published') === 'published'));
-          renderFilters();
-          render();
-        })
-        .catch(error => console.warn('Resource legacy fallback failed:', error));
-      return;
-    }
     resources = normalizeResources(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })).filter(item => (item.status || 'published') === 'published'));
     renderFilters();
     render();
@@ -250,13 +240,13 @@ function loadResourcesFromFirestore() {
     fetch('../data/resources.json')
       .then(r => r.json())
       .then(d => {
-        resources = normalizeResources(d);
+        resources = normalizeResources(d).filter(item => item.category !== 'Software');
         renderFilters();
         render();
         // Fallback: tidak bisa query logs tanpa Firestore, langsung pakai data statis
         const f = document.getElementById('featuredResources');
         if (f) {
-          const fallback = resources.filter(i => ['SNI', 'Software', 'Struktur'].includes(i.category)).slice(0, 3);
+          const fallback = resources.filter(i => ['SNI', 'Struktur'].includes(i.category)).slice(0, 3);
           f.innerHTML = fallback.map(card).join('');
           bindCopyButtons(f);
         }
