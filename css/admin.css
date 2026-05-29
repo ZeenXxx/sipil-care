@@ -1551,6 +1551,146 @@ body.admin-page [hidden]  {
 
 }
 
+.admin-workspace-tabs  {
+
+    display: grid;
+
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+
+    gap: 10px;
+
+    padding: 10px;
+
+    border: 1px solid var(--line);
+
+    border-radius: 8px;
+
+    background: rgba(255, 255, 255, .72);
+
+    box-shadow: 0 10px 26px rgba(15, 77, 58, .06)
+
+}
+
+.admin-workspace-tab  {
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    gap: 10px;
+
+    min-height: 54px;
+
+    padding: 8px 12px;
+
+    border: 1px solid transparent;
+
+    border-radius: 8px;
+
+    background: transparent;
+
+    color: var(--primary);
+
+    font: inherit;
+
+    font-weight: 900;
+
+    cursor: pointer;
+
+    transition: background .18s ease, border-color .18s ease, color .18s ease, transform .18s ease
+
+}
+
+.admin-workspace-tab span  {
+
+    display: inline-grid;
+
+    place-items: center;
+
+    width: 34px;
+
+    height: 34px;
+
+    flex: 0 0 auto;
+
+    border-radius: 8px;
+
+    background: var(--soft);
+
+    color: var(--primary);
+
+    font-size: 12px;
+
+    font-weight: 900
+
+}
+
+.admin-workspace-tab:hover  {
+
+    border-color: rgba(15, 77, 58, .16);
+
+    background: #fff;
+
+    transform: translateY(-1px)
+
+}
+
+.admin-workspace-tab.active  {
+
+    border-color: var(--primary);
+
+    background: var(--primary);
+
+    color: #fff;
+
+    box-shadow: 0 12px 26px rgba(15, 77, 58, .14)
+
+}
+
+.admin-workspace-tab.active span  {
+
+    background: #f0dd43;
+
+    color: #0c3328
+
+}
+
+.admin-workspace-note  {
+
+    display: flex;
+
+    flex-wrap: wrap;
+
+    align-items: center;
+
+    gap: 10px;
+
+    padding: 14px 16px;
+
+    border: 1px solid rgba(15, 77, 58, .14);
+
+    border-radius: 8px;
+
+    background: var(--soft);
+
+    color: var(--muted)
+
+}
+
+.admin-workspace-note strong  {
+
+    color: var(--primary)
+
+}
+
+.admin-workspace-panel  {
+
+    min-width: 0
+
+}
+
 .admin-card  {
   
     padding: 24px;
@@ -2879,4 +3019,29 @@ th  {
 .student-note code {
   color: var(--primary);
   font-weight: 900;
+}
+
+@media (max-width: 1100px) {
+  .admin-workspace-tabs {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 700px) {
+  .admin-workspace-tabs {
+    display: flex;
+    overflow-x: auto;
+    padding: 8px;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .admin-workspace-tab {
+    min-width: 178px;
+    scroll-snap-align: start;
+  }
+
+  .admin-workspace-note {
+    align-items: flex-start;
+  }
 }

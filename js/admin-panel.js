@@ -518,6 +518,7 @@ const applyAdminRoleUI = () => {
     const permissions = item.dataset.adminPermission.split(',').map(value => value.trim()).filter(Boolean);
     item.hidden = permissions.length ? !permissions.some(permission => hasPermission(permission)) : false;
   });
+  syncAdminWorkspace();
   renderAdminPermissionSummary();
 };
 
@@ -617,6 +618,120 @@ const hasPermission = permission => currentAdmin().role === 'developer' || curre
 const canManageAdminAccounts = () => currentAdmin().role === 'developer' || hasPermission('admin_accounts');
 const canManageStudentAccounts = () => currentAdmin().role === 'developer' || hasPermission('student_accounts');
 const canDeleteDashboardLogs = () => currentAdmin().role === 'developer' || hasPermission('log_delete');
+
+const adminWorkspaceNotes = {
+  resource: {
+    title: 'Resource umum',
+    text: 'Upload dan kelola materi umum non-praktikum.'
+  },
+  software: {
+    title: 'Software',
+    text: 'Kelola link software yang tampil di halaman Software mahasiswa.'
+  },
+  practicum: {
+    title: 'Praktikum & Studio',
+    text: 'Upload modul praktikum/studio sesuai angkatan, semester, dan scope aslab.'
+  },
+  attendance: {
+    title: 'Absensi Praktikum',
+    text: 'Kelola data praktikan, sesi absen, rekap, dan backup absensi.'
+  },
+  video: {
+    title: 'Video',
+    text: 'Upload dan kelola video pembelajaran yang tampil di halaman Videos.'
+  }
+};
+const adminWorkspaceHashMap = {
+  resources: 'resource',
+  software: 'software',
+  'practicum-studio': 'practicum',
+  'practicum-attendance': 'attendance',
+  'practicum-attendance-recap': 'attendance',
+  'practicum-attendance-sessions': 'attendance',
+  videos: 'video'
+};
+const adminWorkspaceTargetMap = {
+  resource: 'resources',
+  software: 'software',
+  practicum: 'practicum-studio',
+  attendance: 'practicum-attendance',
+  video: 'videos'
+};
+let activeAdminWorkspace = adminWorkspaceHashMap[location.hash.replace('#', '')] || 'resource';
+
+function adminPermissionHidden(element) {
+  const raw = element?.dataset?.adminPermission || '';
+  const permissions = raw.split(',').map(value => value.trim()).filter(Boolean);
+  return permissions.length ? !permissions.some(permission => hasPermission(permission)) : false;
+}
+
+function visibleAdminWorkspaceTabs() {
+  return [...document.querySelectorAll('[data-admin-workspace-tab]')]
+    .filter(tab => !adminPermissionHidden(tab));
+}
+
+function syncAdminWorkspace(options = {}) {
+  const tabs = [...document.querySelectorAll('[data-admin-workspace-tab]')];
+  if (!tabs.length) return;
+
+  tabs.forEach(tab => {
+    tab.hidden = adminPermissionHidden(tab);
+  });
+
+  const visibleTabs = tabs.filter(tab => !tab.hidden);
+  if (!visibleTabs.length) {
+    document.querySelectorAll('[data-admin-workspace], [data-admin-workspace-group], #adminWorkspaceNote').forEach(item => {
+      item.hidden = true;
+    });
+    return;
+  }
+
+  if (!visibleTabs.some(tab => tab.dataset.adminWorkspaceTab === activeAdminWorkspace)) {
+    activeAdminWorkspace = visibleTabs[0].dataset.adminWorkspaceTab || 'resource';
+  }
+
+  tabs.forEach(tab => {
+    const active = tab.dataset.adminWorkspaceTab === activeAdminWorkspace;
+    tab.classList.toggle('active', active);
+    tab.setAttribute('aria-pressed', String(active));
+  });
+
+  document.querySelectorAll('[data-admin-workspace]').forEach(item => {
+    const workspace = item.dataset.adminWorkspace;
+    item.hidden = adminPermissionHidden(item) || workspace !== activeAdminWorkspace;
+  });
+
+  document.querySelectorAll('[data-admin-workspace-group]').forEach(item => {
+    const groups = String(item.dataset.adminWorkspaceGroup || '').split(/\s+/).filter(Boolean);
+    item.hidden = !groups.includes(activeAdminWorkspace);
+  });
+
+  const note = document.getElementById('adminWorkspaceNote');
+  if (note) {
+    const meta = adminWorkspaceNotes[activeAdminWorkspace] || adminWorkspaceNotes.resource;
+    note.hidden = false;
+    note.querySelector('strong').textContent = meta.title;
+    note.querySelector('span').textContent = meta.text;
+  }
+
+  const targetId = adminWorkspaceTargetMap[activeAdminWorkspace];
+  if (targetId && options.updateHash) {
+    history.replaceState(null, '', `#${targetId}`);
+  }
+}
+
+function setupAdminWorkspaceTabs() {
+  const tabs = visibleAdminWorkspaceTabs();
+  if (!tabs.length) return;
+  document.querySelectorAll('[data-admin-workspace-tab]').forEach(tab => {
+    tab.addEventListener('click', () => {
+      activeAdminWorkspace = tab.dataset.adminWorkspaceTab || 'resource';
+      syncAdminWorkspace({ updateHash: true });
+    });
+  });
+  syncAdminWorkspace();
+}
+
 const canAccessAdminPage = (page = location.pathname.split('/').pop() || 'dashboard.html') => {
   page = normalizeAdminPageName(page);
   const admin = currentAdmin();
@@ -5132,6 +5247,7 @@ renderAdminRoleChecklist();
 renderAdminRoleOptions();
 syncNotificationButton();
 setupAdminMobileNav();
+setupAdminWorkspaceTabs();
 applyAdminRoleUIAfterSession();
 renderGuideRoleOverview();
 

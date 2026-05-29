@@ -10,7 +10,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-title" content="SIPIL CARE">
     <link rel="stylesheet" href="../../css/style.css?v=26">
-    <link rel="stylesheet" href="../../css/admin.css?v=48">
+    <link rel="stylesheet" href="../../css/admin.css?v=49">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -38,8 +38,21 @@
         <p>Upload dan kelola Resource umum, Praktikum & Studio, Software, dan Video dengan permission admin yang terpisah.</p>
       </section>
 
-      <section id="resource-upload" class="admin-panel-grid">
-        <form class="admin-card" id="resourceForm" data-admin-permission="resources" novalidate>
+      <section class="admin-workspace-tabs" aria-label="Menu kelola materi">
+        <button class="admin-workspace-tab active" type="button" data-admin-workspace-tab="resource" data-admin-permission="resources"><span>RS</span>Resource</button>
+        <button class="admin-workspace-tab" type="button" data-admin-workspace-tab="software" data-admin-permission="software"><span>SW</span>Software</button>
+        <button class="admin-workspace-tab" type="button" data-admin-workspace-tab="practicum" data-admin-permission="practicum_studio"><span>PS</span>Praktikum &amp; Studio</button>
+        <button class="admin-workspace-tab" type="button" data-admin-workspace-tab="attendance" data-admin-permission="practicum_studio"><span>AB</span>Absensi Praktikum</button>
+        <button class="admin-workspace-tab" type="button" data-admin-workspace-tab="video" data-admin-permission="videos"><span>VD</span>Video</button>
+      </section>
+
+      <section class="admin-workspace-note" id="adminWorkspaceNote">
+        <strong>Resource umum</strong>
+        <span>Upload dan kelola materi umum non-praktikum.</span>
+      </section>
+
+      <section id="resource-upload" class="admin-panel-grid admin-workspace-panel" data-admin-workspace-group="resource software practicum video">
+        <form class="admin-card" id="resourceForm" data-admin-workspace="resource" data-admin-permission="resources" novalidate>
           <h3>Upload Resource</h3>
           <input type="hidden" id="resourceId">
           <input class="control" id="resourceTitle" placeholder="Judul" required>
@@ -72,7 +85,7 @@
           <button id="submitResourceBtn" class="btn btn-primary" type="submit">Simpan Resource</button>
         </form>
 
-        <form class="admin-card" id="practicumForm" data-admin-permission="practicum_studio" novalidate>
+        <form class="admin-card" id="practicumForm" data-admin-workspace="practicum" data-admin-permission="practicum_studio" novalidate>
           <h3>Upload Praktikum &amp; Studio</h3>
           <input type="hidden" id="practicumId">
           <input class="control" id="practicumTitle" placeholder="Judul modul" required>
@@ -111,7 +124,7 @@
           <button id="submitPracticumBtn" class="btn btn-primary" type="submit">Simpan Modul</button>
         </form>
 
-        <form class="admin-card" id="softwareForm" data-admin-permission="software" novalidate>
+        <form class="admin-card" id="softwareForm" data-admin-workspace="software" data-admin-permission="software" novalidate>
           <h3>Upload Software</h3>
           <input type="hidden" id="softwareId">
           <input class="control" id="softwareTitle" placeholder="Judul" required>
@@ -136,7 +149,7 @@
           <button id="submitSoftwareBtn" class="btn btn-primary" type="submit">Simpan Software</button>
         </form>
 
-        <form class="admin-card" id="videoForm" data-admin-permission="videos">
+        <form class="admin-card" id="videoForm" data-admin-workspace="video" data-admin-permission="videos">
           <h3>Upload Video</h3>
           <input class="control" id="videoTitle" placeholder="Judul video" required>
           <input class="control" id="videoThumb" placeholder="Thumbnail label" required>
@@ -154,12 +167,12 @@
         </form>
       </section>
 
-      <section id="resources" class="admin-card" data-admin-permission="resources">
+      <section id="resources" class="admin-card admin-workspace-panel" data-admin-workspace="resource" data-admin-permission="resources">
         <div class="admin-table-head"><h3>Resource Management</h3><div><input class="control" id="adminSearch" placeholder="Search"><select class="control" id="adminFilter"><option value="All">All</option></select></div></div>
         <div class="table-wrap"><table><thead><tr><th>Judul</th><th>Kategori</th><th>Tipe</th><th>Status</th><th>Tanggal</th><th>Aksi</th></tr></thead><tbody id="resourceTable"></tbody></table></div>
       </section>
 
-      <section id="practicum-studio" class="admin-card" data-admin-permission="practicum_studio">
+      <section id="practicum-studio" class="admin-card admin-workspace-panel" data-admin-workspace="practicum" data-admin-permission="practicum_studio">
         <div class="admin-table-head">
           <div>
             <h3>Praktikum &amp; Studio Management</h3>
@@ -174,7 +187,7 @@
         <div class="table-wrap"><table><thead><tr><th>Judul</th><th>Kategori</th><th>Angkatan</th><th>Semester</th><th>Tipe</th><th>Status</th><th>Tanggal</th><th>Aksi</th></tr></thead><tbody id="practicumTable"></tbody></table></div>
       </section>
 
-      <section id="practicum-attendance" class="admin-panel-grid" data-admin-permission="practicum_studio">
+      <section id="practicum-attendance" class="admin-panel-grid admin-workspace-panel" data-admin-workspace="attendance" data-admin-permission="practicum_studio">
         <form class="admin-card" id="practicumRosterForm">
           <h3>Data Praktikan</h3>
           <select class="control" id="rosterCategory"></select>
@@ -215,7 +228,7 @@
         </form>
       </section>
 
-      <section id="practicum-attendance-recap" class="admin-card" data-admin-permission="practicum_studio">
+      <section id="practicum-attendance-recap" class="admin-card admin-workspace-panel" data-admin-workspace="attendance" data-admin-permission="practicum_studio">
         <div class="admin-table-head">
           <div>
             <h3>Rekap Absensi Praktikum</h3>
@@ -237,7 +250,7 @@
         <div class="table-wrap attendance-recap-scroll"><table><thead><tr><th>Praktikan</th><th>Kelas</th><th>Praktikum</th><th>Modul</th><th>Status</th><th>Waktu Absen</th><th>Aksi</th></tr></thead><tbody id="attendanceRecapTable"></tbody></table></div>
       </section>
 
-      <section id="practicum-attendance-sessions" class="admin-card" data-admin-permission="practicum_studio">
+      <section id="practicum-attendance-sessions" class="admin-card admin-workspace-panel" data-admin-workspace="attendance" data-admin-permission="practicum_studio">
         <div class="admin-table-head">
           <div>
             <h3>Daftar Sesi Absen</h3>
@@ -247,12 +260,12 @@
         <div class="table-wrap"><table><thead><tr><th>Praktikum</th><th>Kelas</th><th>Modul</th><th>Jadwal</th><th>Status</th><th>Record</th><th>Aksi</th></tr></thead><tbody id="attendanceSessionTable"></tbody></table></div>
       </section>
 
-      <section id="software" class="admin-card" data-admin-permission="software">
+      <section id="software" class="admin-card admin-workspace-panel" data-admin-workspace="software" data-admin-permission="software">
         <div class="admin-table-head"><h3>Software Management</h3><div><input class="control" id="softwareSearch" placeholder="Search"><select class="control" id="softwareFilter"><option value="All">All</option></select></div></div>
         <div class="table-wrap"><table><thead><tr><th>Judul</th><th>Kategori</th><th>Tipe</th><th>Status</th><th>Tanggal</th><th>Aksi</th></tr></thead><tbody id="softwareTable"></tbody></table></div>
       </section>
 
-      <section id="videos" class="admin-card" data-admin-permission="videos">
+      <section id="videos" class="admin-card admin-workspace-panel" data-admin-workspace="video" data-admin-permission="videos">
         <div class="admin-table-head"><h3>Video Management</h3><div><input class="control" id="videoSearch" placeholder="Search"><select class="control" id="videoFilter"><option value="All">All</option></select></div></div>
         <div class="table-wrap"><table><thead><tr><th>Judul</th><th>Kategori</th><th>Channel</th><th>Status</th><th>Aksi</th></tr></thead><tbody id="videoTable"></tbody></table></div>
       </section>
@@ -262,7 +275,7 @@
     <script src="../../js/student-config.js?v=20"></script>
     <script src="../../js/auth.js?v=31"></script>
     <script src="../../js/push-config.js?v=1"></script>
-    <script type="module" src="../../js/admin-panel.js?v=68"></script>
+    <script type="module" src="../../js/admin-panel.js?v=69"></script>
       <script src="../../js/pwa.js?v=2"></script>
   </body>
 </html>
