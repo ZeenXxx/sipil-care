@@ -1,20 +1,15 @@
 [
   {
-    "id": "2026-05-29:admin-dashboard",
+    "id": "2026-05-29:admin-dashboard,resources-content,student-access",
     "date": "2026-05-29",
     "dateLabel": "29 Mei 2026",
     "generated": true,
-    "summary": "Dashboard Admin, Panduan Admin & Developer, Akses dan Login Mahasiswa",
+    "summary": "Dashboard Admin, Akses dan Login Mahasiswa, Resource dan Materi Akademik",
     "items": [
       {
         "type": "improved",
         "title": "Dashboard Admin",
         "description": "Dashboard admin ditingkatkan agar navigasi, tampilan mobile, ringkasan data, dan akses ke bagian log lebih nyaman digunakan."
-      },
-      {
-        "type": "added",
-        "title": "Panduan Admin & Developer",
-        "description": "Panel admin kini dilengkapi halaman panduan internal berisi alur kerja, role, permission, checklist developer, dan troubleshooting cepat."
       },
       {
         "type": "improved",
@@ -25,6 +20,11 @@
         "type": "improved",
         "title": "Resource dan Materi Akademik",
         "description": "Halaman materi, praktikum, studio, software, video, dan akses file diperbarui agar konten akademik lebih mudah ditemukan dan digunakan."
+      },
+      {
+        "type": "added",
+        "title": "Panduan Admin & Developer",
+        "description": "Panel admin kini dilengkapi halaman panduan internal berisi alur kerja, role, permission, checklist developer, dan troubleshooting cepat."
       },
       {
         "type": "improved",

@@ -2121,6 +2121,15 @@ function attendanceSessionLabel(session) {
   ].filter(Boolean).join(' - ');
 }
 
+const studentReviewUrlForRoster = roster => {
+  const params = new URLSearchParams({
+    adminReviewNim: roster.nim || '',
+    adminReviewName: roster.name || '',
+    adminReviewAngkatan: targetCohortForPracticumResource(roster) || roster.angkatan || ''
+  });
+  return `../praktikum-studio?${params.toString()}`;
+};
+
 function attendanceSessionOptions() {
   if (!attendanceSessionFilter) return;
   const current = attendanceSessionFilter.value || 'All';
@@ -2202,6 +2211,7 @@ function attendanceRecapRender() {
         <td>${session ? status : '<span class="student-status never">Roster</span>'}</td>
         <td>${escapeText(record ? formatDateTime(record.attendedAt || record.createdAt) : '-')}</td>
         <td>
+          <a class="action-btn" href="${escapeText(studentReviewUrlForRoster(roster))}" target="_blank" rel="noopener">Review Mahasiswa</a>
           ${session ? `<button class="action-btn" data-toggle-attendance="${escapeText(session.docId)}" type="button">${session.status === 'closed' ? 'Aktifkan' : 'Tutup'}</button>
           <button class="action-btn" data-edit-attendance-session="${escapeText(session.docId)}" type="button">Edit Sesi</button>
           <button class="action-btn danger" data-del-attendance-session="${escapeText(session.docId)}" type="button">Hapus Sesi</button>` : ''}

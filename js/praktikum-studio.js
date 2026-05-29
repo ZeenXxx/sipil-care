@@ -71,6 +71,7 @@ const toggleBookmark = item => {
 
 const readStudentSession = () => {
   try {
+    if (window.SIPILCARE_STUDENT_REVIEW?.nim) return window.SIPILCARE_STUDENT_REVIEW;
     const raw = localStorage.getItem(SESSION_KEY) || sessionStorage.getItem(SESSION_KEY);
     if (!raw) return null;
     const session = JSON.parse(raw);
@@ -130,11 +131,12 @@ const attendancePanel = (course, rosters) => {
   }
 
   const records = new Set(attendanceRecords.map(record => record.sessionId));
+  const reviewMode = Boolean(readStudentSession()?.isAdminReview);
   return `<div class="attendance-list">${sessions.map(item => {
     const already = records.has(item.docId);
     const open = isSessionOpen(item);
-    const disabled = already || !open ? 'disabled' : '';
-    const status = already ? 'Sudah absen' : open ? 'Absen dibuka' : 'Belum waktunya / sudah tutup';
+    const disabled = already || !open || reviewMode ? 'disabled' : '';
+    const status = already ? 'Sudah absen' : reviewMode ? 'Belum absen' : open ? 'Absen dibuka' : 'Belum waktunya / sudah tutup';
     return `<article class="attendance-item">
       <div>
         <strong>${escapeText(item.moduleNumber)} - ${escapeText(item.moduleTitle)}</strong>
@@ -204,7 +206,7 @@ function render() {
   semesterGrid.innerHTML = `
     <div class="semester-access-note">
       <strong>${escapeText(semesterAccessLabel(activeSemester, currentSession.angkatan, academicSettings))}</strong>
-      <span>${escapeText(academicPeriodLabel(academicPeriod))}${studentRosters.length ? ` &middot; ${studentRosters.length} roster praktikum` : ''}</span>
+      <span>${currentSession.isAdminReview ? 'Mode review admin - tidak bisa mengirim absen &middot; ' : ''}${escapeText(academicPeriodLabel(academicPeriod))}${studentRosters.length ? ` &middot; ${studentRosters.length} roster praktikum` : ''}</span>
     </div>
   ` + semesters
     .filter(semester => selectedSemester === 'All' || Number(selectedSemester) === semester)
@@ -234,6 +236,10 @@ function bindAttendanceButtons() {
       const item = attendanceSessions.find(sessionItem => sessionItem.docId === sessionId);
       const currentSession = readStudentSession();
       if (!item || !currentSession) return;
+      if (currentSession.isAdminReview) {
+        showToast('Mode review admin hanya untuk pengecekan. Absen tidak dikirim.');
+        return;
+      }
       const roster = studentRosters.find(row => row.category === item.category
         && sameTarget(item, row)
         && (row.classKey || slugifyAcademic(row.className)) === (item.classKey || slugifyAcademic(item.className))

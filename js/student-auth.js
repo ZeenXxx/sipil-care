@@ -21,6 +21,8 @@
   const isAdminPanel = currentPage === "panel-hms-sipil-2026.html";
   const isHomePage = currentPage === "index.html" && !location.pathname.includes("/pages/");
   const isPublicHelpPage = currentPage === "help.html";
+  const adminReviewParams = new URLSearchParams(location.search);
+  const adminReviewNim = adminReviewParams.get("adminReviewNim") || "";
   const usingSupabase = CONFIG.mode === "supabase" && CONFIG.supabaseUrl && CONFIG.supabaseAnonKey;
   const HMS_INSTAGRAM = "https://www.instagram.com/hmsunjani";
   const HMS_YOUTUBE = "https://youtube.com/@hmsunjani1986?si=d_lPiLa4u7yzBDYE";
@@ -47,6 +49,35 @@
   const isValidNim = (nim) => /^[0-9]{8,14}$/.test(nim);
   const nextUrl = () => cleanRoute(new URLSearchParams(location.search).get("next") || "index.html");
   const queryMode = () => new URLSearchParams(location.search).get("mode") || "login";
+  const readLocalJson = (key) => {
+    try {
+      return JSON.parse(localStorage.getItem(key) || "{}");
+    } catch {
+      return {};
+    }
+  };
+  const canUseAdminStudentReview = () => {
+    if (!isValidNim(adminReviewNim)) return false;
+    const adminSession = readLocalJson("sipilcare_admin_session");
+    const adminProfile = readLocalJson("sipilcare_admin_profile");
+    const permissions = Array.isArray(adminProfile.permissions) ? adminProfile.permissions : [];
+    return Boolean(adminSession.token && adminSession.username && (
+      adminProfile.role === "developer" ||
+      permissions.includes("practicum_studio") ||
+      permissions.includes("student_accounts")
+    ));
+  };
+  const adminReviewSession = () => {
+    if (!canUseAdminStudentReview()) return null;
+    return {
+      nim: adminReviewNim,
+      name: adminReviewParams.get("adminReviewName") || "Mahasiswa Review",
+      angkatan: adminReviewParams.get("adminReviewAngkatan") || "",
+      lastSeenAt: Date.now(),
+      isAdminReview: true
+    };
+  };
+  window.SIPILCARE_STUDENT_REVIEW = adminReviewSession();
   const getGreetingHour = () => {
     try {
       const parts = new Intl.DateTimeFormat("id-ID", {
@@ -69,6 +100,8 @@
 
   const readSession = () => {
     try {
+      const reviewSession = adminReviewSession();
+      if (reviewSession) return reviewSession;
       const raw = localStorage.getItem(SESSION_KEY) || sessionStorage.getItem(SESSION_KEY);
       if (!raw) return null;
       const session = JSON.parse(raw);
@@ -166,6 +199,7 @@
   };
 
   const updateStudentActivity = async (session, options = {}) => {
+    if (session?.isAdminReview) return;
     if (!usingSupabase || !session?.nim) return;
     const now = Date.now();
     const key = activityKey(session.nim);
@@ -196,6 +230,7 @@
   };
 
   const remoteSessionGuard = async (session) => {
+    if (session?.isAdminReview) return;
     if (!usingSupabase || !session?.nim) return;
     try {
       const student = await remoteFindStudent(session.nim);
@@ -332,7 +367,7 @@
             <strong data-student-greeting-text>${escapeHtml(getTimeGreeting())}, ${escapeHtml((session.name || "Mahasiswa").split(" ")[0])}!</strong>
             <small>NIM ${escapeHtml(session.nim)}${session.angkatan ? " · Angkatan " + escapeHtml(session.angkatan) : ""}</small>
           </span>
-          <span class="student-greeting-tag">✓ Sudah login</span>
+          <span class="student-greeting-tag">${session.isAdminReview ? "Mode review admin" : "✓ Sudah login"}</span>
         </div>
       `;
       main.insertBefore(bar, main.firstChild);
@@ -373,7 +408,7 @@
           </div>
         </div>
         <div class="student-account-status">
-          <span class="student-status-dot"></span> Aktif di SIPIL CARE
+          <span class="student-status-dot"></span> ${session.isAdminReview ? "Mode review admin" : "Aktif di SIPIL CARE"}
         </div>
       </div>
       <div class="student-account-divider"></div>
@@ -448,9 +483,11 @@
       if (event.key === "Escape") closeAccountMenu();
     });
 
-    menu.appendChild(dashboardLink);
-    menu.appendChild(passwordButton);
-    menu.appendChild(logout);
+    if (!session.isAdminReview) {
+      menu.appendChild(dashboardLink);
+      menu.appendChild(passwordButton);
+      menu.appendChild(logout);
+    }
     account.appendChild(accountButton);
     account.appendChild(menu);
     nav.appendChild(account);
