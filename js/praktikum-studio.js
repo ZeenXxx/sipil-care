@@ -51,6 +51,81 @@ const showToast = message => {
   toast.classList.add('show');
   setTimeout(() => toast.classList.remove('show'), 3000);
 };
+const normalizeAttendanceCode = value => String(value || '').trim().toUpperCase();
+
+function ensureAttendanceCodeDialog() {
+  let dialog = document.getElementById('attendanceCodeDialog');
+  if (dialog) return dialog;
+
+  dialog = document.createElement('div');
+  dialog.id = 'attendanceCodeDialog';
+  dialog.className = 'attendance-code-dialog';
+  dialog.hidden = true;
+  dialog.innerHTML = `
+    <div class="attendance-code-backdrop" data-attendance-code-cancel></div>
+    <form class="attendance-code-card" autocomplete="off">
+      <span class="eyebrow">Kode Absensi</span>
+      <h2>Masukkan kode dari aslab</h2>
+      <p data-attendance-code-detail>Pastikan kode sesuai dengan sesi praktikum yang sedang dibuka.</p>
+      <input class="control" name="attendanceCode" type="text" inputmode="text" autocomplete="one-time-code" autocapitalize="none" spellcheck="false" placeholder="Ketik kode absen" required>
+      <small data-attendance-code-error></small>
+      <div class="attendance-code-actions">
+        <button class="btn btn-primary" type="submit">Kirim Absen</button>
+        <button class="btn btn-ghost" type="button" data-attendance-code-cancel>Batal</button>
+      </div>
+    </form>
+  `;
+  document.body.appendChild(dialog);
+  return dialog;
+}
+
+function requestAttendanceCode(sessionItem) {
+  return new Promise(resolve => {
+    const dialog = ensureAttendanceCodeDialog();
+    const form = dialog.querySelector('form');
+    const input = dialog.querySelector('[name="attendanceCode"]');
+    const error = dialog.querySelector('[data-attendance-code-error]');
+    const detail = dialog.querySelector('[data-attendance-code-detail]');
+    const expectedCode = normalizeAttendanceCode(sessionItem.code);
+    let settled = false;
+
+    const close = result => {
+      if (settled) return;
+      settled = true;
+      dialog.hidden = true;
+      document.body.classList.remove('attendance-code-open');
+      form.onsubmit = null;
+      dialog.querySelectorAll('[data-attendance-code-cancel]').forEach(button => {
+        button.onclick = null;
+      });
+      resolve(result);
+    };
+
+    detail.textContent = `${sessionItem.moduleNumber || 'Sesi'} - ${sessionItem.moduleTitle || 'Praktikum'} - Kelas ${sessionItem.className || '-'}`;
+    input.value = '';
+    error.textContent = '';
+    dialog.hidden = false;
+    document.body.classList.add('attendance-code-open');
+    window.setTimeout(() => input.focus(), 80);
+
+    form.onsubmit = event => {
+      event.preventDefault();
+      const enteredCode = normalizeAttendanceCode(input.value);
+      if (enteredCode !== expectedCode) {
+        error.textContent = 'Kode salah. Silakan ketik ulang kode yang benar.';
+        input.value = '';
+        window.setTimeout(() => input.focus(), 50);
+        showToast('Kode absen salah. Masukkan ulang kode yang benar.');
+        return;
+      }
+      close(true);
+    };
+
+    dialog.querySelectorAll('[data-attendance-code-cancel]').forEach(button => {
+      button.onclick = () => close(false);
+    });
+  });
+}
 const readBookmarks = () => {
   try { return JSON.parse(localStorage.getItem(BOOKMARK_KEY) || '[]'); } catch { return []; }
 };
@@ -253,11 +328,8 @@ function bindAttendanceButtons() {
         return;
       }
       if (item.code) {
-        const code = prompt('Masukkan kode absen dari aslab:');
-        if (String(code || '').trim() !== String(item.code).trim()) {
-          showToast('Kode absen salah.');
-          return;
-        }
+        const codeValid = await requestAttendanceCode(item);
+        if (!codeValid) return;
       }
 
       try {

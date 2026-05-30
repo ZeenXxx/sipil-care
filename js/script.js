@@ -269,6 +269,13 @@ const fallbackAnnouncements = [
   }
 ];
 
+const publishedItems = items => items.filter(item => String(item.status || 'published').toLowerCase() === 'published');
+const sortByNewestDate = items => [...items].sort((a, b) => {
+  const left = parseDisplayDate(a.date || a.createdAt || a.updatedAt).machine || '0000-00-00';
+  const right = parseDisplayDate(b.date || b.createdAt || b.updatedAt).machine || '0000-00-00';
+  return right.localeCompare(left);
+});
+
 async function loadHomeVideos() {
   const target = document.getElementById('homeVideoHighlights');
   const countTarget = document.getElementById('homeVideoCount');
@@ -301,10 +308,24 @@ async function loadAnnouncements() {
   if (!target) return;
 
   try {
-    const announcementsRef = query(collection(db, 'announcements'), where('status', '==', 'published'), orderBy('date', 'desc'));
-    let snapshot = await getDocs(announcementsRef);
-    if (snapshot.empty) snapshot = await getDocs(query(collection(db, 'announcements'), orderBy('date', 'desc')));
-    const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })).filter(item => (item.status || 'published') === 'published');
+    let snapshot;
+    try {
+      const announcementsRef = query(collection(db, 'announcements'), where('status', '==', 'published'), orderBy('date', 'desc'));
+      snapshot = await getDocs(announcementsRef);
+    } catch (queryError) {
+      console.warn('Published announcement query failed, using broad fallback:', queryError);
+    }
+
+    if (!snapshot || snapshot.empty) {
+      try {
+        snapshot = await getDocs(query(collection(db, 'announcements'), orderBy('date', 'desc')));
+      } catch (orderError) {
+        console.warn('Ordered announcement fallback failed, using plain collection:', orderError);
+        snapshot = await getDocs(collection(db, 'announcements'));
+      }
+    }
+
+    const data = sortByNewestDate(publishedItems(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))));
     target.innerHTML = announcementCarousel((data.length ? data : fallbackAnnouncements).slice(0, 5));
     setupAnnouncementCarousel(target);
   } catch (err) {

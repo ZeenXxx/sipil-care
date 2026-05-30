@@ -30,5 +30,15 @@ body { background: #f6f9f8; }
 .attendance-item strong { color: var(--primary); }
 .attendance-item p { margin: 4px 0 0; color: var(--muted); font-weight: 700; }
 .attendance-item .btn { flex: 0 0 auto; }
+.attendance-code-dialog { position: fixed; inset: 0; z-index: 1000; display: grid; place-items: center; padding: 18px; }
+.attendance-code-dialog[hidden] { display: none; }
+.attendance-code-backdrop { position: absolute; inset: 0; background: rgba(7, 26, 20, .58); backdrop-filter: blur(8px); }
+.attendance-code-card { position: relative; z-index: 1; width: min(420px, 100%); display: grid; gap: 12px; padding: 24px; border: 1px solid rgba(255,255,255,.34); border-radius: 8px; background: rgba(255,255,255,.96); box-shadow: 0 28px 80px rgba(0,0,0,.22); }
+.attendance-code-card h2 { margin: 0; color: var(--primary); font-size: 28px; line-height: 1.12; }
+.attendance-code-card p { margin: 0; color: var(--muted); line-height: 1.5; }
+.attendance-code-card small { min-height: 18px; color: #b42318; font-weight: 800; }
+.attendance-code-card input { font-size: 18px; font-weight: 900; letter-spacing: .08em; text-align: center; text-transform: uppercase; }
+.attendance-code-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.attendance-code-open { overflow: hidden; }
 .empty-module { margin: 0; color: var(--muted); }
-@media (max-width: 780px) { .practicum-toolbar, .course-grid { grid-template-columns: 1fr; } .semester-head, .semester-access-note, .attendance-item { display: grid; } .attendance-item .btn { width: 100%; } }
+@media (max-width: 780px) { .practicum-toolbar, .course-grid { grid-template-columns: 1fr; } .semester-head, .semester-access-note, .attendance-item { display: grid; } .attendance-item .btn { width: 100%; } .attendance-code-actions { grid-template-columns: 1fr; } }
