@@ -30,6 +30,7 @@ import {
   normalizeCohortYear,
   normalizeAcademicSettings,
   resolveAcademicPeriod,
+  normalizeText,
   sameCohort,
   semesterForPracticumResource,
   slugifyAcademic,
