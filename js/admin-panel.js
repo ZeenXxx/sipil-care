@@ -2295,11 +2295,7 @@ const attendanceSessionGroupKey = session => JSON.stringify([
   String(session.academicYear || '').trim(),
   normalizeText(session.moduleNumber),
   normalizeText(session.moduleTitle),
-  String(session.date || '').trim(),
-  String(session.openAt || '').trim(),
-  String(session.closeAt || '').trim(),
-  String(session.code || '').trim().toUpperCase(),
-  String(session.status || 'open').trim()
+  String(session.date || '').trim()
 ]);
 
 function attendanceSessionGroups() {
@@ -2319,6 +2315,20 @@ function attendanceSessionGroups() {
 
 const attendanceGroupIds = group => group.sessions.map(session => session.docId).join(',');
 const parseAttendanceGroupIds = value => String(value || '').split(',').map(item => item.trim()).filter(Boolean);
+const attendanceSessionTimeLabel = session => [session.openAt, session.closeAt].filter(Boolean).join(' - ') || '-';
+const attendanceGroupScheduleLabel = group => {
+  const schedules = group.sessions.map(session => ({
+    className: session.className || '-',
+    time: attendanceSessionTimeLabel(session)
+  }));
+  const uniqueTimes = [...new Set(schedules.map(item => item.time))];
+  if (uniqueTimes.length <= 1) return uniqueTimes[0] || '-';
+  return schedules.map(item => `${item.className}: ${item.time}`).join('; ');
+};
+const attendanceGroupStatusLabel = group => {
+  const statuses = [...new Set(group.sessions.map(session => session.status === 'closed' ? 'Ditutup' : 'Aktif'))];
+  return statuses.length === 1 ? statuses[0] : 'Campuran';
+};
 
 function attendanceRecapRows() {
   const q = (attendanceSearch?.value || '').toLowerCase();
@@ -2417,19 +2427,23 @@ function attendanceSessionTableRender() {
       const classes = group.sessions.map(item => item.className || '-').join(', ');
       const totalRecords = group.sessions.reduce((sum, item) => sum + (recordCounts[item.docId] || 0), 0);
       const groupLabel = group.sessions.length > 1 ? `${group.sessions.length} kelas` : '1 kelas';
+      const singleEditButtons = group.sessions.length > 1
+        ? `<div class="attendance-class-actions"><span>Edit per kelas</span>${group.sessions.map(item => `<button class="action-btn compact" data-edit-attendance-session="${escapeText(item.docId)}" type="button">${escapeText(item.className || 'Kelas')}</button>`).join('')}</div>`
+        : '';
       return `
       <tr>
         <td><b>${escapeText(session.course || session.category)}</b><br><span class="small-text">${escapeText(session.category || '-')}</span></td>
         <td>${escapeText(classes)}<br><span class="small-text">${escapeText(groupLabel)} &middot; Angkatan ${escapeText(targetCohortForPracticumResource(session) || '-')} &middot; ${escapeText(session.academicYear || '-')}</span></td>
         <td><b>${escapeText(session.moduleNumber || '-')}</b><br><span class="small-text">${escapeText(session.moduleTitle || '-')}</span></td>
-        <td>${escapeText(session.date || '-')}<br><span class="small-text">${escapeText([session.openAt, session.closeAt].filter(Boolean).join(' - ') || '-')}</span></td>
-        <td><span class="badge">${escapeText(session.status === 'closed' ? 'Ditutup' : 'Aktif')}</span></td>
+        <td>${escapeText(session.date || '-')}<br><span class="small-text">${escapeText(attendanceGroupScheduleLabel(group))}</span></td>
+        <td><span class="badge">${escapeText(attendanceGroupStatusLabel(group))}</span></td>
         <td>${totalRecords} record</td>
         <td>
-          <button class="action-btn" data-edit-attendance-session-group="${escapeText(ids)}" type="button">Edit</button>
+          <button class="action-btn" data-edit-attendance-session-group="${escapeText(ids)}" type="button">Edit Semua</button>
           <button class="action-btn" data-toggle-attendance-session-group="${escapeText(ids)}" type="button">${session.status === 'closed' ? 'Aktifkan' : 'Tutup'}</button>
           <button class="action-btn" data-reset-attendance-session-group="${escapeText(ids)}" type="button">Reset Absen</button>
           <button class="action-btn danger" data-delete-attendance-session-group="${escapeText(ids)}" type="button">Hapus Sesi</button>
+          ${singleEditButtons}
         </td>
       </tr>
     `;

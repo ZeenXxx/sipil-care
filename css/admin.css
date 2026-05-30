@@ -2314,6 +2314,42 @@ th  {
 
 }
 
+.action-btn.compact  {
+
+    min-height: 30px;
+
+    padding: 0 8px;
+
+    margin: 0
+
+}
+
+.attendance-class-actions  {
+
+    display: flex;
+
+    flex-wrap: wrap;
+
+    gap: 6px;
+
+    align-items: center;
+
+    margin-top: 8px
+
+}
+
+.attendance-class-actions span  {
+
+    flex: 0 0 100%;
+
+    color: var(--muted);
+
+    font-size: 12px;
+
+    font-weight: 900
+
+}
+
 .danger  {
   
     color: #b42318
