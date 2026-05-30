@@ -2095,6 +2095,31 @@ body.admin-page [hidden]  {
 
 }
 
+.attendance-group-options  {
+
+    display: grid;
+
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+
+    gap: 8px;
+
+    padding: 10px;
+
+    border: 1px solid var(--line);
+
+    border-radius: 8px;
+
+    background: #f8fbfa
+
+}
+
+.attendance-group-options:empty,
+.attendance-group-options[hidden]  {
+
+    display: none
+
+}
+
 .student-bulk-form  {
 
     display: grid;

@@ -10,7 +10,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-title" content="SIPIL CARE">
     <link rel="stylesheet" href="../../css/style.css?v=26">
-    <link rel="stylesheet" href="../../css/admin.css?v=50">
+    <link rel="stylesheet" href="../../css/admin.css?v=51">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -211,6 +211,12 @@
           <input class="control" id="attendanceClassName" list="attendanceClassOptions" placeholder="Kelas praktikum, contoh A / B / Reguler">
           <datalist id="attendanceClassOptions"></datalist>
           <label class="small-text" id="attendanceClassHint">Mode semua kelas akan membuat sesi otomatis untuk seluruh kelas yang ada di data praktikan.</label>
+          <select class="control" id="attendanceGroupMode">
+            <option value="all">Semua kelompok pada kelas terpilih</option>
+            <option value="selected">Pilih kelompok tertentu</option>
+          </select>
+          <div class="attendance-group-options" id="attendanceGroupOptions"></div>
+          <label class="small-text" id="attendanceGroupHint">Default: sesi berlaku untuk semua kelompok pada kelas yang dibuat.</label>
           <input class="control" id="attendanceModuleNumber" placeholder="Modul / pertemuan ke, contoh Modul 3" required>
           <input class="control" id="attendanceModuleTitle" placeholder="Judul modul / kegiatan" required>
           <div class="admin-inline-grid">
@@ -275,7 +281,7 @@
     <script src="../../js/student-config.js?v=20"></script>
     <script src="../../js/auth.js?v=31"></script>
     <script src="../../js/push-config.js?v=1"></script>
-    <script type="module" src="../../js/admin-panel.js?v=72"></script>
+    <script type="module" src="../../js/admin-panel.js?v=73"></script>
       <script src="../../js/pwa.js?v=2"></script>
   </body>
 </html>

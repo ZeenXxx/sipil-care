@@ -99,6 +99,9 @@ const attendanceClassMode = document.getElementById('attendanceClassMode');
 const attendanceClassName = document.getElementById('attendanceClassName');
 const attendanceClassOptions = document.getElementById('attendanceClassOptions');
 const attendanceClassHint = document.getElementById('attendanceClassHint');
+const attendanceGroupMode = document.getElementById('attendanceGroupMode');
+const attendanceGroupOptions = document.getElementById('attendanceGroupOptions');
+const attendanceGroupHint = document.getElementById('attendanceGroupHint');
 const attendanceModuleNumber = document.getElementById('attendanceModuleNumber');
 const attendanceModuleTitle = document.getElementById('attendanceModuleTitle');
 const attendanceDate = document.getElementById('attendanceDate');
@@ -953,7 +956,8 @@ const rosterNimsForSession = session => practicumRosters
     && item.category === session.category
     && matchesTargetCohort(item, session.targetAngkatan || session.targetCohort)
     && item.academicYear === session.academicYear
-    && (item.classKey || slugifyAcademic(item.className)) === (session.classKey || slugifyAcademic(session.className)))
+    && (item.classKey || slugifyAcademic(item.className)) === (session.classKey || slugifyAcademic(session.className))
+    && matchesAttendanceGroup(item, session))
   .map(item => item.nim)
   .filter(Boolean);
 
@@ -972,6 +976,34 @@ const attendanceClassEntriesForTarget = (meta, targetAngkatan, academicYear) => 
     if (!classes.has(classKey)) classes.set(classKey, { className, classKey });
   });
   return [...classes.values()].sort((a, b) => a.className.localeCompare(b.className, 'id', { numeric: true }));
+};
+
+const normalizeGroupName = value => String(value || '').trim().replace(/\s+/g, ' ');
+const groupKeyForValue = value => {
+  const normalized = normalizeGroupName(value);
+  return normalized ? slugifyAcademic(normalized) : '';
+};
+const matchesAttendanceGroup = (roster, session) => {
+  const sessionGroup = normalizeGroupName(session?.group);
+  const sessionGroupKey = session?.groupKey || groupKeyForValue(sessionGroup);
+  if (!sessionGroup && !sessionGroupKey) return true;
+  const rosterGroup = normalizeGroupName(roster?.group);
+  const rosterGroupKey = roster?.groupKey || groupKeyForValue(rosterGroup);
+  return Boolean(rosterGroup) && (rosterGroupKey === sessionGroupKey || normalizeText(rosterGroup) === normalizeText(sessionGroup));
+};
+
+const attendanceGroupEntriesForTarget = (meta, targetAngkatan, academicYear, classEntries = []) => {
+  const selectedClassKeys = new Set(classEntries.map(item => item.classKey || slugifyAcademic(item.className)).filter(Boolean));
+  const groups = new Map();
+  attendanceRostersForTarget(meta, targetAngkatan, academicYear)
+    .filter(item => !selectedClassKeys.size || selectedClassKeys.has(item.classKey || slugifyAcademic(item.className)))
+    .forEach(item => {
+      const group = normalizeGroupName(item.group);
+      if (!group) return;
+      const groupKey = item.groupKey || groupKeyForValue(group);
+      if (!groups.has(groupKey)) groups.set(groupKey, { group, groupKey });
+    });
+  return [...groups.values()].sort((a, b) => a.group.localeCompare(b.group, 'id', { numeric: true }));
 };
 
 const selectedPracticumMeta = () => {
@@ -2042,6 +2074,77 @@ function selectedTargetCohort(input, meta) {
   return normalizeCohortYear(input?.value) || targetCohortSuggestion(meta);
 }
 
+function selectedAttendanceClassEntries(meta, targetAngkatan, academicYear) {
+  const allMode = (attendanceClassMode?.value || 'all') === 'all';
+  const className = normalizeClassName(attendanceClassName?.value);
+  return allMode
+    ? attendanceClassEntriesForTarget(meta, targetAngkatan, academicYear)
+    : className ? [{ className, classKey: slugifyAcademic(className) }] : [];
+}
+
+function selectedAttendanceGroupKeys() {
+  if (!attendanceGroupOptions) return [];
+  return [...attendanceGroupOptions.querySelectorAll('input[type="checkbox"]:checked')]
+    .map(input => input.value)
+    .filter(Boolean);
+}
+
+function syncAttendanceGroupOptions(classEntries = null) {
+  if (!attendanceGroupMode || !attendanceGroupOptions) return;
+  const meta = selectedCourseFrom(attendanceCategory);
+  const targetAngkatan = selectedTargetCohort(attendanceTargetCohort, meta);
+  const academicYear = String(attendanceAcademicYear?.value || '').trim();
+  const editing = Boolean(editingAttendanceSessionId || editingAttendanceSessionIds.length);
+  const entries = classEntries || selectedAttendanceClassEntries(meta, targetAngkatan, academicYear);
+  const groupEntries = attendanceGroupEntriesForTarget(meta, targetAngkatan, academicYear, entries);
+  const previousSelected = new Set(selectedAttendanceGroupKeys());
+  const selectedMode = (attendanceGroupMode.value || 'all') === 'selected';
+  const editingGroupKeys = editing
+    ? new Set(editingAttendanceSessionIds
+      .map(id => {
+        const session = practicumAttendanceSessions.find(item => item.docId === id);
+        return session?.groupKey || groupKeyForValue(session?.group);
+      })
+      .filter(Boolean))
+    : new Set();
+
+  attendanceGroupOptions.innerHTML = groupEntries.map(item => {
+    const checked = previousSelected.has(item.groupKey) || editingGroupKeys.has(item.groupKey) ? 'checked' : '';
+    return `<label class="admin-mini-check"><input type="checkbox" value="${escapeText(item.groupKey)}" ${checked}> Kelompok ${escapeText(item.group)}</label>`;
+  }).join('');
+
+  if (editing) {
+    attendanceGroupMode.disabled = true;
+    attendanceGroupOptions.querySelectorAll('input').forEach(input => { input.disabled = true; });
+    attendanceGroupOptions.hidden = !selectedMode || !groupEntries.length;
+    if (attendanceGroupHint) {
+      const groups = editingAttendanceSessionIds
+        .map(id => normalizeGroupName(practicumAttendanceSessions.find(item => item.docId === id)?.group))
+        .filter(Boolean);
+      const uniqueGroups = [...new Set(groups)];
+      attendanceGroupHint.textContent = uniqueGroups.length
+        ? `Mode edit sesi kelompok: ${uniqueGroups.map(item => `Kelompok ${item}`).join(', ')}. Scope kelompok tidak diubah saat edit.`
+        : 'Mode edit tidak mengubah scope kelompok. Record mahasiswa yang sudah absen tetap tersimpan.';
+    }
+    return;
+  }
+
+  attendanceGroupMode.disabled = !groupEntries.length;
+  attendanceGroupOptions.hidden = !selectedMode || !groupEntries.length;
+  attendanceGroupOptions.querySelectorAll('input').forEach(input => { input.disabled = !selectedMode; });
+
+  if (!groupEntries.length) {
+    attendanceGroupMode.value = 'all';
+    if (attendanceGroupHint) attendanceGroupHint.textContent = 'Belum ada data kelompok pada roster. Sesi akan berlaku untuk semua praktikan di kelas terpilih.';
+    return;
+  }
+  if (attendanceGroupHint) {
+    attendanceGroupHint.textContent = selectedMode
+      ? 'Centang satu atau beberapa kelompok. Sesi hanya muncul untuk praktikan pada kelompok tersebut.'
+      : `Sesi berlaku untuk semua kelompok pada kelas terpilih: ${groupEntries.map(item => item.group).join(', ')}.`;
+  }
+}
+
 function syncAttendanceClassOptions() {
   if (!attendanceClassName) return;
   const meta = selectedCourseFrom(attendanceCategory);
@@ -2062,9 +2165,10 @@ function syncAttendanceClassOptions() {
     if (attendanceClassHint) {
       const count = editingAttendanceSessionIds.length || 1;
       attendanceClassHint.textContent = count > 1
-        ? `Mode edit grup mengubah ${count} kelas sekaligus. Record mahasiswa yang sudah absen tetap tersimpan.`
+        ? `Mode edit grup mengubah ${count} sesi sekaligus. Record mahasiswa yang sudah absen tetap tersimpan.`
         : 'Mode edit hanya mengubah jadwal, status, kode, dan keterangan modul. Record mahasiswa yang sudah absen tetap tersimpan.';
     }
+    syncAttendanceGroupOptions(classEntries);
     return;
   }
 
@@ -2083,6 +2187,7 @@ function syncAttendanceClassOptions() {
         : 'Mode semua kelas membutuhkan data praktikan terlebih dahulu agar daftar kelas bisa dibaca.')
       : 'Mode satu kelas hanya membuat sesi untuk kelas yang ditulis atau dipilih dari daftar.';
   }
+  syncAttendanceGroupOptions(selectedAttendanceClassEntries(meta, targetAngkatan, academicYear));
 }
 
 function matchesTargetCohort(item, targetAngkatan) {
@@ -2092,9 +2197,10 @@ function matchesTargetCohort(item, targetAngkatan) {
 }
 
 function setAttendanceIdentityDisabled(disabled) {
-  [attendanceCategory, attendanceTargetCohort, attendanceAcademicYear, attendanceClassMode, attendanceClassName].forEach(input => {
+  [attendanceCategory, attendanceTargetCohort, attendanceAcademicYear, attendanceClassMode, attendanceClassName, attendanceGroupMode].forEach(input => {
     if (input) input.disabled = disabled;
   });
+  attendanceGroupOptions?.querySelectorAll('input').forEach(input => { input.disabled = disabled; });
 }
 
 function resetAttendanceSessionForm() {
@@ -2106,6 +2212,8 @@ function resetAttendanceSessionForm() {
   setAttendanceIdentityDisabled(false);
   if (attendanceClassMode) attendanceClassMode.value = 'all';
   if (attendanceClassName) attendanceClassName.value = '';
+  if (attendanceGroupMode) attendanceGroupMode.value = 'all';
+  if (attendanceGroupOptions) attendanceGroupOptions.innerHTML = '';
   if (attendanceModuleNumber) attendanceModuleNumber.value = '';
   if (attendanceModuleTitle) attendanceModuleTitle.value = '';
   if (attendanceDate) attendanceDate.value = '';
@@ -2136,7 +2244,7 @@ function editAttendanceSession(sessionId, sessionIds = [sessionId]) {
   });
   if (!editingAttendanceSessionIds.length) editingAttendanceSessionIds = [sessionId];
   const editingCount = editingAttendanceSessionIds.length;
-  if (attendanceSessionFormTitle) attendanceSessionFormTitle.textContent = editingCount > 1 ? `Edit Sesi Absen (${editingCount} kelas)` : 'Edit Sesi Absen';
+  if (attendanceSessionFormTitle) attendanceSessionFormTitle.textContent = editingCount > 1 ? `Edit Sesi Absen (${editingCount} sesi)` : 'Edit Sesi Absen';
   if (attendanceSessionSubmit) attendanceSessionSubmit.textContent = editingCount > 1 ? 'Update Semua Sesi' : 'Update Sesi Absen';
   if (attendanceSessionCancelEdit) attendanceSessionCancelEdit.hidden = false;
 
@@ -2148,8 +2256,9 @@ function editAttendanceSession(sessionId, sessionIds = [sessionId]) {
     const classNames = editingAttendanceSessionIds
       .map(id => practicumAttendanceSessions.find(item => item.docId === id)?.className)
       .filter(Boolean);
-    attendanceClassName.value = editingCount > 1 ? classNames.join(', ') : session.className || '';
+    attendanceClassName.value = editingCount > 1 ? [...new Set(classNames)].join(', ') : session.className || '';
   }
+  if (attendanceGroupMode) attendanceGroupMode.value = session.group ? 'selected' : 'all';
   if (attendanceModuleNumber) attendanceModuleNumber.value = session.moduleNumber || '';
   if (attendanceModuleTitle) attendanceModuleTitle.value = session.moduleTitle || '';
   if (attendanceDate) attendanceDate.value = session.date || '';
@@ -2263,7 +2372,7 @@ function attendanceSessionLabel(session) {
   return [
     session.moduleNumber,
     session.moduleTitle,
-    session.className ? `Kelas ${session.className}` : '',
+    session.className ? `Kelas ${session.className}${session.group ? ` Kelompok ${session.group}` : ''}` : '',
     session.date
   ].filter(Boolean).join(' - ');
 }
@@ -2309,16 +2418,21 @@ function attendanceSessionGroups() {
     });
   return [...map.values()].map(group => ({
     ...group,
-    sessions: group.sessions.sort((a, b) => String(a.className || '').localeCompare(String(b.className || ''), 'id-ID', { numeric: true }))
+    sessions: group.sessions.sort((a, b) => [String(a.className || ''), normalizeGroupName(a.group)].join('|').localeCompare([String(b.className || ''), normalizeGroupName(b.group)].join('|'), 'id-ID', { numeric: true }))
   }));
 }
 
 const attendanceGroupIds = group => group.sessions.map(session => session.docId).join(',');
 const parseAttendanceGroupIds = value => String(value || '').split(',').map(item => item.trim()).filter(Boolean);
 const attendanceSessionTimeLabel = session => [session.openAt, session.closeAt].filter(Boolean).join(' - ') || '-';
+const attendanceSessionScopeLabel = session => {
+  const className = session.className || 'Kelas';
+  const group = normalizeGroupName(session.group);
+  return group ? `${className} K${group}` : className;
+};
 const attendanceGroupScheduleLabel = group => {
   const schedules = group.sessions.map(session => ({
-    className: session.className || '-',
+    className: attendanceSessionScopeLabel(session),
     time: attendanceSessionTimeLabel(session)
   }));
   const uniqueTimes = [...new Set(schedules.map(item => item.time))];
@@ -2360,6 +2474,7 @@ function attendanceRecapRows() {
         && roster.category === session.category
         && matchesTargetCohort(roster, session.targetAngkatan || session.targetCohort)
         && (roster.classKey || slugifyAcademic(roster.className)) === (session.classKey || slugifyAcademic(session.className))
+        && matchesAttendanceGroup(roster, session)
         && roster.academicYear === session.academicYear)
       .forEach(roster => {
         const record = recordByKey.get(`${session.docId}_${roster.nim}`);
@@ -2424,11 +2539,13 @@ function attendanceSessionTableRender() {
     .map(group => {
       const session = group.sessions[0];
       const ids = attendanceGroupIds(group);
-      const classes = group.sessions.map(item => item.className || '-').join(', ');
+      const classNames = [...new Set(group.sessions.map(item => item.className || '-'))];
+      const groupNames = [...new Set(group.sessions.map(item => normalizeGroupName(item.group)).filter(Boolean))];
+      const classes = classNames.join(', ');
       const totalRecords = group.sessions.reduce((sum, item) => sum + (recordCounts[item.docId] || 0), 0);
-      const groupLabel = group.sessions.length > 1 ? `${group.sessions.length} kelas` : '1 kelas';
+      const groupLabel = `${classNames.length} kelas${groupNames.length ? ` · Kelompok ${groupNames.join(', ')}` : ' · Semua kelompok'}`;
       const singleEditButtons = group.sessions.length > 1
-        ? `<div class="attendance-class-actions"><span>Edit per kelas</span>${group.sessions.map(item => `<button class="action-btn compact" data-edit-attendance-session="${escapeText(item.docId)}" type="button">${escapeText(item.className || 'Kelas')}</button>`).join('')}</div>`
+        ? `<div class="attendance-class-actions"><span>Edit per kelas/kelompok</span>${group.sessions.map(item => `<button class="action-btn compact" data-edit-attendance-session="${escapeText(item.docId)}" type="button">${escapeText(attendanceSessionScopeLabel(item))}</button>`).join('')}</div>`
         : '';
       return `
       <tr>
@@ -2617,6 +2734,7 @@ function exportSessionExcel() {
       targetCohortForPracticumResource(item),
       item.academicYear,
       item.className,
+      item.group || '',
       item.moduleNumber,
       item.moduleTitle,
       item.date,
@@ -2638,6 +2756,7 @@ function exportSessionExcel() {
       'Angkatan Target',
       'Tahun Akademik',
       'Kelas',
+      'Kelompok',
       'Modul',
       'Judul Modul',
       'Tanggal',
@@ -3825,6 +3944,8 @@ on(attendanceSessionForm, 'submit', async e => {
   const targetAngkatan = selectedTargetCohort(attendanceTargetCohort, meta);
   const academicYear = String(attendanceAcademicYear?.value || '').trim();
   const classMode = attendanceClassMode?.value || 'all';
+  const groupMode = attendanceGroupMode?.value || 'all';
+  const selectedGroupKeys = selectedAttendanceGroupKeys();
   const className = normalizeClassName(attendanceClassName?.value);
   const moduleNumber = String(attendanceModuleNumber?.value || '').trim();
   const moduleTitle = String(attendanceModuleTitle?.value || '').trim();
@@ -3915,6 +4036,10 @@ on(attendanceSessionForm, 'submit', async e => {
       .filter(item => (item.classKey || slugifyAcademic(item.className)) === selectedClassKey).length;
     if (!rosterCount && !confirm('Belum ada data praktikan untuk kelas ini. Tetap buat sesi absen?')) return;
   }
+  if (groupMode === 'selected' && !selectedGroupKeys.length) {
+    toast('Pilih minimal satu kelompok untuk sesi absen.');
+    return;
+  }
 
   try {
     const submit = attendanceSessionForm.querySelector('button[type="submit"]');
@@ -3935,13 +4060,46 @@ on(attendanceSessionForm, 'submit', async e => {
       createdBy: currentAdmin().username
     };
     const createdSessions = [];
+    const targetRosters = attendanceRostersForTarget(meta, targetAngkatan, academicYear);
+    const sessionTargets = [];
 
-    for (const classEntry of classEntries) {
+    classEntries.forEach(classEntry => {
+      const classKey = classEntry.classKey || slugifyAcademic(classEntry.className);
+      const classRosters = targetRosters.filter(item => (item.classKey || slugifyAcademic(item.className)) === classKey);
+      if (groupMode === 'selected') {
+        const groups = new Map();
+        classRosters.forEach(item => {
+          const group = normalizeGroupName(item.group);
+          if (!group) return;
+          const groupKey = item.groupKey || groupKeyForValue(group);
+          if (selectedGroupKeys.includes(groupKey) && !groups.has(groupKey)) {
+            groups.set(groupKey, { group, groupKey });
+          }
+        });
+        groups.forEach(group => {
+          sessionTargets.push({ ...classEntry, classKey, group: group.group, groupKey: group.groupKey });
+        });
+        return;
+      }
+      sessionTargets.push({ ...classEntry, classKey, group: '', groupKey: '' });
+    });
+
+    if (groupMode === 'selected' && !sessionTargets.length) {
+      toast('Kelompok yang dipilih tidak ditemukan pada kelas/data praktikan tersebut.');
+      return;
+    }
+
+    for (const classEntry of sessionTargets) {
       const payload = {
         ...basePayload,
         className: classEntry.className,
         classKey: classEntry.classKey || slugifyAcademic(classEntry.className),
-        batchMode: classMode === 'all' ? 'all_classes' : 'single_class'
+        group: classEntry.group || '',
+        groupKey: classEntry.groupKey || '',
+        scope: classEntry.group ? 'group' : 'class',
+        batchMode: classMode === 'all'
+          ? (classEntry.group ? 'all_classes_selected_groups' : 'all_classes')
+          : (classEntry.group ? 'single_class_selected_groups' : 'single_class')
       };
       const created = await addDoc(collection(db, PRACTICUM_ATTENDANCE_SESSION_COLLECTION), payload);
       createdSessions.push({ created, payload });
@@ -3952,15 +4110,13 @@ on(attendanceSessionForm, 'submit', async e => {
       targetType: 'practicum_attendance_session',
       targetId: createdSessions.map(item => item.created.id).join(', '),
       targetTitle: `${basePayload.course} - ${basePayload.moduleNumber}`,
-      detail: classMode === 'all'
-        ? `${createdSessions.length} sesi absen ${basePayload.moduleNumber} ${basePayload.moduleTitle}, angkatan ${targetAngkatan}, dibuat untuk semua kelas: ${classEntries.map(item => item.className).join(', ')}.`
-        : `Sesi absen ${basePayload.moduleNumber} ${basePayload.moduleTitle}, angkatan ${targetAngkatan}, kelas ${classEntries[0].className}, dibuat.`
+      detail: `${createdSessions.length} sesi absen ${basePayload.moduleNumber} ${basePayload.moduleTitle}, angkatan ${targetAngkatan}, dibuat untuk ${classMode === 'all' ? 'semua kelas' : `kelas ${classEntries[0].className}`}${groupMode === 'selected' ? ` dan kelompok terpilih: ${createdSessions.map(item => attendanceSessionScopeLabel(item.payload)).join(', ')}` : ''}.`
     });
 
     for (const item of createdSessions) {
       notifyStudents({
         title: 'Sesi absen praktikum dibuka',
-        body: `${item.payload.course} ${item.payload.moduleNumber} - ${item.payload.moduleTitle}, kelas ${item.payload.className}.`,
+        body: `${item.payload.course} ${item.payload.moduleNumber} - ${item.payload.moduleTitle}, ${attendanceSessionScopeLabel(item.payload)}.`,
         url: '/pages/praktikum-studio',
         tag: `attendance-${item.created.id}`,
         type: 'attendance',
@@ -3975,9 +4131,7 @@ on(attendanceSessionForm, 'submit', async e => {
     attendanceModuleTitle.value = '';
     attendanceCode.value = '';
     syncAttendanceClassOptions();
-    toast(classMode === 'all'
-      ? `${createdSessions.length} sesi absen berhasil dibuat untuk semua kelas.`
-      : 'Sesi absen berhasil dibuat.');
+    toast(`${createdSessions.length} sesi absen berhasil dibuat${groupMode === 'selected' ? ' untuk kelompok terpilih' : ''}.`);
   } catch (error) {
     console.error('Create attendance session error:', error);
     toast('Gagal membuat sesi absen.');
@@ -5289,6 +5443,9 @@ on(attendanceTargetCohort, 'change', () => refreshAcademicYearFromTarget(attenda
 on(attendanceAcademicYear, 'input', () => syncAttendanceClassOptions());
 on(attendanceAcademicYear, 'change', () => syncAttendanceClassOptions());
 on(attendanceClassMode, 'change', () => syncAttendanceClassOptions());
+on(attendanceClassName, 'input', () => syncAttendanceGroupOptions());
+on(attendanceClassName, 'change', () => syncAttendanceGroupOptions());
+on(attendanceGroupMode, 'change', () => syncAttendanceGroupOptions());
 on(attendanceSessionCancelEdit, 'click', () => resetAttendanceSessionForm());
 on(attendanceSearch, 'input', () => attendanceRecapRender());
 on(attendanceSessionFilter, 'change', () => attendanceRecapRender());

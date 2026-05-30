@@ -40,6 +40,11 @@ let academicSettings = {};
 
 const escapeText = value => String(value || '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
 const normalize = normalizeText;
+const normalizeGroupName = value => String(value || '').trim().replace(/\s+/g, ' ');
+const groupKeyForValue = value => {
+  const normalized = normalizeGroupName(value);
+  return normalized ? slugifyAcademic(normalized) : '';
+};
 const slugify = value => String(value || '').toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'module';
 const accessId = item => encodeURIComponent(item.id || item.slug || slugify(item.title));
 const accessUrl = item => `access?source=practicum&id=${accessId(item)}`;
@@ -170,6 +175,14 @@ const sameTarget = (left, right) => {
 const hasRosterAccess = (item, rosters) => rosters.some(roster => normalize(roster.category) === normalize(item.category)
   && sameTarget(item, roster)
   && (!item.academicYear || !roster.academicYear || item.academicYear === roster.academicYear));
+const matchesAttendanceGroup = (sessionItem, roster) => {
+  const sessionGroup = normalizeGroupName(sessionItem?.group);
+  const sessionGroupKey = sessionItem?.groupKey || groupKeyForValue(sessionGroup);
+  if (!sessionGroup && !sessionGroupKey) return true;
+  const rosterGroup = normalizeGroupName(roster?.group);
+  const rosterGroupKey = roster?.groupKey || groupKeyForValue(rosterGroup);
+  return Boolean(rosterGroup) && (rosterGroupKey === sessionGroupKey || normalize(rosterGroup) === normalize(sessionGroup));
+};
 
 const canStudentSeeModule = (item, currentSession, activeSemester, rosters) => {
   const target = resourceTargetCohort(item);
@@ -188,6 +201,7 @@ const sessionsForCourse = (course, rosters) => attendanceSessions.filter(session
   && matchesPracticumCourse(sessionItem, course)
   && rosters.some(roster => sameTarget(sessionItem, roster)
     && (roster.classKey || slugifyAcademic(roster.className)) === (sessionItem.classKey || slugifyAcademic(sessionItem.className))
+    && matchesAttendanceGroup(sessionItem, roster)
     && roster.academicYear === sessionItem.academicYear));
 
 const isSessionOpen = sessionItem => {
@@ -215,7 +229,7 @@ const attendancePanel = (course, rosters) => {
     return `<article class="attendance-item">
       <div>
         <strong>${escapeText(item.moduleNumber)} - ${escapeText(item.moduleTitle)}</strong>
-        <p>Kelas ${escapeText(item.className)} &middot; ${escapeText(item.date)} &middot; ${escapeText(item.openAt)}-${escapeText(item.closeAt)}</p>
+        <p>Kelas ${escapeText(item.className)}${item.group ? ` &middot; Kelompok ${escapeText(item.group)}` : ''} &middot; ${escapeText(item.date)} &middot; ${escapeText(item.openAt)}-${escapeText(item.closeAt)}</p>
       </div>
       <button class="btn btn-primary" data-attendance-session="${escapeText(item.docId)}" type="button" ${disabled}>${escapeText(status)}</button>
     </article>`;
@@ -318,9 +332,10 @@ function bindAttendanceButtons() {
       const roster = studentRosters.find(row => row.category === item.category
         && sameTarget(item, row)
         && (row.classKey || slugifyAcademic(row.className)) === (item.classKey || slugifyAcademic(item.className))
+        && matchesAttendanceGroup(item, row)
         && row.academicYear === item.academicYear);
       if (!roster) {
-        showToast('NIM kamu tidak ada di data praktikan kelas ini.');
+        showToast('NIM kamu tidak ada di data praktikan kelas/kelompok ini.');
         return;
       }
       if (!isSessionOpen(item)) {
@@ -345,6 +360,7 @@ function bindAttendanceButtons() {
           targetAngkatan: item.targetAngkatan || roster.targetAngkatan || '',
           academicYear: item.academicYear,
           className: item.className,
+          sessionGroup: item.group || '',
           group: roster.group || '',
           moduleNumber: item.moduleNumber,
           moduleTitle: item.moduleTitle,
