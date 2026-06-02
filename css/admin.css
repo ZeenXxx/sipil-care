@@ -2375,6 +2375,140 @@ th  {
 
 }
 
+.attendance-qr-dialog[hidden]  {
+
+    display: none
+
+}
+
+.attendance-qr-dialog  {
+
+    position: fixed;
+
+    inset: 0;
+
+    z-index: 1200;
+
+    display: grid;
+
+    place-items: center;
+
+    padding: 20px
+
+}
+
+.attendance-qr-backdrop  {
+
+    position: absolute;
+
+    inset: 0;
+
+    background: rgba(5, 38, 29, .56);
+
+    backdrop-filter: blur(5px)
+
+}
+
+.attendance-qr-card  {
+
+    position: relative;
+
+    z-index: 1;
+
+    width: min(460px, 100%);
+
+    max-height: calc(100vh - 40px);
+
+    overflow: auto;
+
+    padding: 22px;
+
+    border: 1px solid var(--line);
+
+    border-radius: 10px;
+
+    background: #fff;
+
+    box-shadow: 0 24px 60px rgba(5, 38, 29, .24)
+
+}
+
+.attendance-qr-head  {
+
+    display: flex;
+
+    align-items: flex-start;
+
+    justify-content: space-between;
+
+    gap: 12px;
+
+    margin-bottom: 16px
+
+}
+
+.attendance-qr-card img  {
+
+    display: block;
+
+    width: min(320px, 100%);
+
+    aspect-ratio: 1;
+
+    margin: 0 auto 14px;
+
+    border: 1px solid var(--line);
+
+    border-radius: 8px;
+
+    background: #fff
+
+}
+
+.attendance-qr-card p  {
+
+    color: var(--muted);
+
+    font-size: 14px;
+
+    line-height: 1.55
+
+}
+
+.attendance-qr-link  {
+
+    max-height: 90px;
+
+    overflow: auto;
+
+    padding: 10px;
+
+    border: 1px solid var(--line);
+
+    border-radius: 8px;
+
+    background: #f8fbfa;
+
+    color: var(--ink);
+
+    font-size: 12px;
+
+    line-height: 1.45;
+
+    word-break: break-all
+
+}
+
+.attendance-qr-actions  {
+
+    display: flex;
+
+    gap: 10px;
+
+    margin-top: 14px
+
+}
+
 .danger  {
   
     color: #b42318

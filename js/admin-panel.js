@@ -108,6 +108,8 @@ const attendanceDate = document.getElementById('attendanceDate');
 const attendanceOpenAt = document.getElementById('attendanceOpenAt');
 const attendanceCloseAt = document.getElementById('attendanceCloseAt');
 const attendanceCode = document.getElementById('attendanceCode');
+const attendanceQrMode = document.getElementById('attendanceQrMode');
+const attendanceQrTtl = document.getElementById('attendanceQrTtl');
 const attendanceStatus = document.getElementById('attendanceStatus');
 const attendanceSessionSubmit = document.getElementById('attendanceSessionSubmit');
 const attendanceSessionCancelEdit = document.getElementById('attendanceSessionCancelEdit');
@@ -2220,6 +2222,8 @@ function resetAttendanceSessionForm() {
   if (attendanceOpenAt) attendanceOpenAt.value = '';
   if (attendanceCloseAt) attendanceCloseAt.value = '';
   if (attendanceCode) attendanceCode.value = '';
+  if (attendanceQrMode) attendanceQrMode.value = 'direct';
+  if (attendanceQrTtl) attendanceQrTtl.value = '2';
   if (attendanceStatus) attendanceStatus.value = 'open';
   syncAttendanceClassOptions();
 }
@@ -2265,6 +2269,8 @@ function editAttendanceSession(sessionId, sessionIds = [sessionId]) {
   if (attendanceOpenAt) attendanceOpenAt.value = session.openAt || '';
   if (attendanceCloseAt) attendanceCloseAt.value = session.closeAt || '';
   if (attendanceCode) attendanceCode.value = session.code || '';
+  if (attendanceQrMode) attendanceQrMode.value = normalizedQrMode(session.qrMode);
+  if (attendanceQrTtl) attendanceQrTtl.value = normalizedQrTtl(session.qrTtlMinutes || session.qrTtl || 2);
   if (attendanceStatus) attendanceStatus.value = session.status || 'open';
 
   setAttendanceIdentityDisabled(true);
@@ -2326,6 +2332,104 @@ async function commitFirestoreDeletes(collectionName, docIds) {
     });
     await batch.commit();
   }
+}
+
+const bytesToHex = bytes => [...new Uint8Array(bytes)].map(byte => byte.toString(16).padStart(2, '0')).join('');
+async function hashQrToken(value) {
+  const text = String(value || '');
+  if (window.crypto?.subtle) {
+    const buffer = await window.crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+    return bytesToHex(buffer);
+  }
+  let hash = 2166136261;
+  for (let index = 0; index < text.length; index++) {
+    hash ^= text.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return `fallback-${(hash >>> 0).toString(16)}`;
+}
+
+function createQrToken() {
+  const bytes = new Uint8Array(24);
+  if (window.crypto?.getRandomValues) {
+    window.crypto.getRandomValues(bytes);
+    return btoa(String.fromCharCode(...bytes)).replace(/[+/=]/g, char => ({ '+': '-', '/': '_', '=': '' }[char]));
+  }
+  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}`;
+}
+
+const normalizedQrMode = value => ['off', 'direct', 'direct_code'].includes(value) ? value : 'direct';
+const normalizedQrTtl = value => Math.min(Math.max(Number(value) || 2, 1), 30);
+const qrLinkForAttendance = (ids, token) => {
+  const url = new URL('/pages/praktikum-studio', location.origin);
+  const sessionIds = uniqueIds(ids);
+  if (sessionIds.length > 1) url.searchParams.set('attendanceGroup', sessionIds.join(','));
+  else url.searchParams.set('attendance', sessionIds[0] || '');
+  url.searchParams.set('token', token);
+  return url.href;
+};
+
+function ensureAttendanceQrDialog() {
+  let dialog = document.getElementById('attendanceQrDialog');
+  if (dialog) return dialog;
+  dialog = document.createElement('div');
+  dialog.id = 'attendanceQrDialog';
+  dialog.className = 'attendance-qr-dialog';
+  dialog.hidden = true;
+  dialog.innerHTML = `
+    <div class="attendance-qr-backdrop" data-attendance-qr-close></div>
+    <section class="attendance-qr-card">
+      <div class="attendance-qr-head">
+        <div>
+          <span class="eyebrow">QR Absensi</span>
+          <h3 data-attendance-qr-title>Sesi Praktikum</h3>
+        </div>
+        <button class="action-btn" type="button" data-attendance-qr-close>Tutup</button>
+      </div>
+      <img alt="QR Absensi SIPIL CARE" data-attendance-qr-image>
+      <p data-attendance-qr-detail></p>
+      <div class="attendance-qr-link" data-attendance-qr-link></div>
+      <div class="attendance-qr-actions">
+        <button class="btn btn-primary" type="button" data-attendance-qr-copy>Salin Link</button>
+      </div>
+    </section>
+  `;
+  document.body.appendChild(dialog);
+  dialog.querySelectorAll('[data-attendance-qr-close]').forEach(button => {
+    button.addEventListener('click', () => {
+      dialog.hidden = true;
+      document.body.classList.remove('attendance-qr-open');
+    });
+  });
+  return dialog;
+}
+
+function showAttendanceQrDialog({ session, ids, link, expiresAt }) {
+  const dialog = ensureAttendanceQrDialog();
+  const image = dialog.querySelector('[data-attendance-qr-image]');
+  const title = dialog.querySelector('[data-attendance-qr-title]');
+  const detail = dialog.querySelector('[data-attendance-qr-detail]');
+  const linkBox = dialog.querySelector('[data-attendance-qr-link]');
+  const copyButton = dialog.querySelector('[data-attendance-qr-copy]');
+  const qrSrc = `https://api.qrserver.com/v1/create-qr-code/?size=360x360&margin=12&data=${encodeURIComponent(link)}`;
+  if (image) image.src = qrSrc;
+  if (title) title.textContent = attendanceSessionLabel(session);
+  if (detail) {
+    detail.textContent = `${ids.length} sesi terkait. QR berlaku sampai ${formatDateTime(expiresAt)}. Mode: ${attendanceQrModeLabel(session.qrMode)}.`;
+  }
+  if (linkBox) linkBox.textContent = link;
+  if (copyButton) {
+    copyButton.onclick = async () => {
+      try {
+        await navigator.clipboard.writeText(link);
+        toast('Link QR berhasil disalin.');
+      } catch {
+        toast('Tidak bisa menyalin otomatis. Salin link yang tampil di modal.');
+      }
+    };
+  }
+  dialog.hidden = false;
+  document.body.classList.add('attendance-qr-open');
 }
 
 function parsePracticumRosterRows(text, fallbackClassName) {
@@ -2430,6 +2534,11 @@ const attendanceSessionScopeLabel = session => {
   const group = normalizeGroupName(session.group);
   return group ? `${className} K${group}` : className;
 };
+const attendanceQrModeLabel = mode => ({
+  off: 'QR mati',
+  direct: 'QR langsung',
+  direct_code: 'QR + kode'
+}[mode || 'direct'] || 'QR langsung');
 const attendanceGroupScheduleLabel = group => {
   const schedules = group.sessions.map(session => ({
     className: attendanceSessionScopeLabel(session),
@@ -2552,11 +2661,12 @@ function attendanceSessionTableRender() {
         <td><b>${escapeText(session.course || session.category)}</b><br><span class="small-text">${escapeText(session.category || '-')}</span></td>
         <td>${escapeText(classes)}<br><span class="small-text">${escapeText(groupLabel)} &middot; Angkatan ${escapeText(targetCohortForPracticumResource(session) || '-')} &middot; ${escapeText(session.academicYear || '-')}</span></td>
         <td><b>${escapeText(session.moduleNumber || '-')}</b><br><span class="small-text">${escapeText(session.moduleTitle || '-')}</span></td>
-        <td>${escapeText(session.date || '-')}<br><span class="small-text">${escapeText(attendanceGroupScheduleLabel(group))}</span></td>
+        <td>${escapeText(session.date || '-')}<br><span class="small-text">${escapeText(attendanceGroupScheduleLabel(group))} &middot; ${escapeText(attendanceQrModeLabel(session.qrMode))}</span></td>
         <td><span class="badge">${escapeText(attendanceGroupStatusLabel(group))}</span></td>
         <td>${totalRecords} record</td>
         <td>
           <button class="action-btn" data-edit-attendance-session-group="${escapeText(ids)}" type="button">Edit Semua</button>
+          <button class="action-btn" data-qr-attendance-session-group="${escapeText(ids)}" type="button">QR Absen</button>
           <button class="action-btn" data-toggle-attendance-session-group="${escapeText(ids)}" type="button">${session.status === 'closed' ? 'Aktifkan' : 'Tutup'}</button>
           <button class="action-btn" data-reset-attendance-session-group="${escapeText(ids)}" type="button">Reset Absen</button>
           <button class="action-btn danger" data-delete-attendance-session-group="${escapeText(ids)}" type="button">Hapus Sesi</button>
@@ -2740,6 +2850,9 @@ function exportSessionExcel() {
       item.date,
       item.openAt,
       item.closeAt,
+      attendanceQrModeLabel(item.qrMode),
+      item.qrTtlMinutes || item.qrTtl || 2,
+      formatDateTime(item.qrTokenExpiresAt),
       item.status === 'closed' ? 'Ditutup' : 'Aktif',
       recordCounts[item.docId] || 0,
       formatDateTime(item.createdAt),
@@ -2762,6 +2875,9 @@ function exportSessionExcel() {
       'Tanggal',
       'Buka',
       'Tutup',
+      'Metode QR',
+      'QR Berlaku Menit',
+      'QR Kedaluwarsa',
       'Status',
       'Jumlah Record',
       'Dibuat Pada',
@@ -2974,6 +3090,53 @@ async function toggleAttendanceSession(sessionIds) {
   toast(nextStatus === 'open'
     ? `${ids.length} sesi absen diaktifkan.`
     : `${ids.length} sesi absen ditutup.`);
+}
+
+async function issueAttendanceQr(sessionIds) {
+  const ids = uniqueIds(sessionIds);
+  const sessions = ids.map(id => practicumAttendanceSessions.find(item => item.docId === id)).filter(Boolean);
+  const session = sessions[0];
+  if (!session) return;
+  if (sessions.some(item => !canAccessPracticumCategory(item.category))) {
+    toast('Akun ini tidak memiliki akses ke sesi absen tersebut.');
+    return;
+  }
+  if ((session.qrMode || 'direct') === 'off') {
+    toast('QR untuk sesi ini sedang dimatikan. Edit sesi lalu aktifkan metode QR.');
+    return;
+  }
+  const token = createQrToken();
+  const tokenHash = await hashQrToken(token);
+  const ttlMinutes = normalizedQrTtl(session.qrTtlMinutes || session.qrTtl || 2);
+  const now = new Date();
+  const expiresAt = new Date(now.getTime() + ttlMinutes * 60 * 1000).toISOString();
+  const payload = {
+    qrTokenHash: tokenHash,
+    qrTokenExpiresAt: expiresAt,
+    qrIssuedAt: now.toISOString(),
+    qrIssuedBy: currentAdmin().username,
+    updatedAt: now.toISOString(),
+    updatedBy: currentAdmin().username
+  };
+  await commitFirestoreUpdates(ids.map(id => ({
+    collectionName: PRACTICUM_ATTENDANCE_SESSION_COLLECTION,
+    docId: id,
+    payload
+  })));
+  await writeAuditLog({
+    action: 'ISSUE_ATTENDANCE_QR',
+    targetType: 'practicum_attendance_session',
+    targetId: ids.join(', '),
+    targetTitle: attendanceSessionLabel(session),
+    detail: `QR absensi dibuat untuk ${ids.length} sesi dan berlaku ${ttlMinutes} menit.`
+  });
+  showAttendanceQrDialog({
+    session,
+    ids,
+    link: qrLinkForAttendance(ids, token),
+    expiresAt
+  });
+  toast('QR absen berhasil dibuat.');
 }
 
 async function resetAttendanceSession(sessionIds) {
@@ -3952,6 +4115,9 @@ on(attendanceSessionForm, 'submit', async e => {
   const date = attendanceDate?.value || '';
   const openAt = attendanceOpenAt?.value || '';
   const closeAt = attendanceCloseAt?.value || '';
+  const codeValue = String(attendanceCode?.value || '').trim();
+  const qrModeValue = normalizedQrMode(attendanceQrMode?.value);
+  const qrTtlValue = normalizedQrTtl(attendanceQrTtl?.value);
 
   if (!meta.category || !canAccessPracticumCategory(meta.category)) {
     toast('Akun ini tidak memiliki scope untuk sesi absen tersebut.');
@@ -3963,6 +4129,10 @@ on(attendanceSessionForm, 'submit', async e => {
   }
   if (!academicYear || !moduleNumber || !moduleTitle || !date || !openAt || !closeAt) {
     toast('Lengkapi praktikum, modul, tanggal, jam buka, dan jam tutup absen.');
+    return;
+  }
+  if (qrModeValue === 'direct_code' && !codeValue) {
+    toast('Isi kode absen jika memilih mode QR + kode.');
     return;
   }
   if (!confirmAcademicYearIfNeeded(academicYear, meta, targetAngkatan)) return;
@@ -3990,7 +4160,9 @@ on(attendanceSessionForm, 'submit', async e => {
         date,
         openAt,
         closeAt,
-        code: String(attendanceCode?.value || '').trim(),
+        code: codeValue,
+        qrMode: qrModeValue,
+        qrTtlMinutes: qrTtlValue,
         status: attendanceStatus?.value || 'open',
         updatedAt: new Date().toISOString(),
         updatedBy: currentAdmin().username
@@ -4054,7 +4226,9 @@ on(attendanceSessionForm, 'submit', async e => {
       date,
       openAt,
       closeAt,
-      code: String(attendanceCode?.value || '').trim(),
+      code: codeValue,
+      qrMode: qrModeValue,
+      qrTtlMinutes: qrTtlValue,
       status: attendanceStatus?.value || 'open',
       createdAt: now,
       createdBy: currentAdmin().username
@@ -4464,12 +4638,12 @@ on(attendanceRecapTable, 'click', async e => {
 });
 
 on(attendanceSessionTable, 'click', async e => {
-  const button = e.target.closest('[data-edit-attendance-session], [data-toggle-attendance-session], [data-reset-attendance-session], [data-delete-attendance-session], [data-edit-attendance-session-group], [data-toggle-attendance-session-group], [data-reset-attendance-session-group], [data-delete-attendance-session-group]');
+  const button = e.target.closest('[data-edit-attendance-session], [data-qr-attendance-session], [data-toggle-attendance-session], [data-reset-attendance-session], [data-delete-attendance-session], [data-edit-attendance-session-group], [data-qr-attendance-session-group], [data-toggle-attendance-session-group], [data-reset-attendance-session-group], [data-delete-attendance-session-group]');
   if (!button) return;
   if (!requirePermission('practicum_studio', 'Sesi Absen')) return;
 
-  const groupValue = button.dataset.editAttendanceSessionGroup || button.dataset.toggleAttendanceSessionGroup || button.dataset.resetAttendanceSessionGroup || button.dataset.deleteAttendanceSessionGroup;
-  const sessionId = button.dataset.editAttendanceSession || button.dataset.toggleAttendanceSession || button.dataset.resetAttendanceSession || button.dataset.deleteAttendanceSession;
+  const groupValue = button.dataset.editAttendanceSessionGroup || button.dataset.qrAttendanceSessionGroup || button.dataset.toggleAttendanceSessionGroup || button.dataset.resetAttendanceSessionGroup || button.dataset.deleteAttendanceSessionGroup;
+  const sessionId = button.dataset.editAttendanceSession || button.dataset.qrAttendanceSession || button.dataset.toggleAttendanceSession || button.dataset.resetAttendanceSession || button.dataset.deleteAttendanceSession;
   const sessionIds = groupValue ? parseAttendanceGroupIds(groupValue) : uniqueIds(sessionId);
   if (!sessionIds.length) return;
 
@@ -4477,6 +4651,10 @@ on(attendanceSessionTable, 'click', async e => {
     button.disabled = true;
     if (button.dataset.editAttendanceSession || button.dataset.editAttendanceSessionGroup) {
       editAttendanceSession(sessionIds[0], sessionIds);
+      return;
+    }
+    if (button.dataset.qrAttendanceSession || button.dataset.qrAttendanceSessionGroup) {
+      await issueAttendanceQr(sessionIds);
       return;
     }
     if (button.dataset.toggleAttendanceSession || button.dataset.toggleAttendanceSessionGroup) {

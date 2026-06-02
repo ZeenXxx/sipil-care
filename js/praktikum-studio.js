@@ -37,6 +37,9 @@ let studentRosters = [];
 let attendanceSessions = [];
 let attendanceRecords = [];
 let academicSettings = {};
+let qrAttendanceProcessing = false;
+let qrAttendanceProcessed = false;
+let qrAttendanceLoginNoticeShown = false;
 
 const escapeText = value => String(value || '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
 const normalize = normalizeText;
@@ -57,6 +60,33 @@ const showToast = message => {
   setTimeout(() => toast.classList.remove('show'), 3000);
 };
 const normalizeAttendanceCode = value => String(value || '').trim().toUpperCase();
+const bytesToHex = bytes => [...new Uint8Array(bytes)].map(byte => byte.toString(16).padStart(2, '0')).join('');
+async function hashQrToken(value) {
+  const text = String(value || '');
+  if (window.crypto?.subtle) {
+    const buffer = await window.crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+    return bytesToHex(buffer);
+  }
+  let hash = 2166136261;
+  for (let index = 0; index < text.length; index++) {
+    hash ^= text.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return `fallback-${(hash >>> 0).toString(16)}`;
+}
+const qrAttendanceParams = () => {
+  const params = new URLSearchParams(location.search);
+  const token = params.get('token') || '';
+  const ids = [
+    params.get('attendance') || '',
+    ...(params.get('attendanceGroup') || '').split(',')
+  ].map(value => value.trim()).filter(Boolean);
+  return { token, ids: [...new Set(ids)] };
+};
+const hasQrAttendanceParams = () => {
+  const { token, ids } = qrAttendanceParams();
+  return Boolean(token && ids.length);
+};
 
 function ensureAttendanceCodeDialog() {
   let dialog = document.getElementById('attendanceCodeDialog');
@@ -313,10 +343,132 @@ function render() {
     }).join('');
   bindCopyButtons();
   bindAttendanceButtons();
+  processQrAttendanceFromUrl();
 }
 
 search.addEventListener('input', render);
 semesterFilter.addEventListener('change', render);
+
+const rosterForAttendanceSession = item => studentRosters.find(row => row.category === item.category
+  && sameTarget(item, row)
+  && (row.classKey || slugifyAcademic(row.className)) === (item.classKey || slugifyAcademic(item.className))
+  && matchesAttendanceGroup(item, row)
+  && row.academicYear === item.academicYear);
+
+const attendanceAlreadyRecorded = sessionId => attendanceRecords.some(record => record.sessionId === sessionId);
+
+async function submitAttendance(item, roster, currentSession, { method = 'manual', token = '' } = {}) {
+  if (!item || !roster || !currentSession) return false;
+  if (currentSession.isAdminReview) {
+    showToast('Mode review admin hanya untuk pengecekan. Absen tidak dikirim.');
+    return false;
+  }
+  if (attendanceAlreadyRecorded(item.docId)) {
+    showToast('Kamu sudah absen pada sesi ini.');
+    return false;
+  }
+  if (!isSessionOpen(item)) {
+    showToast('Sesi absen belum dibuka atau sudah ditutup.');
+    return false;
+  }
+  if (method !== 'qr' || item.qrMode === 'direct_code') {
+    if (item.code) {
+      const codeValid = await requestAttendanceCode(item);
+      if (!codeValid) return false;
+    }
+  }
+
+  await setDoc(doc(db, PRACTICUM_ATTENDANCE_RECORD_COLLECTION, attendanceRecordId(item.docId, currentSession.nim)), {
+    sessionId: item.docId,
+    nim: currentSession.nim,
+    name: currentSession.name || roster.name || '',
+    angkatan: currentSession.angkatan || '',
+    category: item.category,
+    course: item.course,
+    semester: item.semester,
+    targetAngkatan: item.targetAngkatan || roster.targetAngkatan || '',
+    academicYear: item.academicYear,
+    className: item.className,
+    sessionGroup: item.group || '',
+    group: roster.group || '',
+    moduleNumber: item.moduleNumber,
+    moduleTitle: item.moduleTitle,
+    status: 'present',
+    method,
+    qrTokenUsed: method === 'qr' ? token.slice(0, 12) : '',
+    attendedAt: new Date().toISOString(),
+    page: location.pathname
+  }, { merge: false });
+  showToast(method === 'qr' ? 'Absen QR berhasil dicatat.' : 'Absen berhasil dicatat.');
+  return true;
+}
+
+async function processQrAttendanceFromUrl() {
+  if (qrAttendanceProcessing || qrAttendanceProcessed || !hasQrAttendanceParams()) return;
+  const currentSession = readStudentSession();
+  if (!currentSession) {
+    if (!qrAttendanceLoginNoticeShown) {
+      qrAttendanceLoginNoticeShown = true;
+      showToast('Login sebagai mahasiswa dulu, lalu scan QR ulang.');
+    }
+    return;
+  }
+  if (!attendanceSessions.length || !studentRosters.length) return;
+
+  const { token, ids } = qrAttendanceParams();
+  const candidates = attendanceSessions.filter(item => ids.includes(item.docId));
+  if (!candidates.length) {
+    qrAttendanceProcessed = true;
+    showToast('Sesi QR tidak ditemukan atau belum terbaca.');
+    return;
+  }
+  const matched = candidates
+    .map(item => ({ item, roster: rosterForAttendanceSession(item) }))
+    .find(row => row.roster);
+  if (!matched) {
+    qrAttendanceProcessed = true;
+    showToast('QR ini tidak cocok dengan kelas atau kelompok akun kamu.');
+    return;
+  }
+
+  qrAttendanceProcessing = true;
+  try {
+    const item = matched.item;
+    if ((item.qrMode || 'direct') === 'off') {
+      qrAttendanceProcessed = true;
+      showToast('QR untuk sesi ini sedang dimatikan.');
+      return;
+    }
+    if (!item.qrTokenHash || !item.qrTokenExpiresAt) {
+      qrAttendanceProcessed = true;
+      showToast('QR belum aktif. Minta aslab tampilkan QR terbaru.');
+      return;
+    }
+    if (Date.now() > new Date(item.qrTokenExpiresAt).getTime()) {
+      qrAttendanceProcessed = true;
+      showToast('QR sudah kedaluwarsa. Minta QR terbaru ke aslab.');
+      return;
+    }
+    const tokenHash = await hashQrToken(token);
+    if (tokenHash !== item.qrTokenHash) {
+      qrAttendanceProcessed = true;
+      showToast('Token QR tidak valid. Scan QR terbaru dari aslab.');
+      return;
+    }
+    await submitAttendance(item, matched.roster, currentSession, { method: 'qr', token });
+    qrAttendanceProcessed = true;
+    const cleanUrl = new URL(location.href);
+    cleanUrl.searchParams.delete('attendance');
+    cleanUrl.searchParams.delete('attendanceGroup');
+    cleanUrl.searchParams.delete('token');
+    history.replaceState(null, '', cleanUrl.pathname + cleanUrl.search + cleanUrl.hash);
+  } catch (error) {
+    console.error('QR attendance failed:', error);
+    showToast('Gagal mencatat absen QR. Coba scan ulang.');
+  } finally {
+    qrAttendanceProcessing = false;
+  }
+}
 
 function bindAttendanceButtons() {
   semesterGrid.querySelectorAll('[data-attendance-session]').forEach(button => {
@@ -325,50 +477,16 @@ function bindAttendanceButtons() {
       const item = attendanceSessions.find(sessionItem => sessionItem.docId === sessionId);
       const currentSession = readStudentSession();
       if (!item || !currentSession) return;
-      if (currentSession.isAdminReview) {
-        showToast('Mode review admin hanya untuk pengecekan. Absen tidak dikirim.');
-        return;
-      }
-      const roster = studentRosters.find(row => row.category === item.category
-        && sameTarget(item, row)
-        && (row.classKey || slugifyAcademic(row.className)) === (item.classKey || slugifyAcademic(item.className))
-        && matchesAttendanceGroup(item, row)
-        && row.academicYear === item.academicYear);
+      const roster = rosterForAttendanceSession(item);
       if (!roster) {
         showToast('NIM kamu tidak ada di data praktikan kelas/kelompok ini.');
         return;
       }
-      if (!isSessionOpen(item)) {
-        showToast('Sesi absen belum dibuka atau sudah ditutup.');
-        return;
-      }
-      if (item.code) {
-        const codeValid = await requestAttendanceCode(item);
-        if (!codeValid) return;
-      }
 
       try {
         button.disabled = true;
-        await setDoc(doc(db, PRACTICUM_ATTENDANCE_RECORD_COLLECTION, attendanceRecordId(sessionId, currentSession.nim)), {
-          sessionId,
-          nim: currentSession.nim,
-          name: currentSession.name || roster.name || '',
-          angkatan: currentSession.angkatan || '',
-          category: item.category,
-          course: item.course,
-          semester: item.semester,
-          targetAngkatan: item.targetAngkatan || roster.targetAngkatan || '',
-          academicYear: item.academicYear,
-          className: item.className,
-          sessionGroup: item.group || '',
-          group: roster.group || '',
-          moduleNumber: item.moduleNumber,
-          moduleTitle: item.moduleTitle,
-          status: 'present',
-          attendedAt: new Date().toISOString(),
-          page: location.pathname
-        }, { merge: false });
-        showToast('Absen berhasil dicatat.');
+        const submitted = await submitAttendance(item, roster, currentSession);
+        if (!submitted) button.disabled = false;
       } catch (error) {
         console.error('Submit attendance error:', error);
         showToast('Gagal mengirim absen. Coba refresh halaman.');
