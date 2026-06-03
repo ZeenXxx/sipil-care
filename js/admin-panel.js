@@ -2493,11 +2493,122 @@ const studentReviewUrlForRoster = roster => {
 function attendanceSessionOptions() {
   if (!attendanceSessionFilter) return;
   const current = attendanceSessionFilter.value || 'All';
-  const sessions = practicumAttendanceSessions.filter(session => canAccessPracticumCategory(session.category));
-  attendanceSessionFilter.innerHTML = '<option value="All">Semua sesi</option>' + sessions.map(session => (
-    `<option value="${escapeText(session.docId)}">${escapeText(attendanceSessionLabel(session))}</option>`
-  )).join('');
-  attendanceSessionFilter.value = current === 'All' || sessions.some(session => session.docId === current) ? current : 'All';
+  const groups = attendanceSessionGroups();
+  attendanceSessionFilter.innerHTML = '<option value="All">Semua sesi</option>' + groups.map(group => {
+    const session = group.sessions[0];
+    const ids = attendanceGroupIds(group);
+    const classes = [...new Set(group.sessions.map(item => item.className).filter(Boolean))].join(', ');
+    const label = [
+      session.course || session.category,
+      session.moduleNumber,
+      session.moduleTitle,
+      classes ? `Kelas ${classes}` : '',
+      session.date
+    ].filter(Boolean).join(' - ');
+    return `<option value="group:${escapeText(ids)}">${escapeText(label)}</option>`;
+  }).join('');
+  const legacySessionGroup = groups.find(group => group.sessions.some(session => session.docId === current));
+  const nextValue = legacySessionGroup ? `group:${attendanceGroupIds(legacySessionGroup)}` : current;
+  attendanceSessionFilter.value = nextValue === 'All' || groups.some(group => `group:${attendanceGroupIds(group)}` === nextValue) ? nextValue : 'All';
+}
+
+function selectedAttendanceFilterIds() {
+  const value = attendanceSessionFilter?.value || 'All';
+  if (value === 'All') return [];
+  if (value.startsWith('group:')) return parseAttendanceGroupIds(value.slice('group:'.length));
+  return uniqueIds(value);
+}
+
+function attendanceSessionsForIds(sessionIds = []) {
+  const idSet = new Set(uniqueIds(sessionIds));
+  return practicumAttendanceSessions.filter(session => canAccessPracticumCategory(session.category) && (!idSet.size || idSet.has(session.docId)));
+}
+
+function attendanceExportTitle(sessions) {
+  if (!sessions.length) return 'Rekap Absensi Praktikum';
+  const session = sessions[0];
+  return [
+    'Rekap Absensi Praktikum',
+    session.course || session.category,
+    session.moduleNumber,
+    session.moduleTitle,
+    session.date
+  ].filter(Boolean).join(' - ');
+}
+
+function attendanceExportFilename(sessions) {
+  const session = sessions[0];
+  const base = session
+    ? ['rekap-absensi', session.course || session.category, session.moduleNumber, session.moduleTitle, session.date].filter(Boolean).join('-')
+    : 'rekap-absensi-praktikum';
+  return `${slugifyAcademic(base)}-${Date.now()}.xls`;
+}
+
+function attendanceExportSheetName(sessions) {
+  const session = sessions[0];
+  return session
+    ? [session.moduleNumber, session.moduleTitle].filter(Boolean).join(' ') || 'Rekap Absensi'
+    : 'Rekap Absensi';
+}
+
+function attendanceRowsForSessions(sessionIds = null) {
+  const selectedIds = sessionIds === null ? selectedAttendanceFilterIds() : uniqueIds(sessionIds);
+  const q = (attendanceSearch?.value || '').toLowerCase();
+  const recordByKey = new Map(practicumAttendanceRecords.map(record => [`${record.sessionId}_${record.nim}`, record]));
+  const selectedSessions = attendanceSessionsForIds(selectedIds);
+  const rows = [];
+
+  selectedSessions.forEach(session => {
+    practicumRosters
+      .filter(roster => roster.isActive !== false
+        && canAccessPracticumCategory(roster.category)
+        && roster.category === session.category
+        && matchesTargetCohort(roster, session.targetAngkatan || session.targetCohort)
+        && (roster.classKey || slugifyAcademic(roster.className)) === (session.classKey || slugifyAcademic(session.className))
+        && matchesAttendanceGroup(roster, session)
+        && roster.academicYear === session.academicYear)
+      .forEach(roster => {
+        const record = recordByKey.get(`${session.docId}_${roster.nim}`);
+        rows.push({ session, roster, record });
+      });
+  });
+
+  return rows.filter(({ session, roster, record }) => [
+    roster.nim,
+    roster.name,
+    roster.className,
+    roster.group,
+    session.course,
+    session.category,
+    session.targetAngkatan,
+    session.moduleNumber,
+    session.moduleTitle,
+    record?.status
+  ].join(' ').toLowerCase().includes(q));
+}
+
+function attendanceRosterRowsForEmptyFilter() {
+  const q = (attendanceSearch?.value || '').toLowerCase();
+  return practicumRosters
+    .filter(roster => roster.isActive !== false && canAccessPracticumCategory(roster.category))
+    .map(roster => ({ session: null, roster, record: null }))
+    .filter(({ roster }) => [
+      roster.nim,
+      roster.name,
+      roster.className,
+      roster.group,
+      roster.course,
+      roster.category,
+      roster.targetAngkatan,
+      roster.academicYear
+    ].join(' ').toLowerCase().includes(q));
+}
+
+function attendanceRecapRows() {
+  const selectedIds = selectedAttendanceFilterIds();
+  const scopedSessions = attendanceSessionsForIds(selectedIds);
+  if (!scopedSessions.length && !selectedIds.length) return attendanceRosterRowsForEmptyFilter();
+  return attendanceRowsForSessions(selectedIds);
 }
 
 const attendanceSessionGroupKey = session => JSON.stringify([
@@ -2552,58 +2663,6 @@ const attendanceGroupStatusLabel = group => {
   const statuses = [...new Set(group.sessions.map(session => session.status === 'closed' ? 'Ditutup' : 'Aktif'))];
   return statuses.length === 1 ? statuses[0] : 'Campuran';
 };
-
-function attendanceRecapRows() {
-  const q = (attendanceSearch?.value || '').toLowerCase();
-  const sessionId = attendanceSessionFilter?.value || 'All';
-  const recordByKey = new Map(practicumAttendanceRecords.map(record => [`${record.sessionId}_${record.nim}`, record]));
-  const selectedSessions = practicumAttendanceSessions.filter(session => canAccessPracticumCategory(session.category) && (sessionId === 'All' || session.docId === sessionId));
-  const rows = [];
-
-  if (!selectedSessions.length) {
-    return practicumRosters
-      .filter(roster => roster.isActive !== false && canAccessPracticumCategory(roster.category))
-      .map(roster => ({ session: null, roster, record: null }))
-      .filter(({ roster }) => [
-        roster.nim,
-        roster.name,
-        roster.className,
-        roster.group,
-        roster.course,
-        roster.category,
-        roster.targetAngkatan,
-        roster.academicYear
-      ].join(' ').toLowerCase().includes(q));
-  }
-
-  selectedSessions.forEach(session => {
-    practicumRosters
-      .filter(roster => roster.isActive !== false
-        && canAccessPracticumCategory(roster.category)
-        && roster.category === session.category
-        && matchesTargetCohort(roster, session.targetAngkatan || session.targetCohort)
-        && (roster.classKey || slugifyAcademic(roster.className)) === (session.classKey || slugifyAcademic(session.className))
-        && matchesAttendanceGroup(roster, session)
-        && roster.academicYear === session.academicYear)
-      .forEach(roster => {
-        const record = recordByKey.get(`${session.docId}_${roster.nim}`);
-        rows.push({ session, roster, record });
-      });
-  });
-
-  return rows.filter(({ session, roster, record }) => [
-    roster.nim,
-    roster.name,
-    roster.className,
-    roster.group,
-    session.course,
-    session.category,
-    session.targetAngkatan,
-    session.moduleNumber,
-    session.moduleTitle,
-    record?.status
-  ].join(' ').toLowerCase().includes(q));
-}
 
 function attendanceRecapRender() {
   practicumCourseOptions();
@@ -2666,6 +2725,7 @@ function attendanceSessionTableRender() {
         <td>${totalRecords} record</td>
         <td>
           <button class="action-btn" data-edit-attendance-session-group="${escapeText(ids)}" type="button">Edit Semua</button>
+          <button class="action-btn" data-export-attendance-session-group="${escapeText(ids)}" type="button">Export Excel</button>
           <button class="action-btn" data-qr-attendance-session-group="${escapeText(ids)}" type="button">QR Absen</button>
           <button class="action-btn" data-toggle-attendance-session-group="${escapeText(ids)}" type="button">${session.status === 'closed' ? 'Aktifkan' : 'Tutup'}</button>
           <button class="action-btn" data-reset-attendance-session-group="${escapeText(ids)}" type="button">Reset Absen</button>
@@ -2751,11 +2811,17 @@ function downloadExcel(filename, { title, sheetName, headers, rows, absentPredic
   URL.revokeObjectURL(url);
 }
 
-function exportAttendanceExcel() {
-  const rows = attendanceRecapRows();
-  downloadExcel(`rekap-absensi-praktikum-${Date.now()}.xls`, {
-    title: 'Rekap Absensi Praktikum',
-    sheetName: 'Rekap Absensi',
+function exportAttendanceExcel(sessionIds = null) {
+  const selectedIds = sessionIds === null ? selectedAttendanceFilterIds() : uniqueIds(sessionIds);
+  const sessions = attendanceSessionsForIds(selectedIds);
+  const rows = sessionIds === null ? attendanceRecapRows() : attendanceRowsForSessions(selectedIds);
+  if (!rows.length) {
+    toast('Belum ada data untuk sesi yang dipilih.');
+    return;
+  }
+  downloadExcel(attendanceExportFilename(sessions), {
+    title: attendanceExportTitle(sessions),
+    sheetName: attendanceExportSheetName(sessions),
     headers: [
       'NIM',
       'Nama',
@@ -4638,12 +4704,12 @@ on(attendanceRecapTable, 'click', async e => {
 });
 
 on(attendanceSessionTable, 'click', async e => {
-  const button = e.target.closest('[data-edit-attendance-session], [data-qr-attendance-session], [data-toggle-attendance-session], [data-reset-attendance-session], [data-delete-attendance-session], [data-edit-attendance-session-group], [data-qr-attendance-session-group], [data-toggle-attendance-session-group], [data-reset-attendance-session-group], [data-delete-attendance-session-group]');
+  const button = e.target.closest('[data-edit-attendance-session], [data-export-attendance-session], [data-qr-attendance-session], [data-toggle-attendance-session], [data-reset-attendance-session], [data-delete-attendance-session], [data-edit-attendance-session-group], [data-export-attendance-session-group], [data-qr-attendance-session-group], [data-toggle-attendance-session-group], [data-reset-attendance-session-group], [data-delete-attendance-session-group]');
   if (!button) return;
   if (!requirePermission('practicum_studio', 'Sesi Absen')) return;
 
-  const groupValue = button.dataset.editAttendanceSessionGroup || button.dataset.qrAttendanceSessionGroup || button.dataset.toggleAttendanceSessionGroup || button.dataset.resetAttendanceSessionGroup || button.dataset.deleteAttendanceSessionGroup;
-  const sessionId = button.dataset.editAttendanceSession || button.dataset.qrAttendanceSession || button.dataset.toggleAttendanceSession || button.dataset.resetAttendanceSession || button.dataset.deleteAttendanceSession;
+  const groupValue = button.dataset.editAttendanceSessionGroup || button.dataset.exportAttendanceSessionGroup || button.dataset.qrAttendanceSessionGroup || button.dataset.toggleAttendanceSessionGroup || button.dataset.resetAttendanceSessionGroup || button.dataset.deleteAttendanceSessionGroup;
+  const sessionId = button.dataset.editAttendanceSession || button.dataset.exportAttendanceSession || button.dataset.qrAttendanceSession || button.dataset.toggleAttendanceSession || button.dataset.resetAttendanceSession || button.dataset.deleteAttendanceSession;
   const sessionIds = groupValue ? parseAttendanceGroupIds(groupValue) : uniqueIds(sessionId);
   if (!sessionIds.length) return;
 
@@ -4651,6 +4717,10 @@ on(attendanceSessionTable, 'click', async e => {
     button.disabled = true;
     if (button.dataset.editAttendanceSession || button.dataset.editAttendanceSessionGroup) {
       editAttendanceSession(sessionIds[0], sessionIds);
+      return;
+    }
+    if (button.dataset.exportAttendanceSession || button.dataset.exportAttendanceSessionGroup) {
+      exportAttendanceExcel(sessionIds);
       return;
     }
     if (button.dataset.qrAttendanceSession || button.dataset.qrAttendanceSessionGroup) {

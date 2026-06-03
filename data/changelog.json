@@ -1,5 +1,19 @@
 [
   {
+    "id": "2026-06-04:admin-dashboard",
+    "date": "2026-06-04",
+    "dateLabel": "4 Juni 2026",
+    "generated": true,
+    "summary": "Dashboard Admin",
+    "items": [
+      {
+        "type": "improved",
+        "title": "Dashboard Admin",
+        "description": "Dashboard admin ditingkatkan agar navigasi, tampilan mobile, ringkasan data, dan akses ke bagian log lebih nyaman digunakan."
+      }
+    ]
+  },
+  {
     "id": "2026-06-02:admin-dashboard,resources-content",
     "date": "2026-06-02",
     "dateLabel": "2 Juni 2026",
