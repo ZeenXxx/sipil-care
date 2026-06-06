@@ -270,10 +270,10 @@
           </div>
           <div>
             <select class="control" id="zoomReconcileSession"><option value="">Pilih sesi absen</option></select>
-            <input class="control" id="zoomReconcileFile" type="file" accept=".txt,.csv,image/*">
+            <input class="control" id="zoomReconcileFile" type="file" accept=".txt,.csv,image/*" multiple>
           </div>
         </div>
-        <textarea class="control textarea zoom-reconcile-input" id="zoomReconcileText" placeholder="Paste daftar peserta Zoom di sini. Bisa berisi NIM, nama, atau hasil copy participant Zoom."></textarea>
+        <textarea class="control textarea zoom-reconcile-input" id="zoomReconcileText" placeholder="Paste daftar peserta Zoom di sini. Bisa berisi NIM, 3 angka akhir NIM, nama, atau hasil copy participant Zoom."></textarea>
         <div class="admin-actions-row">
           <button class="btn btn-primary" id="zoomReconcileRun" type="button">Cocokkan Data</button>
           <button class="action-btn" id="zoomReconcileExport" type="button" disabled>Export Hasil Excel</button>
@@ -313,7 +313,7 @@
     <script src="../../js/student-config.js?v=20"></script>
     <script src="../../js/auth.js?v=31"></script>
     <script src="../../js/push-config.js?v=1"></script>
-    <script type="module" src="../../js/admin-panel.js?v=76"></script>
+    <script type="module" src="../../js/admin-panel.js?v=77"></script>
       <script src="../../js/pwa.js?v=2"></script>
   </body>
 </html>

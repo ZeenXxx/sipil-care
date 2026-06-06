@@ -2648,7 +2648,40 @@ const normalizeZoomText = value => String(value || '')
 
 const zoomTokens = value => normalizeZoomText(value)
   .split(' ')
-  .filter(token => token.length > 1 && !['ft', 'hms', 'unjani', 'sipil', 'zoom', 'iphone', 'android'].includes(token));
+  .filter(token => token.length > 1 && ![
+    'ft',
+    'hms',
+    'unjani',
+    'sipil',
+    'zoom',
+    'iphone',
+    'android',
+    'kelas',
+    'kelompok',
+    'peserta',
+    'participant',
+    'participants',
+    'host',
+    'cohost',
+    'user',
+    'admin'
+  ].includes(token));
+
+const normalizeZoomDigits = value => String(value || '')
+  .replace(/[oO]/g, '0')
+  .replace(/[iIl|]/g, '1')
+  .replace(/[sS]/g, '5')
+  .replace(/[bB]/g, '8')
+  .replace(/\D/g, '');
+
+const zoomDigitCandidates = value => {
+  const candidates = [];
+  String(value || '').match(/[0-9oOiIl|sSbB\-_ ]{3,18}/g)?.forEach(part => {
+    const digits = normalizeZoomDigits(part);
+    if (digits.length >= 3 && digits.length <= 14) candidates.push(digits);
+  });
+  return [...new Set(candidates)];
+};
 
 function zoomLineDisplayName(line) {
   return String(line || '')
@@ -2688,35 +2721,95 @@ function zoomCandidateLine(rawLine) {
   }) || fields[0];
 }
 
+function zoomRawParticipantLines(rawLine) {
+  const fields = zoomCsvFields(rawLine);
+  if (fields.length <= 1) return [rawLine];
+  const headerLike = fields.some(field => /^(name|nama|participant|participants|peserta|duration|email|total|join|leave|time)$/i.test(field.trim()));
+  if (headerLike || fields.length > 2) return [zoomCandidateLine(rawLine)];
+  const usefulFields = fields.filter(field => {
+    const normalized = normalizeZoomText(field);
+    return normalized
+      && !field.includes('@')
+      && !/\b\d{1,2}:\d{2}(:\d{2})?\b/.test(field);
+  });
+  return usefulFields.length > 1 ? usefulFields : [zoomCandidateLine(rawLine)];
+}
+
 function parseZoomParticipants(text) {
   const participants = [];
   const seen = new Set();
   String(text || '').split(/\r?\n/).forEach(rawLine => {
-    const line = zoomLineDisplayName(zoomCandidateLine(rawLine));
-    if (!line || line.length < 3) return;
-    if (/^(name|nama|participant|participants|peserta|duration|email|total)$/i.test(line)) return;
-    const nim = (line.match(/\b\d{8,14}\b/) || [])[0] || '';
-    const normalized = normalizeZoomText(line.replace(nim, ''));
-    const key = nim || normalized;
-    if (!key || seen.has(key)) return;
-    seen.add(key);
-    participants.push({ raw: line, nim, normalized, tokens: zoomTokens(line) });
+    zoomRawParticipantLines(rawLine).forEach(rawCandidate => {
+      const line = zoomLineDisplayName(rawCandidate);
+      if (!line || line.length < 3) return;
+      if (/^(name|nama|participant|participants|peserta|duration|email|total)$/i.test(line)) return;
+      const digits = zoomDigitCandidates(line);
+      const nim = digits.find(item => item.length >= 8) || '';
+      const nimTail = digits.find(item => item.length >= 3 && item.length < 8) || (nim ? nim.slice(-3) : '');
+      const normalized = normalizeZoomText(line.replace(nim, '').replace(nimTail, ''));
+      const key = nim || nimTail || normalized;
+      if (!key || seen.has(key)) return;
+      seen.add(key);
+      participants.push({ raw: line, nim, nimTail, digits, normalized, tokens: zoomTokens(line) });
+    });
   });
   return participants;
 }
 
+function zoomTokenSimilarity(a, b) {
+  if (!a || !b) return 0;
+  if (a === b) return 1;
+  const longer = a.length >= b.length ? a : b;
+  const shorter = a.length >= b.length ? b : a;
+  if (longer.includes(shorter) && shorter.length >= 4) return .9;
+  const distances = Array.from({ length: shorter.length + 1 }, (_, index) => index);
+  for (let i = 1; i <= longer.length; i += 1) {
+    let previous = i;
+    for (let j = 1; j <= shorter.length; j += 1) {
+      const next = longer[i - 1] === shorter[j - 1]
+        ? distances[j - 1]
+        : Math.min(distances[j - 1], previous, distances[j]) + 1;
+      distances[j - 1] = previous;
+      previous = next;
+    }
+    distances[shorter.length] = previous;
+  }
+  return 1 - (distances[shorter.length] / Math.max(longer.length, shorter.length));
+}
+
+function zoomNameScore(rosterName, participant) {
+  const rosterNameNormalized = normalizeZoomText(rosterName);
+  const zoomName = participant.normalized;
+  if (!rosterNameNormalized || !zoomName) return 0;
+  if (rosterNameNormalized === zoomName) return .98;
+  if (rosterNameNormalized.includes(zoomName) || zoomName.includes(rosterNameNormalized)) return .9;
+  const rosterTokens = zoomTokens(rosterName);
+  const participantTokens = participant.tokens || [];
+  if (!rosterTokens.length || !participantTokens.length) return 0;
+  const matched = participantTokens.filter(token => rosterTokens.some(rosterToken => zoomTokenSimilarity(rosterToken, token) >= .82));
+  const overlap = matched.length;
+  if (!overlap) return 0;
+  const coverageSmall = overlap / Math.min(rosterTokens.length, participantTokens.length);
+  const coverageLarge = overlap / Math.max(rosterTokens.length, participantTokens.length);
+  if (coverageSmall >= 1 && matched.some(token => token.length >= 4)) return Math.max(.78, coverageLarge);
+  if (overlap >= 2) return Math.max(.72, (coverageSmall + coverageLarge) / 2);
+  if (matched[0]?.length >= 5) return .64;
+  return coverageLarge;
+}
+
 function zoomMatchScore(roster, participant) {
   if (!participant) return 0;
-  if (participant.nim && String(roster.nim) === participant.nim) return 1;
-  const rosterName = normalizeZoomText(roster.name);
-  const zoomName = participant.normalized;
-  if (!rosterName || !zoomName) return 0;
-  if (rosterName === zoomName) return .98;
-  if (rosterName.includes(zoomName) || zoomName.includes(rosterName)) return .9;
-  const rosterTokens = new Set(zoomTokens(roster.name));
-  if (!rosterTokens.size || !participant.tokens.length) return 0;
-  const overlap = participant.tokens.filter(token => rosterTokens.has(token)).length;
-  return overlap / Math.max(rosterTokens.size, participant.tokens.length);
+  const rosterNim = normalizeZoomDigits(roster.nim);
+  if (participant.nim && rosterNim === participant.nim) return 1;
+  const suffixScore = (participant.digits || []).reduce((score, digits) => {
+    if (digits.length >= 8 && rosterNim.endsWith(digits)) return Math.max(score, .98);
+    if (digits.length >= 4 && rosterNim.endsWith(digits)) return Math.max(score, .94);
+    if (digits.length === 3 && rosterNim.endsWith(digits)) return Math.max(score, .88);
+    return score;
+  }, 0);
+  const nameScore = zoomNameScore(roster.name, participant);
+  if (suffixScore && nameScore) return Math.min(1, Math.max(suffixScore, .72) + (nameScore * .08));
+  return Math.max(suffixScore, nameScore);
 }
 
 function bestZoomMatch(roster, participants, usedIndexes) {
@@ -2724,7 +2817,7 @@ function bestZoomMatch(roster, participants, usedIndexes) {
   participants.forEach((participant, index) => {
     if (usedIndexes.has(index)) return;
     const score = zoomMatchScore(roster, participant);
-    if (score >= .55 && (!best || score > best.score)) best = { participant, index, score };
+    if (score >= .62 && (!best || score > best.score)) best = { participant, index, score };
   });
   return best;
 }
@@ -2818,12 +2911,30 @@ async function loadTesseractIfNeeded() {
 async function readZoomReconcileFile(file) {
   if (!file) return '';
   if (file.type.startsWith('image/')) {
-    if (zoomReconcileStatus) zoomReconcileStatus.textContent = 'Membaca screenshot Zoom dengan OCR. Tunggu sebentar...';
     const Tesseract = await loadTesseractIfNeeded();
-    const result = await Tesseract.recognize(file, 'eng+ind');
+    const result = await Tesseract.recognize(file, 'eng+ind', {
+      tessedit_pageseg_mode: '6',
+      preserve_interword_spaces: '1'
+    });
     return result?.data?.text || '';
   }
   return file.text();
+}
+
+async function readZoomReconcileFiles(files = []) {
+  const selectedFiles = Array.from(files || []);
+  const texts = [];
+  for (let index = 0; index < selectedFiles.length; index += 1) {
+    const file = selectedFiles[index];
+    if (zoomReconcileStatus) {
+      const progress = selectedFiles.length > 1 ? ` ${index + 1}/${selectedFiles.length}` : '';
+      zoomReconcileStatus.textContent = file.type.startsWith('image/')
+        ? `Membaca screenshot Zoom${progress} dengan OCR. Tunggu sebentar...`
+        : `Membaca file${progress}: ${file.name}`;
+    }
+    texts.push(await readZoomReconcileFile(file));
+  }
+  return texts.filter(Boolean).join('\n');
 }
 
 async function runZoomReconcile() {
@@ -2834,10 +2945,10 @@ async function runZoomReconcile() {
   }
   if (zoomReconcileRun) zoomReconcileRun.disabled = true;
   try {
-    const fileText = await readZoomReconcileFile(zoomReconcileFile?.files?.[0]);
+    const fileText = await readZoomReconcileFiles(zoomReconcileFile?.files);
     const text = [zoomReconcileText?.value || '', fileText].filter(Boolean).join('\n');
     if (!text.trim()) {
-      toast('Upload screenshot/CSV/TXT atau paste daftar peserta Zoom terlebih dahulu.');
+      toast('Upload satu atau beberapa screenshot/CSV/TXT, atau paste daftar peserta Zoom terlebih dahulu.');
       return;
     }
     latestZoomReconcileSessions = attendanceSessionsForIds(sessionIds);
@@ -2851,7 +2962,7 @@ async function runZoomReconcile() {
   } catch (error) {
     console.error('Zoom reconcile failed:', error);
     toast(error.message || 'Gagal mencocokkan data Zoom.');
-    if (zoomReconcileStatus) zoomReconcileStatus.textContent = 'OCR gagal. Coba paste daftar peserta Zoom atau upload CSV/TXT.';
+    if (zoomReconcileStatus) zoomReconcileStatus.textContent = 'OCR gagal pada salah satu file. Coba ulangi, pakai screenshot lebih jelas, atau paste daftar peserta Zoom.';
   } finally {
     if (zoomReconcileRun) zoomReconcileRun.disabled = false;
   }
@@ -5984,10 +6095,10 @@ on(zoomReconcileSession, 'change', () => {
   if (zoomReconcileStatus) zoomReconcileStatus.textContent = 'Sesi diganti. Klik Cocokkan Data untuk membuat hasil baru.';
 });
 on(zoomReconcileFile, 'change', () => {
-  const fileName = zoomReconcileFile?.files?.[0]?.name;
+  const files = Array.from(zoomReconcileFile?.files || []);
   if (zoomReconcileStatus) {
-    zoomReconcileStatus.textContent = fileName
-      ? `File ${fileName} siap dicocokkan.`
+    zoomReconcileStatus.textContent = files.length
+      ? `${files.length} file siap dicocokkan. Screenshot akan dibaca berurutan.`
       : 'Pilih sesi lalu upload screenshot/CSV/TXT atau paste daftar peserta Zoom.';
   }
 });
