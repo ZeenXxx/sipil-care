@@ -302,6 +302,7 @@ let editingAttendanceSessionId = '';
 let editingAttendanceSessionIds = [];
 let latestZoomReconcileRows = [];
 let latestZoomReconcileSessions = [];
+let latestZoomUnmatchedParticipants = [];
 let videos = [];
 let announcements = [];
 let contactMessages = [];
@@ -2683,6 +2684,12 @@ const zoomDigitCandidates = value => {
   return [...new Set(candidates)];
 };
 
+const zoomTailDigit = value => {
+  const digits = normalizeZoomDigits(value);
+  if (!digits) return '';
+  return digits.length <= 2 ? digits.padStart(3, '0') : digits;
+};
+
 function zoomLineDisplayName(line) {
   return String(line || '')
     .replace(/\b(joined|left|host|co-host|me|recording|muted|unmuted)\b/gi, ' ')
@@ -2735,6 +2742,56 @@ function zoomRawParticipantLines(rawLine) {
   return usefulFields.length > 1 ? usefulFields : [zoomCandidateLine(rawLine)];
 }
 
+function zoomCodeParticipants(line) {
+  const text = zoomLineDisplayName(line);
+  const matches = [];
+  const markerPattern = /(^|[\s_#%~|+.,;:/\\()[\]{}-])(?:(?<class1>[ABCD])[\s_.-]*)?(?:(?<year>2[3-6])[\s_.-]*)?(?:(?<class2>[ABCD])[\s_.-]*)?(?<nums>\d{2,4}(?:\s*&\s*\d{2,4})?)/gi;
+  let match;
+  while ((match = markerPattern.exec(text))) {
+    const nums = String(match.groups?.nums || '').split('&').map(zoomTailDigit).filter(Boolean);
+    if (!nums.length) continue;
+    matches.push({
+      index: match.index,
+      end: markerPattern.lastIndex,
+      year: match.groups?.year || '',
+      nums
+    });
+  }
+  return matches.flatMap((item, index) => {
+    const nextIndex = matches[index + 1]?.index ?? Math.min(text.length, item.end + 42);
+    const raw = text.slice(Math.max(0, item.index - 18), nextIndex).trim();
+    const externalYear = item.year && item.year !== '25';
+    return item.nums.map(digits => ({
+      raw,
+      nim: digits.length >= 8 ? digits : '',
+      nimTail: digits,
+      digits: [digits],
+      externalYear,
+      normalized: normalizeZoomText(raw.replace(digits, '')),
+      tokens: zoomTokens(raw)
+    }));
+  });
+}
+
+function zoomParticipantFromLine(line) {
+  const digits = zoomDigitCandidates(line).map(zoomTailDigit).filter(Boolean);
+  const nim = digits.find(item => item.length >= 8) || '';
+  const nimTail = digits.find(item => item.length >= 3 && item.length < 8) || (nim ? nim.slice(-3) : '');
+  const normalized = normalizeZoomText(line.replace(nim, '').replace(nimTail, ''));
+  return { raw: line, nim, nimTail, digits, externalYear: false, normalized, tokens: zoomTokens(line) };
+}
+
+function pushZoomParticipant(participants, seen, participant) {
+  const key = [
+    participant.externalYear ? 'external' : 'target',
+    participant.nim || participant.nimTail || '',
+    participant.normalized || normalizeZoomText(participant.raw)
+  ].join('|');
+  if (!key.replace(/\|/g, '') || seen.has(key)) return;
+  seen.add(key);
+  participants.push(participant);
+}
+
 function parseZoomParticipants(text) {
   const participants = [];
   const seen = new Set();
@@ -2743,14 +2800,11 @@ function parseZoomParticipants(text) {
       const line = zoomLineDisplayName(rawCandidate);
       if (!line || line.length < 3) return;
       if (/^(name|nama|participant|participants|peserta|duration|email|total)$/i.test(line)) return;
-      const digits = zoomDigitCandidates(line);
-      const nim = digits.find(item => item.length >= 8) || '';
-      const nimTail = digits.find(item => item.length >= 3 && item.length < 8) || (nim ? nim.slice(-3) : '');
-      const normalized = normalizeZoomText(line.replace(nim, '').replace(nimTail, ''));
-      const key = nim || nimTail || normalized;
-      if (!key || seen.has(key)) return;
-      seen.add(key);
-      participants.push({ raw: line, nim, nimTail, digits, normalized, tokens: zoomTokens(line) });
+      const codeParticipants = zoomCodeParticipants(line);
+      codeParticipants.forEach(participant => pushZoomParticipant(participants, seen, participant));
+      if (!codeParticipants.length) {
+        pushZoomParticipant(participants, seen, zoomParticipantFromLine(line));
+      }
     });
   });
   return participants;
@@ -2802,6 +2856,7 @@ function zoomMatchScore(roster, participant) {
   const rosterNim = normalizeZoomDigits(roster.nim);
   if (participant.nim && rosterNim === participant.nim) return 1;
   const suffixScore = (participant.digits || []).reduce((score, digits) => {
+    if (participant.externalYear) return score;
     if (digits.length >= 8 && rosterNim.endsWith(digits)) return Math.max(score, .98);
     if (digits.length >= 4 && rosterNim.endsWith(digits)) return Math.max(score, .94);
     if (digits.length === 3 && rosterNim.endsWith(digits)) return Math.max(score, .88);
@@ -2828,7 +2883,6 @@ function selectedZoomReconcileIds() {
 
 function buildZoomReconcileRows(text) {
   const sessionIds = selectedZoomReconcileIds();
-  const sessions = attendanceSessionsForIds(sessionIds);
   const rows = attendanceRowsForSessions(sessionIds, { ignoreSearch: true });
   const participants = parseZoomParticipants(text);
   const used = new Set();
@@ -2859,20 +2913,7 @@ function buildZoomReconcileRows(text) {
       tone
     };
   });
-  participants.forEach((participant, index) => {
-    if (used.has(index)) return;
-    result.push({
-      session: sessions[0] || null,
-      roster: { nim: '-', name: participant.raw, className: '-', group: '' },
-      record: null,
-      zoomName: participant.raw,
-      zoomScore: 0,
-      sipilPresent: false,
-      zoomPresent: true,
-      status: 'Nama Zoom tidak dikenali di data praktikan',
-      tone: 'unknown'
-    });
-  });
+  latestZoomUnmatchedParticipants = participants.filter((_, index) => !used.has(index));
   return result;
 }
 
@@ -2881,7 +2922,7 @@ function renderZoomReconcile(rows = latestZoomReconcileRows) {
   if (zoomMatchCount) zoomMatchCount.textContent = rows.filter(row => row.tone === 'ok').length;
   if (zoomOnlyCount) zoomOnlyCount.textContent = rows.filter(row => row.status === 'Hadir Zoom, belum absen SIPIL CARE').length;
   if (sipilOnlyCount) sipilOnlyCount.textContent = rows.filter(row => row.status === 'Absen SIPIL CARE, tidak terlihat di Zoom').length;
-  if (zoomUnknownCount) zoomUnknownCount.textContent = rows.filter(row => row.tone === 'unknown').length;
+  if (zoomUnknownCount) zoomUnknownCount.textContent = latestZoomUnmatchedParticipants.length;
   if (zoomReconcileExport) zoomReconcileExport.disabled = !rows.length;
   if (!zoomReconcileTable) return;
   zoomReconcileTable.innerHTML = rows.map(row => `
@@ -6091,6 +6132,7 @@ on(zoomReconcileExport, 'click', () => exportZoomReconcileExcel());
 on(zoomReconcileSession, 'change', () => {
   latestZoomReconcileRows = [];
   latestZoomReconcileSessions = [];
+  latestZoomUnmatchedParticipants = [];
   renderZoomReconcile([]);
   if (zoomReconcileStatus) zoomReconcileStatus.textContent = 'Sesi diganti. Klik Cocokkan Data untuk membuat hasil baru.';
 });
