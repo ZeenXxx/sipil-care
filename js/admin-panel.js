@@ -2754,7 +2754,9 @@ function zoomCodeParticipants(line) {
       index: match.index,
       end: markerPattern.lastIndex,
       year: match.groups?.year || '',
-      nums
+      className: match.groups?.class1 || match.groups?.class2 || '',
+      nums,
+      hasLinkedNums: String(match.groups?.nums || '').includes('&')
     });
   }
   return matches.flatMap((item, index) => {
@@ -2767,6 +2769,7 @@ function zoomCodeParticipants(line) {
       nimTail: digits,
       digits: [digits],
       externalYear,
+      strongCode: !externalYear && (digits.length >= 8 || item.year === '25' || Boolean(item.className) || item.hasLinkedNums),
       normalized: normalizeZoomText(raw.replace(digits, '')),
       tokens: zoomTokens(raw)
     }));
@@ -2778,7 +2781,7 @@ function zoomParticipantFromLine(line) {
   const nim = digits.find(item => item.length >= 8) || '';
   const nimTail = digits.find(item => item.length >= 3 && item.length < 8) || (nim ? nim.slice(-3) : '');
   const normalized = normalizeZoomText(line.replace(nim, '').replace(nimTail, ''));
-  return { raw: line, nim, nimTail, digits, externalYear: false, normalized, tokens: zoomTokens(line) };
+  return { raw: line, nim, nimTail, digits, externalYear: false, strongCode: Boolean(nim), normalized, tokens: zoomTokens(line) };
 }
 
 function pushZoomParticipant(participants, seen, participant) {
@@ -2855,14 +2858,18 @@ function zoomMatchScore(roster, participant) {
   if (!participant) return 0;
   const rosterNim = normalizeZoomDigits(roster.nim);
   if (participant.nim && rosterNim === participant.nim) return 1;
+  const nameScore = zoomNameScore(roster.name, participant);
   const suffixScore = (participant.digits || []).reduce((score, digits) => {
-    if (participant.externalYear) return score;
-    if (digits.length >= 8 && rosterNim.endsWith(digits)) return Math.max(score, .98);
-    if (digits.length >= 4 && rosterNim.endsWith(digits)) return Math.max(score, .94);
-    if (digits.length === 3 && rosterNim.endsWith(digits)) return Math.max(score, .88);
+    if (participant.externalYear || !rosterNim.endsWith(digits)) return score;
+    if (digits.length >= 8) return Math.max(score, .98);
+    if (participant.strongCode) {
+      if (digits.length >= 4) return Math.max(score, .96);
+      if (digits.length === 3) return Math.max(score, .92);
+    }
+    if (digits.length >= 4 && nameScore >= .35) return Math.max(score, .82 + (nameScore * .12));
+    if (digits.length === 3 && nameScore >= .45) return Math.max(score, .72 + (nameScore * .18));
     return score;
   }, 0);
-  const nameScore = zoomNameScore(roster.name, participant);
   if (suffixScore && nameScore) return Math.min(1, Math.max(suffixScore, .72) + (nameScore * .08));
   return Math.max(suffixScore, nameScore);
 }
@@ -2872,7 +2879,7 @@ function bestZoomMatch(roster, participants, usedIndexes) {
   participants.forEach((participant, index) => {
     if (usedIndexes.has(index)) return;
     const score = zoomMatchScore(roster, participant);
-    if (score >= .62 && (!best || score > best.score)) best = { participant, index, score };
+    if (score >= .68 && (!best || score > best.score)) best = { participant, index, score };
   });
   return best;
 }
