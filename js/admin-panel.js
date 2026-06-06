@@ -123,6 +123,17 @@ const attendanceSessionTable = document.getElementById('attendanceSessionTable')
 const rosterTotalCount = document.getElementById('rosterTotalCount');
 const attendanceSessionCount = document.getElementById('attendanceSessionCount');
 const attendanceRecordCount = document.getElementById('attendanceRecordCount');
+const zoomReconcileSession = document.getElementById('zoomReconcileSession');
+const zoomReconcileFile = document.getElementById('zoomReconcileFile');
+const zoomReconcileText = document.getElementById('zoomReconcileText');
+const zoomReconcileRun = document.getElementById('zoomReconcileRun');
+const zoomReconcileExport = document.getElementById('zoomReconcileExport');
+const zoomReconcileStatus = document.getElementById('zoomReconcileStatus');
+const zoomMatchCount = document.getElementById('zoomMatchCount');
+const zoomOnlyCount = document.getElementById('zoomOnlyCount');
+const sipilOnlyCount = document.getElementById('sipilOnlyCount');
+const zoomUnknownCount = document.getElementById('zoomUnknownCount');
+const zoomReconcileTable = document.getElementById('zoomReconcileTable');
 
 const videoForm = document.getElementById('videoForm');
 const videoTitle = document.getElementById('videoTitle');
@@ -289,6 +300,8 @@ let practicumAttendanceSessions = [];
 let practicumAttendanceRecords = [];
 let editingAttendanceSessionId = '';
 let editingAttendanceSessionIds = [];
+let latestZoomReconcileRows = [];
+let latestZoomReconcileSessions = [];
 let videos = [];
 let announcements = [];
 let contactMessages = [];
@@ -2495,21 +2508,25 @@ function attendanceSessionOptions() {
   const current = attendanceSessionFilter.value || 'All';
   const groups = attendanceSessionGroups();
   attendanceSessionFilter.innerHTML = '<option value="All">Semua sesi</option>' + groups.map(group => {
-    const session = group.sessions[0];
     const ids = attendanceGroupIds(group);
-    const classes = [...new Set(group.sessions.map(item => item.className).filter(Boolean))].join(', ');
-    const label = [
-      session.course || session.category,
-      session.moduleNumber,
-      session.moduleTitle,
-      classes ? `Kelas ${classes}` : '',
-      session.date
-    ].filter(Boolean).join(' - ');
-    return `<option value="group:${escapeText(ids)}">${escapeText(label)}</option>`;
+    return `<option value="group:${escapeText(ids)}">${escapeText(attendanceGroupOptionLabel(group))}</option>`;
   }).join('');
   const legacySessionGroup = groups.find(group => group.sessions.some(session => session.docId === current));
   const nextValue = legacySessionGroup ? `group:${attendanceGroupIds(legacySessionGroup)}` : current;
   attendanceSessionFilter.value = nextValue === 'All' || groups.some(group => `group:${attendanceGroupIds(group)}` === nextValue) ? nextValue : 'All';
+  syncZoomReconcileSessionOptions(groups);
+}
+
+function attendanceGroupOptionLabel(group) {
+  const session = group.sessions[0] || {};
+  const classes = [...new Set(group.sessions.map(item => item.className).filter(Boolean))].join(', ');
+  return [
+    session.course || session.category,
+    session.moduleNumber,
+    session.moduleTitle,
+    classes ? `Kelas ${classes}` : '',
+    session.date
+  ].filter(Boolean).join(' - ');
 }
 
 function selectedAttendanceFilterIds() {
@@ -2551,9 +2568,9 @@ function attendanceExportSheetName(sessions) {
     : 'Rekap Absensi';
 }
 
-function attendanceRowsForSessions(sessionIds = null) {
+function attendanceRowsForSessions(sessionIds = null, options = {}) {
   const selectedIds = sessionIds === null ? selectedAttendanceFilterIds() : uniqueIds(sessionIds);
-  const q = (attendanceSearch?.value || '').toLowerCase();
+  const q = options.ignoreSearch ? '' : (attendanceSearch?.value || '').toLowerCase();
   const recordByKey = new Map(practicumAttendanceRecords.map(record => [`${record.sessionId}_${record.nim}`, record]));
   const selectedSessions = attendanceSessionsForIds(selectedIds);
   const rows = [];
@@ -2573,7 +2590,7 @@ function attendanceRowsForSessions(sessionIds = null) {
       });
   });
 
-  return rows.filter(({ session, roster, record }) => [
+  return rows.filter(({ session, roster, record }) => !q || [
     roster.nim,
     roster.name,
     roster.className,
@@ -2609,6 +2626,264 @@ function attendanceRecapRows() {
   const scopedSessions = attendanceSessionsForIds(selectedIds);
   if (!scopedSessions.length && !selectedIds.length) return attendanceRosterRowsForEmptyFilter();
   return attendanceRowsForSessions(selectedIds);
+}
+
+function syncZoomReconcileSessionOptions(groups = attendanceSessionGroups()) {
+  if (!zoomReconcileSession) return;
+  const current = zoomReconcileSession.value || '';
+  zoomReconcileSession.innerHTML = '<option value="">Pilih sesi absen</option>' + groups.map(group => {
+    const ids = attendanceGroupIds(group);
+    return `<option value="${escapeText(ids)}">${escapeText(attendanceGroupOptionLabel(group))}</option>`;
+  }).join('');
+  zoomReconcileSession.value = groups.some(group => attendanceGroupIds(group) === current) ? current : '';
+}
+
+const normalizeZoomText = value => String(value || '')
+  .toLowerCase()
+  .normalize('NFKD')
+  .replace(/[\u0300-\u036f]/g, '')
+  .replace(/[^a-z0-9\s]/g, ' ')
+  .replace(/\s+/g, ' ')
+  .trim();
+
+const zoomTokens = value => normalizeZoomText(value)
+  .split(' ')
+  .filter(token => token.length > 1 && !['ft', 'hms', 'unjani', 'sipil', 'zoom', 'iphone', 'android'].includes(token));
+
+function zoomLineDisplayName(line) {
+  return String(line || '')
+    .replace(/\b(joined|left|host|co-host|me|recording|muted|unmuted)\b/gi, ' ')
+    .replace(/\b\d{1,2}:\d{2}(:\d{2})?\b/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function zoomCsvFields(line) {
+  const fields = [];
+  let current = '';
+  let quoted = false;
+  String(line || '').split('').forEach(char => {
+    if (char === '"') {
+      quoted = !quoted;
+    } else if ((char === ',' || char === '\t') && !quoted) {
+      fields.push(current.trim());
+      current = '';
+    } else {
+      current += char;
+    }
+  });
+  fields.push(current.trim());
+  return fields.filter(Boolean);
+}
+
+function zoomCandidateLine(rawLine) {
+  const fields = zoomCsvFields(rawLine);
+  if (fields.length <= 1) return rawLine;
+  return fields.find(field => {
+    const normalized = normalizeZoomText(field);
+    return normalized
+      && !field.includes('@')
+      && !/\b\d{1,2}:\d{2}(:\d{2})?\b/.test(field)
+      && !/^(name|nama|participant|participants|peserta|duration|email|total|join|leave|time)$/i.test(field);
+  }) || fields[0];
+}
+
+function parseZoomParticipants(text) {
+  const participants = [];
+  const seen = new Set();
+  String(text || '').split(/\r?\n/).forEach(rawLine => {
+    const line = zoomLineDisplayName(zoomCandidateLine(rawLine));
+    if (!line || line.length < 3) return;
+    if (/^(name|nama|participant|participants|peserta|duration|email|total)$/i.test(line)) return;
+    const nim = (line.match(/\b\d{8,14}\b/) || [])[0] || '';
+    const normalized = normalizeZoomText(line.replace(nim, ''));
+    const key = nim || normalized;
+    if (!key || seen.has(key)) return;
+    seen.add(key);
+    participants.push({ raw: line, nim, normalized, tokens: zoomTokens(line) });
+  });
+  return participants;
+}
+
+function zoomMatchScore(roster, participant) {
+  if (!participant) return 0;
+  if (participant.nim && String(roster.nim) === participant.nim) return 1;
+  const rosterName = normalizeZoomText(roster.name);
+  const zoomName = participant.normalized;
+  if (!rosterName || !zoomName) return 0;
+  if (rosterName === zoomName) return .98;
+  if (rosterName.includes(zoomName) || zoomName.includes(rosterName)) return .9;
+  const rosterTokens = new Set(zoomTokens(roster.name));
+  if (!rosterTokens.size || !participant.tokens.length) return 0;
+  const overlap = participant.tokens.filter(token => rosterTokens.has(token)).length;
+  return overlap / Math.max(rosterTokens.size, participant.tokens.length);
+}
+
+function bestZoomMatch(roster, participants, usedIndexes) {
+  let best = null;
+  participants.forEach((participant, index) => {
+    if (usedIndexes.has(index)) return;
+    const score = zoomMatchScore(roster, participant);
+    if (score >= .55 && (!best || score > best.score)) best = { participant, index, score };
+  });
+  return best;
+}
+
+function selectedZoomReconcileIds() {
+  return parseAttendanceGroupIds(zoomReconcileSession?.value || '');
+}
+
+function buildZoomReconcileRows(text) {
+  const sessionIds = selectedZoomReconcileIds();
+  const sessions = attendanceSessionsForIds(sessionIds);
+  const rows = attendanceRowsForSessions(sessionIds, { ignoreSearch: true });
+  const participants = parseZoomParticipants(text);
+  const used = new Set();
+  const result = rows.map(row => {
+    const match = bestZoomMatch(row.roster, participants, used);
+    if (match) used.add(match.index);
+    const sipilPresent = Boolean(row.record);
+    const zoomPresent = Boolean(match);
+    let status = 'Belum hadir di Zoom dan belum absen';
+    let tone = 'neutral';
+    if (sipilPresent && zoomPresent) {
+      status = 'Cocok';
+      tone = 'ok';
+    } else if (!sipilPresent && zoomPresent) {
+      status = 'Hadir Zoom, belum absen SIPIL CARE';
+      tone = 'danger';
+    } else if (sipilPresent && !zoomPresent) {
+      status = 'Absen SIPIL CARE, tidak terlihat di Zoom';
+      tone = 'warning';
+    }
+    return {
+      ...row,
+      zoomName: match?.participant.raw || '',
+      zoomScore: match ? Math.round(match.score * 100) : 0,
+      sipilPresent,
+      zoomPresent,
+      status,
+      tone
+    };
+  });
+  participants.forEach((participant, index) => {
+    if (used.has(index)) return;
+    result.push({
+      session: sessions[0] || null,
+      roster: { nim: '-', name: participant.raw, className: '-', group: '' },
+      record: null,
+      zoomName: participant.raw,
+      zoomScore: 0,
+      sipilPresent: false,
+      zoomPresent: true,
+      status: 'Nama Zoom tidak dikenali di data praktikan',
+      tone: 'unknown'
+    });
+  });
+  return result;
+}
+
+function renderZoomReconcile(rows = latestZoomReconcileRows) {
+  latestZoomReconcileRows = rows;
+  if (zoomMatchCount) zoomMatchCount.textContent = rows.filter(row => row.tone === 'ok').length;
+  if (zoomOnlyCount) zoomOnlyCount.textContent = rows.filter(row => row.status === 'Hadir Zoom, belum absen SIPIL CARE').length;
+  if (sipilOnlyCount) sipilOnlyCount.textContent = rows.filter(row => row.status === 'Absen SIPIL CARE, tidak terlihat di Zoom').length;
+  if (zoomUnknownCount) zoomUnknownCount.textContent = rows.filter(row => row.tone === 'unknown').length;
+  if (zoomReconcileExport) zoomReconcileExport.disabled = !rows.length;
+  if (!zoomReconcileTable) return;
+  zoomReconcileTable.innerHTML = rows.map(row => `
+    <tr class="zoom-reconcile-row ${escapeText(row.tone)}">
+      <td><b>${escapeText(row.roster.nim || '-')}</b><br><span class="small-text">${escapeText(row.roster.name || '-')}</span></td>
+      <td>${escapeText(row.roster.className || '-')}${row.roster.group ? `<br><span class="small-text">Kelompok ${escapeText(row.roster.group)}</span>` : ''}</td>
+      <td><b>${escapeText(row.session?.moduleNumber || '-')}</b><br><span class="small-text">${escapeText(row.session?.moduleTitle || '-')}</span></td>
+      <td>${row.sipilPresent ? '<span class="student-status online">Hadir</span>' : '<span class="student-status never">Belum absen</span>'}</td>
+      <td>${row.zoomPresent ? `<span class="student-status online">Ada</span><br><span class="small-text">${escapeText(row.zoomName)}${row.zoomScore ? ` (${row.zoomScore}%)` : ''}</span>` : '<span class="student-status never">Tidak terlihat</span>'}</td>
+      <td><b>${escapeText(row.status)}</b></td>
+    </tr>
+  `).join('') || '<tr><td colspan="6">Belum ada hasil cocokkan. Pilih sesi dan masukkan data Zoom.</td></tr>';
+}
+
+async function loadTesseractIfNeeded() {
+  if (window.Tesseract?.recognize) return window.Tesseract;
+  await new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = 'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';
+    script.onload = resolve;
+    script.onerror = () => reject(new Error('OCR tidak bisa dimuat.'));
+    document.head.appendChild(script);
+  });
+  return window.Tesseract;
+}
+
+async function readZoomReconcileFile(file) {
+  if (!file) return '';
+  if (file.type.startsWith('image/')) {
+    if (zoomReconcileStatus) zoomReconcileStatus.textContent = 'Membaca screenshot Zoom dengan OCR. Tunggu sebentar...';
+    const Tesseract = await loadTesseractIfNeeded();
+    const result = await Tesseract.recognize(file, 'eng+ind');
+    return result?.data?.text || '';
+  }
+  return file.text();
+}
+
+async function runZoomReconcile() {
+  const sessionIds = selectedZoomReconcileIds();
+  if (!sessionIds.length) {
+    toast('Pilih sesi absen yang ingin dicocokkan.');
+    return;
+  }
+  if (zoomReconcileRun) zoomReconcileRun.disabled = true;
+  try {
+    const fileText = await readZoomReconcileFile(zoomReconcileFile?.files?.[0]);
+    const text = [zoomReconcileText?.value || '', fileText].filter(Boolean).join('\n');
+    if (!text.trim()) {
+      toast('Upload screenshot/CSV/TXT atau paste daftar peserta Zoom terlebih dahulu.');
+      return;
+    }
+    latestZoomReconcileSessions = attendanceSessionsForIds(sessionIds);
+    const rows = buildZoomReconcileRows(text);
+    renderZoomReconcile(rows);
+    if (zoomReconcileStatus) {
+      const issueCount = rows.filter(row => row.tone === 'danger' || row.tone === 'warning' || row.tone === 'unknown').length;
+      zoomReconcileStatus.textContent = `${rows.length} baris dicek. ${issueCount} perlu perhatian.`;
+    }
+    toast('Data Zoom berhasil dicocokkan.');
+  } catch (error) {
+    console.error('Zoom reconcile failed:', error);
+    toast(error.message || 'Gagal mencocokkan data Zoom.');
+    if (zoomReconcileStatus) zoomReconcileStatus.textContent = 'OCR gagal. Coba paste daftar peserta Zoom atau upload CSV/TXT.';
+  } finally {
+    if (zoomReconcileRun) zoomReconcileRun.disabled = false;
+  }
+}
+
+function exportZoomReconcileExcel() {
+  if (!latestZoomReconcileRows.length) {
+    toast('Belum ada hasil cocokkan untuk diexport.');
+    return;
+  }
+  const sessions = latestZoomReconcileSessions.length ? latestZoomReconcileSessions : attendanceSessionsForIds(selectedZoomReconcileIds());
+  downloadExcel(`cocokkan-zoom-absensi-${Date.now()}.xls`, {
+    title: attendanceExportTitle(sessions).replace('Rekap Absensi Praktikum', 'Cocokkan Zoom vs Absensi'),
+    sheetName: 'Cocokkan Zoom',
+    headers: ['NIM', 'Nama', 'Kelas', 'Kelompok', 'Modul', 'Judul Modul', 'SIPIL CARE', 'Zoom', 'Nama Zoom', 'Keterangan'],
+    rows: latestZoomReconcileRows.map(row => ({
+      values: [
+        row.roster.nim || '',
+        row.roster.name || '',
+        row.roster.className || '',
+        row.roster.group || '',
+        row.session?.moduleNumber || '',
+        row.session?.moduleTitle || '',
+        row.sipilPresent ? 'Hadir' : 'Belum absen',
+        row.zoomPresent ? 'Ada' : 'Tidak terlihat',
+        row.zoomName || '',
+        row.status
+      ],
+      absent: row.tone === 'danger' || row.tone === 'warning' || row.tone === 'unknown'
+    })),
+    absentPredicate: row => row.absent
+  });
 }
 
 const attendanceSessionGroupKey = session => JSON.stringify([
@@ -5700,6 +5975,22 @@ on(attendanceSessionFilter, 'change', () => attendanceRecapRender());
 on(attendanceExport, 'click', () => exportAttendanceExcel());
 on(rosterExport, 'click', () => exportRosterExcel());
 on(sessionExport, 'click', () => exportSessionExcel());
+on(zoomReconcileRun, 'click', () => runZoomReconcile());
+on(zoomReconcileExport, 'click', () => exportZoomReconcileExcel());
+on(zoomReconcileSession, 'change', () => {
+  latestZoomReconcileRows = [];
+  latestZoomReconcileSessions = [];
+  renderZoomReconcile([]);
+  if (zoomReconcileStatus) zoomReconcileStatus.textContent = 'Sesi diganti. Klik Cocokkan Data untuk membuat hasil baru.';
+});
+on(zoomReconcileFile, 'change', () => {
+  const fileName = zoomReconcileFile?.files?.[0]?.name;
+  if (zoomReconcileStatus) {
+    zoomReconcileStatus.textContent = fileName
+      ? `File ${fileName} siap dicocokkan.`
+      : 'Pilih sesi lalu upload screenshot/CSV/TXT atau paste daftar peserta Zoom.';
+  }
+});
 on(backupContentData, 'click', () => exportDeveloperBackup('content-practicum'));
 on(backupAccountData, 'click', () => exportDeveloperBackup('accounts-logs'));
 on(restoreBackupFile, 'change', async () => {

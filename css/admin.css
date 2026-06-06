@@ -2244,6 +2244,52 @@ body.admin-page [hidden]  {
 
 }
 
+.zoom-reconcile-input  {
+
+    min-height: 140px;
+
+    resize: vertical
+
+}
+
+.zoom-reconcile-summary strong  {
+
+    font-size: 1.75rem
+
+}
+
+.zoom-reconcile-row.ok  {
+
+    background: #f0fdf4
+
+}
+
+.zoom-reconcile-row.danger  {
+
+    background: #fef2f2
+
+}
+
+.zoom-reconcile-row.warning  {
+
+    background: #fffbeb
+
+}
+
+.zoom-reconcile-row.unknown  {
+
+    background: #f8fafc
+
+}
+
+.zoom-reconcile-row.danger td:first-child,
+.zoom-reconcile-row.warning td:first-child,
+.zoom-reconcile-row.unknown td:first-child  {
+
+    border-left: 4px solid #b91c1c
+
+}
+
 .student-account-scroll,
 .student-preview-scroll  {
 

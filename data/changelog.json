@@ -1,5 +1,24 @@
 [
   {
+    "id": "2026-06-06:admin-dashboard,attendance-recap-scroll",
+    "date": "2026-06-06",
+    "dateLabel": "6 Juni 2026",
+    "generated": true,
+    "summary": "Dashboard Admin, Rekap Absensi Praktikum Lebih Rapi",
+    "items": [
+      {
+        "type": "improved",
+        "title": "Dashboard Admin",
+        "description": "Dashboard admin ditingkatkan agar navigasi, tampilan mobile, ringkasan data, dan akses ke bagian log lebih nyaman digunakan."
+      },
+      {
+        "type": "improved",
+        "title": "Rekap Absensi Praktikum Lebih Rapi",
+        "description": "Tabel rekap absensi praktikum kini memiliki scroll sendiri agar daftar praktikan yang panjang tidak membuat admin harus scroll terlalu jauh ke menu berikutnya."
+      }
+    ]
+  },
+  {
     "id": "2026-06-04:admin-dashboard",
     "date": "2026-06-04",
     "dateLabel": "4 Juni 2026",

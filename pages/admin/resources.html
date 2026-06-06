@@ -10,7 +10,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-title" content="SIPIL CARE">
     <link rel="stylesheet" href="../../css/style.css?v=26">
-    <link rel="stylesheet" href="../../css/admin.css?v=52">
+    <link rel="stylesheet" href="../../css/admin.css?v=53">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -262,6 +262,32 @@
         <div class="table-wrap attendance-recap-scroll"><table><thead><tr><th>Praktikan</th><th>Kelas</th><th>Praktikum</th><th>Modul</th><th>Status</th><th>Waktu Absen</th><th>Aksi</th></tr></thead><tbody id="attendanceRecapTable"></tbody></table></div>
       </section>
 
+      <section id="practicum-attendance-reconcile" class="admin-card admin-workspace-panel" data-admin-workspace="attendance" data-admin-permission="practicum_studio">
+        <div class="admin-table-head">
+          <div>
+            <h3>Cocokkan Zoom vs Absensi</h3>
+            <p class="small-text">Bandingkan daftar peserta Zoom dengan rekap sesi absen SIPIL CARE. Panel ini berdiri sendiri dan tidak mengubah data absensi.</p>
+          </div>
+          <div>
+            <select class="control" id="zoomReconcileSession"><option value="">Pilih sesi absen</option></select>
+            <input class="control" id="zoomReconcileFile" type="file" accept=".txt,.csv,image/*">
+          </div>
+        </div>
+        <textarea class="control textarea zoom-reconcile-input" id="zoomReconcileText" placeholder="Paste daftar peserta Zoom di sini. Bisa berisi NIM, nama, atau hasil copy participant Zoom."></textarea>
+        <div class="admin-actions-row">
+          <button class="btn btn-primary" id="zoomReconcileRun" type="button">Cocokkan Data</button>
+          <button class="action-btn" id="zoomReconcileExport" type="button" disabled>Export Hasil Excel</button>
+          <span class="small-text" id="zoomReconcileStatus">Pilih sesi lalu upload screenshot/CSV/TXT atau paste daftar peserta Zoom.</span>
+        </div>
+        <div class="student-activity-summary zoom-reconcile-summary">
+          <article><span>Cocok</span><strong id="zoomMatchCount">0</strong></article>
+          <article><span>Zoom hadir, absen kosong</span><strong id="zoomOnlyCount">0</strong></article>
+          <article><span>Absen, tidak di Zoom</span><strong id="sipilOnlyCount">0</strong></article>
+          <article><span>Nama Zoom tidak dikenali</span><strong id="zoomUnknownCount">0</strong></article>
+        </div>
+        <div class="table-wrap attendance-recap-scroll"><table><thead><tr><th>Praktikan</th><th>Kelas</th><th>Modul</th><th>SIPIL CARE</th><th>Zoom</th><th>Keterangan</th></tr></thead><tbody id="zoomReconcileTable"></tbody></table></div>
+      </section>
+
       <section id="practicum-attendance-sessions" class="admin-card admin-workspace-panel" data-admin-workspace="attendance" data-admin-permission="practicum_studio">
         <div class="admin-table-head">
           <div>
@@ -287,7 +313,7 @@
     <script src="../../js/student-config.js?v=20"></script>
     <script src="../../js/auth.js?v=31"></script>
     <script src="../../js/push-config.js?v=1"></script>
-    <script type="module" src="../../js/admin-panel.js?v=75"></script>
+    <script type="module" src="../../js/admin-panel.js?v=76"></script>
       <script src="../../js/pwa.js?v=2"></script>
   </body>
 </html>
