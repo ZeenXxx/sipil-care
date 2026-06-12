@@ -22,6 +22,14 @@ service cloud.firestore {
       allow read, create, update, delete: if true;
     }
 
+    match /hms_active_members/{memberId} {
+      allow read, create, update, delete: if true;
+    }
+
+    match /student_gpa_records/{recordId} {
+      allow read, create, update, delete: if true;
+    }
+
     match /videos/{videoId} {
       allow read, create, update, delete: if true;
     }

@@ -1,5 +1,39 @@
 [
   {
+    "id": "2026-06-12:admin-dashboard,admin-guide,backend-security,public-interface,resources-content",
+    "date": "2026-06-12",
+    "dateLabel": "12 Juni 2026",
+    "generated": true,
+    "summary": "Dashboard Admin, Panduan Admin & Developer, Resource dan Materi Akademik",
+    "items": [
+      {
+        "type": "improved",
+        "title": "Dashboard Admin",
+        "description": "Dashboard admin ditingkatkan agar navigasi, tampilan mobile, ringkasan data, dan akses ke bagian log lebih nyaman digunakan."
+      },
+      {
+        "type": "added",
+        "title": "Panduan Admin & Developer",
+        "description": "Panel admin kini dilengkapi halaman panduan internal berisi alur kerja, role, permission, checklist developer, dan troubleshooting cepat."
+      },
+      {
+        "type": "improved",
+        "title": "Resource dan Materi Akademik",
+        "description": "Halaman materi, praktikum, studio, software, video, dan akses file diperbarui agar konten akademik lebih mudah ditemukan dan digunakan."
+      },
+      {
+        "type": "improved",
+        "title": "Tampilan Public Website",
+        "description": "Tampilan halaman public diperhalus agar lebih responsif, konsisten, dan nyaman dibuka dari perangkat mobile."
+      },
+      {
+        "type": "fixed",
+        "title": "Backend dan Permission",
+        "description": "Dokumentasi serta fungsi backend terkait akun, role, permission, dan sesi admin diperbaiki agar sistem lebih aman dan konsisten."
+      }
+    ]
+  },
+  {
     "id": "2026-06-07:admin-dashboard",
     "date": "2026-06-07",
     "dateLabel": "7 Juni 2026",

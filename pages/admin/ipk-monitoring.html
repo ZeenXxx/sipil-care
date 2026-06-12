@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="../../assets/icons/pwa-192.png" type="image/png" sizes="192x192">
+    <link rel="apple-touch-icon" href="../../assets/icons/pwa-180.png">
+    <meta name="theme-color" content="#0f4d3a">
+    <link rel="manifest" href="../../manifest.webmanifest?v=2">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="SIPIL CARE">
+    <link rel="stylesheet" href="../../css/style.css?v=26">
+    <link rel="stylesheet" href="../../css/admin.css?v=54">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <title>IPK Anggota Aktif - SIPIL CARE</title>
+  </head>
+  <body class="admin-page">
+    <aside class="admin-sidebar">
+      <div class="admin-brand"><span>SC</span><div><h1>SIPIL CARE</h1><small>HMS Admin Panel</small></div></div>
+      <nav class="admin-nav" aria-label="Admin navigation">
+        <a href="dashboard.html"><span>DB</span>Dashboard</a>
+        <a href="guide.html"><span>PA</span>Panduan Admin</a>
+        <a href="admin-accounts.html" data-developer-only="true"><span>AA</span>Akun Admin</a>
+        <a href="student-accounts.html" data-student-account-only="true"><span>AM</span>Akun Mahasiswa</a>
+        <a class="active" href="ipk-monitoring.html"><span>IP</span>IPK Anggota</a>
+        <a href="resources.html"><span>RS</span>Resources</a>
+        <a href="announcements.html"><span>IF</span>Pemberitahuan</a>
+        <a href="messages.html"><span>PM</span>Pesan Mahasiswa</a>
+      </nav>
+      <button class="admin-logout" id="logoutBtn" type="button"><span>LO</span>Logout</button>
+    </aside>
+
+    <main class="admin-main">
+      <section class="admin-page-head">
+        <span class="eyebrow">Pemantauan IPK</span>
+        <h2>IPK Anggota Aktif HMS</h2>
+        <p>Kelola status anggota aktif, input IPK dari admin, dan pantau data IPK yang dikirim mahasiswa aktif.</p>
+        <div class="admin-stats ipk-stats" id="ipkStats"></div>
+      </section>
+
+      <section class="ipk-admin-grid" data-admin-permission="ipk_monitoring">
+        <article class="admin-card">
+          <div class="admin-table-head">
+            <div>
+              <h3>Daftarkan Anggota Aktif</h3>
+              <p class="small-text">Mahasiswa yang masuk daftar ini akan melihat badge Anggota Aktif dan form input IPK di dashboard mahasiswa.</p>
+            </div>
+          </div>
+          <form id="activeMemberForm" class="ipk-form-grid">
+            <input class="control" id="activeMemberNim" placeholder="NIM" autocomplete="off" required>
+            <input class="control" id="activeMemberName" placeholder="Nama anggota" autocomplete="off" required>
+            <input class="control" id="activeMemberCohort" placeholder="Angkatan, contoh: 2023" autocomplete="off">
+            <input class="control" id="activeMemberDivision" placeholder="Divisi, contoh: PENDPROF" autocomplete="off">
+            <input class="control" id="activeMemberPosition" placeholder="Jabatan, contoh: Staff" autocomplete="off">
+            <select class="control" id="activeMemberStatus">
+              <option value="active">Aktif</option>
+              <option value="inactive">Nonaktif</option>
+            </select>
+            <div class="admin-form-actions">
+              <button class="action-btn primary" id="activeMemberSubmit" type="submit">Simpan Anggota Aktif</button>
+              <button class="action-btn" id="activeMemberCancel" type="button">Batal</button>
+            </div>
+          </form>
+        </article>
+
+        <article class="admin-card">
+          <div class="admin-table-head">
+            <div>
+              <h3>Input IPK oleh Admin</h3>
+              <p class="small-text">Admin bisa membantu memasukkan atau memperbaiki IPK anggota aktif jika mahasiswa belum mengisi.</p>
+            </div>
+          </div>
+          <form id="ipkRecordForm" class="ipk-form-grid">
+            <input id="ipkRecordId" type="hidden">
+            <input class="control" id="ipkStudentNim" list="ipkStudentList" placeholder="NIM anggota aktif" autocomplete="off" required>
+            <datalist id="ipkStudentList"></datalist>
+            <input class="control" id="ipkStudentName" placeholder="Nama" autocomplete="off" required>
+            <input class="control" id="ipkStudentCohort" placeholder="Angkatan" autocomplete="off">
+            <input class="control" id="ipkSemester" type="number" min="1" max="14" placeholder="Semester" required>
+            <input class="control" id="ipkAcademicYear" placeholder="Tahun akademik, contoh: 2025/2026" autocomplete="off">
+            <input class="control" id="ipkValue" type="number" min="0" max="4" step="0.01" placeholder="IPK, contoh: 3.56" required>
+            <textarea class="control" id="ipkNote" placeholder="Catatan pemantauan, opsional"></textarea>
+            <div class="admin-form-actions">
+              <button class="action-btn primary" id="ipkRecordSubmit" type="submit">Simpan IPK</button>
+              <button class="action-btn" id="ipkRecordCancel" type="button">Batal</button>
+            </div>
+          </form>
+        </article>
+      </section>
+
+      <section class="admin-card" data-admin-permission="ipk_monitoring">
+        <div class="admin-table-head">
+          <div>
+            <h3>Anggota Aktif</h3>
+            <p class="small-text">Daftar ini menentukan status Anggota Aktif atau Anggota Biasa pada akun mahasiswa.</p>
+          </div>
+          <input class="control" id="activeMemberSearch" placeholder="Cari NIM, nama, divisi, atau jabatan">
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Mahasiswa</th>
+                <th>Angkatan</th>
+                <th>Divisi/Jabatan</th>
+                <th>Status</th>
+                <th>IPK Terakhir</th>
+                <th>Update</th>
+                <th>Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="activeMemberTable"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="admin-card" data-admin-permission="ipk_monitoring">
+        <div class="admin-table-head">
+          <div>
+            <h3>Rekap IPK Anggota Aktif</h3>
+            <p class="small-text">Rekap ini menerima input dari mahasiswa aktif dan dari admin.</p>
+          </div>
+          <div>
+            <input class="control" id="ipkRecordSearch" placeholder="Cari NIM, nama, semester, atau catatan">
+            <select class="control" id="ipkRecordCohortFilter">
+              <option value="All">Semua angkatan</option>
+            </select>
+            <select class="control" id="ipkRecordStatusFilter">
+              <option value="All">Semua status</option>
+              <option value="safe">Aman</option>
+              <option value="warning">Perlu pantauan</option>
+            </select>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Mahasiswa</th>
+                <th>Angkatan</th>
+                <th>Semester</th>
+                <th>Tahun Akademik</th>
+                <th>IPK</th>
+                <th>Sumber</th>
+                <th>Update/Catatan</th>
+                <th>Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="ipkRecordTable"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <div class="toast" id="toast"></div>
+    <script src="../../js/auth.js?v=32"></script>
+    <script type="module" src="../../js/admin-panel.js?v=80"></script>
+    <script src="../../js/pwa.js?v=2"></script>
+    <script src="../../js/push-config.js?v=1"></script>
+    <script type="module" src="../../js/pwa-push.js?v=5"></script>
+  </body>
+</html>

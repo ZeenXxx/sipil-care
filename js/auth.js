@@ -11,7 +11,7 @@ const ADMIN_SESSION_KEY = 'sipilcare_admin_session';
 const ADMIN_PROFILE_KEY = 'sipilcare_admin_profile';
 const ADMIN_SESSION_TTL = 30 * 60 * 1000;
 const ADMIN_GUIDE_PAGE = 'guide.html';
-const ADMIN_ALL_PAGES = ['dashboard.html', 'guide.html', 'resources.html', 'announcements.html', 'messages.html', 'admin-accounts.html', 'student-accounts.html'];
+const ADMIN_ALL_PAGES = ['dashboard.html', 'guide.html', 'resources.html', 'announcements.html', 'messages.html', 'admin-accounts.html', 'student-accounts.html', 'ipk-monitoring.html'];
 const ADMIN_ROLE_ACCESS = {
   admin_sipil: {
     roleLabel: 'Admin SIPIL CARE',
@@ -132,7 +132,7 @@ const normalizeAdminProfile = profile => {
     roleLabel: profile.roleLabel || profile.role_label || roleAccess?.roleLabel || FALLBACK_ADMIN.roleLabel,
     allowedPages,
     permissions: role === 'developer'
-      ? ['dashboard', 'resources', 'practicum_studio', 'software', 'videos', 'announcements', 'messages', 'audit', 'admin_accounts', 'student_accounts', 'log_delete']
+      ? ['dashboard', 'resources', 'practicum_studio', 'software', 'videos', 'announcements', 'messages', 'audit', 'admin_accounts', 'student_accounts', 'ipk_monitoring', 'log_delete']
       : shouldUseRolePermissions ? roleAccess.permissions : rawPermissions.length ? rawPermissions : roleAccess?.permissions || [],
     sessionCheckedAt: Date.now()
   };

@@ -247,6 +247,34 @@ const studentEditActive = document.getElementById('studentEditActive');
 const studentEditResetDefault = document.getElementById('studentEditResetDefault');
 const studentEditSubmit = document.getElementById('studentEditSubmit');
 const studentEditCancel = document.getElementById('studentEditCancel');
+const activeMemberForm = document.getElementById('activeMemberForm');
+const activeMemberNim = document.getElementById('activeMemberNim');
+const activeMemberName = document.getElementById('activeMemberName');
+const activeMemberCohort = document.getElementById('activeMemberCohort');
+const activeMemberDivision = document.getElementById('activeMemberDivision');
+const activeMemberPosition = document.getElementById('activeMemberPosition');
+const activeMemberStatus = document.getElementById('activeMemberStatus');
+const activeMemberSubmit = document.getElementById('activeMemberSubmit');
+const activeMemberCancel = document.getElementById('activeMemberCancel');
+const activeMemberSearch = document.getElementById('activeMemberSearch');
+const activeMemberTable = document.getElementById('activeMemberTable');
+const ipkRecordForm = document.getElementById('ipkRecordForm');
+const ipkRecordId = document.getElementById('ipkRecordId');
+const ipkStudentNim = document.getElementById('ipkStudentNim');
+const ipkStudentName = document.getElementById('ipkStudentName');
+const ipkStudentCohort = document.getElementById('ipkStudentCohort');
+const ipkSemester = document.getElementById('ipkSemester');
+const ipkAcademicYear = document.getElementById('ipkAcademicYear');
+const ipkValue = document.getElementById('ipkValue');
+const ipkNote = document.getElementById('ipkNote');
+const ipkRecordSubmit = document.getElementById('ipkRecordSubmit');
+const ipkRecordCancel = document.getElementById('ipkRecordCancel');
+const ipkRecordSearch = document.getElementById('ipkRecordSearch');
+const ipkRecordCohortFilter = document.getElementById('ipkRecordCohortFilter');
+const ipkRecordStatusFilter = document.getElementById('ipkRecordStatusFilter');
+const ipkStats = document.getElementById('ipkStats');
+const ipkRecordTable = document.getElementById('ipkRecordTable');
+const ipkStudentList = document.getElementById('ipkStudentList');
 
 const resourceTable = document.getElementById('resourceTable');
 const adminSearch = document.getElementById('adminSearch');
@@ -317,6 +345,8 @@ let adminRoles = [];
 let adminPracticumScopes = {};
 let studentAccounts = [];
 let studentCohorts = [];
+let activeMembers = [];
+let ipkRecords = [];
 let academicSettings = {};
 let maintenanceSettings = {};
 let studentBulkPreviewRows = [];
@@ -326,6 +356,8 @@ let editingVideoDocId = null;
 let editingSoftwareDocId = null;
 let editingPracticumDocId = null;
 let editingAnnouncementDocId = null;
+let editingActiveMemberNim = '';
+let editingIpkRecordId = '';
 let supabaseClient = null;
 let adminActivityListening = false;
 const ANNOUNCEMENT_BUCKET = 'sipilcare';
@@ -337,6 +369,8 @@ const ADMIN_AUDIT_COLLECTION = 'admin_audit_logs';
 const ADMIN_ACTIVITY_COLLECTION = 'admin_activity';
 const RESOURCE_ACCESS_LOG_COLLECTION = 'resource_access_logs';
 const CLIENT_ERROR_LOG_COLLECTION = 'client_error_logs';
+const ACTIVE_MEMBER_COLLECTION = 'hms_active_members';
+const GPA_RECORD_COLLECTION = 'student_gpa_records';
 const ACADEMIC_SETTINGS_PATH = `${ACADEMIC_SETTINGS_COLLECTION}/${ACADEMIC_SETTINGS_DOC}`;
 const SITE_SETTINGS_COLLECTION = 'site_settings';
 const MAINTENANCE_DOC = 'maintenance';
@@ -347,7 +381,7 @@ const ADMIN_SESSION_KEY = 'sipilcare_admin_session';
 const ADMIN_PROFILE_KEY = 'sipilcare_admin_profile';
 const CLIENT_ERROR_KEY = 'sipilcare_client_errors';
 const ADMIN_GUIDE_PAGE = 'guide.html';
-const ADMIN_ALL_PAGES = ['dashboard.html', 'guide.html', 'resources.html', 'announcements.html', 'messages.html', 'admin-accounts.html', 'student-accounts.html'];
+const ADMIN_ALL_PAGES = ['dashboard.html', 'guide.html', 'resources.html', 'announcements.html', 'messages.html', 'admin-accounts.html', 'student-accounts.html', 'ipk-monitoring.html'];
 let liveChatSnapshotReady = false;
 const practicumCategories = [
   'Computer Aided Design (CAD)-S',
@@ -488,7 +522,8 @@ const navPagePermissions = {
   'announcements.html': 'announcements',
   'messages.html': 'messages',
   'admin-accounts.html': 'admin_accounts',
-  'student-accounts.html': 'student_accounts'
+  'student-accounts.html': 'student_accounts',
+  'ipk-monitoring.html': 'ipk_monitoring'
 };
 
 const canSeeAdminNavLink = link => {
@@ -559,8 +594,8 @@ const adminRoleTemplates = {
   developer: {
     role: 'developer',
     roleLabel: 'Developer',
-    allowedPages: ['dashboard.html', 'guide.html', 'resources.html', 'announcements.html', 'messages.html', 'admin-accounts.html', 'student-accounts.html'],
-    permissions: ['dashboard', 'resources', 'practicum_studio', 'software', 'videos', 'announcements', 'messages', 'audit', 'admin_accounts', 'student_accounts', 'log_delete']
+    allowedPages: ['dashboard.html', 'guide.html', 'resources.html', 'announcements.html', 'messages.html', 'admin-accounts.html', 'student-accounts.html', 'ipk-monitoring.html'],
+    permissions: ['dashboard', 'resources', 'practicum_studio', 'software', 'videos', 'announcements', 'messages', 'audit', 'admin_accounts', 'student_accounts', 'ipk_monitoring', 'log_delete']
   },
   admin_sipil: {
     role: 'admin_sipil',
@@ -629,7 +664,7 @@ const currentAdmin = () => {
       ? ADMIN_ALL_PAGES
       : withAdminGuidePage(profilePages.length ? profilePages : template.allowedPages || [ADMIN_GUIDE_PAGE]),
     permissions: role === 'developer'
-      ? ['dashboard', 'resources', 'practicum_studio', 'software', 'videos', 'announcements', 'messages', 'audit', 'admin_accounts', 'student_accounts', 'log_delete']
+      ? ['dashboard', 'resources', 'practicum_studio', 'software', 'videos', 'announcements', 'messages', 'audit', 'admin_accounts', 'student_accounts', 'ipk_monitoring', 'log_delete']
       : profilePermissions.length ? profilePermissions : template.permissions || [],
     practicumScopes: role === 'developer' ? [] : dbScopes.length ? dbScopes : profileScopes
   };
@@ -797,7 +832,8 @@ const adminPageOptions = [
   { value: 'announcements.html', label: 'Pemberitahuan', permission: 'announcements' },
   { value: 'messages.html', label: 'Pesan Mahasiswa', permission: 'messages' },
   { value: 'admin-accounts.html', label: 'Akun Admin', permission: 'admin_accounts' },
-  { value: 'student-accounts.html', label: 'Akun Mahasiswa', permission: 'student_accounts' }
+  { value: 'student-accounts.html', label: 'Akun Mahasiswa', permission: 'student_accounts' },
+  { value: 'ipk-monitoring.html', label: 'IPK Anggota', permission: 'ipk_monitoring' }
 ];
 
 const adminPermissionOptions = [
@@ -811,6 +847,7 @@ const adminPermissionOptions = [
   { value: 'audit', label: 'Lihat audit log' },
   { value: 'admin_accounts', label: 'Kelola akun admin' },
   { value: 'student_accounts', label: 'Kelola akun mahasiswa' },
+  { value: 'ipk_monitoring', label: 'Kelola IPK anggota aktif' },
   { value: 'log_delete', label: 'Hapus log dashboard' }
 ];
 
@@ -893,6 +930,12 @@ const auditActionLabels = {
   UPDATE_STUDENT_ACCOUNT: 'Update akun mahasiswa',
   DELETE_STUDENT_ACCOUNT: 'Hapus akun mahasiswa',
   RESET_STUDENT_ACCOUNT: 'Reset akun mahasiswa',
+  CREATE_ACTIVE_MEMBER: 'Tambah anggota aktif',
+  UPDATE_ACTIVE_MEMBER: 'Update anggota aktif',
+  DELETE_ACTIVE_MEMBER: 'Hapus anggota aktif',
+  CREATE_GPA_RECORD: 'Tambah data IPK',
+  UPDATE_GPA_RECORD: 'Update data IPK',
+  DELETE_GPA_RECORD: 'Hapus data IPK',
   UPDATE_ACADEMIC_SETTINGS: 'Update kalender akademik',
   EXPORT_DEVELOPER_BACKUP: 'Export backup developer',
   RESTORE_DEVELOPER_BACKUP: 'Restore backup developer',
@@ -1206,6 +1249,44 @@ const formatDateTimeShort = value => {
   const t = date.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
   return `${d} ${t}`;
 };
+
+const normalizeGpa = value => {
+  const normalized = Number(String(value || '').replace(',', '.'));
+  if (!Number.isFinite(normalized)) return null;
+  return Math.round(Math.min(4, Math.max(0, normalized)) * 100) / 100;
+};
+
+const formatGpa = value => {
+  const normalized = normalizeGpa(value);
+  return normalized === null ? '-' : normalized.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+};
+
+const gpaStatus = value => {
+  const ipk = normalizeGpa(value);
+  if (ipk === null) return { label: 'Belum ada', className: 'neutral' };
+  if (ipk >= 3.5) return { label: 'Sangat baik', className: 'good' };
+  if (ipk >= 3) return { label: 'Aman', className: 'ok' };
+  return { label: 'Perlu pantauan', className: 'warning' };
+};
+
+const normalizeAcademicYearLabel = value => String(value || '').trim().replace(/\s+/g, '') || new Date().getFullYear().toString();
+
+const memberDocId = nim => String(nim || '').trim();
+
+const gpaRecordDocId = (nim, semester, academicYear) => [
+  String(nim || '').trim(),
+  String(semester || '').trim().replace(/\D+/g, '') || '0',
+  normalizeAcademicYearLabel(academicYear).replace(/[^0-9A-Za-z-]+/g, '-')
+].join('_');
+
+const activeMemberForNim = nim => activeMembers.find(member => member.nim === String(nim || '').trim() && member.status !== 'inactive');
+
+const studentAccountForNim = nim => studentAccounts.find(student => student.nim === String(nim || '').trim())
+  || students.find(student => student.nim === String(nim || '').trim());
+
+const latestGpaForNim = nim => ipkRecords
+  .filter(record => record.nim === String(nim || '').trim())
+  .sort((a, b) => String(b.updatedAt || b.createdAt || '').localeCompare(String(a.updatedAt || a.createdAt || '')))[0];
 
 const formatRelativeTime = value => {
   const date = parseDateValue(value);
@@ -4252,6 +4333,160 @@ function studentAccountTableRender() {
   studentAccountTable.innerHTML = rows || '<tr><td colspan="7">Belum ada akun mahasiswa yang cocok.</td></tr>';
 }
 
+function syncIpkStudentList() {
+  if (!ipkStudentList) return;
+  const members = activeMembers
+    .filter(member => member.status !== 'inactive')
+    .sort((a, b) => String(a.name || a.nim).localeCompare(String(b.name || b.nim)));
+  ipkStudentList.innerHTML = members.map(member => `
+    <option value="${escapeText(member.nim)}">${escapeText(member.name || member.nim)}${member.angkatan ? ` - ${escapeText(member.angkatan)}` : ''}</option>
+  `).join('');
+}
+
+function fillActiveMemberFromStudent(nim, targetName = activeMemberName, targetCohort = activeMemberCohort) {
+  const student = studentAccountForNim(nim);
+  if (!student) return;
+  if (targetName && !targetName.value) targetName.value = student.name || '';
+  if (targetCohort && !targetCohort.value) targetCohort.value = student.angkatan || '';
+}
+
+function fillIpkStudentFromMember(nim) {
+  const member = activeMemberForNim(nim) || activeMembers.find(item => item.nim === String(nim || '').trim());
+  const student = studentAccountForNim(nim);
+  const source = member || student;
+  if (!source) return;
+  if (ipkStudentName) ipkStudentName.value = source.name || '';
+  if (ipkStudentCohort) ipkStudentCohort.value = source.angkatan || '';
+}
+
+function resetActiveMemberForm() {
+  if (!activeMemberForm) return;
+  activeMemberForm.reset();
+  editingActiveMemberNim = '';
+  if (activeMemberStatus) activeMemberStatus.value = 'active';
+  if (activeMemberSubmit) activeMemberSubmit.textContent = 'Simpan Anggota Aktif';
+}
+
+function resetIpkRecordForm() {
+  if (!ipkRecordForm) return;
+  ipkRecordForm.reset();
+  editingIpkRecordId = '';
+  if (ipkRecordId) ipkRecordId.value = '';
+  if (ipkRecordSubmit) ipkRecordSubmit.textContent = 'Simpan IPK';
+}
+
+function renderIpkStats() {
+  if (!ipkStats) return;
+  const active = activeMembers.filter(member => member.status !== 'inactive');
+  const submittedNims = new Set(ipkRecords.map(record => record.nim));
+  const values = ipkRecords.map(record => normalizeGpa(record.ipk)).filter(value => value !== null);
+  const average = values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : null;
+  const needsAttention = active.filter(member => {
+    const latest = latestGpaForNim(member.nim);
+    const ipk = normalizeGpa(latest?.ipk);
+    return ipk !== null && ipk < 3;
+  }).length;
+
+  ipkStats.innerHTML = `
+    <article><span>Anggota aktif</span><strong>${active.length}</strong></article>
+    <article><span>Sudah input IPK</span><strong>${[...submittedNims].filter(nim => activeMemberForNim(nim)).length}</strong></article>
+    <article><span>Rata-rata IPK</span><strong>${formatGpa(average)}</strong></article>
+    <article><span>Perlu pantauan</span><strong>${needsAttention}</strong></article>
+  `;
+}
+
+function syncIpkFilters() {
+  if (!ipkRecordCohortFilter) return;
+  const current = ipkRecordCohortFilter.value || 'All';
+  const cohorts = [...new Set([
+    ...activeMembers.map(member => member.angkatan),
+    ...ipkRecords.map(record => record.angkatan)
+  ].filter(Boolean))].sort((a, b) => String(b).localeCompare(String(a)));
+  ipkRecordCohortFilter.innerHTML = '<option value="All">Semua angkatan</option>'
+    + cohorts.map(cohort => `<option value="${escapeText(cohort)}">${escapeText(cohort)}</option>`).join('');
+  if (cohorts.includes(current)) ipkRecordCohortFilter.value = current;
+}
+
+function renderActiveMemberTable() {
+  if (!activeMemberTable) return;
+  if (!hasPermission('ipk_monitoring')) {
+    activeMemberTable.innerHTML = '<tr><td colspan="7">Role ini tidak memiliki akses pemantauan IPK.</td></tr>';
+    return;
+  }
+
+  const q = (activeMemberSearch?.value || '').toLowerCase();
+  const rows = activeMembers
+    .filter(member => [member.nim, member.name, member.angkatan, member.division, member.position].join(' ').toLowerCase().includes(q))
+    .sort((a, b) => String(b.angkatan || '').localeCompare(String(a.angkatan || '')) || String(a.name || a.nim).localeCompare(String(b.name || b.nim)))
+    .map(member => {
+      const latest = latestGpaForNim(member.nim);
+      const status = gpaStatus(latest?.ipk);
+      return `
+        <tr>
+          <td><b>${escapeText(member.nim)}</b><br><span class="small-text">${escapeText(member.name || '-')}</span></td>
+          <td>${escapeText(member.angkatan || '-')}</td>
+          <td>${escapeText(member.division || '-')}<br><span class="small-text">${escapeText(member.position || '-')}</span></td>
+          <td><span class="badge">${member.status === 'inactive' ? 'Nonaktif' : 'Aktif'}</span></td>
+          <td><b>${escapeText(formatGpa(latest?.ipk))}</b><br><span class="ipk-status ${status.className}">${escapeText(status.label)}</span></td>
+          <td>${escapeText(formatDateTime(latest?.updatedAt || latest?.createdAt))}</td>
+          <td>
+            <button class="action-btn" data-edit-active-member="${escapeText(member.nim)}" type="button">Edit</button>
+            <button class="action-btn danger" data-del-active-member="${escapeText(member.nim)}" type="button">Hapus</button>
+          </td>
+        </tr>
+      `;
+    }).join('');
+  activeMemberTable.innerHTML = rows || '<tr><td colspan="7">Belum ada anggota aktif yang cocok.</td></tr>';
+}
+
+function renderIpkRecordTable() {
+  if (!ipkRecordTable) return;
+  if (!hasPermission('ipk_monitoring')) {
+    ipkRecordTable.innerHTML = '<tr><td colspan="8">Role ini tidak memiliki akses pemantauan IPK.</td></tr>';
+    return;
+  }
+
+  const q = (ipkRecordSearch?.value || '').toLowerCase();
+  const cohort = ipkRecordCohortFilter?.value || 'All';
+  const statusFilter = ipkRecordStatusFilter?.value || 'All';
+  const rows = ipkRecords
+    .filter(record => {
+      if (cohort !== 'All' && String(record.angkatan || '') !== cohort) return false;
+      const status = gpaStatus(record.ipk).className;
+      if (statusFilter === 'warning' && status !== 'warning') return false;
+      if (statusFilter === 'safe' && status === 'warning') return false;
+      return [record.nim, record.name, record.angkatan, record.semester, record.academicYear, record.note].join(' ').toLowerCase().includes(q);
+    })
+    .sort((a, b) => String(b.updatedAt || b.createdAt || '').localeCompare(String(a.updatedAt || a.createdAt || '')))
+    .map(record => {
+      const status = gpaStatus(record.ipk);
+      return `
+        <tr>
+          <td><b>${escapeText(record.nim)}</b><br><span class="small-text">${escapeText(record.name || '-')}</span></td>
+          <td>${escapeText(record.angkatan || '-')}</td>
+          <td>${escapeText(record.semester || '-')}</td>
+          <td>${escapeText(record.academicYear || '-')}</td>
+          <td><b>${escapeText(formatGpa(record.ipk))}</b><br><span class="ipk-status ${status.className}">${escapeText(status.label)}</span></td>
+          <td>${escapeText(record.source === 'student' ? 'Mahasiswa' : 'Admin')}</td>
+          <td>${escapeText(formatDateTime(record.updatedAt || record.createdAt))}<br><span class="small-text">${escapeText(record.note || '-')}</span></td>
+          <td>
+            <button class="action-btn" data-edit-ipk-record="${escapeText(record.docId)}" type="button">Edit</button>
+            <button class="action-btn danger" data-del-ipk-record="${escapeText(record.docId)}" type="button">Hapus</button>
+          </td>
+        </tr>
+      `;
+    }).join('');
+  ipkRecordTable.innerHTML = rows || '<tr><td colspan="8">Belum ada data IPK yang cocok.</td></tr>';
+}
+
+function renderIpkMonitoring() {
+  syncIpkFilters();
+  renderIpkStats();
+  renderActiveMemberTable();
+  renderIpkRecordTable();
+  syncIpkStudentList();
+}
+
 const render = () => {
   stats();
   filters();
@@ -4279,6 +4514,7 @@ const render = () => {
   studentCohortRender();
   studentBulkPreviewRender();
   studentAccountTableRender();
+  renderIpkMonitoring();
 };
 
 const resetForm = () => {
@@ -6017,6 +6253,199 @@ on(studentEditForm, 'submit', async e => {
   }
 });
 
+on(activeMemberNim, 'change', () => fillActiveMemberFromStudent(activeMemberNim.value));
+on(activeMemberSearch, 'input', () => renderActiveMemberTable());
+on(activeMemberCancel, 'click', resetActiveMemberForm);
+on(activeMemberForm, 'submit', async e => {
+  e.preventDefault();
+  if (!requirePermission('ipk_monitoring', 'pemantauan IPK')) return;
+
+  const nim = memberDocId(activeMemberNim.value);
+  const now = new Date().toISOString();
+  if (!nim || !activeMemberName.value.trim()) {
+    toast('Lengkapi NIM dan nama anggota aktif.');
+    return;
+  }
+
+  const payload = {
+    nim,
+    name: activeMemberName.value.trim(),
+    angkatan: String(activeMemberCohort.value || '').trim(),
+    division: activeMemberDivision.value.trim(),
+    position: activeMemberPosition.value.trim(),
+    status: activeMemberStatus.value || 'active',
+    updatedAt: now,
+    updatedBy: currentAdmin().username
+  };
+  if (!editingActiveMemberNim) payload.createdAt = now;
+
+  try {
+    activeMemberSubmit.disabled = true;
+    if (editingActiveMemberNim && editingActiveMemberNim !== nim) {
+      await deleteDoc(doc(db, ACTIVE_MEMBER_COLLECTION, editingActiveMemberNim));
+    }
+    await setDoc(doc(db, ACTIVE_MEMBER_COLLECTION, nim), payload, { merge: true });
+    await writeAuditLog({
+      action: editingActiveMemberNim ? 'UPDATE_ACTIVE_MEMBER' : 'CREATE_ACTIVE_MEMBER',
+      targetType: 'active_member',
+      targetId: nim,
+      targetTitle: payload.name,
+      detail: `${payload.name} disimpan sebagai anggota aktif (${payload.angkatan || 'angkatan belum diisi'}).`
+    });
+    toast(editingActiveMemberNim ? 'Anggota aktif berhasil diperbarui.' : 'Anggota aktif berhasil ditambahkan.');
+    resetActiveMemberForm();
+  } catch (error) {
+    console.error('Save active member failed:', error);
+    toast('Gagal menyimpan anggota aktif.');
+  } finally {
+    activeMemberSubmit.disabled = false;
+  }
+});
+
+on(activeMemberTable, 'click', async e => {
+  if (!requirePermission('ipk_monitoring', 'pemantauan IPK')) return;
+  const editButton = e.target.closest('[data-edit-active-member]');
+  const deleteButton = e.target.closest('[data-del-active-member]');
+  const nim = editButton?.dataset.editActiveMember || deleteButton?.dataset.delActiveMember;
+  if (!nim) return;
+  const member = activeMembers.find(item => item.nim === nim);
+  if (!member) return;
+
+  if (editButton) {
+    editingActiveMemberNim = nim;
+    activeMemberNim.value = member.nim || '';
+    activeMemberName.value = member.name || '';
+    activeMemberCohort.value = member.angkatan || '';
+    activeMemberDivision.value = member.division || '';
+    activeMemberPosition.value = member.position || '';
+    activeMemberStatus.value = member.status || 'active';
+    activeMemberSubmit.textContent = 'Update Anggota Aktif';
+    activeMemberNim.focus();
+    return;
+  }
+
+  if (!confirm(`Yakin hapus anggota aktif "${member.name || nim}"? Data IPK lama tidak dihapus.`)) return;
+  try {
+    deleteButton.disabled = true;
+    await deleteDoc(doc(db, ACTIVE_MEMBER_COLLECTION, nim));
+    await writeAuditLog({
+      action: 'DELETE_ACTIVE_MEMBER',
+      targetType: 'active_member',
+      targetId: nim,
+      targetTitle: member.name || nim,
+      detail: `${member.name || nim} dihapus dari daftar anggota aktif.`
+    });
+    toast('Anggota aktif berhasil dihapus.');
+  } catch (error) {
+    console.error('Delete active member failed:', error);
+    toast('Gagal menghapus anggota aktif.');
+  } finally {
+    deleteButton.disabled = false;
+  }
+});
+
+on(ipkStudentNim, 'change', () => fillIpkStudentFromMember(ipkStudentNim.value));
+on(ipkRecordSearch, 'input', () => renderIpkRecordTable());
+on(ipkRecordCohortFilter, 'change', () => renderIpkRecordTable());
+on(ipkRecordStatusFilter, 'change', () => renderIpkRecordTable());
+on(ipkRecordCancel, 'click', resetIpkRecordForm);
+on(ipkRecordForm, 'submit', async e => {
+  e.preventDefault();
+  if (!requirePermission('ipk_monitoring', 'pemantauan IPK')) return;
+
+  const nim = memberDocId(ipkStudentNim.value);
+  const ipk = normalizeGpa(ipkValue.value);
+  const semester = String(ipkSemester.value || '').trim();
+  const academicYear = normalizeAcademicYearLabel(ipkAcademicYear.value);
+  if (!nim || !ipkStudentName.value.trim() || !semester || ipk === null) {
+    toast('Lengkapi NIM, nama, semester, dan IPK.');
+    return;
+  }
+  if (!activeMemberForNim(nim)) {
+    toast('NIM ini belum aktif sebagai anggota aktif. Tambahkan dulu di daftar anggota aktif.');
+    return;
+  }
+
+  const now = new Date().toISOString();
+  const docId = editingIpkRecordId || gpaRecordDocId(nim, semester, academicYear);
+  const payload = {
+    nim,
+    name: ipkStudentName.value.trim(),
+    angkatan: String(ipkStudentCohort.value || '').trim(),
+    semester,
+    academicYear,
+    ipk,
+    note: ipkNote.value.trim(),
+    source: 'admin',
+    updatedAt: now,
+    updatedBy: currentAdmin().username
+  };
+  if (!editingIpkRecordId) payload.createdAt = now;
+
+  try {
+    ipkRecordSubmit.disabled = true;
+    await setDoc(doc(db, GPA_RECORD_COLLECTION, docId), payload, { merge: true });
+    await writeAuditLog({
+      action: editingIpkRecordId ? 'UPDATE_GPA_RECORD' : 'CREATE_GPA_RECORD',
+      targetType: 'student_gpa_record',
+      targetId: docId,
+      targetTitle: `${payload.name} - Semester ${payload.semester}`,
+      detail: `IPK ${formatGpa(ipk)} untuk ${payload.name} disimpan oleh admin.`
+    });
+    toast(editingIpkRecordId ? 'Data IPK berhasil diperbarui.' : 'Data IPK berhasil ditambahkan.');
+    resetIpkRecordForm();
+  } catch (error) {
+    console.error('Save GPA record failed:', error);
+    toast('Gagal menyimpan data IPK.');
+  } finally {
+    ipkRecordSubmit.disabled = false;
+  }
+});
+
+on(ipkRecordTable, 'click', async e => {
+  if (!requirePermission('ipk_monitoring', 'pemantauan IPK')) return;
+  const editButton = e.target.closest('[data-edit-ipk-record]');
+  const deleteButton = e.target.closest('[data-del-ipk-record]');
+  const docId = editButton?.dataset.editIpkRecord || deleteButton?.dataset.delIpkRecord;
+  if (!docId) return;
+  const record = ipkRecords.find(item => item.docId === docId);
+  if (!record) return;
+
+  if (editButton) {
+    editingIpkRecordId = docId;
+    if (ipkRecordId) ipkRecordId.value = docId;
+    ipkStudentNim.value = record.nim || '';
+    ipkStudentName.value = record.name || '';
+    ipkStudentCohort.value = record.angkatan || '';
+    ipkSemester.value = record.semester || '';
+    ipkAcademicYear.value = record.academicYear || '';
+    ipkValue.value = record.ipk ?? '';
+    ipkNote.value = record.note || '';
+    ipkRecordSubmit.textContent = 'Update IPK';
+    ipkStudentNim.focus();
+    return;
+  }
+
+  if (!confirm(`Yakin hapus data IPK "${record.name || record.nim}" semester ${record.semester || '-'}?`)) return;
+  try {
+    deleteButton.disabled = true;
+    await deleteDoc(doc(db, GPA_RECORD_COLLECTION, docId));
+    await writeAuditLog({
+      action: 'DELETE_GPA_RECORD',
+      targetType: 'student_gpa_record',
+      targetId: docId,
+      targetTitle: record.name || record.nim,
+      detail: `Data IPK ${record.name || record.nim} dihapus.`
+    });
+    toast('Data IPK berhasil dihapus.');
+  } catch (error) {
+    console.error('Delete GPA record failed:', error);
+    toast('Gagal menghapus data IPK.');
+  } finally {
+    deleteButton.disabled = false;
+  }
+});
+
 on(academicSettingsForm, 'submit', async e => {
   e.preventDefault();
   if (!requirePermission('dashboard', 'Pengaturan kalender akademik')) return;
@@ -6332,7 +6761,7 @@ async function loadAdminAccounts(options = {}) {
 }
 
 async function loadStudentAccountData(options = {}) {
-  if (!studentAccountTable && !studentCohortList && !studentBulkCohort) return;
+  if (!studentAccountTable && !studentCohortList && !studentBulkCohort && !activeMemberForm && !ipkRecordForm) return;
   if (!canManageStudentAccounts()) return;
 
   try {
@@ -6350,6 +6779,7 @@ async function loadStudentAccountData(options = {}) {
     studentAccounts = accountResult.data || [];
     studentCohortRender();
     studentAccountTableRender();
+    renderIpkMonitoring();
     if (options.manual) toast('Data akun mahasiswa berhasil diperbarui.');
   } catch (error) {
     console.error('Load student account data failed:', error);
@@ -6471,6 +6901,29 @@ onSnapshot(resourcesQuery, snapshot => {
   toast('Gagal memuat resource dari Firebase.');
 });
 
+const activeMemberQuery = query(collection(db, ACTIVE_MEMBER_COLLECTION), orderBy('name'));
+onSnapshot(activeMemberQuery, snapshot => {
+  activeMembers = snapshot.docs.map(documentSnapshot => ({
+    docId: documentSnapshot.id,
+    ...documentSnapshot.data()
+  }));
+  renderIpkMonitoring();
+}, err => {
+  console.error('Firestore active member error:', err);
+  if (activeMemberTable) activeMemberTable.innerHTML = '<tr><td colspan="7">Gagal memuat anggota aktif.</td></tr>';
+});
+
+const gpaRecordQuery = query(collection(db, GPA_RECORD_COLLECTION), orderBy('updatedAt', 'desc'));
+onSnapshot(gpaRecordQuery, snapshot => {
+  ipkRecords = snapshot.docs.map(documentSnapshot => ({
+    docId: documentSnapshot.id,
+    ...documentSnapshot.data()
+  }));
+  renderIpkMonitoring();
+}, err => {
+  console.error('Firestore GPA record error:', err);
+  if (ipkRecordTable) ipkRecordTable.innerHTML = '<tr><td colspan="8">Gagal memuat data IPK.</td></tr>';
+});
 
 const practicumQuery = query(collection(db, 'practicum_studio_modules'), orderBy('date', 'desc'));
 onSnapshot(practicumQuery, snapshot => {

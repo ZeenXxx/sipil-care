@@ -1837,6 +1837,100 @@ body.admin-page [hidden]  {
 
 }
 
+.ipk-admin-grid  {
+
+    display: grid;
+
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+
+    gap: 18px
+
+}
+
+.ipk-stats  {
+
+    grid-template-columns: repeat(4, minmax(0, 1fr))
+
+}
+
+.ipk-form-grid  {
+
+    display: grid;
+
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+
+    gap: 12px
+
+}
+
+.ipk-form-grid textarea  {
+
+    min-height: 110px;
+
+    grid-column: 1 / -1;
+
+    resize: vertical
+
+}
+
+.ipk-form-grid .admin-form-actions  {
+
+    grid-column: 1 / -1;
+
+    display: flex;
+
+    flex-wrap: wrap;
+
+    gap: 10px
+
+}
+
+.ipk-status  {
+
+    display: inline-flex;
+
+    width: max-content;
+
+    margin-top: 5px;
+
+    padding: 4px 9px;
+
+    border-radius: 999px;
+
+    background: #eef2f0;
+
+    color: var(--muted);
+
+    font-size: 12px;
+
+    font-weight: 900
+
+}
+
+.ipk-status.good  {
+
+    background: #e5f8ed;
+
+    color: #08753f
+
+}
+
+.ipk-status.ok  {
+
+    background: #edf7f3;
+
+    color: var(--primary)
+
+}
+
+.ipk-status.warning  {
+
+    background: #fff2e6;
+
+    color: #9d4c00
+
+}
+
 .student-status  {
 
     display: inline-flex;
@@ -3266,6 +3360,11 @@ th  {
   .admin-workspace-tabs {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
+
+  .ipk-admin-grid,
+  .ipk-stats {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 700px) {
@@ -3284,5 +3383,9 @@ th  {
 
   .admin-workspace-note {
     align-items: flex-start;
+  }
+
+  .ipk-form-grid {
+    grid-template-columns: 1fr;
   }
 }

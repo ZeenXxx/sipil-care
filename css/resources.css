@@ -220,9 +220,99 @@ html.dark .legend-label      { color: #8ab8a0; }
   font-weight: 800;
 }
 
+.student-membership-note {
+  margin: 0;
+  color: var(--muted, #62736d);
+  line-height: 1.7;
+}
+
+.student-member-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) repeat(2, minmax(120px, 160px));
+  gap: 12px;
+  align-items: stretch;
+}
+
+.student-member-card > div {
+  padding: 14px;
+  border: 1px solid var(--line, #d8e5de);
+  border-radius: 10px;
+  background: var(--soft, #eef6f2);
+}
+
+.student-member-card strong,
+.student-member-card small,
+.student-gpa-mini span,
+.student-gpa-mini b {
+  display: block;
+}
+
+.student-member-card small,
+.student-gpa-mini span {
+  margin-top: 5px;
+  color: var(--muted, #62736d);
+}
+
+.student-member-badge {
+  display: inline-flex;
+  width: max-content;
+  margin-bottom: 8px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: var(--primary, #0f4d3a);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.student-gpa-mini b {
+  margin-top: 4px;
+  color: var(--primary, #0f4d3a);
+  font-size: 26px;
+  font-weight: 900;
+}
+
+.student-gpa-form {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.student-gpa-form .btn {
+  min-height: 52px;
+}
+
+.student-gpa-history {
+  display: grid;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.student-gpa-history article {
+  padding: 13px 14px;
+  border: 1px solid var(--line, #d8e5de);
+  border-radius: 10px;
+  background: rgba(255,255,255,.7);
+}
+
+.student-gpa-history strong,
+.student-gpa-history span,
+.student-gpa-history small {
+  display: block;
+}
+
+.student-gpa-history span,
+.student-gpa-history small {
+  margin-top: 4px;
+  color: var(--muted, #62736d);
+}
+
 @media (max-width: 820px) {
   .student-dashboard-grid,
-  .student-dashboard-summary {
+  .student-dashboard-summary,
+  .student-member-card,
+  .student-gpa-form {
     grid-template-columns: 1fr;
   }
 
