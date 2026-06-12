@@ -258,6 +258,10 @@ const activeMemberSubmit = document.getElementById('activeMemberSubmit');
 const activeMemberCancel = document.getElementById('activeMemberCancel');
 const activeMemberSearch = document.getElementById('activeMemberSearch');
 const activeMemberTable = document.getElementById('activeMemberTable');
+const activeMemberBulkRows = document.getElementById('activeMemberBulkRows');
+const activeMemberBulkPreviewBtn = document.getElementById('activeMemberBulkPreviewBtn');
+const activeMemberBulkSubmit = document.getElementById('activeMemberBulkSubmit');
+const activeMemberBulkPreviewTable = document.getElementById('activeMemberBulkPreviewTable');
 const ipkRecordForm = document.getElementById('ipkRecordForm');
 const ipkRecordId = document.getElementById('ipkRecordId');
 const ipkStudentNim = document.getElementById('ipkStudentNim');
@@ -265,7 +269,10 @@ const ipkStudentName = document.getElementById('ipkStudentName');
 const ipkStudentCohort = document.getElementById('ipkStudentCohort');
 const ipkSemester = document.getElementById('ipkSemester');
 const ipkAcademicYear = document.getElementById('ipkAcademicYear');
+const ipkEntryMode = document.getElementById('ipkEntryMode');
 const ipkValue = document.getElementById('ipkValue');
+const ipkCourseRows = document.getElementById('ipkCourseRows');
+const ipkCoursePreview = document.getElementById('ipkCoursePreview');
 const ipkNote = document.getElementById('ipkNote');
 const ipkRecordSubmit = document.getElementById('ipkRecordSubmit');
 const ipkRecordCancel = document.getElementById('ipkRecordCancel');
@@ -275,6 +282,8 @@ const ipkRecordStatusFilter = document.getElementById('ipkRecordStatusFilter');
 const ipkStats = document.getElementById('ipkStats');
 const ipkRecordTable = document.getElementById('ipkRecordTable');
 const ipkStudentList = document.getElementById('ipkStudentList');
+const ipkChartMemberSelect = document.getElementById('ipkChartMemberSelect');
+const ipkMemberChart = document.getElementById('ipkMemberChart');
 
 const resourceTable = document.getElementById('resourceTable');
 const adminSearch = document.getElementById('adminSearch');
@@ -347,6 +356,7 @@ let studentAccounts = [];
 let studentCohorts = [];
 let activeMembers = [];
 let ipkRecords = [];
+let activeMemberBulkPreviewRows = [];
 let academicSettings = {};
 let maintenanceSettings = {};
 let studentBulkPreviewRows = [];
@@ -933,6 +943,7 @@ const auditActionLabels = {
   CREATE_ACTIVE_MEMBER: 'Tambah anggota aktif',
   UPDATE_ACTIVE_MEMBER: 'Update anggota aktif',
   DELETE_ACTIVE_MEMBER: 'Hapus anggota aktif',
+  IMPORT_ACTIVE_MEMBERS: 'Import anggota aktif',
   CREATE_GPA_RECORD: 'Tambah data IPK',
   UPDATE_GPA_RECORD: 'Update data IPK',
   DELETE_GPA_RECORD: 'Hapus data IPK',
@@ -1251,7 +1262,7 @@ const formatDateTimeShort = value => {
 };
 
 const normalizeGpa = value => {
-  const normalized = Number(String(value || '').replace(',', '.'));
+  const normalized = Number(String(value ?? '').replace(',', '.'));
   if (!Number.isFinite(normalized)) return null;
   return Math.round(Math.min(4, Math.max(0, normalized)) * 100) / 100;
 };
@@ -1268,6 +1279,96 @@ const gpaStatus = value => {
   if (ipk >= 3) return { label: 'Aman', className: 'ok' };
   return { label: 'Perlu pantauan', className: 'warning' };
 };
+
+const gradeScale = {
+  A: 4,
+  AB: 3.5,
+  'A-': 3.7,
+  BA: 3.5,
+  B: 3,
+  BC: 2.5,
+  'B+': 3.3,
+  'B-': 2.7,
+  CB: 2.5,
+  C: 2,
+  CD: 1.5,
+  'C+': 2.3,
+  'C-': 1.7,
+  DC: 1.5,
+  D: 1,
+  E: 0
+};
+
+const normalizeGrade = value => String(value || '').trim().toUpperCase().replace(/\s+/g, '');
+
+const gradePoint = value => {
+  const normalized = normalizeGrade(value).replace(',', '.');
+  if (Object.prototype.hasOwnProperty.call(gradeScale, normalized)) return gradeScale[normalized];
+  const numeric = Number(normalized);
+  if (Number.isFinite(numeric)) return Math.min(4, Math.max(0, numeric));
+  return null;
+};
+
+const parseDelimitedRows = value => String(value || '')
+  .split(/\r?\n/)
+  .map(line => line.trim())
+  .filter(Boolean)
+  .map(line => {
+    const delimiter = line.includes('\t') ? '\t' : line.includes(';') ? ';' : ',';
+    return line.split(delimiter).map(cell => cell.trim()).filter(Boolean);
+  });
+
+const parseCourseRows = value => parseDelimitedRows(value)
+  .map(cells => {
+    const grade = cells.at(-1);
+    const sksIndex = cells.findIndex((cell, index) => index > 0 && Number.isFinite(Number(String(cell).replace(',', '.'))));
+    const sks = sksIndex >= 0 ? Number(String(cells[sksIndex]).replace(',', '.')) : 0;
+    const name = cells.slice(0, sksIndex >= 0 ? sksIndex : Math.max(1, cells.length - 2)).join(' ').trim();
+    const point = gradePoint(grade);
+    return {
+      name,
+      sks,
+      grade: normalizeGrade(grade),
+      point
+    };
+  })
+  .filter(course => course.name && course.sks > 0 && course.point !== null);
+
+const courseGpa = courses => {
+  const totalSks = courses.reduce((sum, course) => sum + Number(course.sks || 0), 0);
+  if (!totalSks) return { ipk: null, totalSks: 0 };
+  const weighted = courses.reduce((sum, course) => sum + Number(course.sks || 0) * Number(course.point || 0), 0);
+  return { ipk: Math.round((weighted / totalSks) * 100) / 100, totalSks };
+};
+
+const courseSummary = courses => {
+  if (!Array.isArray(courses) || !courses.length) return '-';
+  const { totalSks } = courseGpa(courses);
+  return `${courses.length} mata kuliah, ${totalSks} SKS`;
+};
+
+const parseActiveMemberBulkRows = value => parseDelimitedRows(value)
+  .map(cells => {
+    const nimIndex = cells.findIndex(cell => /\d{6,}/.test(cell));
+    if (nimIndex < 0) return null;
+    const nim = (cells[nimIndex].match(/\d{6,}/) || [''])[0];
+    const before = cells.slice(0, nimIndex);
+    const after = cells.slice(nimIndex + 1);
+    const name = (before.join(' ') || after.shift() || '').trim();
+    const maybeCohort = after[0] && /^\d{4}$/.test(after[0]) ? after.shift() : (nim.slice(0, 2) ? `20${nim.slice(0, 2)}` : '');
+    const division = after.shift() || '';
+    const position = after.join(' ') || '';
+    if (!nim || !name) return null;
+    return {
+      nim,
+      name,
+      angkatan: maybeCohort,
+      division,
+      position,
+      status: 'active'
+    };
+  })
+  .filter(Boolean);
 
 const normalizeAcademicYearLabel = value => String(value || '').trim().replace(/\s+/g, '') || new Date().getFullYear().toString();
 
@@ -4343,6 +4444,113 @@ function syncIpkStudentList() {
   `).join('');
 }
 
+function syncIpkChartMemberOptions() {
+  if (!ipkChartMemberSelect) return;
+  const current = ipkChartMemberSelect.value || '';
+  const members = activeMembers
+    .filter(member => member.status !== 'inactive')
+    .sort((a, b) => String(a.name || a.nim).localeCompare(String(b.name || b.nim)));
+  ipkChartMemberSelect.innerHTML = '<option value="">Pilih anggota aktif</option>'
+    + members.map(member => `<option value="${escapeText(member.nim)}">${escapeText(member.name || member.nim)} - ${escapeText(member.nim)}</option>`).join('');
+  if (members.some(member => member.nim === current)) ipkChartMemberSelect.value = current;
+  else if (!current && members.length) ipkChartMemberSelect.value = members[0].nim;
+}
+
+function renderActiveMemberBulkPreview() {
+  if (!activeMemberBulkPreviewTable) return;
+  activeMemberBulkPreviewTable.innerHTML = activeMemberBulkPreviewRows.length
+    ? activeMemberBulkPreviewRows.map(row => `
+      <tr>
+        <td><b>${escapeText(row.nim)}</b></td>
+        <td>${escapeText(row.name)}</td>
+        <td>${escapeText(row.angkatan || '-')}</td>
+        <td>${escapeText(row.division || '-')}</td>
+        <td>${escapeText(row.position || '-')}</td>
+      </tr>
+    `).join('')
+    : '<tr><td colspan="5">Belum ada preview import.</td></tr>';
+}
+
+function renderCoursePreview() {
+  if (!ipkCoursePreview) return;
+  const courses = parseCourseRows(ipkCourseRows?.value || '');
+  const { ipk, totalSks } = courseGpa(courses);
+  if (ipkEntryMode?.value === 'courses' && ipkValue) {
+    ipkValue.value = ipk === null ? '' : ipk;
+  }
+  ipkCoursePreview.innerHTML = courses.length
+    ? `
+      <strong>${escapeText(courses.length)} mata kuliah &middot; ${escapeText(totalSks)} SKS &middot; IP ${escapeText(formatGpa(ipk))}</strong>
+      <div>${courses.slice(0, 6).map(course => `<span>${escapeText(course.name)} (${escapeText(course.sks)} SKS, ${escapeText(course.grade)})</span>`).join('')}</div>
+    `
+    : 'Belum ada mata kuliah yang dipreview.';
+}
+
+function semesterSortValue(record) {
+  const semester = Number(record.semester || 0);
+  const year = Number(String(record.academicYear || '').match(/\d{4}/)?.[0] || 0);
+  return year * 20 + semester;
+}
+
+function memberMiniBars(nim) {
+  const rows = ipkRecords
+    .filter(record => record.nim === nim)
+    .sort((a, b) => semesterSortValue(a) - semesterSortValue(b))
+    .slice(-6);
+  if (!rows.length) return '';
+  return `<div class="ipk-mini-bars">${rows.map(record => {
+    const height = Math.max(10, Math.round(((normalizeGpa(record.ipk) || 0) / 4) * 34));
+    return `<span title="Semester ${escapeText(record.semester || '-')} - ${escapeText(formatGpa(record.ipk))}" style="height:${height}px"></span>`;
+  }).join('')}</div>`;
+}
+
+function renderMemberIpkChart() {
+  if (!ipkMemberChart) return;
+  const selectedNim = ipkChartMemberSelect?.value || activeMembers.find(member => member.status !== 'inactive')?.nim || '';
+  const member = activeMembers.find(item => item.nim === selectedNim);
+  const records = ipkRecords
+    .filter(record => record.nim === selectedNim)
+    .sort((a, b) => semesterSortValue(a) - semesterSortValue(b));
+
+  if (!member) {
+    ipkMemberChart.innerHTML = '<div class="empty">Pilih anggota aktif untuk melihat grafik.</div>';
+    return;
+  }
+
+  const bars = records.map(record => {
+    const ipk = normalizeGpa(record.ipk) || 0;
+    const height = Math.max(8, Math.round((ipk / 4) * 120));
+    return `
+      <article class="ipk-chart-bar">
+        <div class="ipk-bar-track"><span style="height:${height}px"></span></div>
+        <b>${escapeText(formatGpa(ipk))}</b>
+        <small>Smt ${escapeText(record.semester || '-')}</small>
+      </article>
+    `;
+  }).join('');
+
+  const latest = records.at(-1);
+  ipkMemberChart.innerHTML = `
+    <div class="ipk-chart-head">
+      <div>
+        <h4>${escapeText(member.name || member.nim)}</h4>
+        <p>${escapeText(member.nim)} &middot; ${escapeText(member.division || '-')} &middot; ${escapeText(member.position || '-')}</p>
+      </div>
+      <strong>IP terakhir ${escapeText(formatGpa(latest?.ipk))}</strong>
+    </div>
+    <div class="ipk-chart-bars">${bars || '<div class="empty">Belum ada data IP/IPK untuk anggota ini.</div>'}</div>
+    <div class="ipk-course-list">
+      ${records.filter(record => Array.isArray(record.courses) && record.courses.length).slice(-3).reverse().map(record => `
+        <article>
+          <b>Semester ${escapeText(record.semester || '-')} &middot; ${escapeText(record.academicYear || '-')}</b>
+          <span>${escapeText(courseSummary(record.courses))}</span>
+          <small>${record.courses.slice(0, 5).map(course => `${escapeText(course.name)} (${escapeText(course.grade)})`).join(', ')}</small>
+        </article>
+      `).join('')}
+    </div>
+  `;
+}
+
 function fillActiveMemberFromStudent(nim, targetName = activeMemberName, targetCohort = activeMemberCohort) {
   const student = studentAccountForNim(nim);
   if (!student) return;
@@ -4372,6 +4580,8 @@ function resetIpkRecordForm() {
   ipkRecordForm.reset();
   editingIpkRecordId = '';
   if (ipkRecordId) ipkRecordId.value = '';
+  if (ipkEntryMode) ipkEntryMode.value = 'gpa';
+  renderCoursePreview();
   if (ipkRecordSubmit) ipkRecordSubmit.textContent = 'Simpan IPK';
 }
 
@@ -4427,7 +4637,7 @@ function renderActiveMemberTable() {
           <td>${escapeText(member.angkatan || '-')}</td>
           <td>${escapeText(member.division || '-')}<br><span class="small-text">${escapeText(member.position || '-')}</span></td>
           <td><span class="badge">${member.status === 'inactive' ? 'Nonaktif' : 'Aktif'}</span></td>
-          <td><b>${escapeText(formatGpa(latest?.ipk))}</b><br><span class="ipk-status ${status.className}">${escapeText(status.label)}</span></td>
+          <td><b>${escapeText(formatGpa(latest?.ipk))}</b><br><span class="ipk-status ${status.className}">${escapeText(status.label)}</span>${memberMiniBars(member.nim)}</td>
           <td>${escapeText(formatDateTime(latest?.updatedAt || latest?.createdAt))}</td>
           <td>
             <button class="action-btn" data-edit-active-member="${escapeText(member.nim)}" type="button">Edit</button>
@@ -4466,7 +4676,7 @@ function renderIpkRecordTable() {
           <td>${escapeText(record.angkatan || '-')}</td>
           <td>${escapeText(record.semester || '-')}</td>
           <td>${escapeText(record.academicYear || '-')}</td>
-          <td><b>${escapeText(formatGpa(record.ipk))}</b><br><span class="ipk-status ${status.className}">${escapeText(status.label)}</span></td>
+          <td><b>${escapeText(formatGpa(record.ipk))}</b><br><span class="ipk-status ${status.className}">${escapeText(status.label)}</span><br><span class="small-text">${escapeText(courseSummary(record.courses))}</span></td>
           <td>${escapeText(record.source === 'student' ? 'Mahasiswa' : 'Admin')}</td>
           <td>${escapeText(formatDateTime(record.updatedAt || record.createdAt))}<br><span class="small-text">${escapeText(record.note || '-')}</span></td>
           <td>
@@ -4485,6 +4695,10 @@ function renderIpkMonitoring() {
   renderActiveMemberTable();
   renderIpkRecordTable();
   syncIpkStudentList();
+  syncIpkChartMemberOptions();
+  renderMemberIpkChart();
+  renderActiveMemberBulkPreview();
+  renderCoursePreview();
 }
 
 const render = () => {
@@ -6256,6 +6470,51 @@ on(studentEditForm, 'submit', async e => {
 on(activeMemberNim, 'change', () => fillActiveMemberFromStudent(activeMemberNim.value));
 on(activeMemberSearch, 'input', () => renderActiveMemberTable());
 on(activeMemberCancel, 'click', resetActiveMemberForm);
+on(activeMemberBulkPreviewBtn, 'click', () => {
+  activeMemberBulkPreviewRows = parseActiveMemberBulkRows(activeMemberBulkRows?.value || '');
+  renderActiveMemberBulkPreview();
+  toast(activeMemberBulkPreviewRows.length ? `${activeMemberBulkPreviewRows.length} anggota siap diimport.` : 'Tidak ada baris valid. Pastikan ada kolom nama dan NIM.');
+});
+on(activeMemberBulkSubmit, 'click', async () => {
+  if (!requirePermission('ipk_monitoring', 'pemantauan IPK')) return;
+  activeMemberBulkPreviewRows = parseActiveMemberBulkRows(activeMemberBulkRows?.value || '');
+  renderActiveMemberBulkPreview();
+  if (!activeMemberBulkPreviewRows.length) {
+    toast('Tidak ada anggota valid untuk diimport.');
+    return;
+  }
+  try {
+    activeMemberBulkSubmit.disabled = true;
+    const now = new Date().toISOString();
+    for (let index = 0; index < activeMemberBulkPreviewRows.length; index += 450) {
+      const batch = writeBatch(db);
+      activeMemberBulkPreviewRows.slice(index, index + 450).forEach(member => {
+        batch.set(doc(db, ACTIVE_MEMBER_COLLECTION, member.nim), {
+          ...member,
+          updatedAt: now,
+          updatedBy: currentAdmin().username,
+          importedAt: now
+        }, { merge: true });
+      });
+      await batch.commit();
+    }
+    await writeAuditLog({
+      action: 'IMPORT_ACTIVE_MEMBERS',
+      targetType: 'active_member',
+      targetTitle: 'Import anggota aktif',
+      detail: `${activeMemberBulkPreviewRows.length} anggota aktif diimport dari data Excel.`
+    });
+    toast(`${activeMemberBulkPreviewRows.length} anggota aktif berhasil diimport.`);
+    activeMemberBulkPreviewRows = [];
+    if (activeMemberBulkRows) activeMemberBulkRows.value = '';
+    renderActiveMemberBulkPreview();
+  } catch (error) {
+    console.error('Import active members failed:', error);
+    toast('Gagal import anggota aktif.');
+  } finally {
+    activeMemberBulkSubmit.disabled = false;
+  }
+});
 on(activeMemberForm, 'submit', async e => {
   e.preventDefault();
   if (!requirePermission('ipk_monitoring', 'pemantauan IPK')) return;
@@ -6345,20 +6604,33 @@ on(activeMemberTable, 'click', async e => {
 });
 
 on(ipkStudentNim, 'change', () => fillIpkStudentFromMember(ipkStudentNim.value));
+on(ipkEntryMode, 'change', () => {
+  if (ipkValue) ipkValue.required = ipkEntryMode?.value !== 'courses';
+  renderCoursePreview();
+});
+on(ipkCourseRows, 'input', renderCoursePreview);
 on(ipkRecordSearch, 'input', () => renderIpkRecordTable());
 on(ipkRecordCohortFilter, 'change', () => renderIpkRecordTable());
 on(ipkRecordStatusFilter, 'change', () => renderIpkRecordTable());
+on(ipkChartMemberSelect, 'change', renderMemberIpkChart);
 on(ipkRecordCancel, 'click', resetIpkRecordForm);
 on(ipkRecordForm, 'submit', async e => {
   e.preventDefault();
   if (!requirePermission('ipk_monitoring', 'pemantauan IPK')) return;
 
   const nim = memberDocId(ipkStudentNim.value);
-  const ipk = normalizeGpa(ipkValue.value);
+  const courses = parseCourseRows(ipkCourseRows?.value || '');
+  const computed = courseGpa(courses);
+  const mode = ipkEntryMode?.value || 'gpa';
+  const ipk = mode === 'courses' ? computed.ipk : normalizeGpa(ipkValue.value);
   const semester = String(ipkSemester.value || '').trim();
   const academicYear = normalizeAcademicYearLabel(ipkAcademicYear.value);
   if (!nim || !ipkStudentName.value.trim() || !semester || ipk === null) {
     toast('Lengkapi NIM, nama, semester, dan IPK.');
+    return;
+  }
+  if (mode === 'courses' && !courses.length) {
+    toast('Isi minimal satu mata kuliah valid untuk mode mata kuliah.');
     return;
   }
   if (!activeMemberForNim(nim)) {
@@ -6375,6 +6647,9 @@ on(ipkRecordForm, 'submit', async e => {
     semester,
     academicYear,
     ipk,
+    entryMode: mode,
+    courses,
+    totalSks: computed.totalSks || null,
     note: ipkNote.value.trim(),
     source: 'admin',
     updatedAt: now,
@@ -6419,8 +6694,15 @@ on(ipkRecordTable, 'click', async e => {
     ipkStudentCohort.value = record.angkatan || '';
     ipkSemester.value = record.semester || '';
     ipkAcademicYear.value = record.academicYear || '';
+    if (ipkEntryMode) ipkEntryMode.value = record.entryMode || (Array.isArray(record.courses) && record.courses.length ? 'courses' : 'gpa');
     ipkValue.value = record.ipk ?? '';
+    if (ipkCourseRows) {
+      ipkCourseRows.value = Array.isArray(record.courses)
+        ? record.courses.map(course => [course.name, course.sks, course.grade].filter(Boolean).join('\t')).join('\n')
+        : '';
+    }
     ipkNote.value = record.note || '';
+    renderCoursePreview();
     ipkRecordSubmit.textContent = 'Update IPK';
     ipkStudentNim.focus();
     return;

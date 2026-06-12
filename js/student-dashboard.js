@@ -61,7 +61,7 @@ const formatDateTime = value => {
 const typeClass = value => String(value || 'materi').toLowerCase().replace(/[^a-z0-9]+/g, '-');
 
 const normalizeGpa = value => {
-  const normalized = Number(String(value || '').replace(',', '.'));
+  const normalized = Number(String(value ?? '').replace(',', '.'));
   if (!Number.isFinite(normalized)) return null;
   return Math.round(Math.min(4, Math.max(0, normalized)) * 100) / 100;
 };
@@ -69,6 +69,56 @@ const normalizeGpa = value => {
 const formatGpa = value => {
   const normalized = normalizeGpa(value);
   return normalized === null ? '-' : normalized.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+};
+
+const gradeScale = {
+  A: 4,
+  AB: 3.5,
+  'A-': 3.7,
+  BA: 3.5,
+  B: 3,
+  BC: 2.5,
+  'B+': 3.3,
+  'B-': 2.7,
+  CB: 2.5,
+  C: 2,
+  CD: 1.5,
+  'C+': 2.3,
+  'C-': 1.7,
+  DC: 1.5,
+  D: 1,
+  E: 0
+};
+const normalizeGrade = value => String(value || '').trim().toUpperCase().replace(/\s+/g, '');
+const gradePoint = value => {
+  const normalized = normalizeGrade(value).replace(',', '.');
+  if (Object.prototype.hasOwnProperty.call(gradeScale, normalized)) return gradeScale[normalized];
+  const numeric = Number(normalized);
+  return Number.isFinite(numeric) ? Math.min(4, Math.max(0, numeric)) : null;
+};
+const parseDelimitedRows = value => String(value || '')
+  .split(/\r?\n/)
+  .map(line => line.trim())
+  .filter(Boolean)
+  .map(line => {
+    const delimiter = line.includes('\t') ? '\t' : line.includes(';') ? ';' : ',';
+    return line.split(delimiter).map(cell => cell.trim()).filter(Boolean);
+  });
+const parseCourseRows = value => parseDelimitedRows(value)
+  .map(cells => {
+    const grade = cells.at(-1);
+    const sksIndex = cells.findIndex((cell, index) => index > 0 && Number.isFinite(Number(String(cell).replace(',', '.'))));
+    const sks = sksIndex >= 0 ? Number(String(cells[sksIndex]).replace(',', '.')) : 0;
+    const name = cells.slice(0, sksIndex >= 0 ? sksIndex : Math.max(1, cells.length - 2)).join(' ').trim();
+    const point = gradePoint(grade);
+    return { name, sks, grade: normalizeGrade(grade), point };
+  })
+  .filter(course => course.name && course.sks > 0 && course.point !== null);
+const courseGpa = courses => {
+  const totalSks = courses.reduce((sum, course) => sum + Number(course.sks || 0), 0);
+  if (!totalSks) return { ipk: null, totalSks: 0 };
+  const weighted = courses.reduce((sum, course) => sum + Number(course.sks || 0) * Number(course.point || 0), 0);
+  return { ipk: Math.round((weighted / totalSks) * 100) / 100, totalSks };
 };
 
 const gpaRecordDocId = (nim, semester, academicYear) => [
@@ -150,6 +200,18 @@ function renderMembership(session, member, records) {
   if (!membershipTarget) return;
   const isActiveMember = Boolean(member && member.status !== 'inactive');
   const latest = records[0];
+  const chronological = [...records].sort((a, b) => Number(a.semester || 0) - Number(b.semester || 0));
+  const bars = chronological.map(record => {
+    const ipk = normalizeGpa(record.ipk) || 0;
+    const height = Math.max(8, Math.round((ipk / 4) * 110));
+    return `
+      <article class="student-gpa-bar">
+        <div><span style="height:${height}px"></span></div>
+        <b>${escapeText(formatGpa(ipk))}</b>
+        <small>Smt ${escapeText(record.semester || '-')}</small>
+      </article>
+    `;
+  }).join('');
   const average = records.length
     ? records.map(record => normalizeGpa(record.ipk)).filter(value => value !== null).reduce((sum, value, _, arr) => sum + value / arr.length, 0)
     : null;
@@ -188,16 +250,25 @@ function renderMembership(session, member, records) {
     <form id="studentGpaForm" class="student-gpa-form">
       <input class="control" id="studentGpaSemester" type="number" min="1" max="14" placeholder="Semester" required>
       <input class="control" id="studentGpaAcademicYear" placeholder="Tahun akademik, contoh: 2025/2026" required>
+      <select class="control" id="studentGpaMode">
+        <option value="gpa">Input IP/IPK langsung</option>
+        <option value="courses">Input nilai per mata kuliah</option>
+      </select>
       <input class="control" id="studentGpaValue" type="number" min="0" max="4" step="0.01" placeholder="IPK, contoh: 3.56" required>
+      <textarea class="control" id="studentGpaCourses" placeholder="Opsional untuk mode mata kuliah:
+Mekanika Teknik	3	A
+Matematika Teknik	2	AB"></textarea>
+      <div class="student-course-preview" id="studentCoursePreview">Belum ada mata kuliah yang dipreview.</div>
       <input class="control" id="studentGpaNote" placeholder="Catatan opsional">
       <button class="btn btn-primary" type="submit">Simpan IPK</button>
     </form>
+    <div class="student-gpa-chart">${bars || '<div class="empty">Grafik muncul setelah ada data IP/IPK.</div>'}</div>
     <div class="student-gpa-history">
       ${records.length
         ? records.slice(0, 8).map(record => `
           <article>
             <strong>Semester ${escapeText(record.semester || '-')} &middot; ${escapeText(record.academicYear || '-')}</strong>
-            <span>IPK ${escapeText(formatGpa(record.ipk))} &middot; ${escapeText(record.source === 'admin' ? 'Diinput admin' : 'Diinput mahasiswa')}</span>
+            <span>IP ${escapeText(formatGpa(record.ipk))} &middot; ${escapeText(record.source === 'admin' ? 'Diinput admin' : 'Diinput mahasiswa')}${Array.isArray(record.courses) && record.courses.length ? ` &middot; ${record.courses.length} mata kuliah` : ''}</span>
             <small>${escapeText(formatDateTime(record.updatedAt || record.createdAt))}${record.note ? ` &middot; ${escapeText(record.note)}` : ''}</small>
           </article>
         `).join('')
@@ -206,14 +277,43 @@ function renderMembership(session, member, records) {
   `;
 
   const form = document.getElementById('studentGpaForm');
+  const modeInput = document.getElementById('studentGpaMode');
+  const coursesInput = document.getElementById('studentGpaCourses');
+  const coursePreview = document.getElementById('studentCoursePreview');
+  const valueInput = document.getElementById('studentGpaValue');
+  const syncCoursePreview = () => {
+    const courses = parseCourseRows(coursesInput?.value || '');
+    const computed = courseGpa(courses);
+    if (modeInput?.value === 'courses' && valueInput) {
+      valueInput.value = computed.ipk === null ? '' : computed.ipk;
+      valueInput.required = false;
+    } else if (valueInput) {
+      valueInput.required = true;
+    }
+    if (coursePreview) {
+      coursePreview.innerHTML = courses.length
+        ? `<strong>${escapeText(courses.length)} mata kuliah, ${escapeText(computed.totalSks)} SKS, IP ${escapeText(formatGpa(computed.ipk))}</strong>`
+        : 'Belum ada mata kuliah yang dipreview.';
+    }
+  };
+  modeInput?.addEventListener('change', syncCoursePreview);
+  coursesInput?.addEventListener('input', syncCoursePreview);
+  syncCoursePreview();
   form?.addEventListener('submit', async event => {
     event.preventDefault();
     const semester = document.getElementById('studentGpaSemester')?.value;
     const academicYear = document.getElementById('studentGpaAcademicYear')?.value;
-    const ipk = normalizeGpa(document.getElementById('studentGpaValue')?.value);
+    const courses = parseCourseRows(coursesInput?.value || '');
+    const computed = courseGpa(courses);
+    const mode = modeInput?.value || 'gpa';
+    const ipk = mode === 'courses' ? computed.ipk : normalizeGpa(valueInput?.value);
     const note = document.getElementById('studentGpaNote')?.value || '';
     if (!semester || !academicYear || ipk === null) {
       showToast('Lengkapi semester, tahun akademik, dan IPK.');
+      return;
+    }
+    if (mode === 'courses' && !courses.length) {
+      showToast('Isi minimal satu mata kuliah valid.');
       return;
     }
     const button = form.querySelector('button[type="submit"]');
@@ -228,6 +328,9 @@ function renderMembership(session, member, records) {
         semester: String(semester),
         academicYear: String(academicYear).trim(),
         ipk,
+        entryMode: mode,
+        courses,
+        totalSks: computed.totalSks || null,
         note: String(note).trim(),
         source: 'student',
         updatedAt: now,
