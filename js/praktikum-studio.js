@@ -1,5 +1,5 @@
 import { app } from './firebase-config.js';
-import { getFirestore, collection, doc, query, orderBy, onSnapshot, setDoc, getDocs } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
+import { getFirestore, collection, doc, query, orderBy, where, onSnapshot, setDoc, getDocs } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
 import {
   ACADEMIC_SETTINGS_COLLECTION,
   ACADEMIC_SETTINGS_DOC,
