@@ -1,5 +1,5 @@
 import { app } from './firebase-config.js';
-import { getFirestore, collection, doc, query, orderBy, where, onSnapshot, setDoc, getDocs } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
+import { getFirestore, collection, doc, query, orderBy, onSnapshot, setDoc, getDocs } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
 import {
   ACADEMIC_SETTINGS_COLLECTION,
   ACADEMIC_SETTINGS_DOC,
@@ -17,6 +17,7 @@ import {
   sameCohort,
   semesterAccessLabel,
   semesterForCohort,
+  semesterForPracticumResource,
   slugifyAcademic,
   targetCohortForPracticumResource
 } from './academic-period.js?v=4';
@@ -31,7 +32,10 @@ const semesterGrid = document.getElementById('semesterGrid');
 const BOOKMARK_KEY = 'sipilcare_student_bookmarks';
 
 const courses = PRACTICUM_COURSES;
-const courseKeys = courses.map(item => item.title.toLowerCase());
+const courseKeys = courses.flatMap(item => [
+  normalizeText(item.title),
+  normalizeText(courseCategory(item))
+]);
 let modules = [];
 let studentRosters = [];
 let attendanceSessions = [];
@@ -220,6 +224,28 @@ const canStudentSeeModule = (item, currentSession, activeSemester, rosters) => {
   if (target) return sameCohort(target, cohort) || hasRosterAccess(item, rosters);
   return Number(item.semester) === Number(activeSemester) || hasRosterAccess(item, rosters);
 };
+
+const normalizeModuleStatus = value => String(value || 'published').trim().toLowerCase();
+const normalizePracticumModule = item => {
+  const course = PRACTICUM_COURSES.find(row => matchesPracticumCourse(item, row));
+  const semester = Number(item?.semester) || semesterForPracticumResource(item) || course?.semester || null;
+  const targetAngkatan = normalizeCohortYear(item?.targetAngkatan || item?.targetCohort || item?.angkatanTarget)
+    || targetCohortForPracticumResource({ ...item, semester });
+  return {
+    ...item,
+    category: item?.category || (course ? courseCategory(course) : ''),
+    course: item?.course || course?.title || item?.category || '',
+    semester,
+    kind: item?.kind || course?.type || '',
+    targetAngkatan,
+    status: normalizeModuleStatus(item?.status)
+  };
+};
+
+const isPracticumModule = item => courseKeys.some(key => normalize([item.category, item.course, item.title, item.type].join(' ')).includes(key));
+const visiblePublishedModules = docs => docs
+  .map(row => normalizePracticumModule(row))
+  .filter(item => item.status === 'published' && isPracticumModule(item));
 
 function resourceCard(item) {
   const url = accessUrl(item);
@@ -506,23 +532,22 @@ onSnapshot(academicSettingsRef, snapshot => {
   render();
 });
 
-const modulesQuery = query(collection(db, 'practicum_studio_modules'), where('status', '==', 'published'), orderBy('date', 'desc'));
+const modulesQuery = query(collection(db, 'practicum_studio_modules'), orderBy('date', 'desc'));
 onSnapshot(modulesQuery, snapshot => {
-  if (snapshot.empty) {
-    getDocs(query(collection(db, 'practicum_studio_modules'), orderBy('date', 'desc')))
-      .then(fallbackSnapshot => {
-        modules = fallbackSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })).filter(item => (item.status || 'published') === 'published' && courseKeys.some(key => normalize([item.category, item.course, item.title, item.type].join(' ')).includes(key)));
-        render();
-      })
-      .catch(error => console.warn('Practicum legacy fallback failed:', error));
-    return;
-  }
-  modules = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })).filter(item => (item.status || 'published') === 'published' && courseKeys.some(key => normalize([item.category, item.course, item.title, item.type].join(' ')).includes(key)));
+  modules = visiblePublishedModules(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
   render();
 }, error => {
   console.error('Praktikum/studio resources failed:', error);
-  modules = [];
-  render();
+  getDocs(query(collection(db, 'practicum_studio_modules'), orderBy('date', 'desc')))
+    .then(fallbackSnapshot => {
+      modules = visiblePublishedModules(fallbackSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      render();
+    })
+    .catch(fallbackError => {
+      console.warn('Practicum legacy fallback failed:', fallbackError);
+      modules = [];
+      render();
+    });
 });
 
 if (session?.nim) {
