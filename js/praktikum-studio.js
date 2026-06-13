@@ -19,6 +19,7 @@ import {
   semesterForCohort,
   semesterForPracticumResource,
   slugifyAcademic,
+  academicYearForCohortSemester,
   targetCohortForPracticumResource
 } from './academic-period.js?v=4';
 
@@ -206,9 +207,22 @@ const sameTarget = (left, right) => {
   const rightTarget = resourceTargetCohort(right);
   return !leftTarget || !rightTarget || sameCohort(leftTarget, rightTarget);
 };
-const hasRosterAccess = (item, rosters) => rosters.some(roster => normalize(roster.category) === normalize(item.category)
+const sameAcademicYear = (left, right) => {
+  const leftYear = String(left?.academicYear || '').trim();
+  const rightYear = String(right?.academicYear || '').trim();
+  return !leftYear || !rightYear || leftYear === rightYear;
+};
+const samePracticumCategory = (left, right) => normalize(left?.category) === normalize(right?.category)
+  || (PRACTICUM_COURSES.some(course => matchesPracticumCourse(left, course) && matchesPracticumCourse(right, course)));
+const sameClass = (left, right) => (left?.classKey || slugifyAcademic(left?.className)) === (right?.classKey || slugifyAcademic(right?.className));
+const matchesRosterSession = (sessionItem, roster) => samePracticumCategory(sessionItem, roster)
+  && sameTarget(sessionItem, roster)
+  && sameClass(sessionItem, roster)
+  && matchesAttendanceGroup(sessionItem, roster)
+  && sameAcademicYear(sessionItem, roster);
+const hasRosterAccess = (item, rosters) => rosters.some(roster => samePracticumCategory(item, roster)
   && sameTarget(item, roster)
-  && (!item.academicYear || !roster.academicYear || item.academicYear === roster.academicYear));
+  && sameAcademicYear(item, roster));
 const matchesAttendanceGroup = (sessionItem, roster) => {
   const sessionGroup = normalizeGroupName(sessionItem?.group);
   const sessionGroupKey = sessionItem?.groupKey || groupKeyForValue(sessionGroup);
@@ -247,18 +261,53 @@ const visiblePublishedModules = docs => docs
   .map(row => normalizePracticumModule(row))
   .filter(item => item.status === 'published' && isPracticumModule(item));
 
+const normalizePracticumRoster = item => {
+  const course = PRACTICUM_COURSES.find(row => matchesPracticumCourse(item, row));
+  const semester = Number(item?.semester) || semesterForPracticumResource(item) || course?.semester || null;
+  const targetAngkatan = normalizeCohortYear(item?.targetAngkatan || item?.targetCohort || item?.angkatanTarget)
+    || targetCohortForPracticumResource({ ...item, semester });
+  return {
+    ...item,
+    category: item?.category || (course ? courseCategory(course) : ''),
+    course: item?.course || course?.title || item?.category || '',
+    semester,
+    targetAngkatan,
+    academicYear: item?.academicYear || academicYearForCohortSemester(targetAngkatan, semester),
+    className: normalizeGroupName(item?.className),
+    classKey: item?.classKey || slugifyAcademic(item?.className),
+    group: normalizeGroupName(item?.group),
+    groupKey: item?.groupKey || groupKeyForValue(item?.group)
+  };
+};
+
+const normalizeAttendanceSession = item => {
+  const course = PRACTICUM_COURSES.find(row => matchesPracticumCourse(item, row));
+  const semester = Number(item?.semester) || semesterForPracticumResource(item) || course?.semester || null;
+  const targetAngkatan = normalizeCohortYear(item?.targetAngkatan || item?.targetCohort || item?.angkatanTarget)
+    || targetCohortForPracticumResource({ ...item, semester });
+  return {
+    ...item,
+    category: item?.category || (course ? courseCategory(course) : ''),
+    course: item?.course || course?.title || item?.category || '',
+    semester,
+    targetAngkatan,
+    academicYear: item?.academicYear || academicYearForCohortSemester(targetAngkatan, semester),
+    className: normalizeGroupName(item?.className),
+    classKey: item?.classKey || slugifyAcademic(item?.className),
+    group: normalizeGroupName(item?.group),
+    groupKey: item?.groupKey || groupKeyForValue(item?.group),
+    status: String(item?.status || 'open').trim().toLowerCase()
+  };
+};
+
 function resourceCard(item) {
   const url = accessUrl(item);
   return `<article class="module-item"><strong>${escapeText(item.title)}</strong><p>${escapeText(item.description || 'Modul pembelajaran dari admin HMS/PENDPROF.')}</p><div class="meta"><span class="badge">${escapeText(item.type || 'PDF')}</span><span class="badge">${escapeText(item.date || 'Update')}</span></div><div class="actions"><a class="btn btn-primary" href="${url}">Akses Modul</a><button class="btn btn-ghost" data-access-url="${url}" type="button">Salin Link</button><button class="btn btn-ghost" data-bookmark-practicum="${escapeText(item.id || item.slug || slugify(item.title))}" type="button">${isBookmarked(item) ? 'Tersimpan' : 'Simpan'}</button></div></article>`;
 }
 
 const rosterForCourse = course => studentRosters.filter(roster => roster.isActive !== false && matchesPracticumCourse(roster, course));
-const sessionsForCourse = (course, rosters) => attendanceSessions.filter(sessionItem => sessionItem.status !== 'closed'
-  && matchesPracticumCourse(sessionItem, course)
-  && rosters.some(roster => sameTarget(sessionItem, roster)
-    && (roster.classKey || slugifyAcademic(roster.className)) === (sessionItem.classKey || slugifyAcademic(sessionItem.className))
-    && matchesAttendanceGroup(sessionItem, roster)
-    && roster.academicYear === sessionItem.academicYear));
+const sessionsForCourse = (course, rosters) => attendanceSessions.filter(sessionItem => matchesPracticumCourse(sessionItem, course)
+  && rosters.some(roster => matchesRosterSession(sessionItem, roster)));
 
 const isSessionOpen = sessionItem => {
   if (sessionItem.status === 'closed') return false;
@@ -375,11 +424,7 @@ function render() {
 search.addEventListener('input', render);
 semesterFilter.addEventListener('change', render);
 
-const rosterForAttendanceSession = item => studentRosters.find(row => row.category === item.category
-  && sameTarget(item, row)
-  && (row.classKey || slugifyAcademic(row.className)) === (item.classKey || slugifyAcademic(item.className))
-  && matchesAttendanceGroup(item, row)
-  && row.academicYear === item.academicYear);
+const rosterForAttendanceSession = item => studentRosters.find(row => matchesRosterSession(item, row));
 
 const attendanceAlreadyRecorded = sessionId => attendanceRecords.some(record => record.sessionId === sessionId);
 
@@ -553,7 +598,9 @@ onSnapshot(modulesQuery, snapshot => {
 if (session?.nim) {
   const rosterQuery = query(collection(db, PRACTICUM_ROSTER_COLLECTION), where('nim', '==', session.nim));
   onSnapshot(rosterQuery, snapshot => {
-    studentRosters = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })).filter(item => item.isActive !== false);
+    studentRosters = snapshot.docs
+      .map(doc => normalizePracticumRoster({ id: doc.id, ...doc.data() }))
+      .filter(item => item.isActive !== false);
     render();
   }, error => {
     console.error('Practicum roster failed:', error);
@@ -574,7 +621,7 @@ if (session?.nim) {
 
 const attendanceQuery = query(collection(db, PRACTICUM_ATTENDANCE_SESSION_COLLECTION), orderBy('date', 'desc'));
 onSnapshot(attendanceQuery, snapshot => {
-  attendanceSessions = snapshot.docs.map(doc => ({ docId: doc.id, ...doc.data() }));
+  attendanceSessions = snapshot.docs.map(doc => normalizeAttendanceSession({ docId: doc.id, ...doc.data() }));
   render();
 }, error => {
   console.error('Attendance sessions failed:', error);
