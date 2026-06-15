@@ -1479,10 +1479,10 @@ function electiveRowMarkup(course = {}, index = 0) {
 function renderIpkElectiveRows(existingCourses = null) {
   if (!ipkElectiveRows) return;
   const isCourseMode = ipkEntryMode?.value === 'courses';
-  ipkElectiveRows.hidden = !isCourseMode;
-  if (!isCourseMode) return;
-  const currentRows = existingCourses === null ? readElectiveCourseRows() : existingCourses;
   const semester = Number(ipkSemester?.value || 0);
+  ipkElectiveRows.hidden = !isCourseMode || !semester;
+  if (!isCourseMode || !semester) return;
+  const currentRows = existingCourses === null ? readElectiveCourseRows() : existingCourses;
   const catalog = requiredCoursesForSemester(semester);
   const rows = (Array.isArray(currentRows) ? currentRows : [])
     .filter(course => !catalog.some(item => catalogCourseMatch(course, item)));
@@ -1565,28 +1565,61 @@ function renderIpkCourseCatalog(existingCourses = null) {
   ipkCourseCatalog.innerHTML = `
     <div class="ipk-course-catalog-head">
       <div>
-        <strong>Mata kuliah wajib semester ${escapeText(semester)}</strong>
-        <span>Nilai yang dikosongkan tidak dihitung ke IPS.</span>
+        <strong>Semester ${escapeText(semester)}</strong>
+        <span>Pilih nilai HM, lalu AM, bobot, total SKS, dan IPS dihitung otomatis.</span>
       </div>
       <span>${escapeText(requiredCourses.reduce((sum, course) => sum + Number(course.sks || 0), 0))} SKS wajib</span>
     </div>
-    <div class="ipk-course-rows">
-      ${requiredCourses.map(course => {
+    <div class="ipk-course-table-wrap">
+      <table class="ipk-course-table">
+        <thead>
+          <tr>
+            <th>No</th>
+            <th>Mata Kuliah</th>
+            <th>SKS</th>
+            <th>AM</th>
+            <th>HM</th>
+            <th>Bobot</th>
+          </tr>
+        </thead>
+        <tbody>
+      ${requiredCourses.map((course, index) => {
         const existing = selectedByKey.get(normalizeText(course.code || ''))
           || selectedByKey.get(normalizeText(course.name || ''))
           || selectedByKey.get(courseIdentity(course));
+        const selectedGrade = normalizeGrade(existing?.grade);
+        const point = gradePoint(selectedGrade);
+        const sks = Number(course.sks || 0);
         return `
-          <label class="ipk-course-row">
-            <span>
+          <tr class="ipk-course-row">
+            <td>${escapeText(index + 1)}</td>
+            <td>
               <b>${escapeText(course.name)}</b>
               <small>${escapeText(course.code)} &middot; ${escapeText(course.type)} &middot; ${escapeText(course.sks)} SKS</small>
-            </span>
+            </td>
+            <td>${escapeText(course.sks)}</td>
+            <td data-ipk-am>${point === null ? '-' : escapeText(point)}</td>
+            <td>
             <select class="control ipk-grade-select" data-code="${escapeText(course.code)}" data-name="${escapeText(course.name)}" data-type="${escapeText(course.type)}" data-sks="${escapeText(course.sks)}">
               ${gradeOptionsMarkup(existing?.grade)}
             </select>
-          </label>
+            </td>
+            <td data-ipk-bobot>${point === null ? '-' : escapeText(Math.round(point * sks * 100) / 100)}</td>
+          </tr>
         `;
       }).join('')}
+        </tbody>
+        <tfoot>
+          <tr>
+            <td colspan="5">TOTAL SKS</td>
+            <td data-ipk-total-sks>-</td>
+          </tr>
+          <tr>
+            <td colspan="5">INDEKS PRESTASI</td>
+            <td data-ipk-ips>-</td>
+          </tr>
+        </tfoot>
+      </table>
     </div>
     ${electiveCourses.length ? `
       <div class="ipk-elective-note">
@@ -1620,6 +1653,24 @@ function readIpkCourses() {
     ...readCatalogCourseRows(),
     ...readElectiveCourseRows()
   ];
+}
+
+function updateIpkCourseTableSummary(ipk = null, totalSks = 0) {
+  if (!ipkCourseCatalog) return;
+  [...ipkCourseCatalog.querySelectorAll('.ipk-grade-select')].forEach(select => {
+    const row = select.closest('.ipk-course-row');
+    const point = gradePoint(select.value);
+    const sks = Number(select.dataset.sks || 0);
+    const weight = point === null ? null : Math.round(point * sks * 100) / 100;
+    const amTarget = row?.querySelector('[data-ipk-am]');
+    const weightTarget = row?.querySelector('[data-ipk-bobot]');
+    if (amTarget) amTarget.textContent = point === null ? '-' : String(point);
+    if (weightTarget) weightTarget.textContent = weight === null ? '-' : String(weight);
+  });
+  const totalTarget = ipkCourseCatalog.querySelector('[data-ipk-total-sks]');
+  const ipsTarget = ipkCourseCatalog.querySelector('[data-ipk-ips]');
+  if (totalTarget) totalTarget.textContent = totalSks ? String(totalSks) : '-';
+  if (ipsTarget) ipsTarget.textContent = ipk === null ? '-' : formatGpa(ipk);
 }
 
 function fillIpkManualCourses(courses = []) {
@@ -4765,7 +4816,8 @@ function renderCoursePreview() {
   if (!ipkCoursePreview) return;
   const courses = readIpkCourses();
   const { ipk, totalSks } = courseGpa(courses);
-  if (ipkEntryMode?.value === 'courses' && ipkValue) {
+  updateIpkCourseTableSummary(ipk, totalSks);
+  if (ipkValue) {
     ipkValue.value = ipk === null ? '' : ipk;
   }
   ipkCoursePreview.innerHTML = courses.length
@@ -4900,7 +4952,7 @@ function resetIpkRecordForm() {
   ipkRecordForm.reset();
   editingIpkRecordId = '';
   if (ipkRecordId) ipkRecordId.value = '';
-  if (ipkEntryMode) ipkEntryMode.value = 'gpa';
+  if (ipkEntryMode) ipkEntryMode.value = 'courses';
   if (ipkElectiveRows) ipkElectiveRows.value = '';
   renderIpkCourseCatalog();
   renderCoursePreview();
@@ -6937,8 +6989,13 @@ on(ipkSemester, 'input', () => {
   renderIpkCourseCatalog();
   renderCoursePreview();
 });
+on(ipkSemester, 'change', () => {
+  syncIpkAcademicYear();
+  renderIpkCourseCatalog();
+  renderCoursePreview();
+});
 on(ipkEntryMode, 'change', () => {
-  if (ipkValue) ipkValue.required = ipkEntryMode?.value !== 'courses';
+  if (ipkValue) ipkValue.required = false;
   renderIpkCourseCatalog();
   renderCoursePreview();
 });
@@ -6977,16 +7034,17 @@ on(ipkRecordForm, 'submit', async e => {
   const nim = memberDocId(ipkStudentNim.value);
   const courses = readIpkCourses();
   const computed = courseGpa(courses);
-  const mode = ipkEntryMode?.value || 'gpa';
-  const ips = mode === 'courses' ? computed.ipk : normalizeGpa(ipkValue.value);
+  const mode = 'courses';
+  if (ipkEntryMode) ipkEntryMode.value = mode;
+  const ips = computed.ipk;
   const semester = String(ipkSemester.value || '').trim();
   const academicYear = normalizeAcademicYearLabel(ipkAcademicYear.value);
   if (!nim || !ipkStudentName.value.trim() || !semester || ips === null) {
     toast('Lengkapi NIM, nama, semester, dan IPS.');
     return;
   }
-  if (mode === 'courses' && !courses.length) {
-    toast('Isi minimal satu mata kuliah valid untuk mode mata kuliah.');
+  if (!courses.length) {
+    toast('Isi minimal satu nilai mata kuliah.');
     return;
   }
   if (!activeMemberForNim(nim)) {
@@ -7054,7 +7112,7 @@ on(ipkRecordTable, 'click', async e => {
     ipkStudentCohort.value = record.angkatan || '';
     ipkSemester.value = record.semester || '';
     ipkAcademicYear.value = record.academicYear || '';
-    if (ipkEntryMode) ipkEntryMode.value = record.entryMode || (Array.isArray(record.courses) && record.courses.length ? 'courses' : 'gpa');
+    if (ipkEntryMode) ipkEntryMode.value = 'courses';
     ipkValue.value = recordGpaValue(record) ?? '';
     renderIpkCourseCatalog(record.courses || []);
     fillIpkManualCourses(record.courses || []);

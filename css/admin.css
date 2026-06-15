@@ -1957,7 +1957,6 @@ body.admin-page [hidden]  {
 }
 
 .ipk-course-catalog-head,
-.ipk-course-row,
 .ipk-elective-note  {
 
     display: flex;
@@ -1971,7 +1970,7 @@ body.admin-page [hidden]  {
 }
 
 .ipk-course-catalog-head strong,
-.ipk-course-row b,
+.ipk-course-table b,
 .ipk-elective-note b  {
 
     color: var(--primary)
@@ -1979,7 +1978,7 @@ body.admin-page [hidden]  {
 }
 
 .ipk-course-catalog-head span,
-.ipk-course-row small,
+.ipk-course-table small,
 .ipk-elective-note span,
 .ipk-course-empty  {
 
@@ -1989,19 +1988,9 @@ body.admin-page [hidden]  {
 
 }
 
-.ipk-course-rows  {
+.ipk-course-table-wrap  {
 
-    display: grid;
-
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-
-    gap: 10px
-
-}
-
-.ipk-course-row  {
-
-    padding: 12px;
+    overflow-x: auto;
 
     border: 1px solid var(--line);
 
@@ -2011,24 +2000,77 @@ body.admin-page [hidden]  {
 
 }
 
-.ipk-course-row span  {
+.ipk-course-table  {
 
-    min-width: 0
+    width: 100%;
+
+    min-width: 680px;
+
+    border-collapse: collapse;
+
+    background: #fff
 
 }
 
-.ipk-course-row b,
-.ipk-course-row small  {
+.ipk-course-table th,
+.ipk-course-table td  {
+
+    padding: 10px 12px;
+
+    border: 1px solid var(--line);
+
+    vertical-align: middle
+
+}
+
+.ipk-course-table th  {
+
+    background: #f1f7f4;
+
+    color: var(--primary);
+
+    font-size: .86rem;
+
+    text-transform: uppercase;
+
+    letter-spacing: .03em
+
+}
+
+.ipk-course-table td:first-child,
+.ipk-course-table td:nth-child(3),
+.ipk-course-table td:nth-child(4),
+.ipk-course-table td:nth-child(5),
+.ipk-course-table td:nth-child(6)  {
+
+    text-align: center;
+
+    white-space: nowrap
+
+}
+
+.ipk-course-table b,
+.ipk-course-table small  {
 
     display: block
 
 }
 
+.ipk-course-table tfoot td  {
+
+    font-weight: 900;
+
+    color: var(--primary);
+
+    background: #f8fbfa
+
+}
+
 .ipk-grade-select  {
 
-    width: 110px;
+    width: 98px;
 
-    flex: 0 0 110px
+    min-height: 40px
 
 }
 
@@ -3859,8 +3901,7 @@ th  {
 
   .ipk-admin-grid,
   .ipk-stats,
-  .ipk-course-list,
-  .ipk-course-rows {
+  .ipk-course-list {
     grid-template-columns: 1fr;
   }
 
@@ -3869,15 +3910,13 @@ th  {
   }
 
   .ipk-course-catalog-head,
-  .ipk-course-row,
   .ipk-elective-note {
     align-items: stretch;
     flex-direction: column;
   }
 
   .ipk-grade-select {
-    width: 100%;
-    flex-basis: auto;
+    width: 98px;
   }
 
   .ipk-elective-builder-head,

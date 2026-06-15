@@ -10,7 +10,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-title" content="SIPIL CARE">
     <link rel="stylesheet" href="../../css/style.css?v=26">
-    <link rel="stylesheet" href="../../css/admin.css?v=57">
+    <link rel="stylesheet" href="../../css/admin.css?v=58">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -108,13 +108,20 @@ Nama Anggota	2350031001	Internal	Staff"></textarea>
             <datalist id="ipkStudentList"></datalist>
             <input class="control" id="ipkStudentName" placeholder="Nama" autocomplete="off" required>
             <input class="control" id="ipkStudentCohort" placeholder="Angkatan" autocomplete="off">
-            <input class="control" id="ipkSemester" type="number" min="1" max="14" placeholder="Semester" required>
-            <input class="control" id="ipkAcademicYear" placeholder="Tahun akademik, contoh: 2025/2026" autocomplete="off">
-            <select class="control" id="ipkEntryMode">
-              <option value="gpa">Input IPS langsung</option>
-              <option value="courses">Input nilai per mata kuliah</option>
+            <select class="control" id="ipkSemester" required>
+              <option value="">Pilih semester</option>
+              <option value="1">Semester 1</option>
+              <option value="2">Semester 2</option>
+              <option value="3">Semester 3</option>
+              <option value="4">Semester 4</option>
+              <option value="5">Semester 5</option>
+              <option value="6">Semester 6</option>
+              <option value="7">Semester 7</option>
+              <option value="8">Semester 8</option>
             </select>
-            <input class="control" id="ipkValue" type="number" min="0" max="4" step="0.01" placeholder="IPS, contoh: 3.56" required>
+            <input id="ipkAcademicYear" type="hidden">
+            <input id="ipkEntryMode" type="hidden" value="courses">
+            <input id="ipkValue" type="hidden">
             <div class="ipk-course-catalog" id="ipkCourseCatalog" hidden></div>
             <div class="ipk-elective-builder" id="ipkElectiveRows" hidden></div>
             <div class="ipk-course-preview" id="ipkCoursePreview">Belum ada mata kuliah yang dipreview.</div>
@@ -207,7 +214,7 @@ Nama Anggota	2350031001	Internal	Staff"></textarea>
     <div class="toast" id="toast"></div>
     <script src="../../js/student-config.js?v=20"></script>
     <script src="../../js/auth.js?v=32"></script>
-    <script type="module" src="../../js/admin-panel.js?v=83"></script>
+    <script type="module" src="../../js/admin-panel.js?v=84"></script>
     <script src="../../js/pwa.js?v=2"></script>
     <script src="../../js/push-config.js?v=1"></script>
     <script type="module" src="../../js/pwa-push.js?v=5"></script>

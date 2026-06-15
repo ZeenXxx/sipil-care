@@ -318,7 +318,6 @@ html.dark .legend-label      { color: #8ab8a0; }
 }
 
 .student-course-catalog-head,
-.student-course-row,
 .student-elective-note {
   display: flex;
   justify-content: space-between;
@@ -327,42 +326,71 @@ html.dark .legend-label      { color: #8ab8a0; }
 }
 
 .student-course-catalog-head strong,
-.student-course-row b,
+.student-course-table b,
 .student-elective-note b {
   color: var(--primary, #0f4d3a);
 }
 
 .student-course-catalog-head span,
-.student-course-row small,
+.student-course-table small,
 .student-elective-note span,
 .student-course-empty {
   color: var(--muted, #62736d);
   line-height: 1.5;
 }
 
-.student-course-rows {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-}
-
-.student-course-row {
-  padding: 12px;
+.student-course-table-wrap {
+  overflow-x: auto;
   border: 1px solid var(--line, #d8e5de);
   border-radius: 10px;
   background: rgba(255,255,255,.78);
 }
 
-.student-course-row span,
-.student-course-row b,
-.student-course-row small {
+.student-course-table {
+  width: 100%;
+  min-width: 680px;
+  border-collapse: collapse;
+  background: #fff;
+}
+
+.student-course-table th,
+.student-course-table td {
+  padding: 10px 12px;
+  border: 1px solid var(--line, #d8e5de);
+  vertical-align: middle;
+}
+
+.student-course-table th {
+  background: #f1f7f4;
+  color: var(--primary, #0f4d3a);
+  font-size: .86rem;
+  text-transform: uppercase;
+  letter-spacing: .03em;
+}
+
+.student-course-table td:first-child,
+.student-course-table td:nth-child(3),
+.student-course-table td:nth-child(4),
+.student-course-table td:nth-child(5),
+.student-course-table td:nth-child(6) {
+  text-align: center;
+  white-space: nowrap;
+}
+
+.student-course-table b,
+.student-course-table small {
   display: block;
-  min-width: 0;
+}
+
+.student-course-table tfoot td {
+  font-weight: 900;
+  color: var(--primary, #0f4d3a);
+  background: var(--soft, #eef6f2);
 }
 
 .student-grade-select {
-  width: 104px;
-  flex: 0 0 104px;
+  width: 98px;
+  min-height: 40px;
 }
 
 .student-elective-note {
@@ -533,21 +561,18 @@ html.dark .legend-label      { color: #8ab8a0; }
   .student-dashboard-grid,
   .student-dashboard-summary,
   .student-member-card,
-  .student-gpa-form,
-  .student-course-rows {
+  .student-gpa-form {
     grid-template-columns: 1fr;
   }
 
   .student-course-catalog-head,
-  .student-course-row,
   .student-elective-note {
     align-items: stretch;
     flex-direction: column;
   }
 
   .student-grade-select {
-    width: 100%;
-    flex-basis: auto;
+    width: 98px;
   }
 
   .student-elective-builder-head,
