@@ -24,7 +24,7 @@ const BOOKMARK_KEY = 'sipilcare_student_bookmarks';
 const SESSION_TTL = 24 * 60 * 60 * 1000;
 const SITE_SETTINGS_COLLECTION = 'site_settings';
 const COURSE_CATALOG_DOC = 'course_catalog';
-let courseCatalogSettings = { sksByCode: {} };
+let courseCatalogSettings = { sksByCode: {}, courseOverrides: {} };
 
 const profileTarget = document.getElementById('studentDashboardProfile');
 const summaryTarget = document.getElementById('studentDashboardSummary');
@@ -161,17 +161,31 @@ const courseCatalogKey = course => [
   course?.name || ''
 ].map(value => String(value || '').trim()).join('|');
 
+const courseCatalogOverride = course => {
+  const key = courseCatalogKey(course);
+  return key ? courseCatalogSettings?.courseOverrides?.[key] || {} : {};
+};
+
 const courseSksValue = course => {
   const key = courseCatalogKey(course);
-  const override = key ? Number(courseCatalogSettings?.sksByCode?.[key]) : NaN;
-  if (Number.isFinite(override) && override > 0) return override;
+  const override = courseCatalogOverride(course);
+  const overrideSks = Number(override.sks);
+  if (Number.isFinite(overrideSks) && overrideSks > 0) return overrideSks;
+  const legacySks = key ? Number(courseCatalogSettings?.sksByCode?.[key]) : NaN;
+  if (Number.isFinite(legacySks) && legacySks > 0) return legacySks;
   return Number(course?.sks || 0);
 };
 
-const withGlobalCourseSks = course => ({
-  ...course,
-  sks: courseSksValue(course)
-});
+const withGlobalCourseSks = course => {
+  const override = courseCatalogOverride(course);
+  return {
+    ...course,
+    code: String(override.code || course.code || '').trim(),
+    name: String(override.name || course.name || '').trim(),
+    type: String(override.type || course.type || 'K').trim().toUpperCase(),
+    sks: courseSksValue(course)
+  };
+};
 
 const studentSemesterCatalogCourses = semester => coursesForSemester(semester).map(withGlobalCourseSks);
 const studentSemesterElectiveOptions = semester => electiveOptionsForSemester(semester).map(withGlobalCourseSks);
@@ -337,7 +351,7 @@ const renderStudentCourseCatalog = (container, semester, existingCourses = []) =
     <div class="student-course-catalog-head">
       <div>
         <strong>Semester ${escapeText(semester)}</strong>
-        <span>Pilih nilai HM. Baris Pilihan memakai dropdown mata kuliah pilihan, SKS mengikuti pengaturan global admin.</span>
+        <span>Pilih nilai HM. Mata kuliah tanpa nilai tidak dihitung ke IPS/IPK. Baris Pilihan memakai dropdown mata kuliah pilihan, SKS mengikuti pengaturan global admin.</span>
       </div>
       <span>${escapeText(catalogCourses.reduce((sum, course) => sum + Number(course.sks || 0), 0))} SKS default</span>
     </div>
@@ -536,9 +550,11 @@ async function loadMembership(session) {
   if (!membershipTarget) return;
   try {
     const catalogSnapshot = await getDoc(doc(db, SITE_SETTINGS_COLLECTION, COURSE_CATALOG_DOC));
-    courseCatalogSettings = catalogSnapshot.exists()
-      ? { sksByCode: catalogSnapshot.data().sksByCode || {} }
-      : { sksByCode: {} };
+    const catalogData = catalogSnapshot.exists() ? catalogSnapshot.data() : {};
+    courseCatalogSettings = {
+      sksByCode: catalogData.sksByCode || {},
+      courseOverrides: catalogData.courseOverrides || {}
+    };
     const memberSnapshot = await getDoc(doc(db, 'hms_active_members', session.nim));
     const member = memberSnapshot.exists() ? memberSnapshot.data() : null;
     const isActiveMember = Boolean(member && member.status !== 'inactive');

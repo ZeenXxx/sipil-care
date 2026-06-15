@@ -4,17 +4,17 @@
     "date": "2026-06-16",
     "dateLabel": "16 Juni 2026",
     "generated": true,
-    "summary": "Pemantauan IPK Anggota",
+    "summary": "Pemantauan IPK Anggota, Katalog Mata Kuliah Global",
     "items": [
       {
         "type": "improved",
-        "title": "Pemantauan IPK Anggota",
-        "description": "Daftar anggota aktif kini bisa difilter per departemen, menampilkan ringkasan jumlah anggota, dan mendukung hapus anggota per departemen."
+        "title": "Katalog Mata Kuliah Global",
+        "description": "Admin kini dapat mengatur kode, nama, tipe, dan SKS mata kuliah secara global sehingga data IPK mahasiswa mengikuti katalog terbaru."
       },
       {
         "type": "improved",
         "title": "Pemantauan IPK Anggota",
-        "description": "Form IPK anggota aktif kini memakai katalog mata kuliah per semester, pilihan mata kuliah berbasis dropdown, dan pengaturan SKS global dari admin."
+        "description": "Input IPK anggota aktif kini hanya menghitung mata kuliah yang sudah memiliki nilai, sehingga semester yang belum lengkap tetap menghasilkan IPS/IPK yang sesuai."
       }
     ]
   },

@@ -408,7 +408,7 @@ const CLIENT_ERROR_KEY = 'sipilcare_client_errors';
 const ADMIN_GUIDE_PAGE = 'guide.html';
 const ADMIN_ALL_PAGES = ['dashboard.html', 'guide.html', 'resources.html', 'announcements.html', 'messages.html', 'admin-accounts.html', 'student-accounts.html', 'ipk-monitoring.html'];
 let liveChatSnapshotReady = false;
-let courseCatalogSettings = { sksByCode: {} };
+let courseCatalogSettings = { sksByCode: {}, courseOverrides: {} };
 const practicumCategories = [
   'Computer Aided Design (CAD)-S',
   'Praktik Kimia-P',
@@ -1395,17 +1395,31 @@ const courseCatalogKey = course => [
   course?.name || ''
 ].map(value => String(value || '').trim()).join('|');
 
+const courseCatalogOverride = course => {
+  const key = courseCatalogKey(course);
+  return key ? courseCatalogSettings?.courseOverrides?.[key] || {} : {};
+};
+
 const courseSksValue = course => {
   const key = courseCatalogKey(course);
-  const override = key ? Number(courseCatalogSettings?.sksByCode?.[key]) : NaN;
-  if (Number.isFinite(override) && override > 0) return override;
+  const override = courseCatalogOverride(course);
+  const overrideSks = Number(override.sks);
+  if (Number.isFinite(overrideSks) && overrideSks > 0) return overrideSks;
+  const legacySks = key ? Number(courseCatalogSettings?.sksByCode?.[key]) : NaN;
+  if (Number.isFinite(legacySks) && legacySks > 0) return legacySks;
   return Number(course?.sks || 0);
 };
 
-const withGlobalCourseSks = course => ({
-  ...course,
-  sks: courseSksValue(course)
-});
+const withGlobalCourseSks = course => {
+  const override = courseCatalogOverride(course);
+  return {
+    ...course,
+    code: String(override.code || course.code || '').trim(),
+    name: String(override.name || course.name || '').trim(),
+    type: String(override.type || course.type || 'K').trim().toUpperCase(),
+    sks: courseSksValue(course)
+  };
+};
 
 const semesterCatalogCourses = semester => coursesForSemester(semester).map(withGlobalCourseSks);
 const semesterElectiveOptions = semester => electiveOptionsForSemester(semester).map(withGlobalCourseSks);
@@ -1601,7 +1615,7 @@ function renderIpkCourseCatalog(existingCourses = null) {
     <div class="ipk-course-catalog-head">
       <div>
         <strong>Semester ${escapeText(semester)}</strong>
-        <span>Pilih nilai HM. Baris Pilihan memakai dropdown mata kuliah pilihan, SKS mengikuti pengaturan global.</span>
+        <span>Pilih nilai HM. Mata kuliah tanpa nilai tidak dihitung ke IPS/IPK. Baris Pilihan memakai dropdown mata kuliah pilihan, SKS mengikuti pengaturan global.</span>
       </div>
       <span>${escapeText(catalogCourses.reduce((sum, course) => sum + Number(course.sks || 0), 0))} SKS default</span>
     </div>
@@ -1772,14 +1786,21 @@ function renderCourseSksEditor() {
   const rows = courseSksEditorRows(semester);
   courseSksTable.innerHTML = rows.length ? rows.map((course, index) => {
     const key = courseCatalogKey(course);
-    const sks = courseSksValue(course);
+    const displayCourse = withGlobalCourseSks(course);
     return `
-      <tr>
+      <tr data-course-catalog-key="${escapeText(key)}">
         <td>${escapeText(index + 1)}</td>
-        <td>${escapeText(course.code || '-')}</td>
-        <td><b>${escapeText(course.name)}</b><br><span class="small-text">${escapeText(course.group || '-')}</span></td>
-        <td>${escapeText(course.type || '-')}</td>
-        <td><input class="control course-sks-control" data-course-sks-key="${escapeText(key)}" type="number" min="0" max="10" step="0.5" value="${escapeText(sks || '')}" aria-label="SKS ${escapeText(course.name)}"></td>
+        <td><input class="control course-code-control" data-course-code value="${escapeText(displayCourse.code || '')}" aria-label="Kode ${escapeText(course.name)}"></td>
+        <td>
+          <input class="control course-name-control" data-course-name value="${escapeText(displayCourse.name || '')}" aria-label="Nama mata kuliah">
+          <span class="small-text">${escapeText(course.group || '-')}</span>
+        </td>
+        <td>
+          <select class="control course-type-control" data-course-type aria-label="Tipe ${escapeText(displayCourse.name || course.name)}">
+            ${['K', 'S', 'P'].map(type => `<option value="${type}"${displayCourse.type === type ? ' selected' : ''}>${type}</option>`).join('')}
+          </select>
+        </td>
+        <td><input class="control course-sks-control" data-course-sks type="number" min="0" max="10" step="0.5" value="${escapeText(displayCourse.sks || '')}" aria-label="SKS ${escapeText(displayCourse.name || course.name)}"></td>
       </tr>
     `;
   }).join('') : '<tr><td colspan="5">Belum ada katalog mata kuliah untuk semester ini.</td></tr>';
@@ -7229,19 +7250,43 @@ on(ipkRecordStatusFilter, 'change', () => renderIpkRecordTable());
 on(ipkChartMemberSelect, 'change', renderMemberIpkChart);
 on(courseSksSemester, 'change', renderCourseSksEditor);
 on(courseSksSave, 'click', async () => {
-  if (!requirePermission('ipk_monitoring', 'pengaturan SKS global')) return;
-  const current = { ...(courseCatalogSettings?.sksByCode || {}) };
-  [...(courseSksTable?.querySelectorAll('[data-course-sks-key]') || [])].forEach(input => {
-    const key = input.dataset.courseSksKey;
-    const value = Number(input.value || 0);
-    if (!key) return;
-    if (Number.isFinite(value) && value > 0) current[key] = value;
-    else delete current[key];
+  if (!requirePermission('ipk_monitoring', 'pengaturan mata kuliah global')) return;
+  const semester = Number(courseSksSemester?.value || 1);
+  const baseRows = new Map(courseSksEditorRows(semester).map(course => [courseCatalogKey(course), course]));
+  const sksByCode = { ...(courseCatalogSettings?.sksByCode || {}) };
+  const courseOverrides = { ...(courseCatalogSettings?.courseOverrides || {}) };
+  let invalidMessage = '';
+
+  [...(courseSksTable?.querySelectorAll('[data-course-catalog-key]') || [])].forEach(row => {
+    const key = row.dataset.courseCatalogKey;
+    const base = baseRows.get(key);
+    if (!key || !base) return;
+    const code = String(row.querySelector('[data-course-code]')?.value || '').trim();
+    const name = String(row.querySelector('[data-course-name]')?.value || '').trim();
+    const type = String(row.querySelector('[data-course-type]')?.value || base.type || 'K').trim().toUpperCase();
+    const sks = Number(row.querySelector('[data-course-sks]')?.value || 0);
+    if (!name) invalidMessage = 'Nama mata kuliah tidak boleh kosong.';
+    if (!Number.isFinite(sks) || sks <= 0) invalidMessage = 'SKS mata kuliah harus lebih dari 0.';
+    delete sksByCode[key];
+    delete courseOverrides[key];
+    const changed = code !== String(base.code || '').trim()
+      || name !== String(base.name || '').trim()
+      || type !== String(base.type || '').trim().toUpperCase()
+      || sks !== Number(base.sks || 0);
+    if (changed) {
+      courseOverrides[key] = { code, name, type, sks };
+    }
   });
+
+  if (invalidMessage) {
+    toast(invalidMessage);
+    return;
+  }
   try {
     courseSksSave.disabled = true;
     await setDoc(doc(db, SITE_SETTINGS_COLLECTION, COURSE_CATALOG_DOC), {
-      sksByCode: current,
+      sksByCode,
+      courseOverrides,
       updatedAt: new Date().toISOString(),
       updatedBy: currentAdmin().username
     }, { merge: true });
@@ -7250,12 +7295,12 @@ on(courseSksSave, 'click', async () => {
       targetType: 'course_catalog',
       targetId: COURSE_CATALOG_DOC,
       targetTitle: `Semester ${courseSksSemester?.value || '-'}`,
-      detail: `Pengaturan SKS global semester ${courseSksSemester?.value || '-'} diperbarui.`
+      detail: `Pengaturan mata kuliah dan SKS global semester ${courseSksSemester?.value || '-'} diperbarui.`
     });
-    toast('SKS global berhasil disimpan.');
+    toast('Mata kuliah dan SKS global berhasil disimpan.');
   } catch (error) {
-    console.error('Save course SKS failed:', error);
-    toast('Gagal menyimpan SKS global.');
+    console.error('Save course catalog failed:', error);
+    toast('Gagal menyimpan pengaturan mata kuliah global.');
   } finally {
     courseSksSave.disabled = false;
   }
@@ -7930,9 +7975,11 @@ onSnapshot(doc(db, SITE_SETTINGS_COLLECTION, MAINTENANCE_DOC), snapshot => {
 });
 
 onSnapshot(doc(db, SITE_SETTINGS_COLLECTION, COURSE_CATALOG_DOC), snapshot => {
-  courseCatalogSettings = snapshot.exists()
-    ? { sksByCode: snapshot.data().sksByCode || {} }
-    : { sksByCode: {} };
+  const data = snapshot.exists() ? snapshot.data() : {};
+  courseCatalogSettings = {
+    sksByCode: data.sksByCode || {},
+    courseOverrides: data.courseOverrides || {}
+  };
   renderCourseSksEditor();
   renderIpkCourseCatalog();
   renderCoursePreview();
@@ -7940,7 +7987,7 @@ onSnapshot(doc(db, SITE_SETTINGS_COLLECTION, COURSE_CATALOG_DOC), snapshot => {
   renderMemberIpkChart();
 }, err => {
   console.error('Firestore course catalog settings error:', err);
-  toast('Gagal memuat pengaturan SKS global.');
+  toast('Gagal memuat pengaturan mata kuliah global.');
 });
 
 const videosQuery = query(collection(db, 'videos'), orderBy('title'));

@@ -2142,6 +2142,9 @@ body.admin-page [hidden]  {
 }
 
 .ipk-elective-choice,
+.course-code-control,
+.course-name-control,
+.course-type-control,
 .course-sks-control  {
 
     min-height: 40px
@@ -2157,6 +2160,24 @@ body.admin-page [hidden]  {
 .course-sks-table-wrap  {
 
     max-height: 360px
+
+}
+
+.course-code-control  {
+
+    min-width: 120px
+
+}
+
+.course-name-control  {
+
+    min-width: 260px
+
+}
+
+.course-type-control  {
+
+    width: 86px
 
 }
 
@@ -4024,8 +4045,11 @@ th  {
     width: 104px;
   }
 
+  .course-code-control,
+  .course-name-control,
+  .course-type-control,
   .course-sks-control {
-    width: 92px;
+    width: 100%;
   }
 
   .ipk-elective-builder-head,
