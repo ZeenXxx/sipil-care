@@ -1847,6 +1847,12 @@ body.admin-page [hidden]  {
 
 }
 
+.ipk-record-card  {
+
+    grid-column: 1 / -1
+
+}
+
 .ipk-stats  {
 
     grid-template-columns: repeat(4, minmax(0, 1fr))
@@ -2004,7 +2010,7 @@ body.admin-page [hidden]  {
 
     width: 100%;
 
-    min-width: 680px;
+    min-width: 760px;
 
     border-collapse: collapse;
 
@@ -2068,9 +2074,21 @@ body.admin-page [hidden]  {
 
 .ipk-grade-select  {
 
-    width: 98px;
+    width: 104px;
 
     min-height: 40px
+
+}
+
+.ipk-sks-input  {
+
+    width: 86px;
+
+    min-height: 40px;
+
+    margin: 0 auto;
+
+    text-align: center
 
 }
 
@@ -2117,7 +2135,15 @@ body.admin-page [hidden]  {
 
 .ipk-elective-builder-head  {
 
-    grid-template-columns: minmax(0, 1fr) auto
+    grid-template-columns: minmax(0, 1fr) auto;
+
+    align-items: start
+
+}
+
+.ipk-elective-builder-head .action-btn  {
+
+    white-space: nowrap
 
 }
 
@@ -2152,7 +2178,7 @@ body.admin-page [hidden]  {
 
 .ipk-elective-row  {
 
-    grid-template-columns: minmax(180px, 1.4fr) minmax(150px, 1fr) 88px 110px auto;
+    grid-template-columns: minmax(220px, 1.5fr) minmax(180px, 1fr) 90px 110px auto;
 
     padding: 10px;
 
@@ -3916,7 +3942,11 @@ th  {
   }
 
   .ipk-grade-select {
-    width: 98px;
+    width: 104px;
+  }
+
+  .ipk-sks-input {
+    width: 86px;
   }
 
   .ipk-elective-builder-head,

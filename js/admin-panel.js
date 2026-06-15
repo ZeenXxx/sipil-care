@@ -1566,9 +1566,9 @@ function renderIpkCourseCatalog(existingCourses = null) {
     <div class="ipk-course-catalog-head">
       <div>
         <strong>Semester ${escapeText(semester)}</strong>
-        <span>Pilih nilai HM, lalu AM, bobot, total SKS, dan IPS dihitung otomatis.</span>
+        <span>Isi SKS dan pilih nilai HM, lalu AM, bobot, total SKS, dan IPS dihitung otomatis.</span>
       </div>
-      <span>${escapeText(requiredCourses.reduce((sum, course) => sum + Number(course.sks || 0), 0))} SKS wajib</span>
+      <span>SKS diisi admin</span>
     </div>
     <div class="ipk-course-table-wrap">
       <table class="ipk-course-table">
@@ -1589,22 +1589,24 @@ function renderIpkCourseCatalog(existingCourses = null) {
           || selectedByKey.get(courseIdentity(course));
         const selectedGrade = normalizeGrade(existing?.grade);
         const point = gradePoint(selectedGrade);
-        const sks = Number(course.sks || 0);
+        const sks = Number(existing?.sks || 0);
         return `
           <tr class="ipk-course-row">
             <td>${escapeText(index + 1)}</td>
             <td>
               <b>${escapeText(course.name)}</b>
-              <small>${escapeText(course.code)} &middot; ${escapeText(course.type)} &middot; ${escapeText(course.sks)} SKS</small>
+              <small>${escapeText(course.code)} &middot; ${escapeText(course.type)}</small>
             </td>
-            <td>${escapeText(course.sks)}</td>
+            <td>
+              <input class="control ipk-sks-input" data-ipk-sks type="number" min="0" max="10" step="0.5" value="${sks ? escapeText(sks) : ''}" placeholder="SKS" aria-label="SKS ${escapeText(course.name)}">
+            </td>
             <td data-ipk-am>${point === null ? '-' : escapeText(point)}</td>
             <td>
-            <select class="control ipk-grade-select" data-code="${escapeText(course.code)}" data-name="${escapeText(course.name)}" data-type="${escapeText(course.type)}" data-sks="${escapeText(course.sks)}">
+            <select class="control ipk-grade-select" data-code="${escapeText(course.code)}" data-name="${escapeText(course.name)}" data-type="${escapeText(course.type)}">
               ${gradeOptionsMarkup(existing?.grade)}
             </select>
             </td>
-            <td data-ipk-bobot>${point === null ? '-' : escapeText(Math.round(point * sks * 100) / 100)}</td>
+            <td data-ipk-bobot>${point === null || !sks ? '-' : escapeText(Math.round(point * sks * 100) / 100)}</td>
           </tr>
         `;
       }).join('')}
@@ -1636,11 +1638,13 @@ function readCatalogCourseRows() {
     .map(select => {
       const point = gradePoint(select.value);
       if (point === null) return null;
+      const row = select.closest('.ipk-course-row');
+      const sks = Number(row?.querySelector('[data-ipk-sks]')?.value || 0);
       return {
         code: select.dataset.code || '',
         name: select.dataset.name || '',
         type: select.dataset.type || '',
-        sks: Number(select.dataset.sks || 0),
+        sks,
         grade: normalizeGrade(select.value),
         point
       };
@@ -1660,12 +1664,12 @@ function updateIpkCourseTableSummary(ipk = null, totalSks = 0) {
   [...ipkCourseCatalog.querySelectorAll('.ipk-grade-select')].forEach(select => {
     const row = select.closest('.ipk-course-row');
     const point = gradePoint(select.value);
-    const sks = Number(select.dataset.sks || 0);
+    const sks = Number(row?.querySelector('[data-ipk-sks]')?.value || 0);
     const weight = point === null ? null : Math.round(point * sks * 100) / 100;
     const amTarget = row?.querySelector('[data-ipk-am]');
     const weightTarget = row?.querySelector('[data-ipk-bobot]');
     if (amTarget) amTarget.textContent = point === null ? '-' : String(point);
-    if (weightTarget) weightTarget.textContent = weight === null ? '-' : String(weight);
+    if (weightTarget) weightTarget.textContent = weight === null || !sks ? '-' : String(weight);
   });
   const totalTarget = ipkCourseCatalog.querySelector('[data-ipk-total-sks]');
   const ipsTarget = ipkCourseCatalog.querySelector('[data-ipk-ips]');
@@ -7021,6 +7025,7 @@ on(ipkElectiveRows, 'click', e => {
     renderCoursePreview();
   }
 });
+on(ipkCourseCatalog, 'input', renderCoursePreview);
 on(ipkCourseCatalog, 'change', renderCoursePreview);
 on(ipkRecordSearch, 'input', () => renderIpkRecordTable());
 on(ipkRecordCohortFilter, 'change', () => renderIpkRecordTable());
