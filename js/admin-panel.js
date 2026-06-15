@@ -37,6 +37,12 @@ import {
   targetCohortForPracticumResource,
   targetCohortForSemester
 } from './academic-period.js?v=4';
+import {
+  GRADE_OPTIONS,
+  defaultAcademicYearForSemester,
+  electiveCoursesForSemester,
+  requiredCoursesForSemester
+} from './ts-course-catalog.js?v=1';
 
 if (window.SIPILCARE_ADMIN_READY) await window.SIPILCARE_ADMIN_READY;
 
@@ -272,6 +278,8 @@ const ipkAcademicYear = document.getElementById('ipkAcademicYear');
 const ipkEntryMode = document.getElementById('ipkEntryMode');
 const ipkValue = document.getElementById('ipkValue');
 const ipkCourseRows = document.getElementById('ipkCourseRows');
+const ipkCourseCatalog = document.getElementById('ipkCourseCatalog');
+const ipkElectiveRows = document.getElementById('ipkElectiveRows');
 const ipkCoursePreview = document.getElementById('ipkCoursePreview');
 const ipkNote = document.getElementById('ipkNote');
 const ipkRecordSubmit = document.getElementById('ipkRecordSubmit');
@@ -1346,6 +1354,165 @@ const courseSummary = courses => {
   const { totalSks } = courseGpa(courses);
   return `${courses.length} mata kuliah, ${totalSks} SKS`;
 };
+
+const recordGpaValue = record => normalizeGpa(record?.ips ?? record?.ipk);
+
+const cumulativeGpa = records => {
+  const rows = (Array.isArray(records) ? records : [])
+    .map(record => {
+      const value = recordGpaValue(record);
+      const sks = Number(record.totalSks || 0);
+      return { value, sks };
+    })
+    .filter(row => row.value !== null);
+  const weightedRows = rows.filter(row => row.sks > 0);
+  if (weightedRows.length) {
+    const totalSks = weightedRows.reduce((sum, row) => sum + row.sks, 0);
+    const weighted = weightedRows.reduce((sum, row) => sum + row.value * row.sks, 0);
+    return { ipk: Math.round((weighted / totalSks) * 100) / 100, totalSks };
+  }
+  if (!rows.length) return { ipk: null, totalSks: 0 };
+  return {
+    ipk: Math.round((rows.reduce((sum, row) => sum + row.value, 0) / rows.length) * 100) / 100,
+    totalSks: 0
+  };
+};
+
+const courseIdentity = course => normalizeText(`${course?.code || ''} ${course?.name || ''}`);
+
+const gradeOptionsMarkup = selected => GRADE_OPTIONS.map(option => `
+  <option value="${escapeText(option)}"${normalizeGrade(selected) === option ? ' selected' : ''}>${escapeText(option || 'Nilai')}</option>
+`).join('');
+
+const existingCourseByCatalog = courses => {
+  const map = new Map();
+  (Array.isArray(courses) ? courses : []).forEach(course => {
+    const keys = [
+      normalizeText(course.code || ''),
+      normalizeText(course.name || ''),
+      courseIdentity(course)
+    ].filter(Boolean);
+    keys.forEach(key => {
+      if (!map.has(key)) map.set(key, course);
+    });
+  });
+  return map;
+};
+
+const catalogCourseMatch = (course, catalog) => {
+  if (!course || !catalog) return false;
+  const code = normalizeText(course.code || '');
+  const name = normalizeText(course.name || '');
+  return (code && code === normalizeText(catalog.code || '')) || (name && name === normalizeText(catalog.name || ''));
+};
+
+function renderIpkCourseCatalog(existingCourses = null) {
+  if (!ipkCourseCatalog) return;
+  const semester = Number(ipkSemester?.value || 0);
+  const requiredCourses = requiredCoursesForSemester(semester);
+  const electiveCourses = electiveCoursesForSemester(semester);
+  const selectedByKey = existingCourseByCatalog(existingCourses || readCatalogCourseRows());
+  const isCourseMode = ipkEntryMode?.value === 'courses';
+  ipkCourseCatalog.hidden = !isCourseMode;
+  if (ipkElectiveRows) ipkElectiveRows.hidden = !isCourseMode;
+  if (!isCourseMode) return;
+  if (!semester) {
+    ipkCourseCatalog.innerHTML = '<div class="ipk-course-empty">Pilih semester untuk menampilkan mata kuliah otomatis.</div>';
+    return;
+  }
+  if (!requiredCourses.length && !electiveCourses.length) {
+    ipkCourseCatalog.innerHTML = '<div class="ipk-course-empty">Katalog semester ini belum tersedia. Gunakan kolom mata kuliah pilihan/tambahan.</div>';
+    return;
+  }
+  ipkCourseCatalog.innerHTML = `
+    <div class="ipk-course-catalog-head">
+      <div>
+        <strong>Mata kuliah wajib semester ${escapeText(semester)}</strong>
+        <span>Nilai yang dikosongkan tidak dihitung ke IPS.</span>
+      </div>
+      <span>${escapeText(requiredCourses.reduce((sum, course) => sum + Number(course.sks || 0), 0))} SKS wajib</span>
+    </div>
+    <div class="ipk-course-rows">
+      ${requiredCourses.map(course => {
+        const existing = selectedByKey.get(normalizeText(course.code || ''))
+          || selectedByKey.get(normalizeText(course.name || ''))
+          || selectedByKey.get(courseIdentity(course));
+        return `
+          <label class="ipk-course-row">
+            <span>
+              <b>${escapeText(course.name)}</b>
+              <small>${escapeText(course.code)} &middot; ${escapeText(course.type)} &middot; ${escapeText(course.sks)} SKS</small>
+            </span>
+            <select class="control ipk-grade-select" data-code="${escapeText(course.code)}" data-name="${escapeText(course.name)}" data-type="${escapeText(course.type)}" data-sks="${escapeText(course.sks)}">
+              ${gradeOptionsMarkup(existing?.grade)}
+            </select>
+          </label>
+        `;
+      }).join('')}
+    </div>
+    ${electiveCourses.length ? `
+      <div class="ipk-elective-note">
+        <b>Mata kuliah pilihan semester ini:</b>
+        <span>${electiveCourses.map(course => `${escapeText(course.name)} (${escapeText(course.sks)} SKS)`).join(', ')}. Isi nama pilihan sebenarnya di kolom pilihan/tambahan.</span>
+      </div>
+    ` : ''}
+  `;
+}
+
+function readCatalogCourseRows() {
+  if (!ipkCourseCatalog) return [];
+  return [...ipkCourseCatalog.querySelectorAll('.ipk-grade-select')]
+    .map(select => {
+      const point = gradePoint(select.value);
+      if (point === null) return null;
+      return {
+        code: select.dataset.code || '',
+        name: select.dataset.name || '',
+        type: select.dataset.type || '',
+        sks: Number(select.dataset.sks || 0),
+        grade: normalizeGrade(select.value),
+        point
+      };
+    })
+    .filter(course => course && course.name && course.sks > 0);
+}
+
+function readIpkCourses() {
+  const manualRows = [
+    ipkCourseRows?.value || '',
+    ipkElectiveRows?.value || ''
+  ].filter(Boolean).join('\n');
+  return [
+    ...readCatalogCourseRows(),
+    ...parseCourseRows(manualRows)
+  ];
+}
+
+function fillIpkManualCourses(courses = []) {
+  if (!ipkElectiveRows) {
+    if (ipkCourseRows) ipkCourseRows.value = Array.isArray(courses)
+      ? courses.map(course => [course.name, course.sks, course.grade].filter(Boolean).join('\t')).join('\n')
+      : '';
+    return;
+  }
+  const semester = Number(ipkSemester?.value || 0);
+  const catalog = requiredCoursesForSemester(semester);
+  const manualCourses = (Array.isArray(courses) ? courses : []).filter(course => !catalog.some(item => catalogCourseMatch(course, item)));
+  ipkElectiveRows.value = manualCourses
+    .map(course => [course.name, course.sks, course.grade].filter(Boolean).join('\t'))
+    .join('\n');
+}
+
+function syncIpkAcademicYear() {
+  if (!ipkAcademicYear) return;
+  const academicYear = defaultAcademicYearForSemester(ipkStudentCohort?.value, ipkSemester?.value);
+  if (!academicYear) return;
+  const current = ipkAcademicYear.value.trim();
+  if (!current || current === ipkAcademicYear.dataset.autoValue) {
+    ipkAcademicYear.value = academicYear;
+    ipkAcademicYear.dataset.autoValue = academicYear;
+  }
+}
 
 const parseActiveMemberBulkRows = value => parseDelimitedRows(value)
   .map(cells => {
@@ -4473,14 +4640,14 @@ function renderActiveMemberBulkPreview() {
 
 function renderCoursePreview() {
   if (!ipkCoursePreview) return;
-  const courses = parseCourseRows(ipkCourseRows?.value || '');
+  const courses = readIpkCourses();
   const { ipk, totalSks } = courseGpa(courses);
   if (ipkEntryMode?.value === 'courses' && ipkValue) {
     ipkValue.value = ipk === null ? '' : ipk;
   }
   ipkCoursePreview.innerHTML = courses.length
     ? `
-      <strong>${escapeText(courses.length)} mata kuliah &middot; ${escapeText(totalSks)} SKS &middot; IP ${escapeText(formatGpa(ipk))}</strong>
+      <strong>${escapeText(courses.length)} mata kuliah &middot; ${escapeText(totalSks)} SKS &middot; IPS ${escapeText(formatGpa(ipk))}</strong>
       <div>${courses.slice(0, 6).map(course => `<span>${escapeText(course.name)} (${escapeText(course.sks)} SKS, ${escapeText(course.grade)})</span>`).join('')}</div>
     `
     : 'Belum ada mata kuliah yang dipreview.';
@@ -4499,9 +4666,49 @@ function memberMiniBars(nim) {
     .slice(-6);
   if (!rows.length) return '';
   return `<div class="ipk-mini-bars">${rows.map(record => {
-    const height = Math.max(10, Math.round(((normalizeGpa(record.ipk) || 0) / 4) * 34));
-    return `<span title="Semester ${escapeText(record.semester || '-')} - ${escapeText(formatGpa(record.ipk))}" style="height:${height}px"></span>`;
+    const height = Math.max(10, Math.round(((recordGpaValue(record) || 0) / 4) * 34));
+    return `<span title="Semester ${escapeText(record.semester || '-')} - ${escapeText(formatGpa(recordGpaValue(record)))}" style="height:${height}px"></span>`;
   }).join('')}</div>`;
+}
+
+function renderIpkLineChart(records, className = 'ipk-line-chart') {
+  const values = [...Array(8)].map((_, index) => {
+    const semester = index + 1;
+    const record = [...records].reverse().find(item => Number(item.semester) === semester);
+    return { semester, value: recordGpaValue(record) };
+  });
+  if (!values.some(item => item.value !== null)) return '<div class="empty">Grafik muncul setelah ada data IPS.</div>';
+  const width = 720;
+  const height = 290;
+  const padding = { left: 54, right: 22, top: 24, bottom: 42 };
+  const innerWidth = width - padding.left - padding.right;
+  const innerHeight = height - padding.top - padding.bottom;
+  const yMax = 4.5;
+  const x = semester => padding.left + ((semester - 1) / 7) * innerWidth;
+  const y = value => padding.top + (1 - Math.min(yMax, Math.max(0, value)) / yMax) * innerHeight;
+  const plotted = values.filter(item => item.value !== null);
+  const points = plotted.map(item => `${x(item.semester)},${y(item.value)}`).join(' ');
+  const yTicks = [0, .5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5];
+  const xTicks = values.map(item => item.semester);
+  return `
+    <div class="${className}" role="img" aria-label="Grafik IPS per semester">
+      <svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="xMidYMid meet">
+        ${yTicks.map(tick => `
+          <line class="ipk-grid-line" x1="${padding.left}" y1="${y(tick)}" x2="${width - padding.right}" y2="${y(tick)}"></line>
+          <text class="ipk-axis-label" x="${padding.left - 12}" y="${y(tick) + 4}" text-anchor="end">${tick.toFixed(2)}</text>
+        `).join('')}
+        ${xTicks.map(tick => `
+          <line class="ipk-grid-line vertical" x1="${x(tick)}" y1="${padding.top}" x2="${x(tick)}" y2="${height - padding.bottom}"></line>
+          <text class="ipk-axis-label" x="${x(tick)}" y="${height - 14}" text-anchor="middle">${tick}</text>
+        `).join('')}
+        <polyline class="ipk-line" points="${points}"></polyline>
+        ${plotted.map(item => `
+          <circle class="ipk-point" cx="${x(item.semester)}" cy="${y(item.value)}" r="5"></circle>
+          <text class="ipk-point-label" x="${x(item.semester)}" y="${y(item.value) - 11}" text-anchor="middle">${formatGpa(item.value)}</text>
+        `).join('')}
+      </svg>
+    </div>
+  `;
 }
 
 function renderMemberIpkChart() {
@@ -4517,28 +4724,17 @@ function renderMemberIpkChart() {
     return;
   }
 
-  const bars = records.map(record => {
-    const ipk = normalizeGpa(record.ipk) || 0;
-    const height = Math.max(8, Math.round((ipk / 4) * 120));
-    return `
-      <article class="ipk-chart-bar">
-        <div class="ipk-bar-track"><span style="height:${height}px"></span></div>
-        <b>${escapeText(formatGpa(ipk))}</b>
-        <small>Smt ${escapeText(record.semester || '-')}</small>
-      </article>
-    `;
-  }).join('');
-
   const latest = records.at(-1);
+  const cumulative = cumulativeGpa(records);
   ipkMemberChart.innerHTML = `
     <div class="ipk-chart-head">
       <div>
         <h4>${escapeText(member.name || member.nim)}</h4>
         <p>${escapeText(member.nim)} &middot; ${escapeText(member.division || '-')} &middot; ${escapeText(member.position || '-')}</p>
       </div>
-      <strong>IP terakhir ${escapeText(formatGpa(latest?.ipk))}</strong>
+      <strong>IPS terakhir ${escapeText(formatGpa(recordGpaValue(latest)))} &middot; IPK ${escapeText(formatGpa(cumulative.ipk))}</strong>
     </div>
-    <div class="ipk-chart-bars">${bars || '<div class="empty">Belum ada data IP/IPK untuk anggota ini.</div>'}</div>
+    ${renderIpkLineChart(records)}
     <div class="ipk-course-list">
       ${records.filter(record => Array.isArray(record.courses) && record.courses.length).slice(-3).reverse().map(record => `
         <article>
@@ -4565,6 +4761,7 @@ function fillIpkStudentFromMember(nim) {
   if (!source) return;
   if (ipkStudentName) ipkStudentName.value = source.name || '';
   if (ipkStudentCohort) ipkStudentCohort.value = source.angkatan || '';
+  syncIpkAcademicYear();
 }
 
 function resetActiveMemberForm() {
@@ -4581,26 +4778,28 @@ function resetIpkRecordForm() {
   editingIpkRecordId = '';
   if (ipkRecordId) ipkRecordId.value = '';
   if (ipkEntryMode) ipkEntryMode.value = 'gpa';
+  if (ipkElectiveRows) ipkElectiveRows.value = '';
+  renderIpkCourseCatalog();
   renderCoursePreview();
-  if (ipkRecordSubmit) ipkRecordSubmit.textContent = 'Simpan IPK';
+  if (ipkRecordSubmit) ipkRecordSubmit.textContent = 'Simpan IPS/IPK';
 }
 
 function renderIpkStats() {
   if (!ipkStats) return;
   const active = activeMembers.filter(member => member.status !== 'inactive');
   const submittedNims = new Set(ipkRecords.map(record => record.nim));
-  const values = ipkRecords.map(record => normalizeGpa(record.ipk)).filter(value => value !== null);
+  const values = ipkRecords.map(record => recordGpaValue(record)).filter(value => value !== null);
   const average = values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : null;
   const needsAttention = active.filter(member => {
-    const latest = latestGpaForNim(member.nim);
-    const ipk = normalizeGpa(latest?.ipk);
+    const memberRecords = ipkRecords.filter(record => record.nim === member.nim);
+    const ipk = cumulativeGpa(memberRecords).ipk;
     return ipk !== null && ipk < 3;
   }).length;
 
   ipkStats.innerHTML = `
     <article><span>Anggota aktif</span><strong>${active.length}</strong></article>
     <article><span>Sudah input IPK</span><strong>${[...submittedNims].filter(nim => activeMemberForNim(nim)).length}</strong></article>
-    <article><span>Rata-rata IPK</span><strong>${formatGpa(average)}</strong></article>
+    <article><span>Rata-rata IPS</span><strong>${formatGpa(average)}</strong></article>
     <article><span>Perlu pantauan</span><strong>${needsAttention}</strong></article>
   `;
 }
@@ -4630,14 +4829,15 @@ function renderActiveMemberTable() {
     .sort((a, b) => String(b.angkatan || '').localeCompare(String(a.angkatan || '')) || String(a.name || a.nim).localeCompare(String(b.name || b.nim)))
     .map(member => {
       const latest = latestGpaForNim(member.nim);
-      const status = gpaStatus(latest?.ipk);
+      const cumulative = cumulativeGpa(ipkRecords.filter(record => record.nim === member.nim));
+      const status = gpaStatus(cumulative.ipk);
       return `
         <tr>
           <td><b>${escapeText(member.nim)}</b><br><span class="small-text">${escapeText(member.name || '-')}</span></td>
           <td>${escapeText(member.angkatan || '-')}</td>
           <td>${escapeText(member.division || '-')}<br><span class="small-text">${escapeText(member.position || '-')}</span></td>
           <td><span class="badge">${member.status === 'inactive' ? 'Nonaktif' : 'Aktif'}</span></td>
-          <td><b>${escapeText(formatGpa(latest?.ipk))}</b><br><span class="ipk-status ${status.className}">${escapeText(status.label)}</span>${memberMiniBars(member.nim)}</td>
+          <td><b>IPK ${escapeText(formatGpa(cumulative.ipk))}</b><br><span class="small-text">IPS terakhir ${escapeText(formatGpa(recordGpaValue(latest)))}</span><br><span class="ipk-status ${status.className}">${escapeText(status.label)}</span>${memberMiniBars(member.nim)}</td>
           <td>${escapeText(formatDateTime(latest?.updatedAt || latest?.createdAt))}</td>
           <td>
             <button class="action-btn" data-edit-active-member="${escapeText(member.nim)}" type="button">Edit</button>
@@ -4669,14 +4869,17 @@ function renderIpkRecordTable() {
     })
     .sort((a, b) => String(b.updatedAt || b.createdAt || '').localeCompare(String(a.updatedAt || a.createdAt || '')))
     .map(record => {
-      const status = gpaStatus(record.ipk);
+      const status = gpaStatus(recordGpaValue(record));
+      const cumulative = cumulativeGpa(ipkRecords
+        .filter(item => item.nim === record.nim && semesterSortValue(item) <= semesterSortValue(record))
+        .sort((a, b) => semesterSortValue(a) - semesterSortValue(b)));
       return `
         <tr>
           <td><b>${escapeText(record.nim)}</b><br><span class="small-text">${escapeText(record.name || '-')}</span></td>
           <td>${escapeText(record.angkatan || '-')}</td>
           <td>${escapeText(record.semester || '-')}</td>
           <td>${escapeText(record.academicYear || '-')}</td>
-          <td><b>${escapeText(formatGpa(record.ipk))}</b><br><span class="ipk-status ${status.className}">${escapeText(status.label)}</span><br><span class="small-text">${escapeText(courseSummary(record.courses))}</span></td>
+          <td><b>IPS ${escapeText(formatGpa(recordGpaValue(record)))}</b><br><span class="small-text">IPK ${escapeText(formatGpa(cumulative.ipk))}</span><br><span class="ipk-status ${status.className}">${escapeText(status.label)}</span><br><span class="small-text">${escapeText(courseSummary(record.courses))}</span></td>
           <td>${escapeText(record.source === 'student' ? 'Mahasiswa' : 'Admin')}</td>
           <td>${escapeText(formatDateTime(record.updatedAt || record.createdAt))}<br><span class="small-text">${escapeText(record.note || '-')}</span></td>
           <td>
@@ -4698,6 +4901,7 @@ function renderIpkMonitoring() {
   syncIpkChartMemberOptions();
   renderMemberIpkChart();
   renderActiveMemberBulkPreview();
+  renderIpkCourseCatalog();
   renderCoursePreview();
 }
 
@@ -6604,11 +6808,20 @@ on(activeMemberTable, 'click', async e => {
 });
 
 on(ipkStudentNim, 'change', () => fillIpkStudentFromMember(ipkStudentNim.value));
+on(ipkStudentCohort, 'input', syncIpkAcademicYear);
+on(ipkSemester, 'input', () => {
+  syncIpkAcademicYear();
+  renderIpkCourseCatalog();
+  renderCoursePreview();
+});
 on(ipkEntryMode, 'change', () => {
   if (ipkValue) ipkValue.required = ipkEntryMode?.value !== 'courses';
+  renderIpkCourseCatalog();
   renderCoursePreview();
 });
 on(ipkCourseRows, 'input', renderCoursePreview);
+on(ipkElectiveRows, 'input', renderCoursePreview);
+on(ipkCourseCatalog, 'change', renderCoursePreview);
 on(ipkRecordSearch, 'input', () => renderIpkRecordTable());
 on(ipkRecordCohortFilter, 'change', () => renderIpkRecordTable());
 on(ipkRecordStatusFilter, 'change', () => renderIpkRecordTable());
@@ -6619,14 +6832,14 @@ on(ipkRecordForm, 'submit', async e => {
   if (!requirePermission('ipk_monitoring', 'pemantauan IPK')) return;
 
   const nim = memberDocId(ipkStudentNim.value);
-  const courses = parseCourseRows(ipkCourseRows?.value || '');
+  const courses = readIpkCourses();
   const computed = courseGpa(courses);
   const mode = ipkEntryMode?.value || 'gpa';
-  const ipk = mode === 'courses' ? computed.ipk : normalizeGpa(ipkValue.value);
+  const ips = mode === 'courses' ? computed.ipk : normalizeGpa(ipkValue.value);
   const semester = String(ipkSemester.value || '').trim();
   const academicYear = normalizeAcademicYearLabel(ipkAcademicYear.value);
-  if (!nim || !ipkStudentName.value.trim() || !semester || ipk === null) {
-    toast('Lengkapi NIM, nama, semester, dan IPK.');
+  if (!nim || !ipkStudentName.value.trim() || !semester || ips === null) {
+    toast('Lengkapi NIM, nama, semester, dan IPS.');
     return;
   }
   if (mode === 'courses' && !courses.length) {
@@ -6640,13 +6853,17 @@ on(ipkRecordForm, 'submit', async e => {
 
   const now = new Date().toISOString();
   const docId = editingIpkRecordId || gpaRecordDocId(nim, semester, academicYear);
+  const siblingRecords = ipkRecords.filter(record => record.nim === nim && record.docId !== docId);
+  const cumulative = cumulativeGpa([...siblingRecords, { semester, academicYear, ips, ipk: ips, totalSks: computed.totalSks || null }]);
   const payload = {
     nim,
     name: ipkStudentName.value.trim(),
     angkatan: String(ipkStudentCohort.value || '').trim(),
     semester,
     academicYear,
-    ipk,
+    ips,
+    ipk: ips,
+    cumulativeIpk: cumulative.ipk,
     entryMode: mode,
     courses,
     totalSks: computed.totalSks || null,
@@ -6665,9 +6882,9 @@ on(ipkRecordForm, 'submit', async e => {
       targetType: 'student_gpa_record',
       targetId: docId,
       targetTitle: `${payload.name} - Semester ${payload.semester}`,
-      detail: `IPK ${formatGpa(ipk)} untuk ${payload.name} disimpan oleh admin.`
+      detail: `IPS ${formatGpa(ips)} untuk ${payload.name} disimpan oleh admin.`
     });
-    toast(editingIpkRecordId ? 'Data IPK berhasil diperbarui.' : 'Data IPK berhasil ditambahkan.');
+    toast(editingIpkRecordId ? 'Data IPS/IPK berhasil diperbarui.' : 'Data IPS/IPK berhasil ditambahkan.');
     resetIpkRecordForm();
   } catch (error) {
     console.error('Save GPA record failed:', error);
@@ -6695,15 +6912,13 @@ on(ipkRecordTable, 'click', async e => {
     ipkSemester.value = record.semester || '';
     ipkAcademicYear.value = record.academicYear || '';
     if (ipkEntryMode) ipkEntryMode.value = record.entryMode || (Array.isArray(record.courses) && record.courses.length ? 'courses' : 'gpa');
-    ipkValue.value = record.ipk ?? '';
-    if (ipkCourseRows) {
-      ipkCourseRows.value = Array.isArray(record.courses)
-        ? record.courses.map(course => [course.name, course.sks, course.grade].filter(Boolean).join('\t')).join('\n')
-        : '';
-    }
+    ipkValue.value = recordGpaValue(record) ?? '';
+    if (ipkCourseRows) ipkCourseRows.value = '';
+    renderIpkCourseCatalog(record.courses || []);
+    fillIpkManualCourses(record.courses || []);
     ipkNote.value = record.note || '';
     renderCoursePreview();
-    ipkRecordSubmit.textContent = 'Update IPK';
+    ipkRecordSubmit.textContent = 'Update IPS/IPK';
     ipkStudentNim.focus();
     return;
   }

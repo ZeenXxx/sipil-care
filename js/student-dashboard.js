@@ -10,6 +10,12 @@ import {
   setDoc,
   doc
 } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
+import {
+  GRADE_OPTIONS,
+  defaultAcademicYearForSemester,
+  electiveCoursesForSemester,
+  requiredCoursesForSemester
+} from './ts-course-catalog.js?v=1';
 
 const db = getFirestore(app);
 const SESSION_KEY = 'sipilcare_student_session';
@@ -121,6 +127,143 @@ const courseGpa = courses => {
   return { ipk: Math.round((weighted / totalSks) * 100) / 100, totalSks };
 };
 
+const recordGpaValue = record => normalizeGpa(record?.ips ?? record?.ipk);
+
+const cumulativeGpa = records => {
+  const rows = (Array.isArray(records) ? records : [])
+    .map(record => ({ value: recordGpaValue(record), sks: Number(record.totalSks || 0) }))
+    .filter(row => row.value !== null);
+  const weightedRows = rows.filter(row => row.sks > 0);
+  if (weightedRows.length) {
+    const totalSks = weightedRows.reduce((sum, row) => sum + row.sks, 0);
+    const weighted = weightedRows.reduce((sum, row) => sum + row.value * row.sks, 0);
+    return { ipk: Math.round((weighted / totalSks) * 100) / 100, totalSks };
+  }
+  if (!rows.length) return { ipk: null, totalSks: 0 };
+  return {
+    ipk: Math.round((rows.reduce((sum, row) => sum + row.value, 0) / rows.length) * 100) / 100,
+    totalSks: 0
+  };
+};
+
+const gradeOptionsMarkup = selected => GRADE_OPTIONS.map(option => `
+  <option value="${escapeText(option)}"${normalizeGrade(selected) === option ? ' selected' : ''}>${escapeText(option || 'Nilai')}</option>
+`).join('');
+
+const readStudentCatalogCourses = container => {
+  if (!container) return [];
+  return [...container.querySelectorAll('.student-grade-select')]
+    .map(select => {
+      const point = gradePoint(select.value);
+      if (point === null) return null;
+      return {
+        code: select.dataset.code || '',
+        name: select.dataset.name || '',
+        type: select.dataset.type || '',
+        sks: Number(select.dataset.sks || 0),
+        grade: normalizeGrade(select.value),
+        point
+      };
+    })
+    .filter(course => course && course.name && course.sks > 0);
+};
+
+const courseIdentity = course => `${String(course?.code || '').toLowerCase()} ${String(course?.name || '').toLowerCase()}`.trim();
+
+const renderStudentCourseCatalog = (container, semester, existingCourses = []) => {
+  if (!container) return;
+  const requiredCourses = requiredCoursesForSemester(semester);
+  const electiveCourses = electiveCoursesForSemester(semester);
+  const existingMap = new Map();
+  (Array.isArray(existingCourses) ? existingCourses : []).forEach(course => {
+    [String(course.code || '').toLowerCase(), String(course.name || '').toLowerCase(), courseIdentity(course)]
+      .filter(Boolean)
+      .forEach(key => {
+        if (!existingMap.has(key)) existingMap.set(key, course);
+      });
+  });
+  if (!semester) {
+    container.innerHTML = '<div class="student-course-empty">Pilih semester untuk menampilkan mata kuliah otomatis.</div>';
+    return;
+  }
+  if (!requiredCourses.length && !electiveCourses.length) {
+    container.innerHTML = '<div class="student-course-empty">Katalog semester ini belum tersedia. Isi mata kuliah pilihan/tambahan secara manual.</div>';
+    return;
+  }
+  container.innerHTML = `
+    <div class="student-course-catalog-head">
+      <div>
+        <strong>Mata kuliah wajib semester ${escapeText(semester)}</strong>
+        <span>Isi nilai yang sudah keluar. Nilai kosong tidak dihitung.</span>
+      </div>
+      <span>${escapeText(requiredCourses.reduce((sum, course) => sum + Number(course.sks || 0), 0))} SKS wajib</span>
+    </div>
+    <div class="student-course-rows">
+      ${requiredCourses.map(course => {
+        const existing = existingMap.get(String(course.code || '').toLowerCase())
+          || existingMap.get(String(course.name || '').toLowerCase())
+          || existingMap.get(courseIdentity(course));
+        return `
+          <label class="student-course-row">
+            <span>
+              <b>${escapeText(course.name)}</b>
+              <small>${escapeText(course.code)} &middot; ${escapeText(course.type)} &middot; ${escapeText(course.sks)} SKS</small>
+            </span>
+            <select class="control student-grade-select" data-code="${escapeText(course.code)}" data-name="${escapeText(course.name)}" data-type="${escapeText(course.type)}" data-sks="${escapeText(course.sks)}">
+              ${gradeOptionsMarkup(existing?.grade)}
+            </select>
+          </label>
+        `;
+      }).join('')}
+    </div>
+    ${electiveCourses.length ? `
+      <div class="student-elective-note">
+        <b>Mata kuliah pilihan:</b>
+        <span>${electiveCourses.map(course => `${escapeText(course.name)} (${escapeText(course.sks)} SKS)`).join(', ')}. Isi nama pilihan sebenarnya di kolom pilihan/tambahan.</span>
+      </div>
+    ` : ''}
+  `;
+};
+
+function renderStudentGpaLineChart(records) {
+  const ordered = [...records].sort((a, b) => Number(a.semester || 0) - Number(b.semester || 0));
+  const values = [...Array(8)].map((_, index) => {
+    const semester = index + 1;
+    const record = [...ordered].reverse().find(item => Number(item.semester) === semester);
+    return { semester, value: recordGpaValue(record) };
+  });
+  if (!values.some(item => item.value !== null)) return '<div class="empty">Grafik muncul setelah ada data IPS.</div>';
+  const width = 720;
+  const height = 290;
+  const padding = { left: 54, right: 22, top: 24, bottom: 42 };
+  const innerWidth = width - padding.left - padding.right;
+  const innerHeight = height - padding.top - padding.bottom;
+  const yMax = 4.5;
+  const x = semester => padding.left + ((semester - 1) / 7) * innerWidth;
+  const y = value => padding.top + (1 - Math.min(yMax, Math.max(0, value)) / yMax) * innerHeight;
+  const plotted = values.filter(item => item.value !== null);
+  const yTicks = [0, .5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5];
+  return `
+    <div class="student-gpa-line-chart" role="img" aria-label="Grafik IPS per semester">
+      <svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="xMidYMid meet">
+        ${yTicks.map(tick => `
+          <line class="student-gpa-grid" x1="${padding.left}" y1="${y(tick)}" x2="${width - padding.right}" y2="${y(tick)}"></line>
+          <text class="student-gpa-axis" x="${padding.left - 12}" y="${y(tick) + 4}" text-anchor="end">${tick.toFixed(2)}</text>
+        `).join('')}
+        ${values.map(item => `
+          <line class="student-gpa-grid vertical" x1="${x(item.semester)}" y1="${padding.top}" x2="${x(item.semester)}" y2="${height - padding.bottom}"></line>
+          <text class="student-gpa-axis" x="${x(item.semester)}" y="${height - 14}" text-anchor="middle">${item.semester}</text>
+        `).join('')}
+        <polyline class="student-gpa-line" points="${plotted.map(item => `${x(item.semester)},${y(item.value)}`).join(' ')}"></polyline>
+        ${plotted.map(item => `
+          <circle class="student-gpa-point" cx="${x(item.semester)}" cy="${y(item.value)}" r="5"></circle>
+          <text class="student-gpa-point-label" x="${x(item.semester)}" y="${y(item.value) - 11}" text-anchor="middle">${formatGpa(item.value)}</text>
+        `).join('')}
+      </svg>
+    </div>
+  `;
+}
+
 const gpaRecordDocId = (nim, semester, academicYear) => [
   String(nim || '').trim(),
   String(semester || '').trim().replace(/\D+/g, '') || '0',
@@ -201,20 +344,7 @@ function renderMembership(session, member, records) {
   const isActiveMember = Boolean(member && member.status !== 'inactive');
   const latest = records[0];
   const chronological = [...records].sort((a, b) => Number(a.semester || 0) - Number(b.semester || 0));
-  const bars = chronological.map(record => {
-    const ipk = normalizeGpa(record.ipk) || 0;
-    const height = Math.max(8, Math.round((ipk / 4) * 110));
-    return `
-      <article class="student-gpa-bar">
-        <div><span style="height:${height}px"></span></div>
-        <b>${escapeText(formatGpa(ipk))}</b>
-        <small>Smt ${escapeText(record.semester || '-')}</small>
-      </article>
-    `;
-  }).join('');
-  const average = records.length
-    ? records.map(record => normalizeGpa(record.ipk)).filter(value => value !== null).reduce((sum, value, _, arr) => sum + value / arr.length, 0)
-    : null;
+  const cumulative = cumulativeGpa(chronological);
 
   if (!isActiveMember) {
     membershipTarget.innerHTML = `
@@ -239,50 +369,75 @@ function renderMembership(session, member, records) {
         <small>${escapeText(member.position || 'Anggota aktif')}${member.angkatan ? ` &middot; Angkatan ${escapeText(member.angkatan)}` : ''}</small>
       </div>
       <div class="student-gpa-mini">
-        <span>IPK terakhir</span>
-        <b>${escapeText(formatGpa(latest?.ipk))}</b>
+        <span>IPS terakhir</span>
+        <b>${escapeText(formatGpa(recordGpaValue(latest)))}</b>
       </div>
       <div class="student-gpa-mini">
-        <span>Rata-rata</span>
-        <b>${escapeText(formatGpa(average))}</b>
+        <span>IPK kumulatif</span>
+        <b>${escapeText(formatGpa(cumulative.ipk))}</b>
       </div>
     </div>
     <form id="studentGpaForm" class="student-gpa-form">
       <input class="control" id="studentGpaSemester" type="number" min="1" max="14" placeholder="Semester" required>
       <input class="control" id="studentGpaAcademicYear" placeholder="Tahun akademik, contoh: 2025/2026" required>
       <select class="control" id="studentGpaMode">
-        <option value="gpa">Input IP/IPK langsung</option>
+        <option value="gpa">Input IPS langsung</option>
         <option value="courses">Input nilai per mata kuliah</option>
       </select>
-      <input class="control" id="studentGpaValue" type="number" min="0" max="4" step="0.01" placeholder="IPK, contoh: 3.56" required>
-      <textarea class="control" id="studentGpaCourses" placeholder="Opsional untuk mode mata kuliah:
+      <input class="control" id="studentGpaValue" type="number" min="0" max="4" step="0.01" placeholder="IPS, contoh: 3.56" required>
+      <div class="student-course-catalog" id="studentCourseCatalog" hidden></div>
+      <textarea class="control" id="studentGpaCourses" hidden placeholder="Mata kuliah pilihan atau tambahan:
 Mekanika Teknik	3	A
 Matematika Teknik	2	AB"></textarea>
       <div class="student-course-preview" id="studentCoursePreview">Belum ada mata kuliah yang dipreview.</div>
       <input class="control" id="studentGpaNote" placeholder="Catatan opsional">
-      <button class="btn btn-primary" type="submit">Simpan IPK</button>
+      <button class="btn btn-primary" type="submit">Simpan IPS/IPK</button>
     </form>
-    <div class="student-gpa-chart">${bars || '<div class="empty">Grafik muncul setelah ada data IP/IPK.</div>'}</div>
+    <div class="student-gpa-chart">${renderStudentGpaLineChart(chronological)}</div>
     <div class="student-gpa-history">
       ${records.length
         ? records.slice(0, 8).map(record => `
           <article>
             <strong>Semester ${escapeText(record.semester || '-')} &middot; ${escapeText(record.academicYear || '-')}</strong>
-            <span>IP ${escapeText(formatGpa(record.ipk))} &middot; ${escapeText(record.source === 'admin' ? 'Diinput admin' : 'Diinput mahasiswa')}${Array.isArray(record.courses) && record.courses.length ? ` &middot; ${record.courses.length} mata kuliah` : ''}</span>
+            <span>IPS ${escapeText(formatGpa(recordGpaValue(record)))} &middot; ${escapeText(record.source === 'admin' ? 'Diinput admin' : 'Diinput mahasiswa')}${Array.isArray(record.courses) && record.courses.length ? ` &middot; ${record.courses.length} mata kuliah` : ''}</span>
             <small>${escapeText(formatDateTime(record.updatedAt || record.createdAt))}${record.note ? ` &middot; ${escapeText(record.note)}` : ''}</small>
           </article>
         `).join('')
-        : '<div class="empty">Belum ada riwayat IPK. Input IPK pertama kamu di form ini.</div>'}
+        : '<div class="empty">Belum ada riwayat IPS/IPK. Input nilai pertama kamu di form ini.</div>'}
     </div>
   `;
 
   const form = document.getElementById('studentGpaForm');
   const modeInput = document.getElementById('studentGpaMode');
   const coursesInput = document.getElementById('studentGpaCourses');
+  const semesterInput = document.getElementById('studentGpaSemester');
+  const academicYearInput = document.getElementById('studentGpaAcademicYear');
+  const courseCatalog = document.getElementById('studentCourseCatalog');
   const coursePreview = document.getElementById('studentCoursePreview');
   const valueInput = document.getElementById('studentGpaValue');
+  const readCourses = () => [
+    ...readStudentCatalogCourses(courseCatalog),
+    ...parseCourseRows(coursesInput?.value || '')
+  ];
+  const syncCatalog = () => {
+    const isCourseMode = modeInput?.value === 'courses';
+    if (courseCatalog) courseCatalog.hidden = !isCourseMode;
+    if (coursesInput) coursesInput.hidden = !isCourseMode;
+    if (!isCourseMode) return;
+    renderStudentCourseCatalog(courseCatalog, semesterInput?.value);
+  };
+  const syncAcademicYear = () => {
+    if (!academicYearInput) return;
+    const year = defaultAcademicYearForSemester(session.angkatan || member.angkatan, semesterInput?.value);
+    if (!year) return;
+    const current = academicYearInput.value.trim();
+    if (!current || current === academicYearInput.dataset.autoValue) {
+      academicYearInput.value = year;
+      academicYearInput.dataset.autoValue = year;
+    }
+  };
   const syncCoursePreview = () => {
-    const courses = parseCourseRows(coursesInput?.value || '');
+    const courses = readCourses();
     const computed = courseGpa(courses);
     if (modeInput?.value === 'courses' && valueInput) {
       valueInput.value = computed.ipk === null ? '' : computed.ipk;
@@ -292,24 +447,35 @@ Matematika Teknik	2	AB"></textarea>
     }
     if (coursePreview) {
       coursePreview.innerHTML = courses.length
-        ? `<strong>${escapeText(courses.length)} mata kuliah, ${escapeText(computed.totalSks)} SKS, IP ${escapeText(formatGpa(computed.ipk))}</strong>`
+        ? `<strong>${escapeText(courses.length)} mata kuliah, ${escapeText(computed.totalSks)} SKS, IPS ${escapeText(formatGpa(computed.ipk))}</strong>`
         : 'Belum ada mata kuliah yang dipreview.';
     }
   };
-  modeInput?.addEventListener('change', syncCoursePreview);
+  modeInput?.addEventListener('change', () => {
+    syncCatalog();
+    syncCoursePreview();
+  });
+  semesterInput?.addEventListener('input', () => {
+    syncAcademicYear();
+    syncCatalog();
+    syncCoursePreview();
+  });
+  courseCatalog?.addEventListener('change', syncCoursePreview);
   coursesInput?.addEventListener('input', syncCoursePreview);
+  syncAcademicYear();
+  syncCatalog();
   syncCoursePreview();
   form?.addEventListener('submit', async event => {
     event.preventDefault();
     const semester = document.getElementById('studentGpaSemester')?.value;
     const academicYear = document.getElementById('studentGpaAcademicYear')?.value;
-    const courses = parseCourseRows(coursesInput?.value || '');
+    const courses = readCourses();
     const computed = courseGpa(courses);
     const mode = modeInput?.value || 'gpa';
-    const ipk = mode === 'courses' ? computed.ipk : normalizeGpa(valueInput?.value);
+    const ips = mode === 'courses' ? computed.ipk : normalizeGpa(valueInput?.value);
     const note = document.getElementById('studentGpaNote')?.value || '';
-    if (!semester || !academicYear || ipk === null) {
-      showToast('Lengkapi semester, tahun akademik, dan IPK.');
+    if (!semester || !academicYear || ips === null) {
+      showToast('Lengkapi semester, tahun akademik, dan IPS.');
       return;
     }
     if (mode === 'courses' && !courses.length) {
@@ -319,6 +485,8 @@ Matematika Teknik	2	AB"></textarea>
     const button = form.querySelector('button[type="submit"]');
     const now = new Date().toISOString();
     const recordId = gpaRecordDocId(session.nim, semester, academicYear);
+    const siblingRecords = records.filter(record => record.docId !== recordId);
+    const cumulative = cumulativeGpa([...siblingRecords, { semester, academicYear, ips, ipk: ips, totalSks: computed.totalSks || null }]);
     try {
       if (button) button.disabled = true;
       await setDoc(doc(db, 'student_gpa_records', recordId), {
@@ -327,7 +495,9 @@ Matematika Teknik	2	AB"></textarea>
         angkatan: session.angkatan || member.angkatan || '',
         semester: String(semester),
         academicYear: String(academicYear).trim(),
-        ipk,
+        ips,
+        ipk: ips,
+        cumulativeIpk: cumulative.ipk,
         entryMode: mode,
         courses,
         totalSks: computed.totalSks || null,
@@ -336,11 +506,11 @@ Matematika Teknik	2	AB"></textarea>
         updatedAt: now,
         updatedBy: session.nim
       }, { merge: true });
-      showToast('IPK berhasil disimpan.');
+      showToast('IPS/IPK berhasil disimpan.');
       await loadMembership(session);
     } catch (error) {
       console.warn('Save student GPA failed:', error);
-      showToast('Gagal menyimpan IPK.');
+      showToast('Gagal menyimpan IPS/IPK.');
     } finally {
       if (button) button.disabled = false;
     }

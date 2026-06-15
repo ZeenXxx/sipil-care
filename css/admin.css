@@ -1930,6 +1930,119 @@ body.admin-page [hidden]  {
 
 }
 
+.ipk-course-catalog  {
+
+    grid-column: 1 / -1;
+
+    display: grid;
+
+    gap: 12px;
+
+    padding: 14px;
+
+    border: 1px solid var(--line);
+
+    border-radius: 8px;
+
+    background: #f8fbfa
+
+}
+
+.ipk-course-catalog[hidden],
+.ipk-form-grid textarea[hidden]  {
+
+    display: none
+
+}
+
+.ipk-course-catalog-head,
+.ipk-course-row,
+.ipk-elective-note  {
+
+    display: flex;
+
+    justify-content: space-between;
+
+    gap: 14px;
+
+    align-items: center
+
+}
+
+.ipk-course-catalog-head strong,
+.ipk-course-row b,
+.ipk-elective-note b  {
+
+    color: var(--primary)
+
+}
+
+.ipk-course-catalog-head span,
+.ipk-course-row small,
+.ipk-elective-note span,
+.ipk-course-empty  {
+
+    color: var(--muted);
+
+    line-height: 1.5
+
+}
+
+.ipk-course-rows  {
+
+    display: grid;
+
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+
+    gap: 10px
+
+}
+
+.ipk-course-row  {
+
+    padding: 12px;
+
+    border: 1px solid var(--line);
+
+    border-radius: 8px;
+
+    background: #fff
+
+}
+
+.ipk-course-row span  {
+
+    min-width: 0
+
+}
+
+.ipk-course-row b,
+.ipk-course-row small  {
+
+    display: block
+
+}
+
+.ipk-grade-select  {
+
+    width: 110px;
+
+    flex: 0 0 110px
+
+}
+
+.ipk-elective-note  {
+
+    align-items: flex-start;
+
+    padding: 12px;
+
+    border-radius: 8px;
+
+    background: #eef6f2
+
+}
+
 .ipk-member-chart  {
 
     min-height: 180px
@@ -1993,6 +2106,83 @@ body.admin-page [hidden]  {
     overflow-x: auto;
 
     padding-bottom: 8px
+
+}
+
+.ipk-line-chart  {
+
+    min-height: 270px;
+
+    padding: 12px;
+
+    border: 1px solid var(--line);
+
+    border-radius: 8px;
+
+    background: #fff;
+
+    overflow-x: auto
+
+}
+
+.ipk-line-chart svg  {
+
+    display: block;
+
+    width: 100%;
+
+    min-width: 640px;
+
+    height: 280px
+
+}
+
+.ipk-grid-line  {
+
+    stroke: #d6ded9;
+
+    stroke-width: 1
+
+}
+
+.ipk-grid-line.vertical  {
+
+    stroke: #e8efeb
+
+}
+
+.ipk-axis-label,
+.ipk-point-label  {
+
+    fill: var(--muted);
+
+    font-size: 12px;
+
+    font-weight: 700
+
+}
+
+.ipk-line  {
+
+    fill: none;
+
+    stroke: #12648a;
+
+    stroke-width: 4;
+
+    stroke-linecap: round;
+
+    stroke-linejoin: round
+
+}
+
+.ipk-point  {
+
+    fill: #12648a;
+
+    stroke: #fff;
+
+    stroke-width: 3
 
 }
 
@@ -3584,12 +3774,25 @@ th  {
 
   .ipk-admin-grid,
   .ipk-stats,
-  .ipk-course-list {
+  .ipk-course-list,
+  .ipk-course-rows {
     grid-template-columns: 1fr;
   }
 
   .ipk-chart-head {
     display: grid;
+  }
+
+  .ipk-course-catalog-head,
+  .ipk-course-row,
+  .ipk-elective-note {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .ipk-grade-select {
+    width: 100%;
+    flex-basis: auto;
   }
 }
 

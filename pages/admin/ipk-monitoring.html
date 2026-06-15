@@ -10,7 +10,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-title" content="SIPIL CARE">
     <link rel="stylesheet" href="../../css/style.css?v=26">
-    <link rel="stylesheet" href="../../css/admin.css?v=55">
+    <link rel="stylesheet" href="../../css/admin.css?v=56">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -98,8 +98,8 @@ Nama Anggota	2350031001	Internal	Staff"></textarea>
         <article class="admin-card">
           <div class="admin-table-head">
             <div>
-              <h3>Input IPK oleh Admin</h3>
-              <p class="small-text">Admin bisa membantu memasukkan atau memperbaiki IPK anggota aktif jika mahasiswa belum mengisi.</p>
+              <h3>Input IPS/IPK oleh Admin</h3>
+              <p class="small-text">Admin bisa membantu memasukkan nilai per semester. IPS dan IPK kumulatif akan dihitung otomatis.</p>
             </div>
           </div>
           <form id="ipkRecordForm" class="ipk-form-grid">
@@ -111,18 +111,18 @@ Nama Anggota	2350031001	Internal	Staff"></textarea>
             <input class="control" id="ipkSemester" type="number" min="1" max="14" placeholder="Semester" required>
             <input class="control" id="ipkAcademicYear" placeholder="Tahun akademik, contoh: 2025/2026" autocomplete="off">
             <select class="control" id="ipkEntryMode">
-              <option value="gpa">Input IP/IPK langsung</option>
+              <option value="gpa">Input IPS langsung</option>
               <option value="courses">Input nilai per mata kuliah</option>
             </select>
-            <input class="control" id="ipkValue" type="number" min="0" max="4" step="0.01" placeholder="IPK, contoh: 3.56" required>
-            <textarea class="control" id="ipkCourseRows" placeholder="Opsional untuk mode mata kuliah:
-Mekanika Teknik	3	A
-Matematika Teknik	2	AB
-Bahan Bangunan	2	3.50"></textarea>
+            <input class="control" id="ipkValue" type="number" min="0" max="4" step="0.01" placeholder="IPS, contoh: 3.56" required>
+            <div class="ipk-course-catalog" id="ipkCourseCatalog" hidden></div>
+            <textarea class="control" id="ipkElectiveRows" hidden placeholder="Mata kuliah pilihan atau tambahan, satu baris per mata kuliah:
+Nama Mata Kuliah Pilihan	2	A
+Mata Kuliah Tambahan	3	AB"></textarea>
             <div class="ipk-course-preview" id="ipkCoursePreview">Belum ada mata kuliah yang dipreview.</div>
             <textarea class="control" id="ipkNote" placeholder="Catatan pemantauan, opsional"></textarea>
             <div class="admin-form-actions">
-              <button class="action-btn primary" id="ipkRecordSubmit" type="submit">Simpan IPK</button>
+              <button class="action-btn primary" id="ipkRecordSubmit" type="submit">Simpan IPS/IPK</button>
               <button class="action-btn" id="ipkRecordCancel" type="button">Batal</button>
             </div>
           </form>
@@ -181,7 +181,7 @@ Bahan Bangunan	2	3.50"></textarea>
                 <th>Angkatan</th>
                 <th>Semester</th>
                 <th>Tahun Akademik</th>
-                <th>IPK</th>
+                <th>IPS/IPK</th>
                 <th>Sumber</th>
                 <th>Update/Catatan</th>
                 <th>Aksi</th>
@@ -196,7 +196,7 @@ Bahan Bangunan	2	3.50"></textarea>
         <div class="admin-table-head">
           <div>
             <h3>Grafik Perkembangan Anggota</h3>
-            <p class="small-text">Pilih anggota aktif untuk melihat perkembangan IP/IPK per semester dan ringkasan mata kuliah yang pernah diinput.</p>
+            <p class="small-text">Pilih anggota aktif untuk melihat grafik IPS per semester dan ringkasan mata kuliah yang pernah diinput.</p>
           </div>
           <select class="control" id="ipkChartMemberSelect">
             <option value="">Pilih anggota aktif</option>
@@ -209,7 +209,7 @@ Bahan Bangunan	2	3.50"></textarea>
     <div class="toast" id="toast"></div>
     <script src="../../js/student-config.js?v=20"></script>
     <script src="../../js/auth.js?v=32"></script>
-    <script type="module" src="../../js/admin-panel.js?v=81"></script>
+    <script type="module" src="../../js/admin-panel.js?v=82"></script>
     <script src="../../js/pwa.js?v=2"></script>
     <script src="../../js/push-config.js?v=1"></script>
     <script type="module" src="../../js/pwa-push.js?v=5"></script>
