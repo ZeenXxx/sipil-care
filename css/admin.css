@@ -1911,6 +1911,67 @@ body.admin-page [hidden]  {
 
 }
 
+.active-member-summary  {
+
+    display: grid;
+
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+
+    gap: 12px;
+
+    margin: 14px 0 4px
+
+}
+
+.active-member-summary article  {
+
+    padding: 14px;
+
+    border: 1px solid var(--line);
+
+    border-radius: 8px;
+
+    background: #f8fbfa
+
+}
+
+.active-member-summary span,
+.active-member-summary small  {
+
+    display: block;
+
+    color: var(--muted);
+
+    line-height: 1.45
+
+}
+
+.active-member-summary span  {
+
+    font-size: 12px;
+
+    font-weight: 900;
+
+    text-transform: uppercase;
+
+    letter-spacing: .04em
+
+}
+
+.active-member-summary strong  {
+
+    display: block;
+
+    margin: 5px 0;
+
+    color: var(--primary);
+
+    font-size: 28px;
+
+    line-height: 1
+
+}
+
 .ipk-course-preview  {
 
     grid-column: 1 / -1;
@@ -3944,6 +4005,7 @@ th  {
 
   .ipk-admin-grid,
   .ipk-stats,
+  .active-member-summary,
   .ipk-course-list {
     grid-template-columns: 1fr;
   }

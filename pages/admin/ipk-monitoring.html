@@ -10,7 +10,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-title" content="SIPIL CARE">
     <link rel="stylesheet" href="../../css/style.css?v=26">
-    <link rel="stylesheet" href="../../css/admin.css?v=60">
+    <link rel="stylesheet" href="../../css/admin.css?v=61">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -176,8 +176,15 @@ Nama Anggota	2350031001	Internal	Staff"></textarea>
             <h3>Anggota Aktif</h3>
             <p class="small-text">Daftar ini menentukan status Anggota Aktif atau Anggota Biasa pada akun mahasiswa.</p>
           </div>
-          <input class="control" id="activeMemberSearch" placeholder="Cari NIM, nama, divisi, atau jabatan">
+          <div>
+            <input class="control" id="activeMemberSearch" placeholder="Cari NIM, nama, divisi, atau jabatan">
+            <select class="control" id="activeMemberDepartmentFilter">
+              <option value="All">Semua departemen</option>
+            </select>
+            <button class="action-btn danger" id="activeMemberDeleteDepartment" type="button" disabled>Hapus Departemen</button>
+          </div>
         </div>
+        <div class="active-member-summary" id="activeMemberDepartmentSummary"></div>
         <div class="table-wrap">
           <table>
             <thead>
@@ -250,7 +257,7 @@ Nama Anggota	2350031001	Internal	Staff"></textarea>
     <div class="toast" id="toast"></div>
     <script src="../../js/student-config.js?v=20"></script>
     <script src="../../js/auth.js?v=32"></script>
-    <script type="module" src="../../js/admin-panel.js?v=86"></script>
+    <script type="module" src="../../js/admin-panel.js?v=87"></script>
     <script src="../../js/pwa.js?v=2"></script>
     <script src="../../js/push-config.js?v=1"></script>
     <script type="module" src="../../js/pwa-push.js?v=5"></script>

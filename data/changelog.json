@@ -9,6 +9,11 @@
       {
         "type": "improved",
         "title": "Pemantauan IPK Anggota",
+        "description": "Daftar anggota aktif kini bisa difilter per departemen, menampilkan ringkasan jumlah anggota, dan mendukung hapus anggota per departemen."
+      },
+      {
+        "type": "improved",
+        "title": "Pemantauan IPK Anggota",
         "description": "Form IPK anggota aktif kini memakai katalog mata kuliah per semester, pilihan mata kuliah berbasis dropdown, dan pengaturan SKS global dari admin."
       }
     ]

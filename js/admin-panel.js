@@ -264,6 +264,9 @@ const activeMemberStatus = document.getElementById('activeMemberStatus');
 const activeMemberSubmit = document.getElementById('activeMemberSubmit');
 const activeMemberCancel = document.getElementById('activeMemberCancel');
 const activeMemberSearch = document.getElementById('activeMemberSearch');
+const activeMemberDepartmentFilter = document.getElementById('activeMemberDepartmentFilter');
+const activeMemberDepartmentSummary = document.getElementById('activeMemberDepartmentSummary');
+const activeMemberDeleteDepartment = document.getElementById('activeMemberDeleteDepartment');
 const activeMemberTable = document.getElementById('activeMemberTable');
 const activeMemberBulkRows = document.getElementById('activeMemberBulkRows');
 const activeMemberBulkPreviewBtn = document.getElementById('activeMemberBulkPreviewBtn');
@@ -956,6 +959,7 @@ const auditActionLabels = {
   CREATE_ACTIVE_MEMBER: 'Tambah anggota aktif',
   UPDATE_ACTIVE_MEMBER: 'Update anggota aktif',
   DELETE_ACTIVE_MEMBER: 'Hapus anggota aktif',
+  DELETE_ACTIVE_MEMBER_DEPARTMENT: 'Hapus departemen anggota aktif',
   IMPORT_ACTIVE_MEMBERS: 'Import anggota aktif',
   CREATE_GPA_RECORD: 'Tambah data IPK',
   UPDATE_GPA_RECORD: 'Update data IPK',
@@ -5084,6 +5088,66 @@ function syncIpkFilters() {
   if (cohorts.includes(current)) ipkRecordCohortFilter.value = current;
 }
 
+const activeMemberDepartment = member => String(member?.division || '').trim() || 'Belum diisi';
+
+function activeMemberDepartmentRows(department = activeMemberDepartmentFilter?.value || 'All') {
+  return activeMembers.filter(member => {
+    if (department === 'All') return true;
+    return activeMemberDepartment(member) === department;
+  });
+}
+
+function syncActiveMemberDepartmentFilter() {
+  if (!activeMemberDepartmentFilter) return;
+  const current = activeMemberDepartmentFilter.value || 'All';
+  const departments = [...new Set(activeMembers.map(activeMemberDepartment))]
+    .sort((a, b) => a.localeCompare(b, 'id-ID'));
+  activeMemberDepartmentFilter.innerHTML = '<option value="All">Semua departemen</option>'
+    + departments.map(department => `<option value="${escapeText(department)}">${escapeText(department)}</option>`).join('');
+  activeMemberDepartmentFilter.value = current === 'All' || departments.includes(current) ? current : 'All';
+}
+
+function renderActiveMemberDepartmentSummary() {
+  if (!activeMemberDepartmentSummary && !activeMemberDeleteDepartment) return;
+  const selectedDepartment = activeMemberDepartmentFilter?.value || 'All';
+  const activeRows = activeMembers.filter(member => member.status !== 'inactive');
+  const selectedRows = activeMemberDepartmentRows(selectedDepartment);
+  const selectedActive = selectedRows.filter(member => member.status !== 'inactive');
+  const departments = new Set(activeMembers.map(activeMemberDepartment));
+
+  if (activeMemberDepartmentSummary) {
+    activeMemberDepartmentSummary.innerHTML = `
+      <article>
+        <span>Total anggota</span>
+        <strong>${escapeText(activeMembers.length)}</strong>
+        <small>Semua status anggota aktif HMS</small>
+      </article>
+      <article>
+        <span>Anggota aktif</span>
+        <strong>${escapeText(activeRows.length)}</strong>
+        <small>Status aktif dan tampil di akun mahasiswa</small>
+      </article>
+      <article>
+        <span>Departemen</span>
+        <strong>${escapeText(departments.size)}</strong>
+        <small>Departemen/divisi yang terdaftar</small>
+      </article>
+      <article>
+        <span>${escapeText(selectedDepartment === 'All' ? 'Filter aktif' : selectedDepartment)}</span>
+        <strong>${escapeText(selectedDepartment === 'All' ? activeMembers.length : selectedActive.length)}</strong>
+        <small>${escapeText(selectedDepartment === 'All' ? 'Semua departemen ditampilkan' : `${selectedRows.length} data, ${selectedActive.length} aktif`)}</small>
+      </article>
+    `;
+  }
+
+  if (activeMemberDeleteDepartment) {
+    activeMemberDeleteDepartment.disabled = selectedDepartment === 'All' || !selectedRows.length;
+    activeMemberDeleteDepartment.textContent = selectedDepartment === 'All'
+      ? 'Hapus Departemen'
+      : `Hapus ${selectedDepartment}`;
+  }
+}
+
 function renderActiveMemberTable() {
   if (!activeMemberTable) return;
   if (!hasPermission('ipk_monitoring')) {
@@ -5091,10 +5155,14 @@ function renderActiveMemberTable() {
     return;
   }
 
+  syncActiveMemberDepartmentFilter();
+  renderActiveMemberDepartmentSummary();
   const q = (activeMemberSearch?.value || '').toLowerCase();
+  const selectedDepartment = activeMemberDepartmentFilter?.value || 'All';
   const rows = activeMembers
+    .filter(member => selectedDepartment === 'All' || activeMemberDepartment(member) === selectedDepartment)
     .filter(member => [member.nim, member.name, member.angkatan, member.division, member.position].join(' ').toLowerCase().includes(q))
-    .sort((a, b) => String(b.angkatan || '').localeCompare(String(a.angkatan || '')) || String(a.name || a.nim).localeCompare(String(b.name || b.nim)))
+    .sort((a, b) => activeMemberDepartment(a).localeCompare(activeMemberDepartment(b), 'id-ID') || String(b.angkatan || '').localeCompare(String(a.angkatan || '')) || String(a.name || a.nim).localeCompare(String(b.name || b.nim)))
     .map(member => {
       const latest = latestGpaForNim(member.nim);
       const cumulative = cumulativeGpa(ipkRecords.filter(record => record.nim === member.nim));
@@ -6942,6 +7010,44 @@ on(studentEditForm, 'submit', async e => {
 
 on(activeMemberNim, 'change', () => fillActiveMemberFromStudent(activeMemberNim.value));
 on(activeMemberSearch, 'input', () => renderActiveMemberTable());
+on(activeMemberDepartmentFilter, 'change', () => renderActiveMemberTable());
+on(activeMemberDeleteDepartment, 'click', async () => {
+  if (!requirePermission('ipk_monitoring', 'hapus anggota aktif per departemen')) return;
+  const department = activeMemberDepartmentFilter?.value || 'All';
+  if (department === 'All') {
+    toast('Pilih departemen terlebih dahulu.');
+    return;
+  }
+  const rows = activeMemberDepartmentRows(department);
+  if (!rows.length) {
+    toast('Tidak ada anggota pada departemen ini.');
+    return;
+  }
+  if (!confirm(`Yakin hapus ${rows.length} anggota aktif dari departemen "${department}"? Data IPK lama tidak dihapus.`)) return;
+  try {
+    activeMemberDeleteDepartment.disabled = true;
+    for (let index = 0; index < rows.length; index += 450) {
+      const batch = writeBatch(db);
+      rows.slice(index, index + 450).forEach(member => {
+        batch.delete(doc(db, ACTIVE_MEMBER_COLLECTION, member.nim));
+      });
+      await batch.commit();
+    }
+    await writeAuditLog({
+      action: 'DELETE_ACTIVE_MEMBER_DEPARTMENT',
+      targetType: 'active_member',
+      targetId: department,
+      targetTitle: department,
+      detail: `${rows.length} anggota aktif departemen ${department} dihapus dari daftar anggota aktif.`
+    });
+    toast(`${rows.length} anggota departemen ${department} berhasil dihapus.`);
+  } catch (error) {
+    console.error('Delete active member department failed:', error);
+    toast('Gagal menghapus anggota aktif per departemen.');
+  } finally {
+    renderActiveMemberTable();
+  }
+});
 on(activeMemberCancel, 'click', resetActiveMemberForm);
 on(activeMemberBulkPreviewBtn, 'click', () => {
   activeMemberBulkPreviewRows = parseActiveMemberBulkRows(activeMemberBulkRows?.value || '');
