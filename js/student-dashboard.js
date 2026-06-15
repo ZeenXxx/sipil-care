@@ -12,17 +12,19 @@ import {
 } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
 import {
   GRADE_OPTIONS,
+  coursesForSemester,
   defaultAcademicYearForSemester,
-  electiveCoursesForSemester,
   electiveOptionsForSemester,
-  repeatableCourseOptions,
-  requiredCoursesForSemester
-} from './ts-course-catalog.js?v=2';
+  repeatableCourseOptions
+} from './ts-course-catalog.js?v=3';
 
 const db = getFirestore(app);
 const SESSION_KEY = 'sipilcare_student_session';
 const BOOKMARK_KEY = 'sipilcare_student_bookmarks';
 const SESSION_TTL = 24 * 60 * 60 * 1000;
+const SITE_SETTINGS_COLLECTION = 'site_settings';
+const COURSE_CATALOG_DOC = 'course_catalog';
+let courseCatalogSettings = { sksByCode: {} };
 
 const profileTarget = document.getElementById('studentDashboardProfile');
 const summaryTarget = document.getElementById('studentDashboardSummary');
@@ -152,25 +154,32 @@ const gradeOptionsMarkup = selected => GRADE_OPTIONS.map(option => `
   <option value="${escapeText(option)}"${normalizeGrade(selected) === option ? ' selected' : ''}>${escapeText(option || 'Nilai')}</option>
 `).join('');
 
-const readStudentCatalogCourses = container => {
-  if (!container) return [];
-  return [...container.querySelectorAll('.student-grade-select')]
-    .map(select => {
-      const point = gradePoint(select.value);
-      if (point === null) return null;
-      return {
-        code: select.dataset.code || '',
-        name: select.dataset.name || '',
-        type: select.dataset.type || '',
-        sks: Number(select.dataset.sks || 0),
-        grade: normalizeGrade(select.value),
-        point
-      };
-    })
-    .filter(course => course && course.name && course.sks > 0);
+const courseIdentity = course => `${String(course?.code || '').toLowerCase()} ${String(course?.name || '').toLowerCase()}`.trim();
+const courseCatalogKey = course => [
+  course?.semester || '',
+  course?.code || '',
+  course?.name || ''
+].map(value => String(value || '').trim()).join('|');
+
+const courseSksValue = course => {
+  const key = courseCatalogKey(course);
+  const override = key ? Number(courseCatalogSettings?.sksByCode?.[key]) : NaN;
+  if (Number.isFinite(override) && override > 0) return override;
+  return Number(course?.sks || 0);
 };
 
-const courseIdentity = course => `${String(course?.code || '').toLowerCase()} ${String(course?.name || '').toLowerCase()}`.trim();
+const withGlobalCourseSks = course => ({
+  ...course,
+  sks: courseSksValue(course)
+});
+
+const studentSemesterCatalogCourses = semester => coursesForSemester(semester).map(withGlobalCourseSks);
+const studentSemesterElectiveOptions = semester => electiveOptionsForSemester(semester).map(withGlobalCourseSks);
+const studentSemesterCatalogCoverage = semester => [
+  ...studentSemesterCatalogCourses(semester),
+  ...studentSemesterElectiveOptions(semester)
+];
+
 const studentAdditionalKey = course => [course?.code || '', course?.name || '', course?.sks || ''].join('|');
 const studentOptionValue = course => [course.code, course.name, course.sks, course.type].map(value => String(value || '')).join('::');
 const parseStudentCourseOption = value => {
@@ -178,12 +187,42 @@ const parseStudentCourseOption = value => {
   return { code, name, sks: Number(sks || 0), type };
 };
 
+const readStudentCatalogCourses = container => {
+  if (!container) return [];
+  return [...container.querySelectorAll('.student-grade-select')]
+    .map(select => {
+      const point = gradePoint(select.value);
+      if (point === null) return null;
+      const row = select.closest('.student-course-row');
+      const electiveChoice = row?.querySelector('[data-student-elective-choice]');
+      const selectedCourse = electiveChoice
+        ? (electiveChoice.value ? parseStudentCourseOption(electiveChoice.value) : null)
+        : {
+          code: select.dataset.code || '',
+          name: select.dataset.name || '',
+          type: select.dataset.type || '',
+          sks: Number(row?.querySelector('[data-student-sks]')?.textContent || 0)
+        };
+      if (!selectedCourse) return null;
+      return {
+        code: selectedCourse.code || '',
+        name: selectedCourse.name || '',
+        type: selectedCourse.type || '',
+        sks: Number(selectedCourse.sks || 0),
+        grade: normalizeGrade(select.value),
+        point
+      };
+    })
+    .filter(course => course && course.name && course.sks > 0);
+};
+
 const studentAdditionalOptions = semester => {
   const selectedSemester = Number(semester || 0);
-  const electiveOptions = electiveOptionsForSemester(selectedSemester).map(course => ({ ...course, group: 'Mata kuliah pilihan' }));
-  const repeatOptions = repeatableCourseOptions().filter(course => Number(course.semester) !== selectedSemester);
+  const repeatOptions = repeatableCourseOptions()
+    .map(withGlobalCourseSks)
+    .filter(course => Number(course.semester) !== selectedSemester);
   const unique = new Map();
-  [...electiveOptions, ...repeatOptions].forEach(course => {
+  repeatOptions.forEach(course => {
     const key = studentAdditionalKey(course);
     if (!unique.has(key)) unique.set(key, course);
   });
@@ -276,8 +315,8 @@ const syncStudentAdditionalRow = row => {
 
 const renderStudentCourseCatalog = (container, semester, existingCourses = []) => {
   if (!container) return;
-  const requiredCourses = requiredCoursesForSemester(semester);
-  const electiveCourses = electiveCoursesForSemester(semester);
+  const catalogCourses = studentSemesterCatalogCourses(semester);
+  const electiveOptions = studentSemesterElectiveOptions(semester);
   const existingMap = new Map();
   (Array.isArray(existingCourses) ? existingCourses : []).forEach(course => {
     [String(course.code || '').toLowerCase(), String(course.name || '').toLowerCase(), courseIdentity(course)]
@@ -290,7 +329,7 @@ const renderStudentCourseCatalog = (container, semester, existingCourses = []) =
     container.innerHTML = '<div class="student-course-empty">Pilih semester untuk menampilkan mata kuliah otomatis.</div>';
     return;
   }
-  if (!requiredCourses.length && !electiveCourses.length) {
+  if (!catalogCourses.length) {
     container.innerHTML = '<div class="student-course-empty">Katalog semester ini belum tersedia. Isi mata kuliah pilihan/tambahan secara manual.</div>';
     return;
   }
@@ -298,9 +337,9 @@ const renderStudentCourseCatalog = (container, semester, existingCourses = []) =
     <div class="student-course-catalog-head">
       <div>
         <strong>Semester ${escapeText(semester)}</strong>
-        <span>Pilih nilai HM, lalu AM, bobot, total SKS, dan IPS dihitung otomatis.</span>
+        <span>Pilih nilai HM. Baris Pilihan memakai dropdown mata kuliah pilihan, SKS mengikuti pengaturan global admin.</span>
       </div>
-      <span>${escapeText(requiredCourses.reduce((sum, course) => sum + Number(course.sks || 0), 0))} SKS wajib</span>
+      <span>${escapeText(catalogCourses.reduce((sum, course) => sum + Number(course.sks || 0), 0))} SKS default</span>
     </div>
     <div class="student-course-table-wrap">
       <table class="student-course-table">
@@ -315,24 +354,46 @@ const renderStudentCourseCatalog = (container, semester, existingCourses = []) =
           </tr>
         </thead>
         <tbody>
-      ${requiredCourses.map((course, index) => {
-        const existing = existingMap.get(String(course.code || '').toLowerCase())
-          || existingMap.get(String(course.name || '').toLowerCase())
-          || existingMap.get(courseIdentity(course));
+      ${catalogCourses.map((course, index) => {
+        const optionMatch = course.elective
+          ? electiveOptions.find(option => existingMap.get(String(option.code || '').toLowerCase())
+            || existingMap.get(String(option.name || '').toLowerCase())
+            || existingMap.get(courseIdentity(option)))
+          : null;
+        const existing = optionMatch
+          ? (existingMap.get(String(optionMatch.code || '').toLowerCase())
+            || existingMap.get(String(optionMatch.name || '').toLowerCase())
+            || existingMap.get(courseIdentity(optionMatch)))
+          : (existingMap.get(String(course.code || '').toLowerCase())
+            || existingMap.get(String(course.name || '').toLowerCase())
+            || existingMap.get(courseIdentity(course)));
+        const rowCourse = optionMatch || course;
+        const selectedElectiveValue = optionMatch ? studentOptionValue(optionMatch) : '';
         const selectedGrade = normalizeGrade(existing?.grade);
         const point = gradePoint(selectedGrade);
-        const sks = Number(course.sks || 0);
+        const sks = Number(rowCourse.sks || existing?.sks || 0);
         return `
-          <tr class="student-course-row">
+          <tr class="student-course-row" data-catalog-elective="${course.elective ? '1' : '0'}">
             <td>${escapeText(index + 1)}</td>
             <td>
-              <b>${escapeText(course.name)}</b>
-              <small>${escapeText(course.code)} &middot; ${escapeText(course.type)} &middot; ${escapeText(course.sks)} SKS</small>
+              ${course.elective ? `
+                <select class="control student-elective-choice" data-student-elective-choice aria-label="${escapeText(course.name)}">
+                  <option value="">${escapeText(course.name)}</option>
+                  ${electiveOptions.map(option => {
+                    const value = studentOptionValue(option);
+                    return `<option value="${escapeText(value)}"${selectedElectiveValue === value ? ' selected' : ''}>${escapeText(option.name)}</option>`;
+                  }).join('')}
+                </select>
+                <small>${escapeText(course.code)} &middot; Mata kuliah pilihan</small>
+              ` : `
+                <b>${escapeText(course.name)}</b>
+                <small>${escapeText(course.code)} &middot; ${escapeText(course.type)}</small>
+              `}
             </td>
-            <td>${escapeText(course.sks)}</td>
+            <td data-student-sks>${sks ? escapeText(sks) : '-'}</td>
             <td data-student-am>${point === null ? '-' : escapeText(point)}</td>
             <td>
-            <select class="control student-grade-select" data-code="${escapeText(course.code)}" data-name="${escapeText(course.name)}" data-type="${escapeText(course.type)}" data-sks="${escapeText(course.sks)}">
+            <select class="control student-grade-select" data-code="${escapeText(rowCourse.code)}" data-name="${escapeText(rowCourse.name)}" data-type="${escapeText(rowCourse.type)}">
               ${gradeOptionsMarkup(existing?.grade)}
             </select>
             </td>
@@ -353,12 +414,6 @@ const renderStudentCourseCatalog = (container, semester, existingCourses = []) =
         </tfoot>
       </table>
     </div>
-    ${electiveCourses.length ? `
-      <div class="student-elective-note">
-        <b>Mata kuliah pilihan:</b>
-        <span>${electiveCourses.map(course => `${escapeText(course.name)} (${escapeText(course.sks)} SKS)`).join(', ')} tersedia di bagian pilihan/SP/mengulang.</span>
-      </div>
-    ` : ''}
   `;
 };
 
@@ -366,13 +421,17 @@ const updateStudentCourseTableSummary = (container, ipk = null, totalSks = 0) =>
   if (!container) return;
   [...container.querySelectorAll('.student-grade-select')].forEach(select => {
     const row = select.closest('.student-course-row');
+    const electiveChoice = row?.querySelector('[data-student-elective-choice]');
+    const selectedCourse = electiveChoice?.value ? parseStudentCourseOption(electiveChoice.value) : null;
     const point = gradePoint(select.value);
-    const sks = Number(select.dataset.sks || 0);
+    const sks = Number(selectedCourse?.sks || row?.querySelector('[data-student-sks]')?.textContent || 0);
     const weight = point === null ? null : Math.round(point * sks * 100) / 100;
     const amTarget = row?.querySelector('[data-student-am]');
+    const sksTarget = row?.querySelector('[data-student-sks]');
     const weightTarget = row?.querySelector('[data-student-bobot]');
+    if (sksTarget && electiveChoice) sksTarget.textContent = selectedCourse?.sks ? String(selectedCourse.sks) : '-';
     if (amTarget) amTarget.textContent = point === null ? '-' : String(point);
-    if (weightTarget) weightTarget.textContent = weight === null ? '-' : String(weight);
+    if (weightTarget) weightTarget.textContent = weight === null || !sks ? '-' : String(weight);
   });
   const totalTarget = container.querySelector('[data-student-total-sks]');
   const ipsTarget = container.querySelector('[data-student-ips]');
@@ -476,6 +535,10 @@ function renderProfile(session, bookmarks) {
 async function loadMembership(session) {
   if (!membershipTarget) return;
   try {
+    const catalogSnapshot = await getDoc(doc(db, SITE_SETTINGS_COLLECTION, COURSE_CATALOG_DOC));
+    courseCatalogSettings = catalogSnapshot.exists()
+      ? { sksByCode: catalogSnapshot.data().sksByCode || {} }
+      : { sksByCode: {} };
     const memberSnapshot = await getDoc(doc(db, 'hms_active_members', session.nim));
     const member = memberSnapshot.exists() ? memberSnapshot.data() : null;
     const isActiveMember = Boolean(member && member.status !== 'inactive');
@@ -585,7 +648,7 @@ function renderMembership(session, member, records) {
     const semester = semesterInput?.value || '';
     coursesInput.hidden = !isCourseMode || !semester;
     if (!isCourseMode || !semester) return;
-    const catalog = requiredCoursesForSemester(semester);
+    const catalog = studentSemesterCatalogCoverage(semester);
     const sourceRows = existingCourses === null ? readStudentAdditionalCourses(coursesInput) : existingCourses;
     const rows = (Array.isArray(sourceRows) ? sourceRows : []).filter(course => !catalog.some(item => (
       (course.code && String(course.code).toLowerCase() === String(item.code).toLowerCase())
@@ -609,8 +672,15 @@ function renderMembership(session, member, records) {
     const isCourseMode = modeInput?.value === 'courses';
     if (courseCatalog) courseCatalog.hidden = !isCourseMode;
     if (!isCourseMode) return;
-    renderStudentCourseCatalog(courseCatalog, semesterInput?.value);
-    renderAdditionalRows();
+    const selectedSemester = semesterInput?.value || '';
+    const existingRecord = [...records]
+      .sort((a, b) => String(b.updatedAt || b.createdAt || '').localeCompare(String(a.updatedAt || a.createdAt || '')))
+      .find(record => String(record.semester || '') === String(selectedSemester));
+    const existingCourses = existingRecord?.courses || [];
+    renderStudentCourseCatalog(courseCatalog, selectedSemester, existingCourses);
+    renderAdditionalRows(existingCourses);
+    const noteInput = document.getElementById('studentGpaNote');
+    if (noteInput) noteInput.value = existingRecord?.note || '';
   };
   const syncAcademicYear = () => {
     if (!academicYearInput) return;

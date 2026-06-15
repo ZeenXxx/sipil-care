@@ -388,9 +388,14 @@ html.dark .legend-label      { color: #8ab8a0; }
   background: var(--soft, #eef6f2);
 }
 
-.student-grade-select {
+.student-grade-select,
+.student-elective-choice {
   width: 98px;
   min-height: 40px;
+}
+
+.student-elective-choice {
+  width: min(100%, 360px);
 }
 
 .student-elective-note {

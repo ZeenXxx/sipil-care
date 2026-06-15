@@ -3,8 +3,8 @@ export const GRADE_OPTIONS = ['', 'A', 'AB', 'B', 'BC', 'C', 'D', 'E'];
 export const TS_COURSE_CATALOG = [
   { semester: 1, code: 'WU611011', name: 'Latihan Dasar Kedisiplinan dan Kepemimpinan', type: 'K', sks: 2 },
   { semester: 1, code: 'TS611011', name: 'Bahasa Inggris', type: 'K', sks: 2 },
-  { semester: 1, code: 'TS611012', name: 'Matematika 1', type: 'K', sks: 3 },
-  { semester: 1, code: 'TS611013', name: 'Fisika 1', type: 'K', sks: 3 },
+  { semester: 1, code: 'TS611012', name: 'Matematika 1', type: 'K', sks: 4 },
+  { semester: 1, code: 'TS611013', name: 'Fisika 1', type: 'K', sks: 4 },
   { semester: 1, code: 'TS611014', name: 'Kimia', type: 'K', sks: 3 },
   { semester: 1, code: 'TS613011', name: 'Pengantar Rekayasa Sipil', type: 'K', sks: 2 },
   { semester: 1, code: 'TS613012', name: 'Computer Aided Design (CAD)', type: 'S', sks: 2 },
@@ -18,6 +18,7 @@ export const TS_COURSE_CATALOG = [
   { semester: 2, code: 'TS621024', name: 'Teori Kekuatan Bahan', type: 'K', sks: 2 },
   { semester: 2, code: 'TS621025', name: 'Sistem Transportasi', type: 'K', sks: 2 },
   { semester: 2, code: 'TS621026', name: 'Hidrologi', type: 'K', sks: 2 },
+  { semester: 2, code: 'TS623021', name: 'Praktik Fisika', type: 'P', sks: 1 },
   { semester: 2, code: 'TS623022', name: 'Praktik Pemetaan Lahan Terapan', type: 'P', sks: 1 },
 
   { semester: 3, code: 'TS611031', name: 'Matematika 3', type: 'K', sks: 3 },
@@ -51,9 +52,8 @@ export const TS_COURSE_CATALOG = [
   { semester: 5, code: 'TS611055', name: 'Perancangan Sistem Pengairan', type: 'K', sks: 2 },
   { semester: 5, code: 'TS611056', name: 'Manajemen Rekayasa Konstruksi', type: 'K', sks: 2 },
   { semester: 5, code: 'TS611057', name: 'Ekonomi Rekayasa', type: 'K', sks: 2 },
-  { semester: 5, code: 'TS612XXX', name: 'Pilihan 1', type: 'K', sks: 2, elective: true },
   { semester: 5, code: 'TS613051', name: 'Aplikasi Ketekniksipilan 2', type: 'S', sks: 2 },
-  { semester: 5, code: 'TS613052', name: 'Pengantar Building Information Modeling (BIM)', type: 'S', sks: 2 },
+  { semester: 5, code: 'TS612XXX', name: 'Pilihan 1', type: 'K', sks: 2, elective: true },
 
   { semester: 6, code: 'TS603061', name: 'Praktik Kerja', type: 'P', sks: 2 },
   { semester: 6, code: 'TS621061', name: 'Metode Penelitian', type: 'K', sks: 2 },
@@ -63,6 +63,7 @@ export const TS_COURSE_CATALOG = [
   { semester: 6, code: 'TS621065', name: 'Pengelolaan Sumber Daya Air dan Lahan', type: 'K', sks: 2 },
   { semester: 6, code: 'TS621066', name: 'Perancangan Bangunan Air', type: 'K', sks: 2 },
   { semester: 6, code: 'TS621067', name: 'Administrasi Proyek', type: 'K', sks: 2 },
+  { semester: 6, code: 'TS613052', name: 'Pengantar Building Information Modeling (BIM)', type: 'S', sks: 2 },
   { semester: 6, code: 'TS622XXX', name: 'Pilihan 2', type: 'K', sks: 2, elective: true },
 
   { semester: 7, code: 'WN611071', name: 'Pendidikan Agama', type: 'K', sks: 2 },

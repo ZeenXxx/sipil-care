@@ -2080,11 +2080,28 @@ body.admin-page [hidden]  {
 
 }
 
-.ipk-sks-input  {
+.ipk-elective-choice,
+.course-sks-control  {
 
-    width: 86px;
+    min-height: 40px
 
-    min-height: 40px;
+}
+
+.ipk-elective-choice  {
+
+    width: min(100%, 360px)
+
+}
+
+.course-sks-table-wrap  {
+
+    max-height: 360px
+
+}
+
+.course-sks-control  {
+
+    width: 92px;
 
     margin: 0 auto;
 
@@ -3945,8 +3962,8 @@ th  {
     width: 104px;
   }
 
-  .ipk-sks-input {
-    width: 86px;
+  .course-sks-control {
+    width: 92px;
   }
 
   .ipk-elective-builder-head,
