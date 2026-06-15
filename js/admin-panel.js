@@ -41,8 +41,10 @@ import {
   GRADE_OPTIONS,
   defaultAcademicYearForSemester,
   electiveCoursesForSemester,
+  electiveOptionsForSemester,
+  repeatableCourseOptions,
   requiredCoursesForSemester
-} from './ts-course-catalog.js?v=1';
+} from './ts-course-catalog.js?v=2';
 
 if (window.SIPILCARE_ADMIN_READY) await window.SIPILCARE_ADMIN_READY;
 
@@ -277,7 +279,6 @@ const ipkSemester = document.getElementById('ipkSemester');
 const ipkAcademicYear = document.getElementById('ipkAcademicYear');
 const ipkEntryMode = document.getElementById('ipkEntryMode');
 const ipkValue = document.getElementById('ipkValue');
-const ipkCourseRows = document.getElementById('ipkCourseRows');
 const ipkCourseCatalog = document.getElementById('ipkCourseCatalog');
 const ipkElectiveRows = document.getElementById('ipkElectiveRows');
 const ipkCoursePreview = document.getElementById('ipkCoursePreview');
@@ -1406,6 +1407,143 @@ const catalogCourseMatch = (course, catalog) => {
   return (code && code === normalizeText(catalog.code || '')) || (name && name === normalizeText(catalog.name || ''));
 };
 
+const additionalCourseKey = course => [
+  course?.code || '',
+  course?.name || '',
+  course?.sks || ''
+].join('|');
+
+const optionValue = course => [course.code, course.name, course.sks, course.type].map(value => String(value || '')).join('::');
+
+const parseCourseOptionValue = value => {
+  const [code = '', name = '', sks = '', type = 'K'] = String(value || '').split('::');
+  return {
+    code,
+    name,
+    sks: Number(sks || 0),
+    type
+  };
+};
+
+function additionalCourseOptions(semester) {
+  const selectedSemester = Number(semester || 0);
+  const electiveOptions = electiveOptionsForSemester(selectedSemester).map(course => ({ ...course, group: 'Mata kuliah pilihan' }));
+  const repeatOptions = repeatableCourseOptions().filter(course => Number(course.semester) !== selectedSemester);
+  const unique = new Map();
+  [...electiveOptions, ...repeatOptions].forEach(course => {
+    const key = additionalCourseKey(course);
+    if (!unique.has(key)) unique.set(key, course);
+  });
+  return [...unique.values()];
+}
+
+function groupedAdditionalOptionsMarkup(selectedValue, semester) {
+  const options = additionalCourseOptions(semester);
+  const groups = options.reduce((map, course) => {
+    const group = course.group || 'Mata kuliah lainnya';
+    if (!map.has(group)) map.set(group, []);
+    map.get(group).push(course);
+    return map;
+  }, new Map());
+  const renderedGroups = [...groups.entries()].map(([group, courses]) => `
+    <optgroup label="${escapeText(group)}">
+      ${courses.map(course => {
+        const value = optionValue(course);
+        return `<option value="${escapeText(value)}"${selectedValue === value ? ' selected' : ''}>${escapeText(course.code)} - ${escapeText(course.name)} (${escapeText(course.sks)} SKS)</option>`;
+      }).join('')}
+    </optgroup>
+  `).join('');
+  return `<option value="">Pilih mata kuliah</option>${renderedGroups}<option value="custom"${selectedValue === 'custom' ? ' selected' : ''}>Lainnya / input manual</option>`;
+}
+
+function electiveRowMarkup(course = {}, index = 0) {
+  const matchedOption = additionalCourseOptions(ipkSemester?.value).find(option => catalogCourseMatch(course, option));
+  const selectedValue = matchedOption ? optionValue(matchedOption) : course.name ? 'custom' : '';
+  const useCustom = selectedValue === 'custom';
+  const sks = Number(course.sks || matchedOption?.sks || 2);
+  return `
+    <div class="ipk-elective-row" data-elective-index="${escapeText(index)}">
+      <select class="control ipk-elective-course" data-elective-course>
+        ${groupedAdditionalOptionsMarkup(selectedValue, ipkSemester?.value)}
+      </select>
+      <input class="control ipk-elective-custom" data-elective-custom placeholder="Nama mata kuliah" value="${escapeText(useCustom ? course.name || '' : '')}"${useCustom ? '' : ' hidden'}>
+      <input class="control ipk-elective-sks" data-elective-sks type="number" min="1" max="6" step="1" value="${escapeText(sks || 2)}" aria-label="SKS">
+      <select class="control ipk-elective-grade" data-elective-grade>
+        ${gradeOptionsMarkup(course.grade)}
+      </select>
+      <button class="action-btn danger" data-remove-elective type="button">Hapus</button>
+    </div>
+  `;
+}
+
+function renderIpkElectiveRows(existingCourses = null) {
+  if (!ipkElectiveRows) return;
+  const isCourseMode = ipkEntryMode?.value === 'courses';
+  ipkElectiveRows.hidden = !isCourseMode;
+  if (!isCourseMode) return;
+  const currentRows = existingCourses === null ? readElectiveCourseRows() : existingCourses;
+  const semester = Number(ipkSemester?.value || 0);
+  const catalog = requiredCoursesForSemester(semester);
+  const rows = (Array.isArray(currentRows) ? currentRows : [])
+    .filter(course => !catalog.some(item => catalogCourseMatch(course, item)));
+  const displayRows = rows.length ? rows : [{}];
+  ipkElectiveRows.innerHTML = `
+    <div class="ipk-elective-builder-head">
+      <div>
+        <strong>Pilihan, SP, atau mata kuliah mengulang</strong>
+        <span>Pilih dari dropdown, isi SKS bila perlu, lalu pilih nilai.</span>
+      </div>
+      <button class="action-btn" data-add-elective type="button">Tambah baris</button>
+    </div>
+    <div class="ipk-elective-rows">
+      ${displayRows.map((course, index) => electiveRowMarkup(course, index)).join('')}
+    </div>
+  `;
+}
+
+function syncElectiveRow(row) {
+  if (!row) return;
+  const courseSelect = row.querySelector('[data-elective-course]');
+  const customInput = row.querySelector('[data-elective-custom]');
+  const sksInput = row.querySelector('[data-elective-sks]');
+  const selected = courseSelect?.value || '';
+  const useCustom = selected === 'custom';
+  if (customInput) {
+    customInput.hidden = !useCustom;
+    if (!useCustom) customInput.value = '';
+  }
+  if (selected && !useCustom && sksInput) {
+    const course = parseCourseOptionValue(selected);
+    if (course.sks) sksInput.value = course.sks;
+  }
+}
+
+function readElectiveCourseRows() {
+  if (!ipkElectiveRows) return [];
+  return [...ipkElectiveRows.querySelectorAll('.ipk-elective-row')]
+    .map(row => {
+      const selectValue = row.querySelector('[data-elective-course]')?.value || '';
+      const customName = row.querySelector('[data-elective-custom]')?.value || '';
+      const sks = Number(row.querySelector('[data-elective-sks]')?.value || 0);
+      const grade = row.querySelector('[data-elective-grade]')?.value || '';
+      const point = gradePoint(grade);
+      if (!selectValue || !sks || point === null) return null;
+      const selected = selectValue === 'custom'
+        ? { code: '', name: customName.trim(), sks, type: 'K' }
+        : parseCourseOptionValue(selectValue);
+      return {
+        code: selected.code || '',
+        name: selected.name || customName.trim(),
+        type: selected.type || 'K',
+        sks,
+        grade: normalizeGrade(grade),
+        point,
+        extra: true
+      };
+    })
+    .filter(course => course && course.name && course.sks > 0);
+}
+
 function renderIpkCourseCatalog(existingCourses = null) {
   if (!ipkCourseCatalog) return;
   const semester = Number(ipkSemester?.value || 0);
@@ -1414,7 +1552,7 @@ function renderIpkCourseCatalog(existingCourses = null) {
   const selectedByKey = existingCourseByCatalog(existingCourses || readCatalogCourseRows());
   const isCourseMode = ipkEntryMode?.value === 'courses';
   ipkCourseCatalog.hidden = !isCourseMode;
-  if (ipkElectiveRows) ipkElectiveRows.hidden = !isCourseMode;
+  renderIpkElectiveRows(existingCourses);
   if (!isCourseMode) return;
   if (!semester) {
     ipkCourseCatalog.innerHTML = '<div class="ipk-course-empty">Pilih semester untuk menampilkan mata kuliah otomatis.</div>';
@@ -1453,7 +1591,7 @@ function renderIpkCourseCatalog(existingCourses = null) {
     ${electiveCourses.length ? `
       <div class="ipk-elective-note">
         <b>Mata kuliah pilihan semester ini:</b>
-        <span>${electiveCourses.map(course => `${escapeText(course.name)} (${escapeText(course.sks)} SKS)`).join(', ')}. Isi nama pilihan sebenarnya di kolom pilihan/tambahan.</span>
+        <span>${electiveCourses.map(course => `${escapeText(course.name)} (${escapeText(course.sks)} SKS)`).join(', ')} tersedia di bagian pilihan/SP/mengulang.</span>
       </div>
     ` : ''}
   `;
@@ -1478,29 +1616,14 @@ function readCatalogCourseRows() {
 }
 
 function readIpkCourses() {
-  const manualRows = [
-    ipkCourseRows?.value || '',
-    ipkElectiveRows?.value || ''
-  ].filter(Boolean).join('\n');
   return [
     ...readCatalogCourseRows(),
-    ...parseCourseRows(manualRows)
+    ...readElectiveCourseRows()
   ];
 }
 
 function fillIpkManualCourses(courses = []) {
-  if (!ipkElectiveRows) {
-    if (ipkCourseRows) ipkCourseRows.value = Array.isArray(courses)
-      ? courses.map(course => [course.name, course.sks, course.grade].filter(Boolean).join('\t')).join('\n')
-      : '';
-    return;
-  }
-  const semester = Number(ipkSemester?.value || 0);
-  const catalog = requiredCoursesForSemester(semester);
-  const manualCourses = (Array.isArray(courses) ? courses : []).filter(course => !catalog.some(item => catalogCourseMatch(course, item)));
-  ipkElectiveRows.value = manualCourses
-    .map(course => [course.name, course.sks, course.grade].filter(Boolean).join('\t'))
-    .join('\n');
+  renderIpkElectiveRows(courses);
 }
 
 function syncIpkAcademicYear() {
@@ -6819,8 +6942,28 @@ on(ipkEntryMode, 'change', () => {
   renderIpkCourseCatalog();
   renderCoursePreview();
 });
-on(ipkCourseRows, 'input', renderCoursePreview);
 on(ipkElectiveRows, 'input', renderCoursePreview);
+on(ipkElectiveRows, 'change', e => {
+  const row = e.target.closest?.('.ipk-elective-row');
+  if (e.target.matches?.('[data-elective-course]')) syncElectiveRow(row);
+  renderCoursePreview();
+});
+on(ipkElectiveRows, 'click', e => {
+  const addButton = e.target.closest?.('[data-add-elective]');
+  const removeButton = e.target.closest?.('[data-remove-elective]');
+  if (addButton) {
+    const rows = ipkElectiveRows.querySelector('.ipk-elective-rows');
+    if (rows) rows.insertAdjacentHTML('beforeend', electiveRowMarkup({}, rows.children.length));
+    renderCoursePreview();
+    return;
+  }
+  if (removeButton) {
+    const row = removeButton.closest('.ipk-elective-row');
+    row?.remove();
+    if (!ipkElectiveRows.querySelector('.ipk-elective-row')) renderIpkElectiveRows([]);
+    renderCoursePreview();
+  }
+});
 on(ipkCourseCatalog, 'change', renderCoursePreview);
 on(ipkRecordSearch, 'input', () => renderIpkRecordTable());
 on(ipkRecordCohortFilter, 'change', () => renderIpkRecordTable());
@@ -6913,7 +7056,6 @@ on(ipkRecordTable, 'click', async e => {
     ipkAcademicYear.value = record.academicYear || '';
     if (ipkEntryMode) ipkEntryMode.value = record.entryMode || (Array.isArray(record.courses) && record.courses.length ? 'courses' : 'gpa');
     ipkValue.value = recordGpaValue(record) ?? '';
-    if (ipkCourseRows) ipkCourseRows.value = '';
     renderIpkCourseCatalog(record.courses || []);
     fillIpkManualCourses(record.courses || []);
     ipkNote.value = record.note || '';

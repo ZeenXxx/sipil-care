@@ -312,6 +312,7 @@ html.dark .legend-label      { color: #8ab8a0; }
 }
 
 .student-course-catalog[hidden],
+.student-elective-builder[hidden],
 .student-gpa-form textarea[hidden] {
   display: none;
 }
@@ -369,6 +370,58 @@ html.dark .legend-label      { color: #8ab8a0; }
   padding: 12px;
   border-radius: 10px;
   background: rgba(255,255,255,.7);
+}
+
+.student-elective-builder {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--line, #d8e5de);
+  border-radius: 10px;
+  background: rgba(255,255,255,.78);
+}
+
+.student-elective-builder-head,
+.student-elective-row {
+  display: grid;
+  gap: 10px;
+  align-items: center;
+}
+
+.student-elective-builder-head {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.student-elective-builder-head strong,
+.student-elective-builder-head span {
+  display: block;
+}
+
+.student-elective-builder-head strong {
+  color: var(--primary, #0f4d3a);
+}
+
+.student-elective-builder-head span {
+  margin-top: 4px;
+  color: var(--muted, #62736d);
+}
+
+.student-elective-rows {
+  display: grid;
+  gap: 10px;
+}
+
+.student-elective-row {
+  grid-template-columns: minmax(180px, 1.4fr) minmax(150px, 1fr) 86px 104px auto;
+  padding: 10px;
+  border: 1px solid var(--line, #d8e5de);
+  border-radius: 10px;
+  background: var(--soft, #eef6f2);
+}
+
+.student-elective-custom[hidden] {
+  display: none;
 }
 
 .student-gpa-form .btn {
@@ -495,6 +548,11 @@ html.dark .legend-label      { color: #8ab8a0; }
   .student-grade-select {
     width: 100%;
     flex-basis: auto;
+  }
+
+  .student-elective-builder-head,
+  .student-elective-row {
+    grid-template-columns: 1fr;
   }
 
   .student-dashboard-profile { position: static; }

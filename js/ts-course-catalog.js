@@ -77,6 +77,29 @@ export const TS_COURSE_CATALOG = [
   { semester: 8, code: 'TS622XXX', name: 'Pilihan 4', type: 'K', sks: 2, elective: true }
 ];
 
+export const TS_ELECTIVE_OPTIONS = [
+  { semester: 5, code: 'TS612051', name: 'Struktur Beton Prategang', type: 'K', sks: 2 },
+  { semester: 5, code: 'TS612052', name: 'Studi Pengembangan Wilayah', type: 'K', sks: 2 },
+  { semester: 5, code: 'TS612053', name: 'Geoteknik Lanjut', type: 'K', sks: 2 },
+  { semester: 5, code: 'TS612054', name: 'Mitigasi Bencana Hidrometeorologis', type: 'K', sks: 2 },
+  { semester: 5, code: 'TS612055', name: 'Hukum Kontrak Konstruksi', type: 'K', sks: 2 },
+  { semester: 6, code: 'TS622061', name: 'Struktur Kayu', type: 'K', sks: 2 },
+  { semester: 6, code: 'TS622062', name: 'Rekayasa Jalan Rel', type: 'K', sks: 2 },
+  { semester: 6, code: 'TS622063', name: 'Geologi Teknik', type: 'K', sks: 2 },
+  { semester: 6, code: 'TS622064', name: 'Angkutan Sedimen', type: 'K', sks: 2 },
+  { semester: 6, code: 'TS622065', name: 'Penjadwalan Proyek', type: 'K', sks: 2 },
+  { semester: 7, code: 'TS612071', name: 'Struktur Baja Lanjut', type: 'K', sks: 3 },
+  { semester: 7, code: 'TS612072', name: 'Pemodelan Transportasi', type: 'K', sks: 3 },
+  { semester: 7, code: 'TS612073', name: 'Dinamika Tanah dan Fondasi Mesin', type: 'K', sks: 3 },
+  { semester: 7, code: 'TS612074', name: 'Pemodelan Hidraulik', type: 'K', sks: 3 },
+  { semester: 7, code: 'TS612075', name: 'Analisis Sistem dan Pengambilan Keputusan', type: 'K', sks: 3 },
+  { semester: 8, code: 'TS622081', name: 'Struktur Beton Lanjut', type: 'K', sks: 2 },
+  { semester: 8, code: 'TS622082', name: 'Keselamatan Jalan Raya', type: 'K', sks: 2 },
+  { semester: 8, code: 'TS622083', name: 'Mekanika Batuan', type: 'K', sks: 2 },
+  { semester: 8, code: 'TS622084', name: 'Hidro Informatika', type: 'K', sks: 2 },
+  { semester: 8, code: 'TS622085', name: 'Rekayasa Nilai Proyek', type: 'K', sks: 2 }
+];
+
 export const coursesForSemester = semester => TS_COURSE_CATALOG
   .filter(course => Number(course.semester) === Number(semester));
 
@@ -85,6 +108,13 @@ export const requiredCoursesForSemester = semester => coursesForSemester(semeste
 
 export const electiveCoursesForSemester = semester => coursesForSemester(semester)
   .filter(course => course.elective);
+
+export const electiveOptionsForSemester = semester => TS_ELECTIVE_OPTIONS
+  .filter(course => Number(course.semester) === Number(semester));
+
+export const repeatableCourseOptions = () => TS_COURSE_CATALOG
+  .filter(course => !course.elective)
+  .map(course => ({ ...course, group: `Semester ${course.semester}` }));
 
 export const defaultAcademicYearForSemester = (cohort, semester) => {
   const cohortYear = Number(String(cohort || '').match(/\d{4}/)?.[0] || 0);

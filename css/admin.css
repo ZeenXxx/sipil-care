@@ -1949,6 +1949,7 @@ body.admin-page [hidden]  {
 }
 
 .ipk-course-catalog[hidden],
+.ipk-elective-builder[hidden],
 .ipk-form-grid textarea[hidden]  {
 
     display: none
@@ -2040,6 +2041,90 @@ body.admin-page [hidden]  {
     border-radius: 8px;
 
     background: #eef6f2
+
+}
+
+.ipk-elective-builder  {
+
+    grid-column: 1 / -1;
+
+    display: grid;
+
+    gap: 12px;
+
+    padding: 14px;
+
+    border: 1px solid var(--line);
+
+    border-radius: 8px;
+
+    background: #fff
+
+}
+
+.ipk-elective-builder-head,
+.ipk-elective-row  {
+
+    display: grid;
+
+    gap: 10px;
+
+    align-items: center
+
+}
+
+.ipk-elective-builder-head  {
+
+    grid-template-columns: minmax(0, 1fr) auto
+
+}
+
+.ipk-elective-builder-head strong,
+.ipk-elective-builder-head span  {
+
+    display: block
+
+}
+
+.ipk-elective-builder-head strong  {
+
+    color: var(--primary)
+
+}
+
+.ipk-elective-builder-head span  {
+
+    margin-top: 4px;
+
+    color: var(--muted)
+
+}
+
+.ipk-elective-rows  {
+
+    display: grid;
+
+    gap: 10px
+
+}
+
+.ipk-elective-row  {
+
+    grid-template-columns: minmax(180px, 1.4fr) minmax(150px, 1fr) 88px 110px auto;
+
+    padding: 10px;
+
+    border: 1px solid var(--line);
+
+    border-radius: 8px;
+
+    background: #f8fbfa
+
+}
+
+.ipk-elective-custom[hidden]  {
+
+    display: none
 
 }
 
@@ -3793,6 +3878,11 @@ th  {
   .ipk-grade-select {
     width: 100%;
     flex-basis: auto;
+  }
+
+  .ipk-elective-builder-head,
+  .ipk-elective-row {
+    grid-template-columns: 1fr;
   }
 }
 

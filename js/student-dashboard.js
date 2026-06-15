@@ -14,8 +14,10 @@ import {
   GRADE_OPTIONS,
   defaultAcademicYearForSemester,
   electiveCoursesForSemester,
+  electiveOptionsForSemester,
+  repeatableCourseOptions,
   requiredCoursesForSemester
-} from './ts-course-catalog.js?v=1';
+} from './ts-course-catalog.js?v=2';
 
 const db = getFirestore(app);
 const SESSION_KEY = 'sipilcare_student_session';
@@ -169,6 +171,108 @@ const readStudentCatalogCourses = container => {
 };
 
 const courseIdentity = course => `${String(course?.code || '').toLowerCase()} ${String(course?.name || '').toLowerCase()}`.trim();
+const studentAdditionalKey = course => [course?.code || '', course?.name || '', course?.sks || ''].join('|');
+const studentOptionValue = course => [course.code, course.name, course.sks, course.type].map(value => String(value || '')).join('::');
+const parseStudentCourseOption = value => {
+  const [code = '', name = '', sks = '', type = 'K'] = String(value || '').split('::');
+  return { code, name, sks: Number(sks || 0), type };
+};
+
+const studentAdditionalOptions = semester => {
+  const selectedSemester = Number(semester || 0);
+  const electiveOptions = electiveOptionsForSemester(selectedSemester).map(course => ({ ...course, group: 'Mata kuliah pilihan' }));
+  const repeatOptions = repeatableCourseOptions().filter(course => Number(course.semester) !== selectedSemester);
+  const unique = new Map();
+  [...electiveOptions, ...repeatOptions].forEach(course => {
+    const key = studentAdditionalKey(course);
+    if (!unique.has(key)) unique.set(key, course);
+  });
+  return [...unique.values()];
+};
+
+const studentAdditionalOptionsMarkup = (selectedValue, semester) => {
+  const groups = studentAdditionalOptions(semester).reduce((map, course) => {
+    const group = course.group || 'Mata kuliah lainnya';
+    if (!map.has(group)) map.set(group, []);
+    map.get(group).push(course);
+    return map;
+  }, new Map());
+  return `<option value="">Pilih mata kuliah</option>${[...groups.entries()].map(([group, courses]) => `
+    <optgroup label="${escapeText(group)}">
+      ${courses.map(course => {
+        const value = studentOptionValue(course);
+        return `<option value="${escapeText(value)}"${selectedValue === value ? ' selected' : ''}>${escapeText(course.code)} - ${escapeText(course.name)} (${escapeText(course.sks)} SKS)</option>`;
+      }).join('')}
+    </optgroup>
+  `).join('')}<option value="custom"${selectedValue === 'custom' ? ' selected' : ''}>Lainnya / input manual</option>`;
+};
+
+const studentAdditionalRowMarkup = (course = {}, semester = '', index = 0) => {
+  const matchedOption = studentAdditionalOptions(semester).find(option => {
+    const code = String(course.code || '').toLowerCase();
+    const name = String(course.name || '').toLowerCase();
+    return (code && code === String(option.code || '').toLowerCase()) || (name && name === String(option.name || '').toLowerCase());
+  });
+  const selectedValue = matchedOption ? studentOptionValue(matchedOption) : course.name ? 'custom' : '';
+  const useCustom = selectedValue === 'custom';
+  const sks = Number(course.sks || matchedOption?.sks || 2);
+  return `
+    <div class="student-elective-row" data-elective-index="${escapeText(index)}">
+      <select class="control student-elective-course" data-student-elective-course>
+        ${studentAdditionalOptionsMarkup(selectedValue, semester)}
+      </select>
+      <input class="control student-elective-custom" data-student-elective-custom placeholder="Nama mata kuliah" value="${escapeText(useCustom ? course.name || '' : '')}"${useCustom ? '' : ' hidden'}>
+      <input class="control student-elective-sks" data-student-elective-sks type="number" min="1" max="6" step="1" value="${escapeText(sks || 2)}" aria-label="SKS">
+      <select class="control student-elective-grade" data-student-elective-grade>
+        ${gradeOptionsMarkup(course.grade)}
+      </select>
+      <button class="btn btn-secondary student-elective-remove" data-student-remove-elective type="button">Hapus</button>
+    </div>
+  `;
+};
+
+const readStudentAdditionalCourses = container => {
+  if (!container) return [];
+  return [...container.querySelectorAll('.student-elective-row')]
+    .map(row => {
+      const selectedValue = row.querySelector('[data-student-elective-course]')?.value || '';
+      const customName = row.querySelector('[data-student-elective-custom]')?.value || '';
+      const sks = Number(row.querySelector('[data-student-elective-sks]')?.value || 0);
+      const grade = row.querySelector('[data-student-elective-grade]')?.value || '';
+      const point = gradePoint(grade);
+      if (!selectedValue || !sks || point === null) return null;
+      const selected = selectedValue === 'custom'
+        ? { code: '', name: customName.trim(), sks, type: 'K' }
+        : parseStudentCourseOption(selectedValue);
+      return {
+        code: selected.code || '',
+        name: selected.name || customName.trim(),
+        type: selected.type || 'K',
+        sks,
+        grade: normalizeGrade(grade),
+        point,
+        extra: true
+      };
+    })
+    .filter(course => course && course.name && course.sks > 0);
+};
+
+const syncStudentAdditionalRow = row => {
+  if (!row) return;
+  const select = row.querySelector('[data-student-elective-course]');
+  const custom = row.querySelector('[data-student-elective-custom]');
+  const sksInput = row.querySelector('[data-student-elective-sks]');
+  const selectedValue = select?.value || '';
+  const useCustom = selectedValue === 'custom';
+  if (custom) {
+    custom.hidden = !useCustom;
+    if (!useCustom) custom.value = '';
+  }
+  if (selectedValue && !useCustom && sksInput) {
+    const selected = parseStudentCourseOption(selectedValue);
+    if (selected.sks) sksInput.value = selected.sks;
+  }
+};
 
 const renderStudentCourseCatalog = (container, semester, existingCourses = []) => {
   if (!container) return;
@@ -219,7 +323,7 @@ const renderStudentCourseCatalog = (container, semester, existingCourses = []) =
     ${electiveCourses.length ? `
       <div class="student-elective-note">
         <b>Mata kuliah pilihan:</b>
-        <span>${electiveCourses.map(course => `${escapeText(course.name)} (${escapeText(course.sks)} SKS)`).join(', ')}. Isi nama pilihan sebenarnya di kolom pilihan/tambahan.</span>
+        <span>${electiveCourses.map(course => `${escapeText(course.name)} (${escapeText(course.sks)} SKS)`).join(', ')} tersedia di bagian pilihan/SP/mengulang.</span>
       </div>
     ` : ''}
   `;
@@ -386,9 +490,7 @@ function renderMembership(session, member, records) {
       </select>
       <input class="control" id="studentGpaValue" type="number" min="0" max="4" step="0.01" placeholder="IPS, contoh: 3.56" required>
       <div class="student-course-catalog" id="studentCourseCatalog" hidden></div>
-      <textarea class="control" id="studentGpaCourses" hidden placeholder="Mata kuliah pilihan atau tambahan:
-Mekanika Teknik	3	A
-Matematika Teknik	2	AB"></textarea>
+      <div class="student-elective-builder" id="studentGpaCourses" hidden></div>
       <div class="student-course-preview" id="studentCoursePreview">Belum ada mata kuliah yang dipreview.</div>
       <input class="control" id="studentGpaNote" placeholder="Catatan opsional">
       <button class="btn btn-primary" type="submit">Simpan IPS/IPK</button>
@@ -417,14 +519,40 @@ Matematika Teknik	2	AB"></textarea>
   const valueInput = document.getElementById('studentGpaValue');
   const readCourses = () => [
     ...readStudentCatalogCourses(courseCatalog),
-    ...parseCourseRows(coursesInput?.value || '')
+    ...readStudentAdditionalCourses(coursesInput)
   ];
+  const renderAdditionalRows = (existingCourses = null) => {
+    if (!coursesInput) return;
+    const isCourseMode = modeInput?.value === 'courses';
+    coursesInput.hidden = !isCourseMode;
+    if (!isCourseMode) return;
+    const semester = semesterInput?.value || '';
+    const catalog = requiredCoursesForSemester(semester);
+    const sourceRows = existingCourses === null ? readStudentAdditionalCourses(coursesInput) : existingCourses;
+    const rows = (Array.isArray(sourceRows) ? sourceRows : []).filter(course => !catalog.some(item => (
+      (course.code && String(course.code).toLowerCase() === String(item.code).toLowerCase())
+      || (course.name && String(course.name).toLowerCase() === String(item.name).toLowerCase())
+    )));
+    const displayRows = rows.length ? rows : [{}];
+    coursesInput.innerHTML = `
+      <div class="student-elective-builder-head">
+        <div>
+          <strong>Pilihan, SP, atau mata kuliah mengulang</strong>
+          <span>Pilih mata kuliah dan nilai. Bagian ini opsional.</span>
+        </div>
+        <button class="btn btn-secondary" data-student-add-elective type="button">Tambah baris</button>
+      </div>
+      <div class="student-elective-rows">
+        ${displayRows.map((course, index) => studentAdditionalRowMarkup(course, semester, index)).join('')}
+      </div>
+    `;
+  };
   const syncCatalog = () => {
     const isCourseMode = modeInput?.value === 'courses';
     if (courseCatalog) courseCatalog.hidden = !isCourseMode;
-    if (coursesInput) coursesInput.hidden = !isCourseMode;
     if (!isCourseMode) return;
     renderStudentCourseCatalog(courseCatalog, semesterInput?.value);
+    renderAdditionalRows();
   };
   const syncAcademicYear = () => {
     if (!academicYearInput) return;
@@ -462,6 +590,26 @@ Matematika Teknik	2	AB"></textarea>
   });
   courseCatalog?.addEventListener('change', syncCoursePreview);
   coursesInput?.addEventListener('input', syncCoursePreview);
+  coursesInput?.addEventListener('change', event => {
+    const row = event.target.closest?.('.student-elective-row');
+    if (event.target.matches?.('[data-student-elective-course]')) syncStudentAdditionalRow(row);
+    syncCoursePreview();
+  });
+  coursesInput?.addEventListener('click', event => {
+    const addButton = event.target.closest?.('[data-student-add-elective]');
+    const removeButton = event.target.closest?.('[data-student-remove-elective]');
+    if (addButton) {
+      const rows = coursesInput.querySelector('.student-elective-rows');
+      if (rows) rows.insertAdjacentHTML('beforeend', studentAdditionalRowMarkup({}, semesterInput?.value || '', rows.children.length));
+      syncCoursePreview();
+      return;
+    }
+    if (removeButton) {
+      removeButton.closest('.student-elective-row')?.remove();
+      if (!coursesInput.querySelector('.student-elective-row')) renderAdditionalRows([]);
+      syncCoursePreview();
+    }
+  });
   syncAcademicYear();
   syncCatalog();
   syncCoursePreview();
