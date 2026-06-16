@@ -1320,6 +1320,7 @@ const normalizeGrade = value => String(value || '').trim().toUpperCase().replace
 
 const gradePoint = value => {
   const normalized = normalizeGrade(value).replace(',', '.');
+  if (!normalized || normalized === 'NILAI') return null;
   if (Object.prototype.hasOwnProperty.call(gradeScale, normalized)) return gradeScale[normalized];
   const numeric = Number(normalized);
   if (Number.isFinite(numeric)) return Math.min(4, Math.max(0, numeric));

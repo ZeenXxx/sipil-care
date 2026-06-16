@@ -4,8 +4,13 @@
     "date": "2026-06-16",
     "dateLabel": "16 Juni 2026",
     "generated": true,
-    "summary": "Pemantauan IPK Anggota, Katalog Mata Kuliah Global",
+    "summary": "Dashboard Admin, Katalog Mata Kuliah Global, Pemantauan IPK Anggota",
     "items": [
+      {
+        "type": "improved",
+        "title": "Dashboard Admin",
+        "description": "Dashboard admin ditingkatkan agar navigasi, tampilan mobile, ringkasan data, dan akses ke bagian log lebih nyaman digunakan."
+      },
       {
         "type": "improved",
         "title": "Katalog Mata Kuliah Global",
