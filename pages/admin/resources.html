@@ -44,6 +44,7 @@
         <button class="admin-workspace-tab" type="button" data-admin-workspace-tab="software" data-admin-permission="software"><span>SW</span>Software</button>
         <button class="admin-workspace-tab" type="button" data-admin-workspace-tab="practicum" data-admin-permission="practicum_studio"><span>PS</span>Praktikum &amp; Studio</button>
         <button class="admin-workspace-tab" type="button" data-admin-workspace-tab="attendance" data-admin-permission="practicum_studio"><span>AB</span>Absensi Praktikum</button>
+        <button class="admin-workspace-tab" type="button" data-admin-workspace-tab="video-progress" data-admin-permission="practicum_studio"><span>PV</span>Progress Video</button>
         <button class="admin-workspace-tab" type="button" data-admin-workspace-tab="video" data-admin-permission="videos"><span>VD</span>Video</button>
       </section>
 
@@ -265,11 +266,11 @@
         <div class="table-wrap attendance-recap-scroll"><table><thead><tr><th>Praktikan</th><th>Kelas</th><th>Praktikum</th><th>Modul</th><th>Status</th><th>Waktu Absen</th><th>Aksi</th></tr></thead><tbody id="attendanceRecapTable"></tbody></table></div>
       </section>
 
-      <section id="practicum-video-progress" class="admin-card admin-workspace-panel" data-admin-workspace="attendance" data-admin-permission="practicum_studio">
+      <section id="practicum-video-progress" class="admin-card admin-workspace-panel" data-admin-workspace="video-progress" data-admin-permission="practicum_studio">
         <div class="admin-table-head">
           <div>
             <h3>Monitoring Tonton Video Praktikum</h3>
-            <p class="small-text">Pantau siapa yang sudah membuka video, progres menit tonton terakhir, dan apakah video sudah selesai ditonton.</p>
+            <p class="small-text">Pantau siapa yang sudah membuka video praktikum, menit tonton terakhir, dan status tracking setiap mahasiswa.</p>
           </div>
           <div>
             <input class="control" id="videoWatchSearch" placeholder="Cari NIM, nama, praktikum, atau judul video">
@@ -335,7 +336,7 @@
     <script src="../../js/student-config.js?v=20"></script>
     <script src="../../js/auth.js?v=32"></script>
     <script src="../../js/push-config.js?v=1"></script>
-    <script type="module" src="../../js/admin-panel.js?v=90"></script>
+    <script type="module" src="../../js/admin-panel.js?v=91"></script>
       <script src="../../js/pwa.js?v=2"></script>
   </body>
 </html>

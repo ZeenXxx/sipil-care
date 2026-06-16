@@ -726,6 +726,10 @@ const adminWorkspaceNotes = {
     title: 'Absensi Praktikum',
     text: 'Kelola data praktikan, sesi absen, rekap, dan backup absensi.'
   },
+  'video-progress': {
+    title: 'Progress Video Praktikum',
+    text: 'Pantau mahasiswa yang membuka video praktikum, durasi tonton, dan status tracking.'
+  },
   video: {
     title: 'Video',
     text: 'Upload dan kelola video pembelajaran yang tampil di halaman Videos.'
@@ -738,6 +742,8 @@ const adminWorkspaceHashMap = {
   'practicum-attendance': 'attendance',
   'practicum-attendance-recap': 'attendance',
   'practicum-attendance-sessions': 'attendance',
+  'practicum-video-progress': 'video-progress',
+  'video-progress': 'video-progress',
   videos: 'video'
 };
 const adminWorkspaceTargetMap = {
@@ -745,6 +751,7 @@ const adminWorkspaceTargetMap = {
   software: 'software',
   practicum: 'practicum-studio',
   attendance: 'practicum-attendance',
+  'video-progress': 'practicum-video-progress',
   video: 'videos'
 };
 let activeAdminWorkspace = adminWorkspaceHashMap[location.hash.replace('#', '')] || 'resource';
@@ -3806,6 +3813,7 @@ function videoWatchFilters() {
 
 function videoWatchStatus(item) {
   if (item.completed) return { label: 'Selesai', tone: 'success' };
+  if (item.trackingMode === 'open_time' && Number(item.currentSeconds || 0) > 0) return { label: 'Dibuka di web', tone: 'progress' };
   if (item.trackingMode === 'open_only') return { label: 'Tracking terbatas', tone: 'muted' };
   if (Number(item.currentSeconds || 0) > 0) return { label: 'Sedang menonton', tone: 'progress' };
   return { label: 'Baru dibuka', tone: 'muted' };
@@ -3831,7 +3839,7 @@ function videoWatchTableRender() {
 
   if (videoWatchStudentCount) videoWatchStudentCount.textContent = String(rows.length);
   if (videoWatchCompletedCount) videoWatchCompletedCount.textContent = String(rows.filter(item => item.completed).length);
-  if (videoWatchLimitedCount) videoWatchLimitedCount.textContent = String(rows.filter(item => item.trackingMode === 'open_only').length);
+  if (videoWatchLimitedCount) videoWatchLimitedCount.textContent = String(rows.filter(item => ['open_only', 'open_time'].includes(item.trackingMode)).length);
 
   videoWatchTable.innerHTML = rows.map(item => {
     const duration = Number(item.durationSeconds || 0);
@@ -3840,12 +3848,15 @@ function videoWatchTableRender() {
       ? Math.round((current / duration) * 1000) / 10
       : Math.round(Number(item.watchedPercent || 0) * 10) / 10;
     const status = videoWatchStatus(item);
+    const progressCell = duration > 0
+      ? `<b>${escapeText(formatWatchSeconds(current))} / ${escapeText(formatWatchSeconds(duration))}</b><br><span class="small-text">${escapeText(percent || 0)}%${item.completed ? ' &middot; selesai' : ''}</span>`
+      : `<b>${escapeText(formatWatchSeconds(current))}</b><br><span class="small-text">${item.trackingMode === 'open_time' ? 'Durasi aktif membuka video' : 'Durasi video tidak terbaca'}</span>`;
     return `
       <tr>
         <td><b>${escapeText(item.nim || '-')}</b><br><span class="small-text">${escapeText(item.name || '-')}</span></td>
         <td><b>${escapeText(item.resourceTitle || item.course || '-')}</b><br><span class="small-text">${escapeText(item.category || '-')} &middot; ${escapeText(item.provider || 'Video')}</span></td>
         <td>${escapeText(item.className || '-')}<br><span class="small-text">${item.group ? `Kelompok ${escapeText(item.group)}` : 'Tanpa kelompok'}</span></td>
-        <td><b>${escapeText(formatWatchSeconds(current))} / ${escapeText(formatWatchSeconds(duration))}</b><br><span class="small-text">${escapeText(percent || 0)}%${item.completed ? ' &middot; selesai' : ''}</span></td>
+        <td>${progressCell}</td>
         <td><span class="badge video-watch-${escapeText(status.tone)}">${escapeText(status.label)}</span></td>
         <td>${escapeText(formatDateTime(item.updatedAt || item.firstOpenedAt || ''))}<br><span class="small-text">${escapeText(item.lastAction || '-')}</span></td>
       </tr>

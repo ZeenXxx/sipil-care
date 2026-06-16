@@ -63,6 +63,7 @@ let currentVideoProgress = null;
 let lastVideoSaveAt = 0;
 let lastSavedSeconds = -1;
 let youtubePollTimer = null;
+let limitedVideoTimer = null;
 let activePlayerCleanup = () => {};
 
 const escapeText = value => String(value || '').replace(/[&<>"']/g, char => ({
@@ -344,6 +345,10 @@ function resetVideoUi() {
     clearInterval(youtubePollTimer);
     youtubePollTimer = null;
   }
+  if (limitedVideoTimer) {
+    clearInterval(limitedVideoTimer);
+    limitedVideoTimer = null;
+  }
   activePlayerCleanup();
   activePlayerCleanup = () => {};
   activeVideoSource = null;
@@ -357,13 +362,21 @@ function syncVideoProgressUi(currentSeconds = 0, durationSeconds = 0, completed 
   if (!els.videoPanel || els.videoPanel.hidden) return;
   const duration = Number(durationSeconds || 0);
   const current = Math.max(0, Number(currentSeconds || 0));
-  const percent = duration > 0 ? Math.min(100, (current / duration) * 100) : 0;
+  const percent = duration > 0
+    ? Math.min(100, (current / duration) * 100)
+    : current > 0
+      ? Math.min(100, Math.max(8, (current / 600) * 100))
+      : 0;
   const label = completed
     ? 'Selesai ditonton'
     : fallbackLabel || (current > 0 ? 'Sedang menonton' : 'Belum mulai');
   if (els.videoProgressLabel) els.videoProgressLabel.textContent = label;
   if (els.videoProgressMeta) {
-    els.videoProgressMeta.textContent = `${formatSeconds(current)} / ${formatSeconds(duration)}`;
+    els.videoProgressMeta.textContent = duration > 0
+      ? `${formatSeconds(current)} / ${formatSeconds(duration)}`
+      : current > 0
+        ? `Durasi buka ${formatSeconds(current)}`
+        : '0:00';
   }
   if (els.videoProgressBar) els.videoProgressBar.style.width = `${percent}%`;
 }
@@ -394,7 +407,7 @@ function resolveVideoSource(url) {
       openUrl: raw,
       downloadUrl: driveDownloadUrl(driveId),
       canDownload: true,
-      trackingMode: 'open_only'
+      trackingMode: 'open_time'
     };
   }
 
@@ -545,14 +558,67 @@ function renderIframeFallback(session, sourceInfo, note) {
   els.videoPlayer.innerHTML = canInlineFrame
     ? `<iframe src="${escapeText(sourceInfo.embedUrl)}" allow="autoplay; fullscreen; encrypted-media; picture-in-picture" allowfullscreen loading="lazy"></iframe>`
     : `<div class="access-video-fallback"><strong>Host video belum mendukung pemutaran internal penuh.</strong><p>${escapeText(note)}</p><div class="access-video-badges"><span class="badge">${escapeText(sourceInfo.provider)}</span><span class="badge">Tracking terbatas</span></div><div class="actions"><a class="btn btn-primary" href="${escapeText(sourceInfo.openUrl || activeResource?.file || '#')}" target="_blank" rel="noopener">Buka sumber video</a></div></div>`;
-  syncVideoProgressUi(currentVideoProgress?.currentSeconds || 0, currentVideoProgress?.durationSeconds || 0, currentVideoProgress?.completed, 'Tracking terbatas');
+  syncVideoProgressUi(currentVideoProgress?.currentSeconds || 0, currentVideoProgress?.durationSeconds || 0, currentVideoProgress?.completed, canInlineFrame ? 'Dibuka di web' : 'Tracking terbatas');
   saveVideoProgress(session, {
     currentSeconds: currentVideoProgress?.currentSeconds || 0,
     durationSeconds: currentVideoProgress?.durationSeconds || 0,
     completed: currentVideoProgress?.completed || false,
     lastAction: 'opened_embed',
-    trackingMode: 'open_only'
+    trackingMode: canInlineFrame ? 'open_time' : sourceInfo.trackingMode || 'open_only'
   }).catch(error => console.warn('Fallback video progress save failed:', error));
+  if (canInlineFrame) {
+    startLimitedVideoTracking(session, sourceInfo);
+  }
+}
+
+function stopLimitedVideoTracking() {
+  if (!limitedVideoTimer) return;
+  clearInterval(limitedVideoTimer);
+  limitedVideoTimer = null;
+}
+
+function startLimitedVideoTracking(session, sourceInfo) {
+  stopLimitedVideoTracking();
+  let current = Math.max(0, Number(currentVideoProgress?.currentSeconds || 0));
+  let lastTickAt = Date.now();
+  let lastPersistAt = 0;
+  syncVideoProgressUi(current, currentVideoProgress?.durationSeconds || 0, currentVideoProgress?.completed, 'Dibuka di web');
+
+  const persist = (lastAction = 'open_time_progress', force = false) => {
+    if (!force && Date.now() - lastPersistAt < VIDEO_PROGRESS_SAVE_INTERVAL_MS) return;
+    lastPersistAt = Date.now();
+    saveVideoProgress(session, {
+      currentSeconds: current,
+      durationSeconds: 0,
+      completed: currentVideoProgress?.completed || false,
+      lastAction,
+      trackingMode: sourceInfo.trackingMode || 'open_time'
+    }).catch(error => console.warn('Limited video progress save failed:', error));
+  };
+
+  persist('opened_embed', true);
+  limitedVideoTimer = setInterval(() => {
+    const now = Date.now();
+    const elapsed = Math.max(0, Math.round((now - lastTickAt) / 1000));
+    lastTickAt = now;
+    if (document.visibilityState !== 'visible' || !els.videoPanel || els.videoPanel.hidden) return;
+    current += elapsed;
+    syncVideoProgressUi(current, 0, false, 'Dibuka di web');
+    persist();
+  }, 5000);
+
+  const flushOnHide = () => {
+    if (document.visibilityState === 'hidden') persist('open_time_hidden', true);
+  };
+  const flushOnClose = () => persist('open_time_close', true);
+  document.addEventListener('visibilitychange', flushOnHide);
+  window.addEventListener('pagehide', flushOnClose);
+  activePlayerCleanup = () => {
+    flushOnClose();
+    document.removeEventListener('visibilitychange', flushOnHide);
+    window.removeEventListener('pagehide', flushOnClose);
+    stopLimitedVideoTracking();
+  };
 }
 
 function mountHtml5Video(session, sourceInfo) {
