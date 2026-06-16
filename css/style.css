@@ -927,6 +927,10 @@ button, input, select, textarea  {
 
     overflow: hidden;
 
+    width: 100%;
+
+    min-height: 260px;
+
     border: 1px solid rgba(15,77,58,.12);
 
     border-radius: 8px;
@@ -941,6 +945,8 @@ button, input, select, textarea  {
     display: block;
 
     width: 100%;
+
+    min-height: clamp(260px, 52vw, 560px);
 
     aspect-ratio: 16 / 9;
 

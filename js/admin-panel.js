@@ -3798,12 +3798,55 @@ const formatWatchSeconds = value => {
     : `${minutes}:${String(seconds).padStart(2, '0')}`;
 };
 
+function canAccessVideoProgressItem(item) {
+  return item.category ? canAccessPracticumCategory(item.category) : hasPermission('practicum_studio');
+}
+
+function videoWatchRows() {
+  const byKey = new Map();
+  practicumVideoProgress.forEach(item => {
+    const key = `${item.resourceId || item.resourceTitle || item.course || 'video'}_${item.nim || item.name || ''}`;
+    byKey.set(key, item);
+  });
+
+  accessLogs
+    .filter(item => item.action === 'video_progress' || (item.action === 'video_play' && item.contentType === 'practicum_video'))
+    .forEach(log => {
+      const key = `${log.progressResourceId || log.resourceId || log.resourceTitle || 'video'}_${log.nim || log.name || ''}`;
+      const existing = byKey.get(key);
+      const fallback = {
+        resourceId: log.progressResourceId || log.resourceId || '',
+        resourceTitle: log.progressResourceTitle || log.resourceTitle || '',
+        category: log.progressCategory || log.category || '',
+        course: log.progressCategory || log.category || '',
+        provider: log.progressProvider || log.fileHost || 'Video',
+        trackingMode: log.progressTrackingMode || 'open_time',
+        nim: log.nim || '',
+        name: log.name || '',
+        className: log.progressClassName || '',
+        group: log.progressGroup || '',
+        currentSeconds: Number(log.progressCurrentSeconds || 0),
+        durationSeconds: Number(log.progressDurationSeconds || 0),
+        completed: Boolean(log.progressCompleted),
+        firstOpenedAt: log.createdAt || log.progressUpdatedAt || '',
+        updatedAt: log.progressUpdatedAt || log.createdAt || '',
+        lastAction: log.action === 'video_play' ? 'video_play' : 'video_progress',
+        fromAccessLog: true
+      };
+      if (!existing || String(fallback.updatedAt || '').localeCompare(String(existing.updatedAt || '')) > 0) {
+        byKey.set(key, { ...existing, ...fallback });
+      }
+    });
+
+  return [...byKey.values()];
+}
+
 function videoWatchFilters() {
   if (!videoWatchFilter) return;
   const current = videoWatchFilter.value || 'All';
   const options = [...new Set(
-    practicumVideoProgress
-      .filter(item => canAccessPracticumCategory(item.category))
+    videoWatchRows()
+      .filter(canAccessVideoProgressItem)
       .map(item => item.resourceTitle)
       .filter(Boolean)
   )].sort((a, b) => a.localeCompare(b, 'id-ID'));
@@ -3823,8 +3866,8 @@ function videoWatchTableRender() {
   if (!videoWatchTable) return;
   const term = (videoWatchSearch?.value || '').toLowerCase();
   const filter = videoWatchFilter?.value || 'All';
-  const rows = practicumVideoProgress
-    .filter(item => canAccessPracticumCategory(item.category))
+  const rows = videoWatchRows()
+    .filter(canAccessVideoProgressItem)
     .filter(item => filter === 'All' || item.resourceTitle === filter)
     .filter(item => [
       item.nim,
@@ -3858,7 +3901,7 @@ function videoWatchTableRender() {
         <td>${escapeText(item.className || '-')}<br><span class="small-text">${item.group ? `Kelompok ${escapeText(item.group)}` : 'Tanpa kelompok'}</span></td>
         <td>${progressCell}</td>
         <td><span class="badge video-watch-${escapeText(status.tone)}">${escapeText(status.label)}</span></td>
-        <td>${escapeText(formatDateTime(item.updatedAt || item.firstOpenedAt || ''))}<br><span class="small-text">${escapeText(item.lastAction || '-')}</span></td>
+        <td>${escapeText(formatDateTime(item.updatedAt || item.firstOpenedAt || ''))}<br><span class="small-text">${escapeText(item.fromAccessLog ? 'fallback log' : item.lastAction || '-')}</span></td>
       </tr>
     `;
   }).join('') || '<tr><td colspan="6">Belum ada data tonton video praktikum.</td></tr>';
@@ -4714,7 +4757,8 @@ const accessTypeLabels = {
 const accessActionLabels = {
   view: 'View',
   download: 'Download',
-  video_play: 'Play video'
+  video_play: 'Play video',
+  video_progress: 'Progress video'
 };
 
 function accessLogFilters() {
@@ -8170,6 +8214,8 @@ onSnapshot(accessLogQuery, snapshot => {
     ...documentSnapshot.data()
   }));
   accessLogRender();
+  videoWatchFilters();
+  videoWatchTableRender();
   stats();
 }, err => {
   console.error('Firestore access log error:', err);

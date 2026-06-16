@@ -62,6 +62,7 @@ let currentPracticumRosters = [];
 let currentVideoProgress = null;
 let lastVideoSaveAt = 0;
 let lastSavedSeconds = -1;
+let lastProgressFallbackLogAt = 0;
 let youtubePollTimer = null;
 let limitedVideoTimer = null;
 let activePlayerCleanup = () => {};
@@ -452,11 +453,75 @@ function videoProgressDocRef(session) {
   return doc(db, PRACTICUM_VIDEO_PROGRESS_COLLECTION, `${resourceKey}_${session.nim}`);
 }
 
+function videoProgressResourceKey() {
+  return String(activeResource?.id || resourceId || slugify(activeResource?.title || 'video'));
+}
+
+function videoProgressStorageKey(session) {
+  const resourceKey = videoProgressResourceKey().replace(/[\\/]/g, '-');
+  return `sipilcare_video_progress_${resourceKey}_${session?.nim || 'guest'}`;
+}
+
+function readLocalVideoProgress(session) {
+  try {
+    const raw = localStorage.getItem(videoProgressStorageKey(session));
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeLocalVideoProgress(session, payload) {
+  try {
+    localStorage.setItem(videoProgressStorageKey(session), JSON.stringify(payload));
+  } catch {
+    /* local cache optional */
+  }
+}
+
 async function loadExistingVideoProgress(session) {
   if (!isPracticumVideo(activeResource) || !session?.nim) return null;
-  const snapshot = await getDoc(videoProgressDocRef(session));
-  currentVideoProgress = snapshot.exists() ? snapshot.data() : null;
+  const localProgress = readLocalVideoProgress(session);
+  currentVideoProgress = localProgress || null;
+  try {
+    const snapshot = await getDoc(videoProgressDocRef(session));
+    currentVideoProgress = snapshot.exists()
+      ? { ...localProgress, ...snapshot.data() }
+      : localProgress || null;
+  } catch (error) {
+    console.warn('Video progress cloud load failed, using local cache:', error);
+  }
+  if (!currentVideoProgress?.currentSeconds) {
+    const fallbackProgress = await loadProgressFromAccessLogs(session).catch(error => {
+      console.warn('Video progress fallback load failed:', error);
+      return null;
+    });
+    if (fallbackProgress) currentVideoProgress = { ...localProgress, ...fallbackProgress };
+  }
   return currentVideoProgress;
+}
+
+async function loadProgressFromAccessLogs(session) {
+  const snapshot = await getDocs(query(collection(db, 'resource_access_logs'), where('nim', '==', session.nim)));
+  const resourceKey = videoProgressResourceKey();
+  const rows = snapshot.docs
+    .map(item => item.data())
+    .filter(item => item.action === 'video_progress')
+    .filter(item => String(item.progressResourceId || item.resourceId || '') === resourceKey || String(item.progressResourceTitle || item.resourceTitle || '') === String(activeResource?.title || ''))
+    .sort((a, b) => String(b.progressUpdatedAt || b.createdAt || '').localeCompare(String(a.progressUpdatedAt || a.createdAt || '')));
+  const latest = rows[0];
+  if (!latest) return null;
+  return {
+    resourceId: latest.progressResourceId || resourceKey,
+    resourceTitle: latest.progressResourceTitle || activeResource?.title || '',
+    category: latest.progressCategory || activeResource?.category || '',
+    provider: latest.progressProvider || '',
+    trackingMode: latest.progressTrackingMode || activeVideoSource?.trackingMode || 'detailed',
+    currentSeconds: Number(latest.progressCurrentSeconds || 0),
+    durationSeconds: Number(latest.progressDurationSeconds || 0),
+    completed: Boolean(latest.progressCompleted),
+    updatedAt: latest.progressUpdatedAt || latest.createdAt || ''
+  };
 }
 
 function matchedStudentRoster(resource) {
@@ -504,10 +569,37 @@ async function saveVideoProgress(session, {
     updatedAt: nowIso,
     updatedAtServer: serverTimestamp()
   };
-  await setDoc(videoProgressDocRef(session), payload, { merge: true });
   currentVideoProgress = { ...previous, ...payload };
+  writeLocalVideoProgress(session, currentVideoProgress);
   lastVideoSaveAt = Date.now();
   lastSavedSeconds = safeCurrent;
+  try {
+    await setDoc(videoProgressDocRef(session), payload, { merge: true });
+  } catch (error) {
+    console.warn('Video progress cloud save failed, writing fallback log:', error);
+    await logVideoProgressFallback(payload, lastAction === 'opened_embed' || lastAction.includes('close') || lastAction.includes('hidden')).catch(logError => {
+      console.warn('Video progress fallback log failed:', logError);
+    });
+  }
+}
+
+async function logVideoProgressFallback(payload, force = false) {
+  const now = Date.now();
+  if (!force && now - lastProgressFallbackLogAt < 30000) return;
+  lastProgressFallbackLogAt = now;
+  await logAccess('video_progress', {
+    progressResourceId: payload.resourceId,
+    progressResourceTitle: payload.resourceTitle,
+    progressCategory: payload.category,
+    progressProvider: payload.provider,
+    progressTrackingMode: payload.trackingMode,
+    progressCurrentSeconds: payload.currentSeconds,
+    progressDurationSeconds: payload.durationSeconds,
+    progressCompleted: payload.completed,
+    progressClassName: payload.className,
+    progressGroup: payload.group,
+    progressUpdatedAt: payload.updatedAt
+  });
 }
 
 async function maybeLogVideoPlay(session) {
@@ -709,14 +801,35 @@ async function mountYoutubeVideo(session, sourceInfo) {
   const playerId = `youtube-practicum-${Date.now()}`;
   els.videoPlayer.innerHTML = `<div id="${playerId}"></div>`;
   const YT = await loadYoutubeApi();
-  const player = new YT.Player(playerId, {
+  let player;
+  const saveCurrentYoutubeProgress = (lastAction = 'progress', force = false) => {
+    if (!player?.getCurrentTime) return;
+    const duration = Number(player.getDuration?.() || currentVideoProgress?.durationSeconds || 0);
+    const current = Number(player.getCurrentTime?.() || currentVideoProgress?.currentSeconds || 0);
+    const completed = duration > 0 && (current / duration) >= VIDEO_COMPLETE_RATIO;
+    syncVideoProgressUi(current, duration, completed || currentVideoProgress?.completed);
+    if (!force && !needsProgressSave(current)) return;
+    saveVideoProgress(session, {
+      currentSeconds: current,
+      durationSeconds: duration,
+      completed,
+      lastAction
+    }).catch(error => console.warn('YouTube progress save failed:', error));
+  };
+  const flushYoutubeProgress = () => saveCurrentYoutubeProgress('pagehide', true);
+  const flushYoutubeProgressOnHidden = () => {
+    if (document.visibilityState === 'hidden') flushYoutubeProgress();
+  };
+
+  player = new YT.Player(playerId, {
     width: '100%',
     height: '100%',
     videoId: parseYoutubeId(sourceInfo.openUrl),
     playerVars: {
       rel: 0,
       modestbranding: 1,
-      playsinline: 1
+      playsinline: 1,
+      origin: location.origin
     },
     events: {
       onReady: async () => {
@@ -738,18 +851,7 @@ async function mountYoutubeVideo(session, sourceInfo) {
           maybeLogVideoPlay(session);
           if (youtubePollTimer) clearInterval(youtubePollTimer);
           youtubePollTimer = setInterval(() => {
-            const duration = Number(player.getDuration() || 0);
-            const current = Number(player.getCurrentTime() || 0);
-            const completed = duration > 0 && (current / duration) >= VIDEO_COMPLETE_RATIO;
-            syncVideoProgressUi(current, duration, completed);
-            if (needsProgressSave(current)) {
-              saveVideoProgress(session, {
-                currentSeconds: current,
-                durationSeconds: duration,
-                completed,
-                lastAction: 'progress'
-              }).catch(error => console.warn('YouTube progress save failed:', error));
-            }
+            saveCurrentYoutubeProgress('progress');
           }, 4000);
         } else if (state === YT.PlayerState.PAUSED) {
           if (youtubePollTimer) {
@@ -782,8 +884,13 @@ async function mountYoutubeVideo(session, sourceInfo) {
       }
     }
   });
+  window.addEventListener('pagehide', flushYoutubeProgress);
+  document.addEventListener('visibilitychange', flushYoutubeProgressOnHidden);
 
   activePlayerCleanup = () => {
+    flushYoutubeProgress();
+    window.removeEventListener('pagehide', flushYoutubeProgress);
+    document.removeEventListener('visibilitychange', flushYoutubeProgressOnHidden);
     if (youtubePollTimer) {
       clearInterval(youtubePollTimer);
       youtubePollTimer = null;
@@ -863,7 +970,7 @@ const renderResource = resource => {
   }
 };
 
-const logAccess = async (action = 'download') => {
+const logAccess = async (action = 'download', extra = {}) => {
   const session = readStudentSession();
   if (!activeResource || !session) return;
 
@@ -873,6 +980,8 @@ const logAccess = async (action = 'download') => {
       ? 'View halaman akses'
       : action === 'video_play'
         ? 'Mulai memutar video'
+        : action === 'video_progress'
+          ? 'Progress video praktikum'
         : 'Download / buka file',
     nim: session.nim,
     name: session.name || '',
@@ -886,7 +995,8 @@ const logAccess = async (action = 'download') => {
     page: location.pathname + location.search,
     userAgent: navigator.userAgent.slice(0, 240),
     createdAt: new Date().toISOString(),
-    accessedAt: serverTimestamp()
+    accessedAt: serverTimestamp(),
+    ...extra
   });
 };
 
