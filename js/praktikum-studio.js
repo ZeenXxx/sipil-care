@@ -302,7 +302,8 @@ const normalizeAttendanceSession = item => {
 
 function resourceCard(item) {
   const url = accessUrl(item);
-  return `<article class="module-item"><strong>${escapeText(item.title)}</strong><p>${escapeText(item.description || 'Modul pembelajaran dari admin HMS/PENDPROF.')}</p><div class="meta"><span class="badge">${escapeText(item.type || 'PDF')}</span><span class="badge">${escapeText(item.date || 'Update')}</span></div><div class="actions"><a class="btn btn-primary" href="${url}">Akses Modul</a><button class="btn btn-ghost" data-access-url="${url}" type="button">Salin Link</button><button class="btn btn-ghost" data-bookmark-practicum="${escapeText(item.id || item.slug || slugify(item.title))}" type="button">${isBookmarked(item) ? 'Tersimpan' : 'Simpan'}</button></div></article>`;
+  const isVideo = String(item.type || '').trim().toUpperCase() === 'VIDEO';
+  return `<article class="module-item"><strong>${escapeText(item.title)}</strong><p>${escapeText(item.description || 'Modul pembelajaran dari admin HMS/PENDPROF.')}</p><div class="meta"><span class="badge">${escapeText(item.type || 'PDF')}</span><span class="badge">${escapeText(item.date || 'Update')}</span>${isVideo ? '<span class="badge">Tracking tonton aktif</span>' : ''}</div><div class="actions"><a class="btn btn-primary" href="${url}">${isVideo ? 'Tonton Video' : 'Akses Modul'}</a><button class="btn btn-ghost" data-access-url="${url}" type="button">Salin Link</button><button class="btn btn-ghost" data-bookmark-practicum="${escapeText(item.id || item.slug || slugify(item.title))}" type="button">${isBookmarked(item) ? 'Tersimpan' : 'Simpan'}</button></div></article>`;
 }
 
 const rosterForCourse = course => studentRosters.filter(roster => roster.isActive !== false && matchesPracticumCourse(roster, course));

@@ -10,7 +10,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-title" content="SIPIL CARE">
     <link rel="stylesheet" href="../../css/style.css?v=26">
-    <link rel="stylesheet" href="../../css/admin.css?v=62">
+    <link rel="stylesheet" href="../../css/admin.css?v=63">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -122,6 +122,7 @@
             <option>VIDEO</option>
           </select>
           <input class="control" id="practicumFile" placeholder="Link file modul praktikum/studio" required>
+          <label class="small-text">Jika tipe VIDEO, tracking menit tonton paling akurat untuk link YouTube, MP4/WebM langsung, atau file Google Drive publik.</label>
           <label class="small-text">Masuk ke Praktikum &amp; Studio Management.</label>
           <button id="submitPracticumBtn" class="btn btn-primary" type="submit">Simpan Modul</button>
         </form>
@@ -264,6 +265,25 @@
         <div class="table-wrap attendance-recap-scroll"><table><thead><tr><th>Praktikan</th><th>Kelas</th><th>Praktikum</th><th>Modul</th><th>Status</th><th>Waktu Absen</th><th>Aksi</th></tr></thead><tbody id="attendanceRecapTable"></tbody></table></div>
       </section>
 
+      <section id="practicum-video-progress" class="admin-card admin-workspace-panel" data-admin-workspace="attendance" data-admin-permission="practicum_studio">
+        <div class="admin-table-head">
+          <div>
+            <h3>Monitoring Tonton Video Praktikum</h3>
+            <p class="small-text">Pantau siapa yang sudah membuka video, progres menit tonton terakhir, dan apakah video sudah selesai ditonton.</p>
+          </div>
+          <div>
+            <input class="control" id="videoWatchSearch" placeholder="Cari NIM, nama, praktikum, atau judul video">
+            <select class="control" id="videoWatchFilter"><option value="All">Semua video</option></select>
+          </div>
+        </div>
+        <div class="student-activity-summary">
+          <article><span>Mahasiswa tercatat</span><strong id="videoWatchStudentCount">0</strong></article>
+          <article><span>Selesai</span><strong id="videoWatchCompletedCount">0</strong></article>
+          <article><span>Tracking terbatas</span><strong id="videoWatchLimitedCount">0</strong></article>
+        </div>
+        <div class="table-wrap attendance-recap-scroll"><table><thead><tr><th>Mahasiswa</th><th>Video</th><th>Kelas</th><th>Progres</th><th>Status</th><th>Update</th></tr></thead><tbody id="videoWatchTable"></tbody></table></div>
+      </section>
+
       <section id="practicum-attendance-reconcile" class="admin-card admin-workspace-panel" data-admin-workspace="attendance" data-admin-permission="practicum_studio">
         <div class="admin-table-head">
           <div>
@@ -315,7 +335,7 @@
     <script src="../../js/student-config.js?v=20"></script>
     <script src="../../js/auth.js?v=32"></script>
     <script src="../../js/push-config.js?v=1"></script>
-    <script type="module" src="../../js/admin-panel.js?v=89"></script>
+    <script type="module" src="../../js/admin-panel.js?v=90"></script>
       <script src="../../js/pwa.js?v=2"></script>
   </body>
 </html>

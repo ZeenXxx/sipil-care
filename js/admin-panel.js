@@ -130,6 +130,12 @@ const attendanceSessionTable = document.getElementById('attendanceSessionTable')
 const rosterTotalCount = document.getElementById('rosterTotalCount');
 const attendanceSessionCount = document.getElementById('attendanceSessionCount');
 const attendanceRecordCount = document.getElementById('attendanceRecordCount');
+const videoWatchSearch = document.getElementById('videoWatchSearch');
+const videoWatchFilter = document.getElementById('videoWatchFilter');
+const videoWatchStudentCount = document.getElementById('videoWatchStudentCount');
+const videoWatchCompletedCount = document.getElementById('videoWatchCompletedCount');
+const videoWatchLimitedCount = document.getElementById('videoWatchLimitedCount');
+const videoWatchTable = document.getElementById('videoWatchTable');
 const zoomReconcileSession = document.getElementById('zoomReconcileSession');
 const zoomReconcileFile = document.getElementById('zoomReconcileFile');
 const zoomReconcileText = document.getElementById('zoomReconcileText');
@@ -349,6 +355,7 @@ let practicumModules = [];
 let practicumRosters = [];
 let practicumAttendanceSessions = [];
 let practicumAttendanceRecords = [];
+let practicumVideoProgress = [];
 let editingAttendanceSessionId = '';
 let editingAttendanceSessionIds = [];
 let latestZoomReconcileRows = [];
@@ -392,6 +399,7 @@ const ADMIN_PUSH_TOKEN_ID_KEY = 'sipilcare_admin_push_token_id';
 const ADMIN_AUDIT_COLLECTION = 'admin_audit_logs';
 const ADMIN_ACTIVITY_COLLECTION = 'admin_activity';
 const RESOURCE_ACCESS_LOG_COLLECTION = 'resource_access_logs';
+const PRACTICUM_VIDEO_PROGRESS_COLLECTION = 'practicum_video_progress';
 const CLIENT_ERROR_LOG_COLLECTION = 'client_error_logs';
 const ACTIVE_MEMBER_COLLECTION = 'hms_active_members';
 const GPA_RECORD_COLLECTION = 'student_gpa_records';
@@ -3773,6 +3781,78 @@ function attendanceRecapRender() {
   attendanceRecapTable.innerHTML = rows || '<tr><td colspan="7">Belum ada data praktikan atau sesi absen yang cocok.</td></tr>';
 }
 
+const formatWatchSeconds = value => {
+  const safe = Number.isFinite(Number(value)) ? Math.max(0, Math.floor(Number(value))) : 0;
+  const hours = Math.floor(safe / 3600);
+  const minutes = Math.floor((safe % 3600) / 60);
+  const seconds = safe % 60;
+  return hours
+    ? `${hours}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
+    : `${minutes}:${String(seconds).padStart(2, '0')}`;
+};
+
+function videoWatchFilters() {
+  if (!videoWatchFilter) return;
+  const current = videoWatchFilter.value || 'All';
+  const options = [...new Set(
+    practicumVideoProgress
+      .filter(item => canAccessPracticumCategory(item.category))
+      .map(item => item.resourceTitle)
+      .filter(Boolean)
+  )].sort((a, b) => a.localeCompare(b, 'id-ID'));
+  videoWatchFilter.innerHTML = '<option value="All">Semua video</option>' + options.map(item => `<option value="${escapeText(item)}">${escapeText(item)}</option>`).join('');
+  videoWatchFilter.value = current === 'All' || options.includes(current) ? current : 'All';
+}
+
+function videoWatchStatus(item) {
+  if (item.completed) return { label: 'Selesai', tone: 'success' };
+  if (item.trackingMode === 'open_only') return { label: 'Tracking terbatas', tone: 'muted' };
+  if (Number(item.currentSeconds || 0) > 0) return { label: 'Sedang menonton', tone: 'progress' };
+  return { label: 'Baru dibuka', tone: 'muted' };
+}
+
+function videoWatchTableRender() {
+  if (!videoWatchTable) return;
+  const term = (videoWatchSearch?.value || '').toLowerCase();
+  const filter = videoWatchFilter?.value || 'All';
+  const rows = practicumVideoProgress
+    .filter(item => canAccessPracticumCategory(item.category))
+    .filter(item => filter === 'All' || item.resourceTitle === filter)
+    .filter(item => [
+      item.nim,
+      item.name,
+      item.category,
+      item.course,
+      item.resourceTitle,
+      item.className,
+      item.group
+    ].join(' ').toLowerCase().includes(term))
+    .sort((a, b) => String(b.updatedAt || '').localeCompare(String(a.updatedAt || '')));
+
+  if (videoWatchStudentCount) videoWatchStudentCount.textContent = String(rows.length);
+  if (videoWatchCompletedCount) videoWatchCompletedCount.textContent = String(rows.filter(item => item.completed).length);
+  if (videoWatchLimitedCount) videoWatchLimitedCount.textContent = String(rows.filter(item => item.trackingMode === 'open_only').length);
+
+  videoWatchTable.innerHTML = rows.map(item => {
+    const duration = Number(item.durationSeconds || 0);
+    const current = Math.min(Number(item.currentSeconds || 0), duration || Number(item.currentSeconds || 0));
+    const percent = duration > 0
+      ? Math.round((current / duration) * 1000) / 10
+      : Math.round(Number(item.watchedPercent || 0) * 10) / 10;
+    const status = videoWatchStatus(item);
+    return `
+      <tr>
+        <td><b>${escapeText(item.nim || '-')}</b><br><span class="small-text">${escapeText(item.name || '-')}</span></td>
+        <td><b>${escapeText(item.resourceTitle || item.course || '-')}</b><br><span class="small-text">${escapeText(item.category || '-')} &middot; ${escapeText(item.provider || 'Video')}</span></td>
+        <td>${escapeText(item.className || '-')}<br><span class="small-text">${item.group ? `Kelompok ${escapeText(item.group)}` : 'Tanpa kelompok'}</span></td>
+        <td><b>${escapeText(formatWatchSeconds(current))} / ${escapeText(formatWatchSeconds(duration))}</b><br><span class="small-text">${escapeText(percent || 0)}%${item.completed ? ' &middot; selesai' : ''}</span></td>
+        <td><span class="badge video-watch-${escapeText(status.tone)}">${escapeText(status.label)}</span></td>
+        <td>${escapeText(formatDateTime(item.updatedAt || item.firstOpenedAt || ''))}<br><span class="small-text">${escapeText(item.lastAction || '-')}</span></td>
+      </tr>
+    `;
+  }).join('') || '<tr><td colspan="6">Belum ada data tonton video praktikum.</td></tr>';
+}
+
 function attendanceSessionTableRender() {
   if (!attendanceSessionTable) return;
   const recordCounts = practicumAttendanceRecords.reduce((map, record) => {
@@ -4616,12 +4696,14 @@ const accessTypeLabels = {
   resource: 'Resources',
   software: 'Software',
   practicum: 'Praktikum/Studio',
+  practicum_video: 'Video Praktikum',
   video: 'Videos'
 };
 
 const accessActionLabels = {
   view: 'View',
-  download: 'Download'
+  download: 'Download',
+  video_play: 'Play video'
 };
 
 function accessLogFilters() {
@@ -4661,7 +4743,7 @@ function accessLogRender() {
 
   if (accessTotalCount) accessTotalCount.textContent = filtered.length;
   if (accessDownloadCount) accessDownloadCount.textContent = accessLogs.filter(item => (item.action || 'download') === 'download').length;
-  if (accessVideoCount) accessVideoCount.textContent = accessLogs.filter(item => (item.contentType || item.source) === 'video').length;
+  if (accessVideoCount) accessVideoCount.textContent = accessLogs.filter(item => ['video', 'practicum_video'].includes(item.contentType || item.source)).length;
 
   accessLogTable.innerHTML = filtered.map(item => {
     const contentType = item.contentType || (item.source === 'videos' ? 'video' : item.category === 'Software' ? 'software' : item.source || 'resource');
@@ -5273,6 +5355,8 @@ const render = () => {
   practicumFilters();
   practicumTableRender();
   attendanceRecapRender();
+  videoWatchFilters();
+  videoWatchTableRender();
   attendanceSessionTableRender();
   videoFilters();
   videoTableRender();
@@ -7540,6 +7624,8 @@ on(attendanceSessionFilter, 'change', () => attendanceRecapRender());
 on(attendanceExport, 'click', () => exportAttendanceExcel());
 on(rosterExport, 'click', () => exportRosterExcel());
 on(sessionExport, 'click', () => exportSessionExcel());
+on(videoWatchSearch, 'input', () => videoWatchTableRender());
+on(videoWatchFilter, 'change', () => videoWatchTableRender());
 on(zoomReconcileRun, 'click', () => runZoomReconcile());
 on(zoomReconcileExport, 'click', () => exportZoomReconcileExcel());
 on(zoomReconcileSession, 'change', () => {
@@ -7954,6 +8040,19 @@ onSnapshot(attendanceRecordQuery, snapshot => {
 }, err => {
   console.error('Firestore attendance record error:', err);
   toast('Gagal memuat rekap absensi praktikum.');
+});
+
+const practicumVideoProgressQuery = query(collection(db, PRACTICUM_VIDEO_PROGRESS_COLLECTION));
+onSnapshot(practicumVideoProgressQuery, snapshot => {
+  practicumVideoProgress = snapshot.docs.map(documentSnapshot => ({
+    docId: documentSnapshot.id,
+    ...documentSnapshot.data()
+  }));
+  videoWatchFilters();
+  videoWatchTableRender();
+}, err => {
+  console.error('Firestore practicum video progress error:', err);
+  if (videoWatchTable) videoWatchTable.innerHTML = '<tr><td colspan="6">Gagal memuat progres tonton video.</td></tr>';
 });
 
 onSnapshot(doc(db, ACADEMIC_SETTINGS_COLLECTION, ACADEMIC_SETTINGS_DOC), snapshot => {

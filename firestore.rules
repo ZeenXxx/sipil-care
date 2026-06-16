@@ -22,6 +22,10 @@ service cloud.firestore {
       allow read, create, update, delete: if true;
     }
 
+    match /practicum_video_progress/{progressId} {
+      allow read, create, update, delete: if true;
+    }
+
     match /hms_active_members/{memberId} {
       allow read, create, update, delete: if true;
     }

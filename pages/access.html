@@ -10,7 +10,7 @@
     <link rel="manifest" href="../manifest.webmanifest?v=2">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-title" content="SIPIL CARE">
-    <link rel="stylesheet" href="../css/style.css?v=26">
+    <link rel="stylesheet" href="../css/style.css?v=27">
     <link rel="stylesheet" href="../css/navbar.css?v=35">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -44,6 +44,22 @@
               <strong>Akses mahasiswa</strong>
               <p id="accessStudent">Data login sedang diperiksa.</p>
             </div>
+            <section class="access-video-panel" id="accessVideoPanel" hidden>
+              <div class="access-video-head">
+                <div>
+                  <strong>Video praktikum</strong>
+                  <p id="accessVideoNote">Video diputar langsung di SIPIL CARE dan progres tontonan kamu akan dicatat otomatis.</p>
+                </div>
+                <div class="access-video-status">
+                  <strong id="accessVideoProgressLabel">Belum mulai</strong>
+                  <span id="accessVideoProgressMeta">0:00 / 0:00</span>
+                </div>
+              </div>
+              <div class="access-video-progress-track" aria-hidden="true">
+                <i id="accessVideoProgressBar"></i>
+              </div>
+              <div class="access-video-player" id="accessVideoPlayer"></div>
+            </section>
             <div class="actions">
               <button class="btn btn-primary" id="openResourceBtn" type="button" disabled>Buka File</button>
               <button class="btn btn-ghost" id="downloadResourceBtn" type="button" disabled>Download File</button>
@@ -65,7 +81,7 @@
     </footer>
     <div class="toast" id="toast"></div>
     <script src="../js/navbar.js?v=32"></script>
-    <script type="module" src="../js/access.js?v=10"></script>
+    <script type="module" src="../js/access.js?v=11"></script>
       <script src="../js/pwa.js?v=2"></script>
       <script src="../js/push-config.js?v=1"></script>
       <script type="module" src="../js/pwa-push.js?v=5"></script>

@@ -21,6 +21,21 @@
   color: #5d6872;
 }
 
+.badge.video-watch-success {
+  background: #eaf8ef;
+  color: #0f6b43;
+}
+
+.badge.video-watch-progress {
+  background: #ecf5ff;
+  color: #1d4ed8;
+}
+
+.badge.video-watch-muted {
+  background: #f1f3f5;
+  color: #5d6872;
+}
+
 .admin-restore-box {
   display: grid;
   gap: 12px;

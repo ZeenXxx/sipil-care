@@ -1,20 +1,40 @@
 [
   {
-    "id": "2026-06-16:backend-security",
+    "id": "2026-06-16:admin-dashboard,attendance-recap-scroll,backend-security,public-interface,resources-content",
     "date": "2026-06-16",
     "dateLabel": "16 Juni 2026",
     "generated": true,
-    "summary": "Permission Katalog Mata Kuliah, Dashboard Admin, Pemantauan IPK Anggota",
+    "summary": "Dashboard Admin, Rekap Absensi Praktikum Lebih Rapi, Resource dan Materi Akademik",
     "items": [
-      {
-        "type": "fixed",
-        "title": "Permission Katalog Mata Kuliah",
-        "description": "Permission database diperbarui agar admin dapat menyimpan perubahan kode, nama, tipe, dan SKS mata kuliah global dari dashboard."
-      },
       {
         "type": "improved",
         "title": "Dashboard Admin",
         "description": "Dashboard admin ditingkatkan agar navigasi, tampilan mobile, ringkasan data, dan akses ke bagian log lebih nyaman digunakan."
+      },
+      {
+        "type": "improved",
+        "title": "Rekap Absensi Praktikum Lebih Rapi",
+        "description": "Tabel rekap absensi praktikum kini memiliki scroll sendiri agar daftar praktikan yang panjang tidak membuat admin harus scroll terlalu jauh ke menu berikutnya."
+      },
+      {
+        "type": "improved",
+        "title": "Resource dan Materi Akademik",
+        "description": "Halaman materi, praktikum, studio, software, video, dan akses file diperbarui agar konten akademik lebih mudah ditemukan dan digunakan."
+      },
+      {
+        "type": "improved",
+        "title": "Tampilan Public Website",
+        "description": "Tampilan halaman public diperhalus agar lebih responsif, konsisten, dan nyaman dibuka dari perangkat mobile."
+      },
+      {
+        "type": "fixed",
+        "title": "Backend dan Permission",
+        "description": "Dokumentasi serta fungsi backend terkait akun, role, permission, dan sesi admin diperbaiki agar sistem lebih aman dan konsisten."
+      },
+      {
+        "type": "fixed",
+        "title": "Permission Katalog Mata Kuliah",
+        "description": "Permission database diperbarui agar admin dapat menyimpan perubahan kode, nama, tipe, dan SKS mata kuliah global dari dashboard."
       },
       {
         "type": "improved",

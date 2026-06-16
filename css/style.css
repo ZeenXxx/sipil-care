@@ -830,6 +830,162 @@ button, input, select, textarea  {
 
 }
 
+.access-video-panel  {
+
+    display: grid;
+
+    gap: 14px;
+
+    padding: 18px;
+
+    border: 1px solid var(--line);
+
+    border-radius: 8px;
+
+    background: #f8fbfa
+
+}
+
+.access-video-head  {
+
+    display: flex;
+
+    align-items: flex-start;
+
+    justify-content: space-between;
+
+    gap: 16px
+
+}
+
+.access-video-head strong  {
+
+    display: block;
+
+    color: var(--primary)
+
+}
+
+.access-video-head p,
+.access-video-status span  {
+
+    margin: 6px 0 0;
+
+    color: var(--muted);
+
+    font-size: 14px;
+
+    line-height: 1.6
+
+}
+
+.access-video-status  {
+
+    flex: 0 0 auto;
+
+    min-width: 140px;
+
+    text-align: right
+
+}
+
+.access-video-progress-track  {
+
+    position: relative;
+
+    height: 10px;
+
+    overflow: hidden;
+
+    border-radius: 999px;
+
+    background: #dfeee8
+
+}
+
+.access-video-progress-track i  {
+
+    position: absolute;
+
+    inset: 0 auto 0 0;
+
+    display: block;
+
+    width: 0;
+
+    border-radius: inherit;
+
+    background: linear-gradient(90deg, #0f4d3a, #f1d22b);
+
+    transition: width .2s ease
+
+}
+
+.access-video-player  {
+
+    position: relative;
+
+    overflow: hidden;
+
+    border: 1px solid rgba(15,77,58,.12);
+
+    border-radius: 8px;
+
+    background: #081a14
+
+}
+
+.access-video-player video,
+.access-video-player iframe  {
+
+    display: block;
+
+    width: 100%;
+
+    aspect-ratio: 16 / 9;
+
+    border: 0;
+
+    background: #081a14
+
+}
+
+.access-video-fallback  {
+
+    display: grid;
+
+    gap: 12px;
+
+    padding: 20px;
+
+    color: #fff
+
+}
+
+.access-video-fallback p  {
+
+    color: rgba(255,255,255,.82)
+
+}
+
+.access-video-badges  {
+
+    display: flex;
+
+    flex-wrap: wrap;
+
+    gap: 10px
+
+}
+
+.access-video-badges .badge  {
+
+    background: rgba(255,255,255,.12);
+
+    color: #fff
+
+}
+
 .help-head-actions  {
 
     margin-top: 24px
@@ -1955,6 +2111,20 @@ button, input, select, textarea  {
     .featured-announcement  {
 
         grid-template-columns: 1fr
+
+}
+
+    .access-video-head  {
+
+        display: grid
+
+}
+
+    .access-video-status  {
+
+        min-width: 0;
+
+        text-align: left
 
 }
 
