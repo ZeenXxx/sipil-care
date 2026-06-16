@@ -387,13 +387,14 @@ function resolveVideoSource(url) {
   if (driveId) {
     return {
       provider: 'Google Drive',
-      playerType: 'html5',
+      playerType: 'drive_iframe',
       directUrl: driveDownloadUrl(driveId),
       previewUrl: drivePreviewUrl(driveId),
+      embedUrl: drivePreviewUrl(driveId),
       openUrl: raw,
       downloadUrl: driveDownloadUrl(driveId),
       canDownload: true,
-      trackingMode: 'detailed'
+      trackingMode: 'open_only'
     };
   }
 
@@ -747,6 +748,10 @@ async function setupVideoExperience(resource, session) {
     mountHtml5Video(session, activeVideoSource);
     return;
   }
+  if (activeVideoSource.playerType === 'drive_iframe') {
+    renderIframeFallback(session, activeVideoSource, 'Video Google Drive ditampilkan langsung di SIPIL CARE. Progress detail menit tonton dibatasi oleh Google Drive, tetapi status membuka video tetap dicatat.');
+    return;
+  }
   renderIframeFallback(session, activeVideoSource, 'Host video ini tetap ditampilkan di dalam SIPIL CARE, tetapi belum mengizinkan pembacaan menit tonton detail seperti video langsung atau YouTube.');
 }
 
@@ -903,7 +908,13 @@ els.copy?.addEventListener('click', async () => {
     }
     renderResource(resource);
     logViewOnce();
-    await setupVideoExperience(resource, session);
+    await setupVideoExperience(resource, session).catch(error => {
+      console.warn('Video setup failed:', error);
+      if (isPracticumVideo(resource)) {
+        activeVideoSource = resolveVideoSource(resource.file);
+        renderIframeFallback(session, activeVideoSource, 'Video tetap bisa dibuka melalui SIPIL CARE. Jika player internal tidak muncul, pastikan file Google Drive sudah dibagikan untuk siapa saja yang memiliki link.');
+      }
+    });
   } catch (error) {
     console.error('Resource access load failed:', error);
     setState('Gagal memuat resource', 'Terjadi kesalahan akses', 'Coba refresh halaman atau hubungi admin HMS.');
