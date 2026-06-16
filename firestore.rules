@@ -87,6 +87,10 @@ service cloud.firestore {
           'autoOddPeriod', 'autoEvenPeriod', 'enabled', 'title', 'message',
           'updatedAt', 'updatedBy'
         ]);
+      allow create, update: if settingId == 'course_catalog'
+        && request.resource.data.keys().hasOnly([
+          'sksByCode', 'courseOverrides', 'updatedAt', 'updatedBy'
+        ]);
       allow delete: if false;
     }
 

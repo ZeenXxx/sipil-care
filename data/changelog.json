@@ -1,11 +1,16 @@
 [
   {
-    "id": "2026-06-16:admin-dashboard",
+    "id": "2026-06-16:backend-security",
     "date": "2026-06-16",
     "dateLabel": "16 Juni 2026",
     "generated": true,
-    "summary": "Dashboard Admin, Katalog Mata Kuliah Global, Pemantauan IPK Anggota",
+    "summary": "Permission Katalog Mata Kuliah, Dashboard Admin, Pemantauan IPK Anggota",
     "items": [
+      {
+        "type": "fixed",
+        "title": "Permission Katalog Mata Kuliah",
+        "description": "Permission database diperbarui agar admin dapat menyimpan perubahan kode, nama, tipe, dan SKS mata kuliah global dari dashboard."
+      },
       {
         "type": "improved",
         "title": "Dashboard Admin",
