@@ -27,12 +27,16 @@ import {
 const db = getFirestore(app);
 const SESSION_KEY = 'sipilcare_student_session';
 const SESSION_TTL = 24 * 60 * 60 * 1000;
+const ADMIN_SESSION_KEY = 'sipilcare_admin_session';
+const ADMIN_PROFILE_KEY = 'sipilcare_admin_profile';
+const ADMIN_SESSION_TTL = 30 * 60 * 1000;
 const PRACTICUM_VIDEO_PROGRESS_COLLECTION = 'practicum_video_progress';
 const VIDEO_PROGRESS_SAVE_INTERVAL_MS = 10000;
 const VIDEO_PROGRESS_MIN_DELTA_SECONDS = 5;
 const VIDEO_COMPLETE_RATIO = 0.95;
 const params = new URLSearchParams(location.search);
 const source = params.get('source') === 'practicum' ? 'practicum' : 'resources';
+const isAdminPreview = source === 'practicum' && params.get('preview') === 'admin';
 const collectionName = source === 'practicum' ? 'practicum_studio_modules' : 'resources';
 const resourceId = params.get('id') || '';
 
@@ -56,6 +60,7 @@ const els = {
 
 let activeResource = null;
 let activeVideoSource = null;
+let currentAccessSession = null;
 let viewLogged = false;
 let videoPlayLogged = false;
 let currentPracticumRosters = [];
@@ -121,6 +126,67 @@ const readStudentSession = () => {
   } catch {
     return null;
   }
+};
+
+const readAdminPreviewSession = () => {
+  try {
+    const rawSession = localStorage.getItem(ADMIN_SESSION_KEY);
+    const rawProfile = localStorage.getItem(ADMIN_PROFILE_KEY);
+    if (!rawSession || !rawProfile) return null;
+    const adminSession = JSON.parse(rawSession);
+    const profile = JSON.parse(rawProfile);
+    if (!adminSession?.token || !adminSession?.username) return null;
+    if (Date.now() - Number(adminSession.savedAt || 0) > ADMIN_SESSION_TTL) return null;
+    const username = String(profile.username || adminSession.username || '').trim().toLowerCase();
+    if (!username) return null;
+    return {
+      nim: `ADMIN-${username}`,
+      name: profile.name || username,
+      username,
+      role: profile.role || '',
+      roleLabel: profile.roleLabel || profile.role_label || profile.role || 'Admin',
+      permissions: Array.isArray(profile.permissions) ? profile.permissions : [],
+      practicumScopes: normalizeAdminPreviewScopes(profile.practicumScopes || profile.practicum_scopes || profile.practicum_scope),
+      isAdminPreview: true
+    };
+  } catch {
+    return null;
+  }
+};
+
+const normalizeAdminPreviewScopes = value => {
+  if (Array.isArray(value)) return value.map(item => String(item || '').trim()).filter(Boolean);
+  if (typeof value === 'string') {
+    try {
+      const parsed = JSON.parse(value);
+      if (Array.isArray(parsed)) return parsed.map(item => String(item || '').trim()).filter(Boolean);
+    } catch {
+      return value.split(',').map(item => item.trim()).filter(Boolean);
+    }
+  }
+  return [];
+};
+
+const canAdminPreviewPracticumResource = (resource, session) => {
+  if (!session?.isAdminPreview) return { allowed: false };
+  if (session.role === 'developer') return { allowed: true };
+  if (!session.permissions.includes('practicum_studio')) {
+    return {
+      allowed: false,
+      title: 'Akses aslab tidak tersedia',
+      description: 'Akun admin ini belum memiliki permission Praktikum & Studio.'
+    };
+  }
+  const category = String(resource?.category || '').trim();
+  const scopes = normalizeAdminPreviewScopes(session.practicumScopes);
+  if (scopes.length && category && !scopes.includes(category)) {
+    return {
+      allowed: false,
+      title: 'Scope praktikum tidak sesuai',
+      description: `Akun ${session.roleLabel || 'admin'} tidak memiliki akses ke ${category}.`
+    };
+  }
+  return { allowed: true };
 };
 
 const getHost = url => {
@@ -525,6 +591,7 @@ async function loadProgressFromAccessLogs(session) {
 }
 
 function matchedStudentRoster(resource) {
+  if (currentAccessSession?.isAdminPreview) return null;
   return currentPracticumRosters.find(roster => matchesPracticumRosterResource(resource, roster)) || null;
 }
 
@@ -556,8 +623,11 @@ async function saveVideoProgress(session, {
     trackingMode,
     nim: session.nim,
     name: session.name || '',
+    username: session.username || '',
+    adminPreview: Boolean(session.isAdminPreview),
+    roleLabel: session.roleLabel || '',
     angkatan: normalizeCohortYear(session.angkatan),
-    className: roster?.className || previous.className || '',
+    className: session.isAdminPreview ? 'Admin preview' : roster?.className || previous.className || '',
     group: roster?.group || previous.group || '',
     currentSeconds: safeCurrent,
     durationSeconds: safeDuration || Number(previous.durationSeconds || 0),
@@ -928,9 +998,8 @@ async function setupVideoExperience(resource, session) {
   renderIframeFallback(session, activeVideoSource, 'Host video ini tetap ditampilkan di dalam SIPIL CARE, tetapi belum mengizinkan pembacaan menit tonton detail seperti video langsung atau YouTube.');
 }
 
-const renderResource = resource => {
+const renderResource = (resource, session = currentAccessSession || readStudentSession()) => {
   activeResource = resource;
-  const session = readStudentSession();
   const title = resource.title || 'Resource SIPIL CARE';
   const meta = [
     resource.category,
@@ -944,7 +1013,9 @@ const renderResource = resource => {
   els.title.textContent = title;
   els.description.textContent = resource.description || 'File tersedia untuk mahasiswa yang sudah login.';
   els.meta.innerHTML = meta.map(item => `<span class="badge">${escapeText(item)}</span>`).join('');
-  els.student.textContent = session ? `${session.name || 'Mahasiswa'} - NIM ${session.nim}` : 'Belum login.';
+  els.student.textContent = session?.isAdminPreview
+    ? `${session.name || session.username} - Preview ${session.roleLabel || 'Admin'}`
+    : session ? `${session.name || 'Mahasiswa'} - NIM ${session.nim}` : 'Belum login.';
 
   if (els.open) {
     els.open.disabled = !isAvailableFile(resource.file);
@@ -971,7 +1042,7 @@ const renderResource = resource => {
 };
 
 const logAccess = async (action = 'download', extra = {}) => {
-  const session = readStudentSession();
+  const session = currentAccessSession || readStudentSession();
   if (!activeResource || !session) return;
 
   await addDoc(collection(db, 'resource_access_logs'), {
@@ -985,6 +1056,9 @@ const logAccess = async (action = 'download', extra = {}) => {
         : 'Download / buka file',
     nim: session.nim,
     name: session.name || '',
+    username: session.username || '',
+    adminPreview: Boolean(session.isAdminPreview),
+    roleLabel: session.roleLabel || '',
     resourceId: activeResource.id || resourceId || slugify(activeResource.title),
     resourceTitle: activeResource.title || '',
     category: activeResource.category || '',
@@ -1057,12 +1131,21 @@ els.copy?.addEventListener('click', async () => {
 });
 
 (async () => {
-  const session = readStudentSession();
+  const session = isAdminPreview ? readAdminPreviewSession() : readStudentSession();
+  currentAccessSession = session;
   if (!session) {
-    setState('Login diperlukan', 'Silakan login ulang', 'Akses file hanya tersedia untuk mahasiswa yang sudah login.');
+    setState(
+      'Login diperlukan',
+      'Silakan login ulang',
+      isAdminPreview
+        ? 'Preview aslab hanya tersedia untuk admin yang sedang login.'
+        : 'Akses file hanya tersedia untuk mahasiswa yang sudah login.'
+    );
     return;
   }
-  els.student.textContent = `${session.name || 'Mahasiswa'} - NIM ${session.nim}`;
+  els.student.textContent = session.isAdminPreview
+    ? `${session.name || session.username} - Preview ${session.roleLabel || 'Admin'}`
+    : `${session.name || 'Mahasiswa'} - NIM ${session.nim}`;
 
   if (!resourceId) {
     setState('Resource tidak valid', 'ID resource tidak ditemukan', 'Gunakan link dari tombol Salin Link SIPIL CARE pada halaman resource.');
@@ -1076,13 +1159,15 @@ els.copy?.addEventListener('click', async () => {
       return;
     }
     const academicSettings = await loadAcademicSettings();
-    currentPracticumRosters = await loadStudentPracticumRoster(session);
-    const accessCheck = canAccessPracticumResource(resource, session, academicSettings, currentPracticumRosters);
+    currentPracticumRosters = session.isAdminPreview ? [] : await loadStudentPracticumRoster(session);
+    const accessCheck = session.isAdminPreview
+      ? canAdminPreviewPracticumResource(resource, session)
+      : canAccessPracticumResource(resource, session, academicSettings, currentPracticumRosters);
     if (!accessCheck.allowed) {
       setState('Akses semester dibatasi', accessCheck.title, accessCheck.description);
       return;
     }
-    renderResource(resource);
+    renderResource(resource, session);
     logViewOnce();
     await setupVideoExperience(resource, session).catch(error => {
       console.warn('Video setup failed:', error);

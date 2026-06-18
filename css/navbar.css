@@ -804,6 +804,43 @@ body.search-open  {
 
 }
 
+.footer-admin-entry  {
+    margin-top: 20px;
+    padding: 16px;
+    display: grid;
+    gap: 10px;
+    max-width: 310px;
+    border: 1px solid rgba(255, 255, 255, .16);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, .06)
+}
+
+.footer-admin-entry strong  {
+    color: #fff;
+    font-size: 16px
+}
+
+.footer-admin-entry span  {
+    color: #b9ccc5;
+    line-height: 1.45
+}
+
+.footer-admin-entry a  {
+    width: fit-content;
+    margin: 2px 0 0 !important;
+    padding: 10px 14px;
+    border: 1px solid rgba(255, 255, 255, .22);
+    border-radius: 8px;
+    background: #fff;
+    color: #0c3328 !important;
+    font-weight: 900
+}
+
+.footer-admin-entry a:hover  {
+    background: #f5df37;
+    color: #06251d !important
+}
+
 .footer-bottom  {
   
     margin-top: 42px;

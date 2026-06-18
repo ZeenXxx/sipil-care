@@ -151,6 +151,26 @@ const cleanDocumentLinks = (root = document) => {
   });
 };
 
+const createFooterAdminEntry = () => {
+  const path = location.pathname.toLowerCase();
+  if (path.includes('/pages/admin/')) return;
+  if (path.endsWith('/login.html') || path.endsWith('/login')) return;
+  if (path.endsWith('/student-login.html') || path.endsWith('/student-login')) return;
+
+  const footer = document.querySelector('.site-footer');
+  if (!footer || footer.querySelector('.footer-admin-entry')) return;
+
+  const target = footer.querySelector('.footer-grid > div:first-child') || footer.querySelector('.footer-grid') || footer;
+  const entry = document.createElement('div');
+  entry.className = 'footer-admin-entry';
+  entry.innerHTML = `
+    <strong>Akses Pengurus HMS</strong>
+    <span>Masuk ke panel admin untuk mengelola data SIPIL CARE.</span>
+    <a href="${escapeHtml(resolveSitePath('login.html'))}">Masuk sebagai Admin</a>
+  `;
+  target.appendChild(entry);
+};
+
 const closeMenu = () => {
   if (!menuToggle || !navLinks) return;
   navLinks.classList.remove('active');
@@ -514,6 +534,7 @@ function createGlobalSearch() {
 
 createGlobalSearch();
 cleanDocumentLinks();
+createFooterAdminEntry();
 
 // ===== DARK MODE TOGGLE =====
 (function() {

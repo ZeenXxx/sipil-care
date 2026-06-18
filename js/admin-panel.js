@@ -2661,18 +2661,25 @@ function practicumTableRender() {
     .filter(item => canAccessPracticumCategory(item.category))
     .filter(item => (cat === 'All' || item.category === cat) &&
       [item.title, item.category, item.course, item.description, item.author].join(' ').toLowerCase().includes(q))
-    .map(item => `
-      <tr>
-        <td>${escapeText(item.title)}</td>
-        <td>${escapeText(item.category)}</td>
-        <td>${escapeText(targetCohortForPracticumResource(item) || 'Legacy')}</td>
-        <td>Semester ${escapeText(item.semester || '-')}</td>
-        <td>${escapeText(item.kind === 'P' ? 'Praktikum' : 'Studio')} / ${escapeText(item.type || 'PDF')}</td>
-        <td>${statusBadge(item.status)}</td>
-        <td>${escapeText(item.date)}</td>
-        <td><button class="action-btn" data-edit="${item.docId}">Edit</button><button class="action-btn danger" data-del="${item.docId}">Delete</button></td>
-      </tr>
-    `)
+    .map(item => {
+      const isVideo = String(item.type || '').toUpperCase() === 'VIDEO';
+      const previewUrl = `../access?source=practicum&id=${encodeURIComponent(item.docId)}&preview=admin`;
+      const previewAction = isVideo
+        ? `<a class="action-btn" href="${previewUrl}" target="_blank" rel="noopener">Preview Video</a>`
+        : '';
+      return `
+        <tr>
+          <td>${escapeText(item.title)}</td>
+          <td>${escapeText(item.category)}</td>
+          <td>${escapeText(targetCohortForPracticumResource(item) || 'Legacy')}</td>
+          <td>Semester ${escapeText(item.semester || '-')}</td>
+          <td>${escapeText(item.kind === 'P' ? 'Praktikum' : 'Studio')} / ${escapeText(item.type || 'PDF')}</td>
+          <td>${statusBadge(item.status)}</td>
+          <td>${escapeText(item.date)}</td>
+          <td>${previewAction}<button class="action-btn" data-edit="${item.docId}">Edit</button><button class="action-btn danger" data-del="${item.docId}">Delete</button></td>
+        </tr>
+      `;
+    })
     .join('');
   if (practicumTable) practicumTable.innerHTML = rows || '<tr><td colspan="8">Belum ada modul praktikum/studio.</td></tr>';
 }
