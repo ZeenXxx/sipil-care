@@ -3,6 +3,7 @@ import { getFirestore, collection, doc, query, orderBy, where, onSnapshot, setDo
 import {
   ACADEMIC_SETTINGS_COLLECTION,
   ACADEMIC_SETTINGS_DOC,
+  ADMIN_PRACTICUM_SCOPE_COLLECTION,
   PRACTICUM_ATTENDANCE_RECORD_COLLECTION,
   PRACTICUM_ATTENDANCE_SESSION_COLLECTION,
   PRACTICUM_COURSES,
@@ -26,11 +27,17 @@ import {
 const db = getFirestore(app);
 const SESSION_KEY = 'sipilcare_student_session';
 const SESSION_TTL = 24 * 60 * 60 * 1000;
+const ADMIN_SESSION_KEY = 'sipilcare_admin_session';
+const ADMIN_PROFILE_KEY = 'sipilcare_admin_profile';
+const ADMIN_SESSION_TTL = 30 * 60 * 1000;
+const ADMIN_ALL_PERMISSIONS = ['dashboard', 'resources', 'practicum_studio', 'software', 'videos', 'announcements', 'messages', 'audit', 'admin_accounts', 'student_accounts', 'ipk_monitoring', 'log_delete'];
 const search = document.getElementById('practicumSearch');
 const semesterFilter = document.getElementById('semesterFilter');
 const semesterTabs = document.getElementById('semesterTabs');
 const semesterGrid = document.getElementById('semesterGrid');
 const BOOKMARK_KEY = 'sipilcare_student_bookmarks';
+const pageParams = new URLSearchParams(location.search);
+const adminPreviewRequested = pageParams.get('preview') === 'admin' || pageParams.get('adminPreview') === '1';
 
 const courses = PRACTICUM_COURSES;
 const courseKeys = courses.flatMap(item => [
@@ -42,6 +49,7 @@ let studentRosters = [];
 let attendanceSessions = [];
 let attendanceRecords = [];
 let academicSettings = {};
+let adminPreviewScopes = [];
 let qrAttendanceProcessing = false;
 let qrAttendanceProcessed = false;
 let qrAttendanceLoginNoticeShown = false;
@@ -55,7 +63,7 @@ const groupKeyForValue = value => {
 };
 const slugify = value => String(value || '').toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'module';
 const accessId = item => encodeURIComponent(item.id || item.slug || slugify(item.title));
-const accessUrl = item => `access?source=practicum&id=${accessId(item)}`;
+const accessUrl = item => `access?source=practicum&id=${accessId(item)}${readActiveSession()?.isAdminPreview ? '&preview=admin' : ''}`;
 const attendanceRecordId = (sessionId, nim) => `${sessionId}_${nim}`;
 const showToast = message => {
   const toast = document.getElementById('toast');
@@ -198,9 +206,75 @@ const readStudentSession = () => {
   }
 };
 
-const session = readStudentSession();
+const normalizeAdminList = value => {
+  if (Array.isArray(value)) return value.map(item => String(item || '').trim()).filter(Boolean);
+  if (typeof value === 'string') {
+    try {
+      const parsed = JSON.parse(value);
+      if (Array.isArray(parsed)) return parsed.map(item => String(item || '').trim()).filter(Boolean);
+    } catch {
+      return value.split(',').map(item => item.trim()).filter(Boolean);
+    }
+  }
+  return [];
+};
+
+const normalizePracticumScopeList = value => {
+  const allowed = new Set(PRACTICUM_COURSES.map(courseCategory));
+  return [...new Set(normalizeAdminList(value).filter(item => allowed.has(item)))];
+};
+
+const readAdminPreviewSession = () => {
+  try {
+    const rawSession = localStorage.getItem(ADMIN_SESSION_KEY);
+    const rawProfile = localStorage.getItem(ADMIN_PROFILE_KEY);
+    if (!rawSession || !rawProfile) return null;
+    const adminSession = JSON.parse(rawSession);
+    const profile = JSON.parse(rawProfile);
+    if (!adminSession?.token || !adminSession?.username) return null;
+    if (Date.now() - Number(adminSession.savedAt || 0) > ADMIN_SESSION_TTL) return null;
+    const username = String(profile.username || adminSession.username || '').trim().toLowerCase();
+    if (!username) return null;
+    const role = profile.role || '';
+    return {
+      nim: `ADMIN-${username}`,
+      name: profile.name || username,
+      username,
+      role,
+      roleLabel: profile.roleLabel || profile.role_label || role || 'Admin',
+      permissions: role === 'developer' ? ADMIN_ALL_PERMISSIONS : normalizeAdminList(profile.permissions),
+      practicumScopes: role === 'developer' ? [] : normalizePracticumScopeList(profile.practicumScopes || profile.practicum_scopes || profile.practicum_scope),
+      isAdminPreview: true,
+      isAdminReview: true
+    };
+  } catch {
+    return null;
+  }
+};
+
+const readActiveSession = () => {
+  const adminSession = adminPreviewRequested ? readAdminPreviewSession() : null;
+  if (adminSession) return adminSession;
+  return readStudentSession();
+};
+
+const session = readActiveSession();
 
 const studentCohort = currentSession => normalizeCohortYear(currentSession?.angkatan);
+const activeAdminScopes = currentSession => normalizePracticumScopeList(adminPreviewScopes.length ? adminPreviewScopes : currentSession?.practicumScopes);
+const canAdminPreviewCategory = (category, currentSession = readActiveSession()) => {
+  if (!currentSession?.isAdminPreview) return false;
+  if (currentSession.role === 'developer') return true;
+  if (!currentSession.permissions.includes('practicum_studio')) return false;
+  const scopes = activeAdminScopes(currentSession);
+  return !scopes.length || scopes.includes(category);
+};
+const canAdminPreviewCourse = (course, currentSession = readActiveSession()) => canAdminPreviewCategory(courseCategory(course), currentSession);
+const canAdminPreviewModule = (item, currentSession = readActiveSession()) => {
+  const matchedCourse = PRACTICUM_COURSES.find(course => matchesPracticumCourse(item, course));
+  const category = item?.category || (matchedCourse ? courseCategory(matchedCourse) : '');
+  return canAdminPreviewCategory(category, currentSession);
+};
 const resourceTargetCohort = item => targetCohortForPracticumResource(item);
 const sameTarget = (left, right) => {
   const leftTarget = resourceTargetCohort(left);
@@ -233,6 +307,7 @@ const matchesAttendanceGroup = (sessionItem, roster) => {
 };
 
 const canStudentSeeModule = (item, currentSession, activeSemester, rosters) => {
+  if (currentSession?.isAdminPreview) return canAdminPreviewModule(item, currentSession);
   const target = resourceTargetCohort(item);
   const cohort = studentCohort(currentSession);
   if (target) return sameCohort(target, cohort) || hasRosterAccess(item, rosters);
@@ -306,9 +381,19 @@ function resourceCard(item) {
   return `<article class="module-item"><strong>${escapeText(item.title)}</strong><p>${escapeText(item.description || 'Modul pembelajaran dari admin HMS/PENDPROF.')}</p><div class="meta"><span class="badge">${escapeText(item.type || 'PDF')}</span><span class="badge">${escapeText(item.date || 'Update')}</span>${isVideo ? '<span class="badge">Tracking tonton aktif</span>' : ''}</div><div class="actions"><a class="btn btn-primary" href="${url}">${isVideo ? 'Tonton Video' : 'Akses Modul'}</a><button class="btn btn-ghost" data-access-url="${url}" type="button">Salin Link</button><button class="btn btn-ghost" data-bookmark-practicum="${escapeText(item.id || item.slug || slugify(item.title))}" type="button">${isBookmarked(item) ? 'Tersimpan' : 'Simpan'}</button></div></article>`;
 }
 
-const rosterForCourse = course => studentRosters.filter(roster => roster.isActive !== false && matchesPracticumCourse(roster, course));
-const sessionsForCourse = (course, rosters) => attendanceSessions.filter(sessionItem => matchesPracticumCourse(sessionItem, course)
-  && rosters.some(roster => matchesRosterSession(sessionItem, roster)));
+const rosterForCourse = course => {
+  const currentSession = readActiveSession();
+  if (currentSession?.isAdminPreview) return [];
+  return studentRosters.filter(roster => roster.isActive !== false && matchesPracticumCourse(roster, course));
+};
+const sessionsForCourse = (course, rosters) => {
+  const currentSession = readActiveSession();
+  if (currentSession?.isAdminPreview) {
+    return attendanceSessions.filter(sessionItem => matchesPracticumCourse(sessionItem, course) && canAdminPreviewModule(sessionItem, currentSession));
+  }
+  return attendanceSessions.filter(sessionItem => matchesPracticumCourse(sessionItem, course)
+    && rosters.some(roster => matchesRosterSession(sessionItem, roster)));
+};
 
 const isSessionOpen = sessionItem => {
   if (sessionItem.status === 'closed') return false;
@@ -319,14 +404,15 @@ const isSessionOpen = sessionItem => {
 };
 
 const attendancePanel = (course, rosters) => {
+  const reviewMode = Boolean(readActiveSession()?.isAdminReview);
   const sessions = sessionsForCourse(course, rosters);
-  if (!rosters.length) return '';
+  if (!rosters.length && !reviewMode) return '';
   if (!sessions.length) {
-    return `<div class="attendance-list"><article class="attendance-item"><strong>Absensi belum dibuka</strong><p>Data praktikan kamu sudah terdaftar untuk kelas ${escapeText(rosters.map(item => item.className).join(', '))}.</p></article></div>`;
+    const detail = reviewMode ? 'Belum ada sesi absen pada scope praktikum admin ini.' : `Data praktikan kamu sudah terdaftar untuk kelas ${escapeText(rosters.map(item => item.className).join(', '))}.`;
+    return `<div class="attendance-list"><article class="attendance-item"><strong>Absensi belum dibuka</strong><p>${detail}</p></article></div>`;
   }
 
   const records = new Set(attendanceRecords.map(record => record.sessionId));
-  const reviewMode = Boolean(readStudentSession()?.isAdminReview);
   return `<div class="attendance-list">${sessions.map(item => {
     const already = records.has(item.docId);
     const open = isSessionOpen(item);
@@ -372,13 +458,16 @@ function syncSemesterFilter(semesters, activeSemester) {
 }
 
 function render() {
-  const currentSession = readStudentSession();
-  const activeSemester = semesterForCohort(currentSession?.angkatan, academicSettings);
+  const currentSession = readActiveSession();
+  const activeSemester = currentSession?.isAdminPreview ? null : semesterForCohort(currentSession?.angkatan, academicSettings);
   const academicPeriod = resolveAcademicPeriod(academicSettings);
   const q = normalize(search.value);
   const visibleCourses = courses.filter(course => {
     const courseRosters = rosterForCourse(course);
     const courseModules = modules.filter(item => matchesPracticumCourse(item, course) && canStudentSeeModule(item, currentSession, activeSemester, courseRosters));
+    if (currentSession?.isAdminPreview) {
+      return canAdminPreviewCourse(course, currentSession) && (courseModules.length || sessionsForCourse(course, courseRosters).length);
+    }
     return course.semester === activeSemester || courseRosters.length || courseModules.length;
   });
   const semesters = [...new Set(visibleCourses.map(course => course.semester))].sort((a, b) => a - b);
@@ -389,19 +478,33 @@ function render() {
   semesterTabs.innerHTML = semesters.map(semester => `<a href="#semester-${semester}">Semester ${escapeText(semester)}${semester === activeSemester ? ' aktif' : ' tambahan'}</a>`).join('');
 
   if (!currentSession) {
-    semesterGrid.innerHTML = '<div class="empty-state">Silakan login sebagai mahasiswa untuk melihat modul Praktikum &amp; Studio yang sesuai angkatan.</div>';
+    semesterGrid.innerHTML = adminPreviewRequested
+      ? '<div class="empty-state">Silakan login sebagai admin/aslab untuk membuka preview Praktikum &amp; Studio sesuai scope.</div>'
+      : '<div class="empty-state">Silakan login sebagai mahasiswa untuk melihat modul Praktikum &amp; Studio yang sesuai angkatan.</div>';
     return;
   }
 
   if (!hasConfiguredCourses) {
-    semesterGrid.innerHTML = `<div class="empty-state"><strong>${escapeText(semesterAccessLabel(activeSemester, currentSession.angkatan, academicSettings))}</strong><p>Modul atau roster praktikum untuk akun kamu belum tersedia di SIPIL CARE.</p></div>`;
+    const title = currentSession.isAdminPreview
+      ? `Preview ${currentSession.roleLabel || 'Admin'}`
+      : semesterAccessLabel(activeSemester, currentSession.angkatan, academicSettings);
+    const message = currentSession.isAdminPreview
+      ? 'Belum ada modul atau sesi absen pada scope praktikum akun admin ini.'
+      : 'Modul atau roster praktikum untuk akun kamu belum tersedia di SIPIL CARE.';
+    semesterGrid.innerHTML = `<div class="empty-state"><strong>${escapeText(title)}</strong><p>${message}</p></div>`;
     return;
   }
 
+  const accessTitle = currentSession.isAdminPreview
+    ? `Mode preview admin - ${currentSession.roleLabel || 'Admin'}`
+    : semesterAccessLabel(activeSemester, currentSession.angkatan, academicSettings);
+  const accessMeta = currentSession.isAdminPreview
+    ? `Akses sesuai scope praktikum${activeAdminScopes(currentSession).length ? `: ${escapeText(activeAdminScopes(currentSession).join(', '))}` : ': semua praktikum'}`
+    : `${escapeText(academicPeriodLabel(academicPeriod))}${studentRosters.length ? ` &middot; ${studentRosters.length} roster praktikum` : ''}`;
   semesterGrid.innerHTML = `
     <div class="semester-access-note">
-      <strong>${escapeText(semesterAccessLabel(activeSemester, currentSession.angkatan, academicSettings))}</strong>
-      <span>${currentSession.isAdminReview ? 'Mode review admin - tidak bisa mengirim absen &middot; ' : ''}${escapeText(academicPeriodLabel(academicPeriod))}${studentRosters.length ? ` &middot; ${studentRosters.length} roster praktikum` : ''}</span>
+      <strong>${escapeText(accessTitle)}</strong>
+      <span>${currentSession.isAdminReview ? 'Tidak bisa mengirim absen &middot; ' : ''}${accessMeta}</span>
     </div>
   ` + semesters
     .filter(semester => selectedSemester === 'All' || Number(selectedSemester) === semester)
@@ -413,7 +516,10 @@ function render() {
           .filter(item => matchesPracticumCourse(item, course))
           .filter(item => canStudentSeeModule(item, currentSession, activeSemester, courseRosters))
           .filter(item => normalize([item.title, item.description, item.author, item.category, item.course, item.targetAngkatan].join(' ')).includes(q));
-        return `<article class="course-card"><div class="course-top"><h3>${escapeText(course.title)}</h3><span class="course-type">${course.type}</span></div><p class="empty-module">${courseKind(course.type)} semester ${semester}${courseRosters.length ? ` &middot; Kelas ${escapeText(courseRosters.map(item => item.className).join(', '))}` : ''}</p>${attendancePanel(course, courseRosters)}<div class="module-list">${courseModules.length ? courseModules.map(resourceCard).join('') : '<p class="empty-module">Modul belum tersedia. Admin dapat upload modul Praktikum &amp; Studio dengan kategori ' + escapeText(courseCategory(course)) + '.</p>'}</div></article>`;
+        const courseDetail = currentSession.isAdminPreview
+          ? `${courseKind(course.type)} semester ${semester} &middot; Preview admin`
+          : `${courseKind(course.type)} semester ${semester}${courseRosters.length ? ` &middot; Kelas ${escapeText(courseRosters.map(item => item.className).join(', '))}` : ''}`;
+        return `<article class="course-card"><div class="course-top"><h3>${escapeText(course.title)}</h3><span class="course-type">${course.type}</span></div><p class="empty-module">${courseDetail}</p>${attendancePanel(course, courseRosters)}<div class="module-list">${courseModules.length ? courseModules.map(resourceCard).join('') : '<p class="empty-module">Modul belum tersedia. Admin dapat upload modul Praktikum &amp; Studio dengan kategori ' + escapeText(courseCategory(course)) + '.</p>'}</div></article>`;
       }).join('');
       return `<section class="semester-block" id="semester-${semester}"><div class="semester-head"><h2>Semester ${semester}</h2><span>${semesterCourses.length} kategori praktikum/studio</span></div><div class="course-grid">${cards}</div></section>`;
     }).join('');
@@ -596,7 +702,30 @@ onSnapshot(modulesQuery, snapshot => {
     });
 });
 
-if (session?.nim) {
+if (session?.isAdminPreview) {
+  if (session.role === 'developer') {
+    adminPreviewScopes = [];
+    render();
+  } else if (session.username) {
+    onSnapshot(doc(db, ADMIN_PRACTICUM_SCOPE_COLLECTION, session.username), snapshot => {
+      adminPreviewScopes = snapshot.exists() ? normalizePracticumScopeList(snapshot.data().scopes || snapshot.data().practicumScopes || snapshot.data().practicum_scopes) : normalizePracticumScopeList(session.practicumScopes);
+      try {
+        const profile = JSON.parse(localStorage.getItem(ADMIN_PROFILE_KEY) || '{}');
+        localStorage.setItem(ADMIN_PROFILE_KEY, JSON.stringify({
+          ...profile,
+          practicumScopes: adminPreviewScopes
+        }));
+      } catch {
+        // Preview tetap berjalan memakai scope dari sesi aktif.
+      }
+      render();
+    }, error => {
+      console.error('Admin practicum scope preview failed:', error);
+      adminPreviewScopes = normalizePracticumScopeList(session.practicumScopes);
+      render();
+    });
+  }
+} else if (session?.nim) {
   const rosterQuery = query(collection(db, PRACTICUM_ROSTER_COLLECTION), where('nim', '==', session.nim));
   onSnapshot(rosterQuery, snapshot => {
     studentRosters = snapshot.docs

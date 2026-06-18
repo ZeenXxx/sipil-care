@@ -3,6 +3,9 @@
   const STUDENTS_KEY = "sipilcare_students";
   const SESSION_KEY = "sipilcare_student_session";
   const SESSION_TTL = 24 * 60 * 60 * 1000;
+  const ADMIN_SESSION_KEY = "sipilcare_admin_session";
+  const ADMIN_PROFILE_KEY = "sipilcare_admin_profile";
+  const ADMIN_SESSION_TTL = 30 * 60 * 1000;
   const ACTIVITY_SYNC_INTERVAL = 60 * 1000;
   const ACTIVITY_SYNC_KEY = "sipilcare_student_activity_sync";
   const cleanRoute = (value) => {
@@ -23,6 +26,7 @@
   const isPublicHelpPage = currentPage === "help.html";
   const adminReviewParams = new URLSearchParams(location.search);
   const adminReviewNim = adminReviewParams.get("adminReviewNim") || "";
+  const adminPracticumPreviewRequested = adminReviewParams.get("preview") === "admin" || adminReviewParams.get("adminPreview") === "1";
   const usingSupabase = CONFIG.mode === "supabase" && CONFIG.supabaseUrl && CONFIG.supabaseAnonKey;
   const HMS_INSTAGRAM = "https://www.instagram.com/hmsunjani";
   const HMS_YOUTUBE = "https://youtube.com/@hmsunjani1986?si=d_lPiLa4u7yzBDYE";
@@ -67,6 +71,16 @@
       permissions.includes("student_accounts")
     ));
   };
+  const canUseAdminPracticumPreview = () => {
+    if (!adminPracticumPreviewRequested) return false;
+    const adminSession = readLocalJson(ADMIN_SESSION_KEY);
+    const adminProfile = readLocalJson(ADMIN_PROFILE_KEY);
+    const permissions = Array.isArray(adminProfile.permissions) ? adminProfile.permissions : [];
+    const savedAt = Number(adminSession.savedAt || 0);
+    if (!adminSession.token || !adminSession.username || !savedAt) return false;
+    if (Date.now() - savedAt > ADMIN_SESSION_TTL) return false;
+    return adminProfile.role === "developer" || permissions.includes("practicum_studio");
+  };
   const adminReviewSession = () => {
     if (!canUseAdminStudentReview()) return null;
     return {
@@ -77,7 +91,22 @@
       isAdminReview: true
     };
   };
+  const adminPracticumPreviewSession = () => {
+    if (!canUseAdminPracticumPreview()) return null;
+    const adminSession = readLocalJson(ADMIN_SESSION_KEY);
+    const adminProfile = readLocalJson(ADMIN_PROFILE_KEY);
+    const username = String(adminProfile.username || adminSession.username || "admin").trim().toLowerCase();
+    return {
+      nim: `ADMIN-${username}`,
+      name: adminProfile.name || username,
+      angkatan: "",
+      lastSeenAt: Date.now(),
+      isAdminReview: true,
+      isAdminPreview: true
+    };
+  };
   window.SIPILCARE_STUDENT_REVIEW = adminReviewSession();
+  window.SIPILCARE_ADMIN_PRACTICUM_PREVIEW = adminPracticumPreviewSession();
   const getGreetingHour = () => {
     try {
       const parts = new Intl.DateTimeFormat("id-ID", {
@@ -102,6 +131,8 @@
     try {
       const reviewSession = adminReviewSession();
       if (reviewSession) return reviewSession;
+      const adminPreviewSession = adminPracticumPreviewSession();
+      if (adminPreviewSession) return adminPreviewSession;
       const raw = localStorage.getItem(SESSION_KEY) || sessionStorage.getItem(SESSION_KEY);
       if (!raw) return null;
       const session = JSON.parse(raw);

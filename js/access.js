@@ -14,6 +14,7 @@ import {
 import {
   ACADEMIC_SETTINGS_COLLECTION,
   ACADEMIC_SETTINGS_DOC,
+  ADMIN_PRACTICUM_SCOPE_COLLECTION,
   PRACTICUM_ROSTER_COLLECTION,
   normalizeCohortYear,
   normalizeText,
@@ -36,7 +37,7 @@ const VIDEO_PROGRESS_MIN_DELTA_SECONDS = 5;
 const VIDEO_COMPLETE_RATIO = 0.95;
 const params = new URLSearchParams(location.search);
 const source = params.get('source') === 'practicum' ? 'practicum' : 'resources';
-const isAdminPreview = source === 'practicum' && params.get('preview') === 'admin';
+const adminPreviewRequested = source === 'practicum' && params.get('preview') === 'admin';
 const collectionName = source === 'practicum' ? 'practicum_studio_modules' : 'resources';
 const resourceId = params.get('id') || '';
 
@@ -165,6 +166,30 @@ const normalizeAdminPreviewScopes = value => {
     }
   }
   return [];
+};
+
+const hydrateAdminPreviewSession = async session => {
+  if (!session?.isAdminPreview || session.role === 'developer' || !session.username) return session;
+  try {
+    const scopeSnapshot = await getDoc(doc(db, ADMIN_PRACTICUM_SCOPE_COLLECTION, session.username));
+    if (!scopeSnapshot.exists()) return session;
+    const scopeData = scopeSnapshot.data();
+    const scopes = normalizeAdminPreviewScopes(scopeData.scopes || scopeData.practicumScopes || scopeData.practicum_scopes);
+    const hydrated = { ...session, practicumScopes: scopes };
+    try {
+      const profile = JSON.parse(localStorage.getItem(ADMIN_PROFILE_KEY) || '{}');
+      localStorage.setItem(ADMIN_PROFILE_KEY, JSON.stringify({
+        ...profile,
+        practicumScopes: scopes
+      }));
+    } catch {
+      // Scope dari database tetap dipakai untuk preview saat ini.
+    }
+    return hydrated;
+  } catch (error) {
+    console.warn('Admin practicum scope load failed:', error);
+    return session;
+  }
 };
 
 const canAdminPreviewPracticumResource = (resource, session) => {
@@ -1131,20 +1156,25 @@ els.copy?.addEventListener('click', async () => {
 });
 
 (async () => {
-  const session = isAdminPreview ? readAdminPreviewSession() : readStudentSession();
+  const studentSession = readStudentSession();
+  const adminSession = source === 'practicum' ? readAdminPreviewSession() : null;
+  const session = adminPreviewRequested ? adminSession : studentSession || adminSession;
   currentAccessSession = session;
   if (!session) {
     setState(
       'Login diperlukan',
       'Silakan login ulang',
-      isAdminPreview
+      adminPreviewRequested
         ? 'Preview aslab hanya tersedia untuk admin yang sedang login.'
         : 'Akses file hanya tersedia untuk mahasiswa yang sudah login.'
     );
     return;
   }
+  if (session.isAdminPreview) {
+    currentAccessSession = await hydrateAdminPreviewSession(session);
+  }
   els.student.textContent = session.isAdminPreview
-    ? `${session.name || session.username} - Preview ${session.roleLabel || 'Admin'}`
+    ? `${currentAccessSession.name || currentAccessSession.username} - Preview ${currentAccessSession.roleLabel || 'Admin'}`
     : `${session.name || 'Mahasiswa'} - NIM ${session.nim}`;
 
   if (!resourceId) {
@@ -1159,17 +1189,18 @@ els.copy?.addEventListener('click', async () => {
       return;
     }
     const academicSettings = await loadAcademicSettings();
-    currentPracticumRosters = session.isAdminPreview ? [] : await loadStudentPracticumRoster(session);
-    const accessCheck = session.isAdminPreview
-      ? canAdminPreviewPracticumResource(resource, session)
-      : canAccessPracticumResource(resource, session, academicSettings, currentPracticumRosters);
+    const activeSession = currentAccessSession || session;
+    currentPracticumRosters = activeSession.isAdminPreview ? [] : await loadStudentPracticumRoster(activeSession);
+    const accessCheck = activeSession.isAdminPreview
+      ? canAdminPreviewPracticumResource(resource, activeSession)
+      : canAccessPracticumResource(resource, activeSession, academicSettings, currentPracticumRosters);
     if (!accessCheck.allowed) {
       setState('Akses semester dibatasi', accessCheck.title, accessCheck.description);
       return;
     }
-    renderResource(resource, session);
+    renderResource(resource, activeSession);
     logViewOnce();
-    await setupVideoExperience(resource, session).catch(error => {
+    await setupVideoExperience(resource, activeSession).catch(error => {
       console.warn('Video setup failed:', error);
       if (isPracticumVideo(resource)) {
         activeVideoSource = resolveVideoSource(resource.file);
