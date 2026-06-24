@@ -2505,6 +2505,25 @@ const setLoading = active => {
 };
 
 const isValidUrl = value => /^https?:\/\//i.test(value.trim());
+const normalizeYoutubeLink = value => {
+  const raw = String(value || '').trim();
+  if (/^[a-zA-Z0-9_-]{11}$/.test(raw)) return `https://www.youtube.com/watch?v=${raw}`;
+  if (/^(?:www\.)?(?:youtube\.com|youtu\.be)\//i.test(raw)) return `https://${raw}`;
+  try {
+    const url = new URL(raw);
+    let id = '';
+    if (url.hostname.includes('youtu.be')) {
+      id = url.pathname.replace(/^\/+/, '').split('/')[0] || '';
+    } else if (url.hostname.includes('youtube.com') || url.hostname.includes('youtube-nocookie.com')) {
+      id = url.pathname === '/watch'
+        ? url.searchParams.get('v') || ''
+        : url.pathname.match(/\/(?:embed|shorts|live)\/([^/?#]+)/)?.[1] || '';
+    }
+    return id ? `https://www.youtube.com/watch?v=${encodeURIComponent(id)}` : '';
+  } catch {
+    return '';
+  }
+};
 
 async function loadSupabaseClient() {
   if (supabaseClient) return supabaseClient;
@@ -2596,8 +2615,8 @@ function validateVideoForm() {
     toast('Lengkapi semua field video.');
     return false;
   }
-  if (!isValidUrl(videoYoutube.value)) {
-    toast('Link YouTube harus dimulai dengan http:// atau https://');
+  if (!normalizeYoutubeLink(videoYoutube.value)) {
+    toast('Masukkan link video YouTube yang valid.');
     return false;
   }
   return true;
@@ -5989,7 +6008,7 @@ on(videoForm, 'submit', async e => {
       category: videoCategoryInput.value.trim(),
       channel: videoChannel.value.trim(),
       duration: videoChannel.value.trim(),
-      youtube: videoYoutube.value.trim(),
+      youtube: normalizeYoutubeLink(videoYoutube.value),
       status: selectedStatus(videoStatus)
     };
 

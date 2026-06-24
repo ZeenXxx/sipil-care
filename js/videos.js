@@ -49,9 +49,18 @@ const escapeAttribute = value => String(value || '').replace(/[&<>"']/g, char =>
 	'"': '&quot;',
 	"'": '&#39;'
 }[char]));
+const normalizeYoutubeInput = value => {
+	const raw = String(value || '').trim();
+	if (!raw || raw === '#') return '';
+	if (/^[a-zA-Z0-9_-]{11}$/.test(raw)) return `https://www.youtube.com/watch?v=${raw}`;
+	if (/^(?:www\.)?(?:youtube\.com|youtu\.be)\//i.test(raw)) return `https://${raw}`;
+	return raw;
+};
 const parseYoutubeId = value => {
 	try {
-		const url = new URL(value, location.href);
+		const normalized = normalizeYoutubeInput(value);
+		if (!normalized) return '';
+		const url = new URL(normalized);
 		if (url.hostname.includes('youtu.be')) return url.pathname.replace(/^\/+/, '').split('/')[0] || '';
 		if (url.hostname.includes('youtube.com') || url.hostname.includes('youtube-nocookie.com')) {
 			if (url.pathname === '/watch') return url.searchParams.get('v') || '';
@@ -65,17 +74,7 @@ const parseYoutubeId = value => {
 };
 const youtubeWatchUrl = value => {
 	const id = parseYoutubeId(value);
-	return id ? `https://www.youtube.com/watch?v=${encodeURIComponent(id)}` : String(value || '');
-};
-const isMobileDevice = () => window.matchMedia('(pointer: coarse)').matches
-	|| /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
-const mobileYoutubeUrl = value => {
-	const watchUrl = youtubeWatchUrl(value);
-	const id = parseYoutubeId(watchUrl);
-	if (id && /Android/i.test(navigator.userAgent)) {
-		return `intent://www.youtube.com/watch?v=${encodeURIComponent(id)}#Intent;scheme=https;package=com.google.android.youtube;S.browser_fallback_url=${encodeURIComponent(watchUrl)};end`;
-	}
-	return watchUrl;
+	return id ? `https://www.youtube.com/watch?v=${encodeURIComponent(id)}` : '';
 };
 const slugify = value => String(value || '').toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'video';
 const showToast = message => {
@@ -127,7 +126,11 @@ const logVideoAccess = async video => {
 		accessedAt: serverTimestamp()
 	});
 };
-const videoLink = (video, label) => `<a class="btn btn-primary" href="${escapeAttribute(youtubeWatchUrl(video.youtube))}" target="_blank" rel="external noopener" data-video-id="${escapeAttribute(video.id)}" data-youtube-open>${label}</a>`;
+const videoLink = (video, label) => {
+	const url = youtubeWatchUrl(video.youtube);
+	if (!url) return `<button class="btn btn-primary" type="button" disabled title="Link YouTube belum tersedia">${label}</button>`;
+	return `<a class="btn btn-primary" href="${escapeAttribute(url)}" target="_blank" rel="external noopener noreferrer" data-video-id="${escapeAttribute(video.id)}">${label}</a>`;
+};
 const card = v => `<article class="card video-card"><div class="thumb">${v.thumbnail}</div><div class="video-body"><div class="meta"><span class="badge">${v.category}</span><span class="badge">Channel: ${channelLabel(v)}</span></div><h3>${v.title}</h3><p>${v.description}</p><br><div class="actions">${videoLink(v, 'Watch')}<button class="btn btn-ghost" type="button" data-bookmark-video="${v.id}">${isBookmarked(v) ? 'Tersimpan' : 'Simpan'}</button></div></div></article>`;
 
 function render() {
@@ -195,8 +198,4 @@ document.addEventListener('click', event => {
 	if (!link) return;
 	const video = videos.find(item => item.id === link.dataset.videoId);
 	logVideoAccess(video).catch(error => console.warn('Video access log failed:', error));
-	if (video && link.matches('[data-youtube-open]') && isMobileDevice()) {
-		event.preventDefault();
-		location.href = mobileYoutubeUrl(video.youtube);
-	}
 });
