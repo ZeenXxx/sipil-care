@@ -2,11 +2,7 @@ import { app } from './firebase-config.js';
 import {
 	getFirestore,
 	collection,
-	query,
-	orderBy,
-	where,
 	onSnapshot,
-	getDocs,
 	addDoc,
 	serverTimestamp
 } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
@@ -22,7 +18,8 @@ const videoSearch = document.getElementById('videoSearch');
 const videoCategory = document.getElementById('videoCategory');
 const featuredVideo = document.getElementById('featuredVideo');
 
-const channelLabel = v => v.channel || v.duration || 'Channel';
+const channelLabel = v => String(v.channel || '').trim() || 'HMS UNJANI';
+const durationLabel = v => String(v.duration || '').trim();
 const readStudentSession = () => {
 	try {
 		const raw = localStorage.getItem(SESSION_KEY) || sessionStorage.getItem(SESSION_KEY);
@@ -103,8 +100,13 @@ const toggleBookmark = item => {
 };
 const normalizeVideos = items => items.map((item, index) => ({
 	...item,
-	id: item.id || item.slug || slugify(item.title || `video-${index + 1}`)
-}));
+	id: item.id || item.slug || slugify(item.title || `video-${index + 1}`),
+	channel: String(item.channel || '').trim(),
+	duration: String(item.duration || '').trim() === String(item.channel || '').trim()
+		? ''
+		: String(item.duration || '').trim(),
+	youtube: youtubeWatchUrl(item.youtube)
+})).sort((a, b) => String(a.title || '').localeCompare(String(b.title || ''), 'id'));
 const logVideoAccess = async video => {
 	const session = readStudentSession();
 	if (!session || !video) return;
@@ -127,11 +129,12 @@ const logVideoAccess = async video => {
 	});
 };
 const videoLink = (video, label) => {
-	const url = youtubeWatchUrl(video.youtube);
+	const url = video.youtube || youtubeWatchUrl(video.youtube);
 	if (!url) return `<button class="btn btn-primary" type="button" disabled title="Link YouTube belum tersedia">${label}</button>`;
 	return `<a class="btn btn-primary" href="${escapeAttribute(url)}" target="_blank" rel="external noopener noreferrer" data-video-id="${escapeAttribute(video.id)}">${label}</a>`;
 };
-const card = v => `<article class="card video-card"><div class="thumb">${v.thumbnail}</div><div class="video-body"><div class="meta"><span class="badge">${v.category}</span><span class="badge">Channel: ${channelLabel(v)}</span></div><h3>${v.title}</h3><p>${v.description}</p><br><div class="actions">${videoLink(v, 'Watch')}<button class="btn btn-ghost" type="button" data-bookmark-video="${v.id}">${isBookmarked(v) ? 'Tersimpan' : 'Simpan'}</button></div></div></article>`;
+const videoMeta = v => `<div class="meta"><span class="badge">${v.category}</span><span class="badge">Channel: ${channelLabel(v)}</span>${durationLabel(v) ? `<span class="badge">Durasi: ${durationLabel(v)}</span>` : ''}</div>`;
+const card = v => `<article class="card video-card"><div class="thumb">${v.thumbnail}</div><div class="video-body">${videoMeta(v)}<h3>${v.title}</h3><p>${v.description}</p><br><div class="actions">${videoLink(v, 'Watch')}<button class="btn btn-ghost" type="button" data-bookmark-video="${v.id}">${isBookmarked(v) ? 'Tersimpan' : 'Simpan'}</button></div></div></article>`;
 
 function render() {
 	const q = (videoSearch?.value || '').toLowerCase();
@@ -141,48 +144,32 @@ function render() {
 }
 
 function updateUI() {
-	if (!videos || videos.length === 0) return;
+	if (!videos || videos.length === 0) {
+		if (featuredVideo) featuredVideo.innerHTML = '<div class="empty">Belum ada video yang dipublikasikan dari Video Management.</div>';
+		if (videoGrid) videoGrid.innerHTML = '<div class="card empty">Belum ada video yang dipublikasikan.</div>';
+		if (videoCategory) videoCategory.innerHTML = '<option value="All">Semua kategori</option>';
+		return;
+	}
 	if (videoCategory) videoCategory.innerHTML = '<option value="All">Semua kategori</option>' + [...new Set(videos.map(v => v.category || 'Uncategorized'))].map(c => `<option>${c}</option>`).join('');
 	const top = videos[0];
-	if (featuredVideo && top) featuredVideo.innerHTML = `<div class="thumb">${top.thumbnail}</div><div><span class="eyebrow">Featured video</span><h2 class="title">${top.title}</h2><div class="meta"><span class="badge">Channel: ${channelLabel(top)}</span></div><p class="lead">${top.description}</p><br>${videoLink(top, 'Watch Video')}</div>`;
+	if (featuredVideo && top) featuredVideo.innerHTML = `<div class="thumb">${top.thumbnail}</div><div><span class="eyebrow">Featured video</span><h2 class="title">${top.title}</h2>${videoMeta(top)}<p class="lead">${top.description}</p><br>${videoLink(top, 'Watch Video')}</div>`;
 	render();
 }
 
-async function loadLocalFallback() {
-	try {
-		const resp = await fetch('../data/videos.json');
-		const d = await resp.json();
-		videos = normalizeVideos(JSON.parse(localStorage.getItem('sipilcare_videos') || 'null') || d);
-		localStorage.setItem('sipilcare_videos', JSON.stringify(videos));
-		updateUI();
-	} catch (err) {
-		console.error('Failed to load local videos.json', err);
-	}
-}
-
-// Try Firestore first, then fallback to local JSON
 try {
-	const videosQuery = query(collection(db, 'videos'), where('status', '==', 'published'), orderBy('title'));
-	onSnapshot(videosQuery, snapshot => {
-		if (snapshot.empty) {
-			getDocs(query(collection(db, 'videos'), orderBy('title')))
-				.then(fallbackSnapshot => {
-					videos = normalizeVideos(fallbackSnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })).filter(item => (item.status || 'published') === 'published'));
-					updateUI();
-				})
-				.catch(error => console.warn('Video legacy fallback failed:', error));
-			return;
-		}
+	onSnapshot(collection(db, 'videos'), snapshot => {
 		videos = normalizeVideos(snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })).filter(item => (item.status || 'published') === 'published'));
-		// ensure deterministic ordering: by title already
 		updateUI();
 	}, err => {
 		console.error('Firestore videos error:', err);
-		loadLocalFallback();
+		videos = [];
+		updateUI();
+		showToast('Gagal memuat video dari server. Coba refresh halaman.');
 	});
 } catch (e) {
 	console.error('Error initializing Firestore videos listener', e);
-	loadLocalFallback();
+	videos = [];
+	updateUI();
 }
 
 videoSearch?.addEventListener('input', render);

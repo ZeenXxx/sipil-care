@@ -6007,7 +6007,6 @@ on(videoForm, 'submit', async e => {
       description: videoDescription.value.trim(),
       category: videoCategoryInput.value.trim(),
       channel: videoChannel.value.trim(),
-      duration: videoChannel.value.trim(),
       youtube: normalizeYoutubeLink(videoYoutube.value),
       status: selectedStatus(videoStatus)
     };
