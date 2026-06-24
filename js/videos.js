@@ -42,6 +42,41 @@ const getHost = url => {
 		return '';
 	}
 };
+const escapeAttribute = value => String(value || '').replace(/[&<>"']/g, char => ({
+	'&': '&amp;',
+	'<': '&lt;',
+	'>': '&gt;',
+	'"': '&quot;',
+	"'": '&#39;'
+}[char]));
+const parseYoutubeId = value => {
+	try {
+		const url = new URL(value, location.href);
+		if (url.hostname.includes('youtu.be')) return url.pathname.replace(/^\/+/, '').split('/')[0] || '';
+		if (url.hostname.includes('youtube.com') || url.hostname.includes('youtube-nocookie.com')) {
+			if (url.pathname === '/watch') return url.searchParams.get('v') || '';
+			const match = url.pathname.match(/\/(?:embed|shorts|live)\/([^/?#]+)/);
+			return match?.[1] || '';
+		}
+		return '';
+	} catch {
+		return '';
+	}
+};
+const youtubeWatchUrl = value => {
+	const id = parseYoutubeId(value);
+	return id ? `https://www.youtube.com/watch?v=${encodeURIComponent(id)}` : String(value || '');
+};
+const isMobileDevice = () => window.matchMedia('(pointer: coarse)').matches
+	|| /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+const mobileYoutubeUrl = value => {
+	const watchUrl = youtubeWatchUrl(value);
+	const id = parseYoutubeId(watchUrl);
+	if (id && /Android/i.test(navigator.userAgent)) {
+		return `intent://www.youtube.com/watch?v=${encodeURIComponent(id)}#Intent;scheme=https;package=com.google.android.youtube;S.browser_fallback_url=${encodeURIComponent(watchUrl)};end`;
+	}
+	return watchUrl;
+};
 const slugify = value => String(value || '').toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'video';
 const showToast = message => {
 	const toast = document.getElementById('toast');
@@ -92,7 +127,8 @@ const logVideoAccess = async video => {
 		accessedAt: serverTimestamp()
 	});
 };
-const card = v => `<article class="card video-card"><div class="thumb">${v.thumbnail}</div><div class="video-body"><div class="meta"><span class="badge">${v.category}</span><span class="badge">Channel: ${channelLabel(v)}</span></div><h3>${v.title}</h3><p>${v.description}</p><br><div class="actions"><a class="btn btn-primary" href="${v.youtube}" target="_blank" rel="noopener" data-video-id="${v.id}">Watch</a><button class="btn btn-ghost" type="button" data-bookmark-video="${v.id}">${isBookmarked(v) ? 'Tersimpan' : 'Simpan'}</button></div></div></article>`;
+const videoLink = (video, label) => `<a class="btn btn-primary" href="${escapeAttribute(youtubeWatchUrl(video.youtube))}" target="_blank" rel="external noopener" data-video-id="${escapeAttribute(video.id)}" data-youtube-open>${label}</a>`;
+const card = v => `<article class="card video-card"><div class="thumb">${v.thumbnail}</div><div class="video-body"><div class="meta"><span class="badge">${v.category}</span><span class="badge">Channel: ${channelLabel(v)}</span></div><h3>${v.title}</h3><p>${v.description}</p><br><div class="actions">${videoLink(v, 'Watch')}<button class="btn btn-ghost" type="button" data-bookmark-video="${v.id}">${isBookmarked(v) ? 'Tersimpan' : 'Simpan'}</button></div></div></article>`;
 
 function render() {
 	const q = (videoSearch?.value || '').toLowerCase();
@@ -105,7 +141,7 @@ function updateUI() {
 	if (!videos || videos.length === 0) return;
 	if (videoCategory) videoCategory.innerHTML = '<option value="All">Semua kategori</option>' + [...new Set(videos.map(v => v.category || 'Uncategorized'))].map(c => `<option>${c}</option>`).join('');
 	const top = videos[0];
-	if (featuredVideo && top) featuredVideo.innerHTML = `<div class="thumb">${top.thumbnail}</div><div><span class="eyebrow">Featured video</span><h2 class="title">${top.title}</h2><div class="meta"><span class="badge">Channel: ${channelLabel(top)}</span></div><p class="lead">${top.description}</p><br><a class="btn btn-primary" href="${top.youtube}" target="_blank" rel="noopener" data-video-id="${top.id}">Watch Video</a></div>`;
+	if (featuredVideo && top) featuredVideo.innerHTML = `<div class="thumb">${top.thumbnail}</div><div><span class="eyebrow">Featured video</span><h2 class="title">${top.title}</h2><div class="meta"><span class="badge">Channel: ${channelLabel(top)}</span></div><p class="lead">${top.description}</p><br>${videoLink(top, 'Watch Video')}</div>`;
 	render();
 }
 
@@ -159,4 +195,8 @@ document.addEventListener('click', event => {
 	if (!link) return;
 	const video = videos.find(item => item.id === link.dataset.videoId);
 	logVideoAccess(video).catch(error => console.warn('Video access log failed:', error));
+	if (video && link.matches('[data-youtube-open]') && isMobileDevice()) {
+		event.preventDefault();
+		location.href = mobileYoutubeUrl(video.youtube);
+	}
 });

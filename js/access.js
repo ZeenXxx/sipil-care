@@ -1033,6 +1033,7 @@ const renderResource = (resource, session = currentAccessSession || readStudentS
     source === 'practicum' ? 'Praktikum & Studio' : 'Resources'
   ].filter(Boolean);
   const resourceIsVideo = isPracticumVideo(resource);
+  if (!resourceIsVideo) resetVideoUi();
 
   els.status.textContent = resourceIsVideo ? 'Video siap diputar' : 'Siap dibuka';
   els.title.textContent = title;
