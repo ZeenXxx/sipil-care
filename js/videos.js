@@ -155,13 +155,13 @@ function render() {
 	const q = (videoSearch?.value || '').toLowerCase();
 	const cat = videoCategory?.value || 'All';
 	const d = videos.filter(v => (v.status || 'published') === 'published' && (cat === 'All' || v.category === cat) && [v.title, v.description, v.category].join(' ').toLowerCase().includes(q));
-	if (videoGrid) videoGrid.innerHTML = d.map(card).join('') || '<div class="card empty">Video tidak ditemukan.</div>';
+	if (videoGrid) videoGrid.innerHTML = d.map(card).join('') || '<div class="card empty video-empty-state"><strong>Video tidak ditemukan.</strong><p>Coba kata kunci atau kategori lain. Video yang tersedia dapat dibuka dari sini.</p></div>';
 }
 
 function updateUI() {
 	if (!videos || videos.length === 0) {
-		if (featuredVideo) featuredVideo.innerHTML = '<div class="empty">Belum ada video yang dipublikasikan dari Video Management.</div>';
-		if (videoGrid) videoGrid.innerHTML = '<div class="card empty">Belum ada video yang dipublikasikan.</div>';
+		if (featuredVideo) featuredVideo.innerHTML = '<div class="empty video-empty-state"><strong>Belum ada video pilihan.</strong><p>Video unggahan pengelola akan tampil di area ini.</p></div>';
+		if (videoGrid) videoGrid.innerHTML = '<div class="card empty video-empty-state"><strong>Video pembelajaran belum tersedia.</strong><p>Konten video akan ditampilkan di sini setelah diterbitkan. Coba kembali nanti atau lihat materi di halaman Resource.</p><a class="btn btn-secondary" href="resources.html">Buka Resource</a></div>';
 		if (videoCategory) videoCategory.innerHTML = '<option value="All">Semua kategori</option>';
 		return;
 	}

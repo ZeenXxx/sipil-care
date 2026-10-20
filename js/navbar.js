@@ -244,24 +244,24 @@ const buildCompactNavbar = () => {
   if (!navLinks || navLinks.dataset.compactNav === 'true') return;
   navLinks.dataset.compactNav = 'true';
   navLinks.innerHTML = '';
-  navLinks.appendChild(createNavLink({ label: 'Home', href: 'index.html' }));
+  navLinks.appendChild(createNavLink({ label: 'Beranda', href: 'index.html' }));
   navLinks.appendChild(createNavDropdown({
-    label: 'Materi',
+    label: 'Akademik',
     items: [
-      { label: 'Resources', href: 'pages/resources.html' },
+      { label: 'Materi & Resource', href: 'pages/resources.html' },
       { label: 'Praktikum & Studio', href: 'pages/praktikum-studio.html' },
-      { label: 'Videos', href: 'pages/videos.html' },
+      { label: 'Video Pembelajaran', href: 'pages/videos.html' },
       { label: 'Software', href: 'pages/resources.html?category=Software' }
     ]
   }));
-  navLinks.appendChild(createNavLink({ label: 'Tools', href: 'pages/tools.html' }));
+  navLinks.appendChild(createNavLink({ label: 'Alat Akademik', href: 'pages/tools.html' }));
   navLinks.appendChild(createNavDropdown({
-    label: 'Info',
+    label: 'Tentang',
     items: [
-      { label: 'About', href: 'pages/about.html' },
-      { label: 'Developer', href: 'pages/developer.html' },
-      { label: 'Contact', href: 'pages/contact.html' },
-      { label: 'Changelog', href: 'pages/changelog.html' }
+      { label: 'Tentang SIPIL CARE', href: 'pages/about.html' },
+      { label: 'Pengembang', href: 'pages/developer.html' },
+      { label: 'Kontak', href: 'pages/contact.html' },
+      { label: 'Riwayat Perubahan', href: 'pages/changelog.html' }
     ]
   }));
 };

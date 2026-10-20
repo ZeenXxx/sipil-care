@@ -287,18 +287,18 @@ async function loadHomeVideos() {
     if (snapshot.empty) snapshot = await getDocs(query(collection(db, 'videos'), orderBy('title')));
     const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })).filter(item => (item.status || 'published') === 'published');
     if (countTarget) countTarget.textContent = data.length;
-    target.innerHTML = data.slice(0, 3).map(videoCard).join('') || '<div class="empty span-2">Belum ada video.</div>';
+    target.innerHTML = data.slice(0, 3).map(videoCard).join('') || '<div class="card empty span-2"><strong>Video pembelajaran belum tersedia.</strong><p>Daftar video akan muncul di sini setelah pengelola menerbitkannya.</p><a class="btn btn-secondary" href="pages/videos.html">Buka halaman video</a></div>';
   } catch (err) {
     console.error('Firestore videos fetch failed:', err);
     fetch('data/videos.json')
       .then(response => response.json())
       .then(data => {
         if (countTarget) countTarget.textContent = data.length;
-        target.innerHTML = data.slice(0, 3).map(videoCard).join('');
+        target.innerHTML = data.slice(0, 3).map(videoCard).join('') || '<div class="card empty span-2"><strong>Video pembelajaran belum tersedia.</strong><p>Daftar video akan muncul di sini setelah pengelola menerbitkannya.</p><a class="btn btn-secondary" href="pages/videos.html">Buka halaman video</a></div>';
       })
       .catch(() => {
         if (countTarget) countTarget.textContent = '0';
-        target.innerHTML = '<div class="empty span-2">Video belum tersedia.</div>';
+        target.innerHTML = '<div class="card empty span-2"><strong>Video belum dapat dimuat.</strong><p>Coba buka halaman video atau muat ulang beberapa saat lagi.</p><a class="btn btn-secondary" href="pages/videos.html">Buka halaman video</a></div>';
       });
   }
 }
