@@ -1569,8 +1569,12 @@ body.nav-open:before  {
 
 @media(max-width:820px) {
   .student-account {
-    width: 100%;
-    justify-content: flex-end;
+    order: 4;
+    position: relative;
+    z-index: 1004;
+    width: auto;
+    flex: 0 0 auto;
+    justify-content: center;
   }
 
   .student-account-toggle {

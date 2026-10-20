@@ -521,7 +521,13 @@
     }
     account.appendChild(accountButton);
     account.appendChild(menu);
-    nav.appendChild(account);
+    // Keep the profile control in the navbar header on mobile. When it lived
+    // inside the expanded navigation drawer, it was easy to cover or clip it.
+    const navbar = document.querySelector(".navbar");
+    const menuToggle = navbar?.querySelector(".menu-toggle");
+    if (navbar && menuToggle) navbar.insertBefore(account, menuToggle);
+    else if (navbar) navbar.appendChild(account);
+    else nav.appendChild(account);
 
     // Load notification count async
     updateNotifBadge(badge).then(({ unread }) => {
