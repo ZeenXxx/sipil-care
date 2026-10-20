@@ -41,6 +41,12 @@
       "icons": [{ "src": "/assets/icons/pwa-192.png", "sizes": "192x192" }]
     },
     {
+      "name": "Software Teknik Sipil",
+      "short_name": "Software",
+      "url": "/pages/software",
+      "icons": [{ "src": "/assets/icons/pwa-192.png", "sizes": "192x192" }]
+    },
+    {
       "name": "Tools",
       "short_name": "Tools",
       "url": "/pages/tools",

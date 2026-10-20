@@ -248,10 +248,10 @@ const buildCompactNavbar = () => {
   navLinks.appendChild(createNavDropdown({
     label: 'Akademik',
     items: [
-      { label: 'Materi & Resource', href: 'pages/resources.html' },
+      { label: 'Resource', href: 'pages/resources.html' },
       { label: 'Praktikum & Studio', href: 'pages/praktikum-studio.html' },
       { label: 'Video Pembelajaran', href: 'pages/videos.html' },
-      { label: 'Software', href: 'pages/resources.html?category=Software' }
+      { label: 'Software Teknik Sipil', href: 'pages/software.html' }
     ]
   }));
   navLinks.appendChild(createNavLink({ label: 'Alat Akademik', href: 'pages/tools.html' }));
@@ -358,10 +358,10 @@ function createGlobalSearch() {
 
   const staticItems = [
     { title: 'Home', type: 'Halaman', url: 'index.html', text: 'Pemberitahuan HMS, tools akademik, video highlight, quick access' },
-    { title: 'Resources', type: 'Materi', url: 'pages/resources.html', text: 'SNI, modul kuliah, referensi, materi akademik, software' },
+    { title: 'Resource', type: 'Materi', url: 'pages/resources.html', text: 'SNI, modul kuliah, referensi, materi akademik' },
     { title: 'Praktikum & Studio', type: 'Materi', url: 'pages/praktikum-studio.html', text: 'Modul praktikum, studio, CAD, BIM, geoteknik, hidraulika' },
     { title: 'Videos', type: 'Materi', url: 'pages/videos.html', text: 'Video pembelajaran teknik sipil dan software' },
-    { title: 'Software', type: 'Materi', url: 'pages/resources.html?category=Software', text: 'Aplikasi, installer, software teknik sipil, CAD, BIM, analisis' },
+    { title: 'Software', type: 'Halaman', url: 'pages/software.html', text: 'Perangkat lunak teknik sipil, panduan, installer, CAD, BIM, analisis' },
     { title: 'Tools', type: 'Tools', url: 'pages/tools.html', text: 'Converter lengkap SI US, KML KMZ to CSV Civil 3D, response spectrum ETABS, PDF merger, PDF to image, JPG to PDF' },
     { title: 'KML/KMZ to CSV Civil 3D', type: 'Tools', url: 'pages/tools.html#kmlcsv', text: 'Google Earth KML KMZ menjadi CSV LAT LONG ALT tanpa header untuk Civil 3D' },
     { title: 'Response Spectrum ETABS', type: 'Tools', url: 'pages/tools.html#spectrum', text: 'Parameter RSA Web RSA Ss S1 Fa Fv TL menjadi file Excel siap import ETABS' },
@@ -484,7 +484,9 @@ function createGlobalSearch() {
         title: item.title,
         type: item.category === 'Software' ? 'Software' : 'Materi',
         category: item.category,
-        url: `pages/resources.html${item.category ? `?category=${encodeURIComponent(item.category)}` : ''}`,
+        url: item.category === 'Software'
+          ? 'pages/software.html'
+          : `pages/resources.html${item.category ? `?category=${encodeURIComponent(item.category)}` : ''}`,
         text: [item.category, item.type, item.author, item.description].filter(Boolean).join(' ')
       }));
       const videoItems = (Array.isArray(videos) ? videos : []).map(item => ({

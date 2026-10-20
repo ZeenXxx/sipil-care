@@ -20,7 +20,7 @@ let resources = [];
 let current = 'All';
 let page = 1;
 const softwareElements = ['Struktur', 'Geoteknik', 'Hidrologi', 'Transportasi', 'Manajemen Konstruksi'];
-const cats = ['All', 'Struktur', 'Geoteknik', 'Hidrologi', 'Transportasi', 'Manajemen Konstruksi', 'Software', 'SNI'];
+const cats = ['All', 'Struktur', 'Geoteknik', 'Hidrologi', 'Transportasi', 'Manajemen Konstruksi', 'SNI'];
 const per = 9;
 const escapeText = value => String(value || '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
 const slugify = value => String(value || '').toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'resource';
@@ -81,7 +81,7 @@ const filtered = () => {
 };
 
 function renderFilters() {
-  categoryFilters.innerHTML = cats.map(c => `<button class="filter ${c === current ? 'active' : ''}" data-c="${c}">${c}</button>`).join('');
+  categoryFilters.innerHTML = cats.map(c => `<button class="filter ${c === current ? 'active' : ''}" data-c="${c}">${c === 'All' ? 'Semua' : c}</button>`).join('');
   categoryFilters.querySelectorAll('button').forEach(b => b.onclick = () => {
     current = b.dataset.c;
     page = 1;
@@ -181,7 +181,7 @@ async function renderFeatured(container) {
     const f = document.getElementById('featuredResources');
     if (!f) return;
     const fallback = resources
-      .filter(i => ['SNI', 'Software', 'Struktur'].includes(i.category))
+      .filter(i => ['SNI', 'Struktur'].includes(i.category))
       .slice(0, 3);
     f.innerHTML = fallback.map(card).join('');
     bindCopyButtons(f);
@@ -209,7 +209,11 @@ function bindCopyButtons(root) {
 }
 
 const params = new URLSearchParams(location.search);
-if (params.get('category')) current = params.get('category');
+if (params.get('category') === 'Software') {
+  location.replace('software.html');
+} else if (params.get('category')) {
+  current = params.get('category');
+}
 
 function normalizeResources(items) {
   return items.map(item => {
@@ -228,7 +232,8 @@ function normalizeResources(items) {
 function loadResourcesFromFirestore() {
   const resourcesQuery = query(collection(db, 'resources'), orderBy('date', 'desc'));
   onSnapshot(resourcesQuery, snapshot => {
-    resources = normalizeResources(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })).filter(item => (item.status || 'published') === 'published'));
+    resources = normalizeResources(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })).filter(item => (item.status || 'published') === 'published'))
+      .filter(item => item.category !== 'Software');
     renderFilters();
     render();
     const f = document.getElementById('featuredResources');
