@@ -70,8 +70,23 @@ const parseYoutubeId = value => {
 	}
 };
 const youtubeWatchUrl = value => {
-	const id = parseYoutubeId(value);
-	return id ? `https://www.youtube.com/watch?v=${encodeURIComponent(id)}` : '';
+	try {
+		const normalized = normalizeYoutubeInput(value);
+		if (!normalized) return '';
+		const url = new URL(normalized);
+		const playlistId = url.searchParams.get('list') || '';
+		const isYoutubeHost = url.hostname.includes('youtube.com') || url.hostname.includes('youtube-nocookie.com') || url.hostname.includes('youtu.be');
+		if (isYoutubeHost && playlistId && /^[a-zA-Z0-9_-]+$/.test(playlistId)) {
+			const videoId = url.pathname === '/playlist' || url.pathname === '/embed/videoseries' ? '' : parseYoutubeId(normalized);
+			return videoId
+				? `https://www.youtube.com/watch?v=${encodeURIComponent(videoId)}&list=${encodeURIComponent(playlistId)}`
+				: `https://www.youtube.com/playlist?list=${encodeURIComponent(playlistId)}`;
+		}
+		const id = parseYoutubeId(normalized);
+		return id ? `https://www.youtube.com/watch?v=${encodeURIComponent(id)}` : '';
+	} catch {
+		return '';
+	}
 };
 const slugify = value => String(value || '').toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'video';
 const showToast = message => {

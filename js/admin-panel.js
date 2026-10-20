@@ -2512,12 +2512,19 @@ const normalizeYoutubeLink = value => {
   try {
     const url = new URL(raw);
     let id = '';
+    const playlistId = url.searchParams.get('list') || '';
     if (url.hostname.includes('youtu.be')) {
       id = url.pathname.replace(/^\/+/, '').split('/')[0] || '';
     } else if (url.hostname.includes('youtube.com') || url.hostname.includes('youtube-nocookie.com')) {
       id = url.pathname === '/watch'
         ? url.searchParams.get('v') || ''
         : url.pathname.match(/\/(?:embed|shorts|live)\/([^/?#]+)/)?.[1] || '';
+    }
+    if (url.pathname === '/playlist' || url.pathname === '/embed/videoseries') id = '';
+    const isYoutubeHost = url.hostname.includes('youtube.com') || url.hostname.includes('youtube-nocookie.com') || url.hostname.includes('youtu.be');
+    if (isYoutubeHost && playlistId && /^[a-zA-Z0-9_-]+$/.test(playlistId)) {
+      if (id) return `https://www.youtube.com/watch?v=${encodeURIComponent(id)}&list=${encodeURIComponent(playlistId)}`;
+      if (url.pathname === '/playlist' || url.pathname === '/embed/videoseries' || !id) return `https://www.youtube.com/playlist?list=${encodeURIComponent(playlistId)}`;
     }
     return id ? `https://www.youtube.com/watch?v=${encodeURIComponent(id)}` : '';
   } catch {
