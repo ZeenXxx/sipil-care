@@ -223,6 +223,16 @@ const adminAccountCancel = document.getElementById('adminAccountCancel');
 const adminAccountRefresh = document.getElementById('adminAccountRefresh');
 const adminAccountSearch = document.getElementById('adminAccountSearch');
 const adminAccountTable = document.getElementById('adminAccountTable');
+const adminPasswordResetForm = document.getElementById('adminPasswordResetForm');
+const adminPasswordResetUsername = document.getElementById('adminPasswordResetUsername');
+const adminPasswordResetValue = document.getElementById('adminPasswordResetValue');
+const adminPasswordResetConfirm = document.getElementById('adminPasswordResetConfirm');
+const adminPasswordResetSubmit = document.getElementById('adminPasswordResetSubmit');
+const developerPasswordForm = document.getElementById('developerPasswordForm');
+const developerPasswordCurrent = document.getElementById('developerPasswordCurrent');
+const developerPasswordNew = document.getElementById('developerPasswordNew');
+const developerPasswordConfirm = document.getElementById('developerPasswordConfirm');
+const developerPasswordSubmit = document.getElementById('developerPasswordSubmit');
 const adminRoleForm = document.getElementById('adminRoleForm');
 const adminRoleOriginal = document.getElementById('adminRoleOriginal');
 const adminRoleKey = document.getElementById('adminRoleKey');
@@ -2392,6 +2402,40 @@ const normalizeAdminAccount = account => {
     practicumScopes: adminScopeFor(account.username),
     isActive: account.is_active !== false
   };
+};
+
+const saveAdminAccountPassword = async (account, password) => {
+  const normalized = normalizeAdminAccount(account);
+  const supabase = await loadSupabaseClient();
+  const { data, error } = await supabase.rpc('sipilcare_save_admin_account', {
+    p_session_token_hash: await adminSessionTokenHash(),
+    p_original_username: normalized.username,
+    p_username: normalized.username,
+    p_name: normalized.name,
+    p_password_hash: await sha256(password),
+    p_role: normalized.role,
+    p_role_label: account.role_label || normalized.roleLabel,
+    p_allowed_pages: account.allowed_pages || normalized.allowedPages,
+    p_permissions: account.permissions || normalized.permissions,
+    p_is_active: account.is_active !== false && account.isActive !== false
+  });
+  if (error) throw error;
+  const savedAccount = Array.isArray(data) ? data[0] : data;
+  if (!savedAccount?.username) throw new Error('Password akun admin tidak tersimpan.');
+  return savedAccount;
+};
+
+const renderAdminPasswordTargets = () => {
+  if (!adminPasswordResetUsername) return;
+  const current = adminPasswordResetUsername.value;
+  const username = currentAdmin().username;
+  const targets = adminAccounts
+    .filter(account => account.username !== username)
+    .sort((a, b) => String(a.username || '').localeCompare(String(b.username || '')));
+  adminPasswordResetUsername.innerHTML = '<option value="">Pilih akun admin</option>' + targets
+    .map(account => `<option value="${escapeText(account.username)}">${escapeText(account.name || account.username)} (${escapeText(account.username)})</option>`)
+    .join('');
+  if (targets.some(account => account.username === current)) adminPasswordResetUsername.value = current;
 };
 
 const resetAdminAccountForm = () => {
@@ -4955,6 +4999,7 @@ function adminAccountTableRender() {
           <td>${escapeText(scopeLabel(account.practicumScopes))}</td>
           <td>
             <button class="action-btn" data-edit-admin-account="${escapeText(account.username)}" type="button">Edit</button>
+            ${isSelf ? '' : `<button class="action-btn" data-reset-admin-password="${escapeText(account.username)}" type="button">Reset Password</button>`}
             <button class="action-btn danger" data-del-admin-account="${escapeText(account.username)}" type="button" ${isSelf ? 'disabled' : ''}>Hapus</button>
           </td>
         </tr>
@@ -6790,11 +6835,24 @@ on(adminAccountTable, 'click', async e => {
 
   const editButton = e.target.closest('[data-edit-admin-account]');
   const deleteButton = e.target.closest('[data-del-admin-account]');
-  const usernameValue = editButton?.dataset.editAdminAccount || deleteButton?.dataset.delAdminAccount;
+  const resetPasswordButton = e.target.closest('[data-reset-admin-password]');
+  const usernameValue = editButton?.dataset.editAdminAccount || deleteButton?.dataset.delAdminAccount || resetPasswordButton?.dataset.resetAdminPassword;
   if (!usernameValue) return;
 
   const account = adminAccounts.find(item => item.username === usernameValue);
   if (!account) return;
+
+  if (resetPasswordButton) {
+    if (usernameValue === currentAdmin().username) {
+      toast('Gunakan formulir Ganti Password Developer untuk akun sendiri.');
+      return;
+    }
+    renderAdminPasswordTargets();
+    adminPasswordResetUsername.value = usernameValue;
+    adminPasswordResetForm?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    adminPasswordResetValue?.focus({ preventScroll: true });
+    return;
+  }
 
   if (editButton) {
     const normalized = normalizeAdminAccount(account);
@@ -6924,6 +6982,115 @@ on(adminAccountForm, 'submit', async e => {
 on(adminAccountCancel, 'click', () => resetAdminAccountForm());
 on(adminAccountRefresh, 'click', () => loadAdminAccounts({ manual: true }));
 on(adminAccountSearch, 'input', () => adminAccountTableRender());
+
+on(adminPasswordResetForm, 'submit', async e => {
+  e.preventDefault();
+  if (!canManageAdminAccounts()) {
+    toast('Reset password admin hanya tersedia untuk Developer.');
+    return;
+  }
+
+  const usernameValue = adminPasswordResetUsername.value;
+  const account = adminAccounts.find(item => item.username === usernameValue);
+  const newPassword = adminPasswordResetValue.value;
+  if (!account || usernameValue === currentAdmin().username) {
+    toast('Pilih akun admin lain yang valid.');
+    return;
+  }
+  if (newPassword.length < 8) {
+    toast('Password baru minimal 8 karakter.');
+    return;
+  }
+  if (newPassword !== adminPasswordResetConfirm.value) {
+    toast('Konfirmasi password tidak sama.');
+    return;
+  }
+
+  try {
+    adminPasswordResetSubmit.disabled = true;
+    const savedAccount = await saveAdminAccountPassword(account, newPassword);
+    await writeAuditLog({
+      action: 'RESET_ADMIN_PASSWORD',
+      targetType: 'admin_account',
+      targetId: usernameValue,
+      targetTitle: savedAccount.name || account.name || usernameValue,
+      detail: `Password akun admin ${usernameValue} direset oleh developer.`
+    });
+    toast(`Password ${usernameValue} berhasil direset. Sesi akun tersebut sudah diakhiri.`);
+    adminPasswordResetForm.reset();
+    renderAdminPasswordTargets();
+    await loadAdminAccounts();
+  } catch (error) {
+    console.error('Reset admin password error:', error);
+    toast(error.message || 'Gagal mereset password akun admin.');
+  } finally {
+    adminPasswordResetSubmit.disabled = false;
+  }
+});
+
+on(developerPasswordForm, 'submit', async e => {
+  e.preventDefault();
+  if (currentAdmin().role !== 'developer') {
+    toast('Ganti password ini hanya tersedia untuk akun Developer.');
+    return;
+  }
+
+  const usernameValue = currentAdmin().username;
+  const account = adminAccounts.find(item => item.username === usernameValue);
+  const currentPassword = developerPasswordCurrent.value;
+  const newPassword = developerPasswordNew.value;
+  if (!account) {
+    toast('Data akun Developer belum tersedia. Muat ulang halaman dan coba lagi.');
+    return;
+  }
+  if (newPassword.length < 8) {
+    toast('Password baru minimal 8 karakter.');
+    return;
+  }
+  if (newPassword !== developerPasswordConfirm.value) {
+    toast('Konfirmasi password tidak sama.');
+    return;
+  }
+
+  try {
+    developerPasswordSubmit.disabled = true;
+    const supabase = await loadSupabaseClient();
+    const tableName = window.SIPILCARE_AUTH_CONFIG?.adminTableName || 'admins';
+    const { data, error } = await supabase
+      .from(tableName)
+      .select('password_hash')
+      .eq('username', usernameValue)
+      .maybeSingle();
+    if (error) throw error;
+    if (!data || data.password_hash !== await sha256(currentPassword)) {
+      toast('Password saat ini tidak sesuai.');
+      return;
+    }
+    if (data.password_hash === await sha256(newPassword)) {
+      toast('Password baru harus berbeda dari password saat ini.');
+      return;
+    }
+
+    const savedAccount = await saveAdminAccountPassword(account, newPassword);
+    await writeAuditLog({
+      action: 'CHANGE_DEVELOPER_PASSWORD',
+      targetType: 'admin_account',
+      targetId: usernameValue,
+      targetTitle: savedAccount.name || account.name || usernameValue,
+      detail: 'Password akun Developer diganti oleh pemilik akun.'
+    });
+    developerPasswordForm.reset();
+    toast('Password Developer berhasil diganti. Silakan login kembali dengan password baru.');
+    setTimeout(() => {
+      window.location.href = `${adminRootPrefix}login.html`;
+    }, 900);
+  } catch (error) {
+    console.error('Change developer password error:', error);
+    toast(error.message || 'Gagal mengganti password Developer.');
+  } finally {
+    developerPasswordSubmit.disabled = false;
+  }
+});
 
 on(studentCohortForm, 'submit', async e => {
   e.preventDefault();
@@ -7897,6 +8064,7 @@ async function loadAdminAccounts(options = {}) {
 
     if (error) throw error;
     adminAccounts = data || [];
+    renderAdminPasswordTargets();
     adminAccountTableRender();
     renderGuideRoleOverview();
     if (options.manual) toast('Data akun admin berhasil diperbarui.');

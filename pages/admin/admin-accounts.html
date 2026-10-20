@@ -10,7 +10,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-title" content="SIPIL CARE">
     <link rel="stylesheet" href="../../css/style.css?v=26">
-    <link rel="stylesheet" href="../../css/admin.css?v=62">
+    <link rel="stylesheet" href="../../css/admin.css?v=63">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -101,6 +101,51 @@
           </div>
         </div>
 
+        <div class="admin-password-grid">
+          <form id="adminPasswordResetForm" class="admin-password-form">
+            <div>
+              <h4>Reset Password Admin</h4>
+              <p class="small-text">Buat password baru untuk akun admin lain. Sesi akun tersebut akan diakhiri.</p>
+            </div>
+            <select class="control" id="adminPasswordResetUsername" required>
+              <option value="">Pilih akun admin</option>
+            </select>
+            <div class="password-field">
+              <input class="control" id="adminPasswordResetValue" type="password" placeholder="Password baru (min. 8 karakter)" autocomplete="new-password" minlength="8" required>
+              <button class="password-toggle" type="button" data-password-toggle aria-label="Tampilkan password baru" aria-pressed="false">Lihat</button>
+            </div>
+            <div class="password-field">
+              <input class="control" id="adminPasswordResetConfirm" type="password" placeholder="Konfirmasi password baru" autocomplete="new-password" minlength="8" required>
+              <button class="password-toggle" type="button" data-password-toggle aria-label="Tampilkan konfirmasi password" aria-pressed="false">Lihat</button>
+            </div>
+            <div class="admin-account-actions">
+              <button class="action-btn" id="adminPasswordResetSubmit" type="submit">Reset Password</button>
+            </div>
+          </form>
+
+          <form id="developerPasswordForm" class="admin-password-form">
+            <div>
+              <h4>Ganti Password Developer</h4>
+              <p class="small-text">Masukkan password saat ini untuk memverifikasi akun. Kamu akan diminta login kembali setelah perubahan.</p>
+            </div>
+            <div class="password-field">
+              <input class="control" id="developerPasswordCurrent" type="password" placeholder="Password saat ini" autocomplete="current-password" required>
+              <button class="password-toggle" type="button" data-password-toggle aria-label="Tampilkan password saat ini" aria-pressed="false">Lihat</button>
+            </div>
+            <div class="password-field">
+              <input class="control" id="developerPasswordNew" type="password" placeholder="Password baru (min. 8 karakter)" autocomplete="new-password" minlength="8" required>
+              <button class="password-toggle" type="button" data-password-toggle aria-label="Tampilkan password baru" aria-pressed="false">Lihat</button>
+            </div>
+            <div class="password-field">
+              <input class="control" id="developerPasswordConfirm" type="password" placeholder="Konfirmasi password baru" autocomplete="new-password" minlength="8" required>
+              <button class="password-toggle" type="button" data-password-toggle aria-label="Tampilkan konfirmasi password" aria-pressed="false">Lihat</button>
+            </div>
+            <div class="admin-account-actions">
+              <button class="action-btn" id="developerPasswordSubmit" type="submit">Ganti Password</button>
+            </div>
+          </form>
+        </div>
+
         <form id="adminAccountForm" class="admin-account-form">
           <input type="hidden" id="adminAccountOriginalUsername">
           <input class="control" id="adminAccountUsername" placeholder="Username admin" autocomplete="off" required>
@@ -145,7 +190,7 @@
     <script src="../../js/student-config.js?v=20"></script>
     <script src="../../js/auth.js?v=33"></script>
     <script src="../../js/push-config.js?v=1"></script>
-    <script type="module" src="../../js/admin-panel.js?v=89"></script>
+    <script type="module" src="../../js/admin-panel.js?v=90"></script>
       <script src="../../js/pwa.js?v=2"></script>
   </body>
 </html>
