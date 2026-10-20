@@ -1,1 +1,281 @@
-C:\Users\arief
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8">
+    <script>!function(){var t=localStorage.getItem("sipilcare_theme");(t==="dark"||(t===null&&window.matchMedia("(prefers-color-scheme: dark)").matches))&&document.documentElement.classList.add("dark")}();</script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="assets/icons/pwa-192.png" type="image/png" sizes="192x192">
+    <link rel="apple-touch-icon" href="assets/icons/pwa-180.png">
+    <meta name="theme-color" content="#0f4d3a">
+    <link rel="manifest" href="manifest.webmanifest?v=2">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="SIPIL CARE">
+    <link rel="stylesheet" href="css/style.css?v=34">
+    <link rel="stylesheet" href="css/navbar.css?v=35">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/home.css?v=24">
+    <meta name="description" content="Platform Digital Akademik Mahasiswa Teknik Sipil UNJANI - HIMPUNAN MAHASISWA SIPIL UNJANI untuk akses resource, praktikum, studio, video, tools, dan informasi HMS.">
+    <link rel="canonical" href="https://sipil-care.vercel.app/">
+    <meta property="og:site_name" content="SIPIL CARE">
+    <meta property="og:title" content="SIPIL CARE">
+    <meta property="og:description" content="Platform Digital Akademik Mahasiswa Teknik Sipil UNJANI - HIMPUNAN MAHASISWA SIPIL UNJANI untuk resource, praktikum, studio, video, tools, dan informasi HMS.">
+    <meta property="og:image" content="https://sipil-care.vercel.app/assets/images/logo-hms.png">
+    <meta property="og:url" content="https://sipil-care.vercel.app/">
+    <title>SIPIL CARE</title>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "name": "SIPIL CARE",
+        "alternateName": "SIPIL CARE HMS",
+        "description": "Platform Digital Akademik Mahasiswa Teknik Sipil UNJANI - HIMPUNAN MAHASISWA SIPIL UNJANI.",
+        "url": "https://sipil-care.vercel.app/",
+        "publisher": {
+          "@type": "Organization",
+          "name": "HMS Teknik Sipil",
+          "logo": {
+            "@type": "ImageObject",
+            "url": "https://sipil-care.vercel.app/assets/images/logo-hms.png",
+            "width": 200,
+            "height": 200
+          }
+        }
+      }
+    </script>
+    <script src="js/student-config.js?v=18"></script>
+    <script src="js/student-auth.js?v=39"></script>
+      <link rel="stylesheet" href="css/mobile-interface.css?v=2">
+</head>
+  <body>
+    <header class="navbar">
+      <a class="brand" href="index.html">
+        <img src="assets/images/logo-hms.png" alt="Logo HMS">
+        <span>
+          <strong>SIPIL CARE</strong>
+          <small>Center for Academic, Resource & Education</small>
+        </span>
+      </a>
+      <button class="menu-toggle" type="button" aria-label="Toggle navigation" aria-expanded="false">
+        <span></span>
+      </button>
+      <nav class="nav-links">
+        <a href="index.html">Home</a>
+        <a href="pages/resources.html">Resources</a>
+        <a href="pages/praktikum-studio.html">Praktikum &amp; Studio</a>
+        <a href="pages/videos.html">Videos</a><a href="pages/tools.html">Tools</a>
+        <a href="pages/about.html">About</a>
+        <a href="pages/developer.html">Developer</a>
+        <a href="pages/contact.html">Contact</a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div class="container hero-grid">
+          <div>
+            <span class="eyebrow">Pusat info dan tools akademik teknik sipil</span>
+            <h1>Pemberitahuan HMS, Tools Tugas, dan Belajar Teknik Sipil dalam Satu Tempat</h1>
+            <p>Platform Digital Akademik Mahasiswa Teknik Sipil UNJANI - HIMPUNAN MAHASISWA SIPIL UNJANI untuk update resmi HMS, PENDPROF HMS, dan tools praktis kebutuhan akademik harian.</p>
+            <div class="actions">
+              <a class="btn btn-primary" href="#pemberitahuan">Lihat Pemberitahuan</a>
+              <a class="btn btn-secondary" href="tools/diagram-struktur.html">Buka Structural Analyzer</a>
+            </div>
+          </div>
+          <div class="visual">
+            <div class="visual-panel">
+              <strong>Announcement & Tools Center</strong>
+              <p>Agenda, dokumentasi, dan tools seperti Structural Analyzer, PDF tools, converter, dan JPG to PDF disiapkan agar aktivitas akademik lebih cepat dikerjakan.</p>
+              <div class="mini">
+                <span><b>Info</b>Pemberitahuan</span>
+                <span><b>Tools</b>Analyzer & PDF</span>
+                <span><b>Care</b>Support akademik</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="pemberitahuan">
+        <div class="container">
+          <span class="eyebrow">Pemberitahuan</span>
+          <h2 class="title">Info terbaru HMS UNJANI dan PENDPROF HMS</h2>
+          <p class="lead">Agenda, pengumuman, dan dokumentasi kegiatan ditampilkan dari panel HMS agar mahasiswa tidak melewatkan informasi penting.</p>
+          <div class="grid g3 content-grid" id="homeAnnouncements"></div>
+        </div>
+      </section>
+
+      <section class="section tools-focus" id="tools-highlight">
+        <div class="container">
+          <span class="eyebrow">Tools akademik</span>
+          <h2 class="title">Tools yang langsung membantu tugas mahasiswa</h2>
+          <p class="lead">Mulai dari analisis diagram struktur sampai pengelolaan file PDF, semua dibuat agar pekerjaan akademik lebih praktis langsung dari browser.</p>
+          <div class="tools-home-grid">
+            <article class="structural-highlight card">
+              <div>
+                <span class="badge">Highlight utama</span>
+                <h3>Structural Diagram Analyzer</h3>
+                <p>Gambar balok 1D, atur node, element, support, beban titik, beban merata, lalu lihat reaksi tumpuan, AFD, SFD, BMD, dan tabel gaya dalam.</p>
+                <div class="actions">
+                  <a class="btn btn-primary" href="tools/diagram-struktur.html">Buka Analyzer</a>
+                  <a class="btn btn-secondary" href="pages/tools.html#jpgpdf">Lihat Tools PDF</a>
+                </div>
+              </div>
+              <div class="structure-mini-diagram" aria-hidden="true">
+                <span class="beam"></span>
+                <span class="support left"></span>
+                <span class="support right"></span>
+                <span class="load l1"></span>
+                <span class="load l2"></span>
+                <span class="moment-line"></span>
+              </div>
+            </article>
+            <div class="tool-mini-grid">
+              <a class="card tool-mini" href="tools/diagram-portal.html"><span>PF</span><strong>Analisis Portal</strong><p>Analisis rangka portal 2D.</p></a>
+              <a class="card tool-mini" href="tools/preliminary-design.html"><span>PD</span><strong>Desain Awal</strong><p>Estimasi awal elemen beton.</p></a>
+              <a class="card tool-mini" href="tools/tulangan-balok.html"><span>TB</span><strong>Tulangan Balok</strong><p>Estimasi tulangan lentur dan geser.</p></a>
+              <a class="card tool-mini" href="pages/tools.html#converter"><span>CV</span><strong>Konversi Satuan</strong><p>Konversi satuan teknik sipil.</p></a>
+              <a class="card tool-mini" href="pages/tools.html#kmlcsv"><span>KM</span><strong>KML/KMZ ke CSV</strong><p>Siapkan titik untuk Civil 3D.</p></a>
+              <a class="card tool-mini" href="pages/tools.html#spectrum"><span>RS</span><strong>Spektrum Respons</strong><p>Hitung dan ekspor data spektrum.</p></a>
+              <a class="card tool-mini" href="pages/tools.html#export"><span>PDF</span><strong>Alat PDF</strong><p>Buat, gabungkan, atau ubah PDF dan gambar.</p></a>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section soft">
+        <div class="container">
+          <span class="eyebrow">Video highlight</span>
+          <h2 class="title">Video pembelajaran terbaru</h2>
+          <p class="lead">Konten video menjadi fokus utama halaman awal supaya mahasiswa langsung diarahkan ke materi belajar yang paling mudah diikuti.</p>
+          <div class="grid g3 content-grid" id="homeVideoHighlights"></div>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="container">
+          <span class="eyebrow">Quick access</span>
+          <h2 class="title">Akses cepat info dan tools</h2>
+          <div class="grid g3">
+            <a class="card quick" href="#pemberitahuan">
+              <span class="icon">IN</span>
+              <h3>Info HMS</h3>
+              <p>Ikuti pemberitahuan kegiatan, agenda departemen, dan informasi akademik terbaru.</p>
+            </a>
+            <a class="card quick" href="pages/videos.html">
+              <span class="icon">VI</span>
+              <h3>Video Learning</h3>
+              <p>Akses video pembelajaran dan dokumentasi edukatif yang relevan untuk mahasiswa.</p>
+            </a>
+            <a class="card quick featured-quick" href="tools/diagram-struktur.html">
+              <span class="icon">SA</span>
+              <h3>Structural Analyzer</h3>
+              <p>Hitung reaksi tumpuan, axial force, shear force, dan bending moment untuk model balok 1D.</p>
+            </a>
+            <a class="card quick" href="pages/resources.html">
+              <span class="icon">MO</span>
+              <h3>Modul Kuliah</h3>
+              <p>Temukan materi pendukung kuliah tanpa menampilkan detail sensitif di halaman depan.</p>
+            </a>
+            <a class="card quick" href="pages/software.html">
+              <span class="icon">SW</span>
+              <h3>Software Teknik Sipil</h3>
+              <p>Buka halaman khusus aplikasi, installer, dan panduan perangkat lunak.</p>
+            </a>
+            <a class="card quick" href="#pemberitahuan">
+              <span class="icon">AG</span>
+              <h3>Agenda</h3>
+              <p>Lihat rencana acara, kelas tambahan, atau program kerja akademik yang akan berjalan.</p>
+            </a>
+            <a class="card quick" href="#pemberitahuan">
+              <span class="icon">DO</span>
+              <h3>Dokumentasi</h3>
+              <p>Dokumentasi kegiatan HMS UNJANI dan PENDPROF HMS dapat ditampilkan sebagai arsip visual.</p>
+            </a>
+            <a class="card quick" href="pages/contact.html">
+              <span class="icon">CS</span>
+              <h3>Kontak Pengurus</h3>
+              <p>Hubungi pengelola platform untuk masukan, kendala akses, atau kebutuhan akademik.</p>
+            </a>
+          </div>
+        </div>
+      </section>
+
+      <section class="section stats">
+        <div class="container grid g4">
+          <div class="stat"><b id="homeVideoCount">0</b><span>Video pembelajaran</span></div>
+          <div class="stat"><b>HMS</b><span>Info kegiatan</span></div>
+          <div class="stat"><b>11</b><span>Alat akademik</span></div>
+          <div class="stat"><b>24/7</b><span>Akses mahasiswa</span></div>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="container grid g2">
+          <div>
+            <span class="eyebrow">About platform</span>
+            <h2 class="title">Dibuat untuk info kampus dan pekerjaan akademik harian</h2>
+            <p class="lead">Halaman awal kini menonjolkan pemberitahuan resmi, dokumentasi kegiatan, dan tools praktis. Resource akademik tetap tersedia untuk mahasiswa yang sudah login, namun bukan fokus utama home.</p>
+          </div>
+          <div class="card quick">
+            <h3>Informasi lebih terkontrol</h3>
+            <p>Mahasiswa dapat mengikuti update resmi, melihat dokumentasi kegiatan, dan mengakses materi belajar melalui navigasi yang lebih rapi serta responsif.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="section soft">
+        <div class="container card quick cta-card">
+          <span class="eyebrow">Start learning</span>
+          <h2 class="title">Mulai dari pemberitahuan dan tools utama</h2>
+          <p class="lead">Cek update HMS/PENDPROF HMS terlebih dahulu, lalu gunakan Structural Analyzer atau tools PDF sesuai kebutuhan tugas.</p>
+          <div class="actions center-actions">
+            <a class="btn btn-primary" href="#pemberitahuan">Cek Pemberitahuan</a>
+            <a class="btn btn-secondary" href="tools/diagram-struktur.html">Buka Structural Analyzer</a>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="footer-grid">
+        <div>
+          <a class="footer-brand" href="index.html">
+            <img src="assets/images/logo-hms.png" alt="Logo HMS">
+            <span>SIPIL CARE</span>
+          </a>
+          <p>Platform Digital Akademik Mahasiswa Teknik Sipil UNJANI - HIMPUNAN MAHASISWA SIPIL UNJANI untuk video pembelajaran, informasi HMS, dokumentasi kegiatan, dan resource mahasiswa.</p>
+        </div>
+        <div>
+          <h3>Navigasi</h3>
+          <a href="pages/resources.html">Resources</a>
+          <a href="pages/praktikum-studio.html">Praktikum &amp; Studio</a>
+          <a href="pages/videos.html">Videos</a><a href="pages/tools.html">Tools</a>
+          <a href="pages/about.html">About</a>
+        </div>
+        <div>
+          <h3>Fokus Home</h3>
+          <a href="#pemberitahuan">Pemberitahuan</a>
+          <a href="pages/videos.html">Video Learning</a><a href="pages/tools.html">Tools</a>
+          <a href="pages/contact.html">Kontak HMS</a>
+        </div>
+        <div>
+          <h3>HMS Unjani</h3>
+          <p>Kampus UNJANI<br>Academic Resource Platform<br>2026</p>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <span>© 2026 PENDPROF HMS - HMS UNJANI</span>
+        <span>Built for civil engineering students.</span>
+      </div>
+    </footer>
+
+    <div class="toast" id="toast"></div>
+    <script src="js/navbar.js?v=36"></script>
+    <script type="module" src="js/script.js?v=31"></script>
+      <script src="js/pwa.js?v=2"></script>
+      <script src="js/push-config.js?v=1"></script>
+      <script type="module" src="js/pwa-push.js?v=5"></script>
+  </body>
+</html>
