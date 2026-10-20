@@ -23,6 +23,13 @@ const softwareElements = ['Struktur', 'Geoteknik', 'Hidrologi', 'Transportasi', 
 const cats = ['All', 'Struktur', 'Geoteknik', 'Hidrologi', 'Transportasi', 'Manajemen Konstruksi', 'SNI'];
 const per = 9;
 const escapeText = value => String(value || '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
+const shortTitle = value => {
+  const title = String(value || 'Resource');
+  if (title.length <= 50) return title;
+  const clipped = title.slice(0, 49);
+  const boundary = clipped.lastIndexOf(' ');
+  return `${clipped.slice(0, boundary > 34 ? boundary : 49).trimEnd()}…`;
+};
 const slugify = value => String(value || '').toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'resource';
 const accessId = item => encodeURIComponent(item.id || item.slug || slugify(item.title));
 const accessUrl = item => `access?id=${accessId(item)}`;
@@ -63,10 +70,10 @@ const getThumbnailDisplay = (thumb) => {
 const card = i => {
   const url = accessUrl(i);
   const description = String(i.description || '').trim();
-  const readMore = description.length > 120
+  const readMore = description.length > 120 || String(i.title || '').length > 50
     ? '<button class="academic-read-more" type="button" data-academic-read-more>Baca selengkapnya</button>'
     : '<span class="academic-read-more-placeholder" aria-hidden="true"></span>';
-  return `<article class="card resource-card academic-description-card"><div class="icon">${escapeText(getThumbnailDisplay(i.thumbnail))}</div><div class="meta"><span class="badge">${escapeText(i.category)}</span><span class="badge">${escapeText(i.type)}</span><span class="badge">${escapeText(i.date)}</span></div><h3 class="academic-description-title">${escapeText(i.title)}</h3><p class="academic-description-preview">${escapeText(description)}</p>${readMore}<div class="academic-description-full" hidden>${escapeText(description)}</div><small class="academic-description-author">Author: ${escapeText(i.author || '-')}</small><div class="actions"><a class="btn btn-primary" href="${url}">Akses File</a><button class="btn btn-ghost" data-access-url="${url}">Salin Link</button><button class="btn btn-ghost" data-bookmark-resource="${escapeText(i.id || i.slug || slugify(i.title))}">${isBookmarked(i) ? 'Tersimpan' : 'Simpan'}</button></div></article>`;
+  return `<article class="card resource-card academic-description-card"><div class="icon">${escapeText(getThumbnailDisplay(i.thumbnail))}</div><div class="meta"><span class="badge">${escapeText(i.category)}</span><span class="badge">${escapeText(i.type)}</span><span class="badge">${escapeText(i.date)}</span></div><h3 class="academic-description-title" title="${escapeText(i.title || 'Resource')}">${escapeText(shortTitle(i.title))}</h3><p class="academic-description-preview">${escapeText(description)}</p>${readMore}<div class="academic-description-full" hidden>${escapeText(description)}</div><small class="academic-description-author">Author: ${escapeText(i.author || '-')}</small><div class="actions"><a class="btn btn-primary" href="${url}">Akses File</a><button class="btn btn-ghost" data-access-url="${url}">Salin Link</button><button class="btn btn-ghost" data-bookmark-resource="${escapeText(i.id || i.slug || slugify(i.title))}">${isBookmarked(i) ? 'Tersimpan' : 'Simpan'}</button></div></article>`;
 };
 const filtered = () => {
   const q = (resourceSearch?.value || '').toLowerCase();

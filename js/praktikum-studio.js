@@ -378,11 +378,18 @@ const normalizeAttendanceSession = item => {
 function resourceCard(item) {
   const url = accessUrl(item);
   const isVideo = String(item.type || '').trim().toUpperCase() === 'VIDEO';
+  const fullTitle = String(item.title || 'Modul Praktikum & Studio');
+  let shortTitle = fullTitle;
+  if (fullTitle.length > 50) {
+    const clipped = fullTitle.slice(0, 49);
+    const boundary = clipped.lastIndexOf(' ');
+    shortTitle = `${clipped.slice(0, boundary > 34 ? boundary : 49).trimEnd()}…`;
+  }
   const description = String(item.description || 'Modul pembelajaran dari admin HMS/PENDPROF.').trim();
-  const readMore = description.length > 120
+  const readMore = description.length > 120 || fullTitle.length > 50
     ? '<button class="academic-read-more" type="button" data-academic-read-more>Baca selengkapnya</button>'
     : '<span class="academic-read-more-placeholder" aria-hidden="true"></span>';
-  return `<article class="module-item academic-description-card"><strong class="academic-description-title">${escapeText(item.title)}</strong><p class="academic-description-preview">${escapeText(description)}</p>${readMore}<div class="academic-description-full" hidden>${escapeText(description)}</div><div class="meta"><span class="badge">${escapeText(item.type || 'PDF')}</span><span class="badge">${escapeText(item.date || 'Update')}</span>${isVideo ? '<span class="badge">Tracking tonton aktif</span>' : ''}</div><div class="actions"><a class="btn btn-primary" href="${url}">${isVideo ? 'Tonton Video' : 'Akses Modul'}</a><button class="btn btn-ghost" data-access-url="${url}" type="button">Salin Link</button><button class="btn btn-ghost" data-bookmark-practicum="${escapeText(item.id || item.slug || slugify(item.title))}" type="button">${isBookmarked(item) ? 'Tersimpan' : 'Simpan'}</button></div></article>`;
+  return `<article class="module-item academic-description-card"><strong class="academic-description-title" title="${escapeText(fullTitle)}">${escapeText(shortTitle)}</strong><p class="academic-description-preview">${escapeText(description)}</p>${readMore}<div class="academic-description-full" hidden>${escapeText(description)}</div><div class="meta"><span class="badge">${escapeText(item.type || 'PDF')}</span><span class="badge">${escapeText(item.date || 'Update')}</span>${isVideo ? '<span class="badge">Tracking tonton aktif</span>' : ''}</div><div class="actions"><a class="btn btn-primary" href="${url}">${isVideo ? 'Tonton Video' : 'Akses Modul'}</a><button class="btn btn-ghost" data-access-url="${url}" type="button">Salin Link</button><button class="btn btn-ghost" data-bookmark-practicum="${escapeText(item.id || item.slug || slugify(item.title))}" type="button">${isBookmarked(item) ? 'Tersimpan' : 'Simpan'}</button></div></article>`;
 }
 
 const rosterForCourse = course => {

@@ -23,7 +23,8 @@ document.addEventListener('click', event => {
   if (!card) return;
 
   descriptionTrigger = trigger;
-  descriptionTitle.textContent = card.querySelector('.academic-description-title')?.textContent?.trim() || 'Deskripsi';
+  const title = card.querySelector('.academic-description-title');
+  descriptionTitle.textContent = title?.getAttribute('title') || title?.textContent?.trim() || 'Deskripsi';
   descriptionContent.textContent = card.querySelector('.academic-description-full')?.textContent?.trim() || '';
   descriptionModal.hidden = false;
   document.body.classList.add('academic-description-open');
