@@ -70,8 +70,15 @@
         engineering students.</span></div>
       </footer>
       <div class="toast" id="toast"></div>
+      <div class="video-description-modal" id="videoDescriptionModal" hidden>
+        <button class="video-description-backdrop" type="button" aria-label="Tutup deskripsi video" data-close-video-description></button>
+        <section class="video-description-dialog" role="dialog" aria-modal="true" aria-labelledby="videoDescriptionTitle">
+          <div class="video-description-heading"><h2 id="videoDescriptionTitle">Deskripsi video</h2><button class="video-description-close" type="button" aria-label="Tutup" data-close-video-description>&times;</button></div>
+          <p id="videoDescriptionText"></p>
+        </section>
+      </div>
       <script src="../js/navbar.js?v=36"></script>
-      <script type="module" src="../js/videos.js?v=29"></script>
+      <script type="module" src="../js/videos.js?v=30"></script>
         <script src="../js/pwa.js?v=2"></script>
       <script src="../js/push-config.js?v=1"></script>
       <script type="module" src="../js/pwa-push.js?v=5"></script>

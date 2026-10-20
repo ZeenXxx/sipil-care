@@ -17,6 +17,10 @@ const videoGrid = document.getElementById('videoGrid');
 const videoSearch = document.getElementById('videoSearch');
 const videoCategory = document.getElementById('videoCategory');
 const featuredVideo = document.getElementById('featuredVideo');
+const videoDescriptionModal = document.getElementById('videoDescriptionModal');
+const videoDescriptionTitle = document.getElementById('videoDescriptionTitle');
+const videoDescriptionText = document.getElementById('videoDescriptionText');
+let lastDescriptionTrigger = null;
 
 const channelLabel = v => String(v.channel || '').trim() || 'HMS UNJANI';
 const durationLabel = v => String(v.duration || '').trim();
@@ -46,6 +50,7 @@ const escapeAttribute = value => String(value || '').replace(/[&<>"']/g, char =>
 	'"': '&quot;',
 	"'": '&#39;'
 }[char]));
+const escapeHtml = escapeAttribute;
 const normalizeYoutubeInput = value => {
 	const raw = String(value || '').trim();
 	if (!raw || raw === '#') return '';
@@ -148,8 +153,31 @@ const videoLink = (video, label) => {
 	if (!url) return `<button class="btn btn-primary" type="button" disabled title="Link YouTube belum tersedia">${label}</button>`;
 	return `<a class="btn btn-primary" href="${escapeAttribute(url)}" target="_blank" rel="external noopener noreferrer" data-video-id="${escapeAttribute(video.id)}">${label}</a>`;
 };
-const videoMeta = v => `<div class="meta"><span class="badge">${v.category}</span><span class="badge">Channel: ${channelLabel(v)}</span>${durationLabel(v) ? `<span class="badge">Durasi: ${durationLabel(v)}</span>` : ''}</div>`;
-const card = v => `<article class="card video-card"><div class="thumb">${v.thumbnail}</div><div class="video-body">${videoMeta(v)}<h3>${v.title}</h3><p>${v.description}</p><br><div class="actions">${videoLink(v, 'Watch')}<button class="btn btn-ghost" type="button" data-bookmark-video="${v.id}">${isBookmarked(v) ? 'Tersimpan' : 'Simpan'}</button></div></div></article>`;
+const videoMeta = v => `<div class="meta"><span class="badge">${escapeHtml(v.category || 'Uncategorized')}</span><span class="badge">Channel: ${escapeHtml(channelLabel(v))}</span>${durationLabel(v) ? `<span class="badge">Durasi: ${escapeHtml(durationLabel(v))}</span>` : ''}</div>`;
+const card = v => {
+	const description = String(v.description || '').trim();
+	const readMore = description.length > 150
+		? `<button class="video-read-more" type="button" data-read-video-description="${escapeAttribute(v.id)}">Baca selengkapnya</button>`
+		: '<span class="video-read-more-placeholder" aria-hidden="true"></span>';
+	return `<article class="card video-card"><div class="thumb">${escapeHtml(v.thumbnail || 'VI')}</div><div class="video-body">${videoMeta(v)}<h3>${escapeHtml(v.title || 'Video')}</h3><p class="video-description">${escapeHtml(description)}</p>${readMore}<div class="actions">${videoLink(v, 'Watch')}<button class="btn btn-ghost" type="button" data-bookmark-video="${escapeAttribute(v.id)}">${isBookmarked(v) ? 'Tersimpan' : 'Simpan'}</button></div></div></article>`;
+};
+
+function openDescription(video, trigger) {
+	if (!videoDescriptionModal || !videoDescriptionTitle || !videoDescriptionText || !video) return;
+	lastDescriptionTrigger = trigger;
+	videoDescriptionTitle.textContent = video.title || 'Deskripsi video';
+	videoDescriptionText.textContent = String(video.description || '').trim();
+	videoDescriptionModal.hidden = false;
+	document.body.classList.add('video-description-open');
+	videoDescriptionModal.querySelector('[data-close-video-description]')?.focus();
+}
+
+function closeDescription() {
+	if (!videoDescriptionModal || videoDescriptionModal.hidden) return;
+	videoDescriptionModal.hidden = true;
+	document.body.classList.remove('video-description-open');
+	lastDescriptionTrigger?.focus();
+}
 
 function render() {
 	const q = (videoSearch?.value || '').toLowerCase();
@@ -190,6 +218,17 @@ try {
 videoSearch?.addEventListener('input', render);
 videoCategory?.addEventListener('change', render);
 document.addEventListener('click', event => {
+	const closeButton = event.target.closest('[data-close-video-description]');
+	if (closeButton) {
+		closeDescription();
+		return;
+	}
+	const readMoreButton = event.target.closest('[data-read-video-description]');
+	if (readMoreButton) {
+		const videoItem = videos.find(item => item.id === readMoreButton.dataset.readVideoDescription);
+		if (videoItem) openDescription(videoItem, readMoreButton);
+		return;
+	}
 	const bookmarkButton = event.target.closest('[data-bookmark-video]');
 	if (bookmarkButton) {
 		const videoItem = videos.find(item => item.id === bookmarkButton.dataset.bookmarkVideo);
@@ -200,4 +239,7 @@ document.addEventListener('click', event => {
 	if (!link) return;
 	const video = videos.find(item => item.id === link.dataset.videoId);
 	logVideoAccess(video).catch(error => console.warn('Video access log failed:', error));
+});
+document.addEventListener('keydown', event => {
+	if (event.key === 'Escape') closeDescription();
 });

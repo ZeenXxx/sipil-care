@@ -1202,8 +1202,161 @@ button, input, select, textarea  {
 
 .video-card  {
   
-    overflow: hidden
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
 
+}
+
+.video-card > .thumb {
+    flex: 0 0 178px;
+}
+
+.video-card .video-body {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.video-card .video-body .meta {
+    height: 64px;
+    overflow: hidden;
+    align-content: flex-start;
+}
+
+.video-card .video-body h3 {
+    display: -webkit-box;
+    height: 56px;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+}
+
+.video-card .video-description {
+    display: -webkit-box;
+    height: 78px;
+    overflow: hidden;
+    line-height: 1.6;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+}
+
+.video-read-more {
+    align-self: flex-start;
+    margin-top: 6px;
+    padding: 4px 0;
+    border: 0;
+    background: transparent;
+    color: var(--primary);
+    font: inherit;
+    font-size: 14px;
+    font-weight: 800;
+    cursor: pointer;
+}
+
+.video-read-more-placeholder {
+    display: block;
+    height: 32px;
+    flex: 0 0 32px;
+}
+
+.video-card .actions {
+    margin-top: auto;
+    padding-top: 18px;
+}
+
+.video-description-modal[hidden] {
+    display: none !important;
+}
+
+.video-description-modal {
+    position: fixed;
+    z-index: 10000;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    padding: 24px;
+}
+
+.video-description-backdrop {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    border: 0;
+    background: rgba(4, 25, 19, .68);
+    cursor: pointer;
+}
+
+.video-description-dialog {
+    position: relative;
+    z-index: 1;
+    width: min(100%, 680px);
+    max-height: min(80vh, 720px);
+    overflow-y: auto;
+    padding: 28px;
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    background: var(--white);
+    box-shadow: 0 24px 80px rgba(0, 0, 0, .28);
+}
+
+.video-description-heading {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 20px;
+}
+
+.video-description-heading h2 {
+    margin: 0;
+    color: var(--primary);
+    font-size: clamp(20px, 3vw, 28px);
+}
+
+.video-description-close {
+    flex: 0 0 auto;
+    width: 40px;
+    height: 40px;
+    border: 1px solid var(--line);
+    border-radius: 50%;
+    background: var(--soft);
+    color: var(--primary);
+    font-size: 26px;
+    cursor: pointer;
+}
+
+.video-description-dialog > p {
+    margin: 20px 0 0;
+    color: var(--muted);
+    line-height: 1.75;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+body.video-description-open {
+    overflow: hidden;
+}
+
+html.dark .video-description-dialog {
+    color: var(--ink);
+}
+
+@media (max-width: 560px) {
+    .video-card > .thumb {
+        flex-basis: 150px;
+    }
+
+    .video-description-modal {
+        padding: 14px;
+    }
+
+    .video-description-dialog {
+        max-height: 86vh;
+        padding: 22px 18px;
+    }
 }
 
 .content-grid  {
