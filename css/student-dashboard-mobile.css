@@ -1,0 +1,82 @@
+/* Keep the student dashboard and its nested content inside narrow screens. */
+@media (max-width: 820px) {
+  .student-dashboard-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+  }
+
+  .student-dashboard-profile,
+  .student-dashboard-main,
+  .student-dashboard-card,
+  .student-dashboard-summary,
+  .student-dashboard-summary article,
+  .student-member-card,
+  .student-member-card > div,
+  .student-gpa-form,
+  .student-gpa-form > *,
+  .student-course-catalog,
+  .student-elective-builder,
+  .student-gpa-chart,
+  .student-gpa-history article {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .student-dashboard-profile,
+  .student-dashboard-card {
+    padding: clamp(14px, 4vw, 20px);
+  }
+
+  .student-dashboard-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .student-dashboard-summary article {
+    padding: 12px;
+  }
+
+  .student-dashboard-summary strong {
+    font-size: clamp(22px, 6vw, 28px);
+    overflow-wrap: anywhere;
+  }
+
+  .student-member-card {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .student-member-card > div:first-child {
+    grid-column: 1 / -1;
+  }
+
+  .student-gpa-form {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .student-gpa-form .btn {
+    width: 100%;
+    min-width: 0;
+    height: auto;
+    padding: 12px 16px;
+    line-height: 1.35;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .student-course-table-wrap {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .student-gpa-chart {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+@media (max-width: 380px) {
+  .student-dashboard-summary {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
