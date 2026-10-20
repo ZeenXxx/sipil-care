@@ -119,11 +119,9 @@ const normalizeAdminProfile = profile => {
   const roleAccess = ADMIN_ROLE_ACCESS[role] || null;
   const rawPages = normalizeList(profile.allowedPages || profile.allowed_pages);
   const rawPermissions = normalizeList(profile.permissions);
-  const shouldUseRolePages = Boolean(roleAccess);
-  const shouldUseRolePermissions = Boolean(roleAccess);
   const allowedPages = role === 'developer'
     ? ADMIN_ALL_PAGES
-    : withAdminGuidePage(shouldUseRolePages ? roleAccess.allowedPages : rawPages.length ? rawPages : roleAccess?.allowedPages || [ADMIN_GUIDE_PAGE]);
+    : withAdminGuidePage(rawPages.length ? rawPages : roleAccess?.allowedPages || [ADMIN_GUIDE_PAGE]);
 
   return {
     username: profile.username || FALLBACK_ADMIN.username,
@@ -133,7 +131,7 @@ const normalizeAdminProfile = profile => {
     allowedPages,
     permissions: role === 'developer'
       ? ['dashboard', 'resources', 'practicum_studio', 'software', 'videos', 'announcements', 'messages', 'audit', 'admin_accounts', 'student_accounts', 'ipk_monitoring', 'log_delete']
-      : shouldUseRolePermissions ? roleAccess.permissions : rawPermissions.length ? rawPermissions : roleAccess?.permissions || [],
+      : rawPermissions.length ? rawPermissions : roleAccess?.permissions || [],
     sessionCheckedAt: Date.now()
   };
 };
