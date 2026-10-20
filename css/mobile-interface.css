@@ -200,6 +200,14 @@
     min-height: 220px;
   }
 
+  .hero .mini {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .hero .mini span {
+    grid-template-columns: 76px minmax(0, 1fr);
+  }
+
   .visual-panel {
     padding: 18px;
   }
