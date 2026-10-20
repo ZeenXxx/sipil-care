@@ -366,6 +366,7 @@ function createGlobalSearch() {
     { title: 'KML/KMZ to CSV Civil 3D', type: 'Tools', url: 'pages/tools.html#kmlcsv', text: 'Google Earth KML KMZ menjadi CSV LAT LONG ALT tanpa header untuk Civil 3D' },
     { title: 'Response Spectrum ETABS', type: 'Tools', url: 'pages/tools.html#spectrum', text: 'Parameter RSA Web RSA Ss S1 Fa Fv TL menjadi file Excel siap import ETABS' },
     { title: 'Structural Diagram Analyzer', type: 'Tools', url: 'tools/diagram-struktur.html', text: 'Balok 1D, reaksi tumpuan, AFD, SFD, BMD' },
+    { title: 'Portal Frame Analyzer 2.0', type: 'Tools', url: 'tools/diagram-portal.html', text: 'Analisis portal 2D metode kekakuan langsung, reaksi, perpindahan, AFD, SFD, BMD' },
     { title: 'Preliminary Design SNI 2847:2019', type: 'Tools', url: 'tools/preliminary-design.html', text: 'Kolom, balok, pelat satu arah dua arah, dinding geser' },
     { title: 'Kalkulator Tulangan Balok', type: 'Tools', url: 'tools/tulangan-balok.html', text: 'Tulangan lentur, sengkang, Mu, Vu, fc, fy' },
     { title: 'About', type: 'Info', url: 'pages/about.html', text: 'Tentang SIPIL CARE dan FAQ singkat' },
