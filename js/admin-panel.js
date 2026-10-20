@@ -2407,12 +2407,13 @@ const normalizeAdminAccount = account => {
 const saveAdminAccountPassword = async (account, password) => {
   const normalized = normalizeAdminAccount(account);
   const supabase = await loadSupabaseClient();
+  const passwordHash = await sha256(password);
   const { data, error } = await supabase.rpc('sipilcare_save_admin_account', {
     p_session_token_hash: await adminSessionTokenHash(),
     p_original_username: normalized.username,
     p_username: normalized.username,
     p_name: normalized.name,
-    p_password_hash: await sha256(password),
+    p_password_hash: passwordHash,
     p_role: normalized.role,
     p_role_label: account.role_label || normalized.roleLabel,
     p_allowed_pages: account.allowed_pages || normalized.allowedPages,
@@ -2422,6 +2423,17 @@ const saveAdminAccountPassword = async (account, password) => {
   if (error) throw error;
   const savedAccount = Array.isArray(data) ? data[0] : data;
   if (!savedAccount?.username) throw new Error('Password akun admin tidak tersimpan.');
+
+  const tableName = window.SIPILCARE_AUTH_CONFIG?.adminTableName || 'admins';
+  const { data: persistedAccount, error: verifyError } = await supabase
+    .from(tableName)
+    .select('password_hash')
+    .eq('username', normalized.username)
+    .maybeSingle();
+  if (verifyError) throw verifyError;
+  if (persistedAccount?.password_hash !== passwordHash) {
+    throw new Error('Password baru belum tersimpan di database. Coba lagi atau hubungi developer aplikasi.');
+  }
   return savedAccount;
 };
 
