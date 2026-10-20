@@ -105,7 +105,7 @@
           <form id="adminPasswordResetForm" class="admin-password-form">
             <div>
               <h4>Reset Password Admin</h4>
-              <p class="small-text">Buat password baru untuk akun admin lain. Sesi akun tersebut akan diakhiri.</p>
+              <p class="small-text">Password lama tidak dapat dilihat. Atur password baru di sini; password baru hanya ditampilkan untuk disalin setelah berhasil disimpan.</p>
             </div>
             <select class="control" id="adminPasswordResetUsername" required>
               <option value="">Pilih akun admin</option>
@@ -118,8 +118,17 @@
               <input class="control" id="adminPasswordResetConfirm" type="password" placeholder="Konfirmasi password baru" autocomplete="new-password" minlength="8" required>
               <button class="password-toggle" type="button" data-password-toggle aria-label="Tampilkan konfirmasi password" aria-pressed="false">Lihat</button>
             </div>
+            <button class="action-btn" id="adminPasswordGenerate" type="button">Buat password otomatis</button>
             <div class="admin-account-actions">
               <button class="action-btn" id="adminPasswordResetSubmit" type="submit">Reset Password</button>
+            </div>
+            <div class="admin-password-result" id="adminPasswordResetResult" hidden role="status">
+              <strong>Password baru untuk <span id="adminPasswordResetResultUsername"></span></strong>
+              <div class="password-field">
+                <input class="control" id="adminPasswordResetResultValue" type="password" readonly autocomplete="off" aria-label="Password baru yang berhasil disimpan">
+                <button class="password-toggle" type="button" data-password-toggle aria-label="Tampilkan password baru" aria-pressed="false">Lihat</button>
+              </div>
+              <button class="action-btn" id="adminPasswordResetCopy" type="button">Salin password</button>
             </div>
           </form>
 
@@ -190,7 +199,7 @@
     <script src="../../js/student-config.js?v=20"></script>
     <script src="../../js/auth.js?v=33"></script>
     <script src="../../js/push-config.js?v=1"></script>
-    <script type="module" src="../../js/admin-panel.js?v=91"></script>
+    <script type="module" src="../../js/admin-panel.js?v=93"></script>
       <script src="../../js/pwa.js?v=2"></script>
   </body>
 </html>

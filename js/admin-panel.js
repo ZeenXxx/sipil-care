@@ -228,6 +228,11 @@ const adminPasswordResetUsername = document.getElementById('adminPasswordResetUs
 const adminPasswordResetValue = document.getElementById('adminPasswordResetValue');
 const adminPasswordResetConfirm = document.getElementById('adminPasswordResetConfirm');
 const adminPasswordResetSubmit = document.getElementById('adminPasswordResetSubmit');
+const adminPasswordGenerate = document.getElementById('adminPasswordGenerate');
+const adminPasswordResetResult = document.getElementById('adminPasswordResetResult');
+const adminPasswordResetResultUsername = document.getElementById('adminPasswordResetResultUsername');
+const adminPasswordResetResultValue = document.getElementById('adminPasswordResetResultValue');
+const adminPasswordResetCopy = document.getElementById('adminPasswordResetCopy');
 const developerPasswordForm = document.getElementById('developerPasswordForm');
 const developerPasswordCurrent = document.getElementById('developerPasswordCurrent');
 const developerPasswordNew = document.getElementById('developerPasswordNew');
@@ -2444,7 +2449,8 @@ const renderAdminPasswordTargets = () => {
   const targets = adminAccounts
     .filter(account => account.username !== username)
     .sort((a, b) => String(a.username || '').localeCompare(String(b.username || '')));
-  adminPasswordResetUsername.innerHTML = '<option value="">Pilih akun admin</option>' + targets
+  const emptyLabel = targets.length ? 'Pilih akun admin' : 'Belum ada akun admin lain';
+  adminPasswordResetUsername.innerHTML = `<option value="">${emptyLabel}</option>` + targets
     .map(account => `<option value="${escapeText(account.username)}">${escapeText(account.name || account.username)} (${escapeText(account.username)})</option>`)
     .join('');
   if (targets.some(account => account.username === current)) adminPasswordResetUsername.value = current;
@@ -7017,6 +7023,9 @@ on(adminPasswordResetForm, 'submit', async e => {
     toast('Konfirmasi password tidak sama.');
     return;
   }
+  if (adminPasswordResetResult) adminPasswordResetResult.hidden = true;
+  if (adminPasswordResetResultValue) adminPasswordResetResultValue.value = '';
+  if (adminPasswordResetResultUsername) adminPasswordResetResultUsername.textContent = '';
 
   try {
     adminPasswordResetSubmit.disabled = true;
@@ -7031,12 +7040,39 @@ on(adminPasswordResetForm, 'submit', async e => {
     toast(`Password ${usernameValue} berhasil direset. Sesi akun tersebut sudah diakhiri.`);
     adminPasswordResetForm.reset();
     renderAdminPasswordTargets();
+    if (adminPasswordResetResult && adminPasswordResetResultUsername && adminPasswordResetResultValue) {
+      adminPasswordResetResultUsername.textContent = usernameValue;
+      adminPasswordResetResultValue.value = newPassword;
+      adminPasswordResetResult.hidden = false;
+      adminPasswordResetResult.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
     await loadAdminAccounts();
   } catch (error) {
     console.error('Reset admin password error:', error);
     toast(error.message || 'Gagal mereset password akun admin.');
   } finally {
     adminPasswordResetSubmit.disabled = false;
+  }
+});
+
+on(adminPasswordGenerate, 'click', () => {
+  const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%';
+  const randomBytes = crypto.getRandomValues(new Uint8Array(18));
+  const generatedPassword = Array.from(randomBytes, byte => alphabet[byte % alphabet.length]).join('');
+  if (adminPasswordResetValue) adminPasswordResetValue.value = generatedPassword;
+  if (adminPasswordResetConfirm) adminPasswordResetConfirm.value = generatedPassword;
+  adminPasswordResetValue?.dispatchEvent(new Event('input', { bubbles: true }));
+  adminPasswordResetConfirm?.dispatchEvent(new Event('input', { bubbles: true }));
+});
+
+on(adminPasswordResetCopy, 'click', async () => {
+  if (!adminPasswordResetResultValue?.value) return;
+  try {
+    await navigator.clipboard.writeText(adminPasswordResetResultValue.value);
+    toast('Password baru berhasil disalin. Simpan di tempat aman.');
+  } catch (error) {
+    console.error('Copy admin password failed:', error);
+    toast('Tidak dapat menyalin otomatis. Pilih dan salin password dari kolom.');
   }
 });
 
@@ -8062,6 +8098,9 @@ async function loadAdminRoles(options = {}) {
 }
 
 async function loadAdminAccounts(options = {}) {
+  // The admin page guard refreshes the remote session timestamp. Wait for it
+  // before calling RPCs that require a recently active admin session.
+  await window.SIPILCARE_ADMIN_READY;
   if (!adminAccountTable && !guideRoleSummary && !guideRoleTable) return;
   if (!canManageAdminAccounts()) {
     renderGuideRoleOverview();
@@ -8082,6 +8121,10 @@ async function loadAdminAccounts(options = {}) {
     if (options.manual) toast('Data akun admin berhasil diperbarui.');
   } catch (error) {
     console.error('Load admin accounts failed:', error);
+    adminAccounts = [];
+    if (adminPasswordResetUsername) {
+      adminPasswordResetUsername.innerHTML = '<option value="">Gagal memuat akun admin. Klik Refresh.</option>';
+    }
     if (adminAccountTable) adminAccountTable.innerHTML = '<tr><td colspan="7">Gagal memuat akun admin dari Supabase. Cek policy tabel admins.</td></tr>';
     renderGuideRoleOverview();
     if (options.manual) toast('Gagal memuat akun admin dari Supabase.');
