@@ -59,6 +59,9 @@ const els = {
   videoProgressBar: document.getElementById('accessVideoProgressBar')
 };
 
+// The practicum player must never appear on Resource or Software access pages.
+if (source !== 'practicum') els.videoPanel?.remove();
+
 let activeResource = null;
 let activeVideoSource = null;
 let currentAccessSession = null;
@@ -1030,7 +1033,7 @@ const renderResource = (resource, session = currentAccessSession || readStudentS
     resource.category,
     resource.type,
     resource.date,
-    source === 'practicum' ? 'Praktikum & Studio' : 'Resources'
+    source === 'practicum' ? 'Praktikum & Studio' : resource.category === 'Software' ? 'Software' : 'Resources'
   ].filter(Boolean);
   const resourceIsVideo = isPracticumVideo(resource);
   if (!resourceIsVideo) resetVideoUi();
@@ -1062,8 +1065,12 @@ const renderResource = (resource, session = currentAccessSession || readStudentS
     }
   }
   if (els.back) {
-    els.back.href = source === 'practicum' ? 'praktikum-studio.html' : 'resources.html';
-    els.back.textContent = source === 'practicum' ? 'Kembali ke Praktikum' : 'Kembali';
+    els.back.href = source === 'practicum'
+      ? 'praktikum-studio.html'
+      : resource.category === 'Software' ? 'software.html' : 'resources.html';
+    els.back.textContent = source === 'practicum'
+      ? 'Kembali ke Praktikum'
+      : resource.category === 'Software' ? 'Kembali ke Software' : 'Kembali ke Resource';
   }
 };
 

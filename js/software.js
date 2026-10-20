@@ -65,7 +65,7 @@ const card = item => {
     <h3>${escapeHtml(item.title || 'Software Teknik Sipil')}</h3>
     <p>${escapeHtml(item.description || 'Perangkat lunak atau panduan pendukung kegiatan akademik Teknik Sipil.')}</p>
     ${item.author ? `<small>Pengunggah: ${escapeHtml(item.author)}</small>` : ''}
-    <div class="actions"><a class="btn btn-primary" href="access?id=${id}">Buka Software</a><button class="btn btn-ghost" type="button" data-save-software="${escapeHtml(itemKey(item))}">${isSaved(item) ? 'Tersimpan' : 'Simpan'}</button></div>
+    <div class="actions"><a class="btn btn-primary" href="access?source=resources&amp;id=${id}">Buka Software</a><button class="btn btn-ghost" type="button" data-save-software="${escapeHtml(itemKey(item))}">${isSaved(item) ? 'Tersimpan' : 'Simpan'}</button></div>
   </article>`;
 };
 
@@ -130,7 +130,7 @@ const render = () => {
     const alreadySaved = bookmarks.some(saved => saved.id === key);
     const next = alreadySaved
       ? bookmarks.filter(saved => saved.id !== key)
-      : [{ id: key, type: 'Software', title: item.title, category: disciplineOf(item), url: `access?id=${encodeURIComponent(item.id || item.slug || itemKey(item))}`, savedAt: new Date().toISOString() }, ...bookmarks];
+      : [{ id: key, type: 'Software', title: item.title, category: disciplineOf(item), url: `access?source=resources&id=${encodeURIComponent(item.id || item.slug || itemKey(item))}`, savedAt: new Date().toISOString() }, ...bookmarks];
     localStorage.setItem(bookmarkKey, JSON.stringify(next.slice(0, 100)));
     showToast(alreadySaved ? 'Software dihapus dari simpanan.' : 'Software disimpan.');
     render();
