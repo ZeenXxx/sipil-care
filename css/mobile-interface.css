@@ -118,11 +118,44 @@
   .content-grid > .empty-state {
     grid-column: 1 / -1;
   }
+
+  .floating-socials,
+  .floating-help {
+    position: static;
+    z-index: auto;
+    margin: 14px auto;
+  }
+
+  .floating-socials {
+    display: flex;
+    width: max-content;
+    justify-content: center;
+    gap: 10px;
+    pointer-events: auto;
+  }
+
+  .floating-help {
+    display: flex;
+    width: max-content;
+  }
+
+  .floating-help b {
+    display: inline;
+  }
 }
 
 @media (max-width: 560px) {
   .container {
     width: min(100% - 28px, 1120px);
+  }
+
+  main,
+  section,
+  .container,
+  .grid,
+  .card {
+    min-width: 0;
+    max-width: 100%;
   }
 
   .navbar {
@@ -218,6 +251,29 @@
   .empty-state {
     padding: 20px 16px;
     line-height: 1.55;
+  }
+
+  h1,
+  h2,
+  h3,
+  p {
+    overflow-wrap: anywhere;
+  }
+
+  .btn,
+  .actions .btn {
+    height: auto;
+    min-width: 0;
+    max-width: 100%;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  img,
+  video,
+  iframe,
+  canvas {
+    max-width: 100%;
   }
 
   .footer-grid {
