@@ -59,12 +59,17 @@ const card = item => {
     ? String(item.thumbnail).toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 4)
     : 'SW';
   const date = item.date ? new Date(item.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
-  return `<article class="card resource-card software-card">
+  const description = String(item.description || 'Perangkat lunak atau panduan pendukung kegiatan akademik Teknik Sipil.').trim();
+  const readMore = description.length > 120
+    ? '<button class="academic-read-more" type="button" data-academic-read-more>Baca selengkapnya</button>'
+    : '<span class="academic-read-more-placeholder" aria-hidden="true"></span>';
+  return `<article class="card resource-card software-card academic-description-card">
     <div class="icon">${escapeHtml(thumbnail || 'SW')}</div>
     <div class="meta"><span class="badge">${escapeHtml(disciplineOf(item))}</span>${date ? `<span class="badge">${escapeHtml(date)}</span>` : ''}</div>
-    <h3>${escapeHtml(item.title || 'Software Teknik Sipil')}</h3>
-    <p>${escapeHtml(item.description || 'Perangkat lunak atau panduan pendukung kegiatan akademik Teknik Sipil.')}</p>
-    ${item.author ? `<small>Pengunggah: ${escapeHtml(item.author)}</small>` : ''}
+    <h3 class="academic-description-title">${escapeHtml(item.title || 'Software Teknik Sipil')}</h3>
+    <p class="academic-description-preview">${escapeHtml(description)}</p>
+    ${readMore}<div class="academic-description-full" hidden>${escapeHtml(description)}</div>
+    <small class="academic-description-author">Pengunggah: ${escapeHtml(item.author || '-')}</small>
     <div class="actions"><a class="btn btn-primary" href="access?source=resources&amp;id=${id}">Buka Software</a><button class="btn btn-ghost" type="button" data-save-software="${escapeHtml(itemKey(item))}">${isSaved(item) ? 'Tersimpan' : 'Simpan'}</button></div>
   </article>`;
 };

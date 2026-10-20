@@ -1,0 +1,171 @@
+.academic-description-card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-width: 0;
+}
+
+.academic-description-card > .icon {
+  flex: 0 0 48px;
+}
+
+.academic-description-card > .meta {
+  height: 64px;
+  min-height: 64px;
+  overflow: hidden;
+  align-content: flex-start;
+}
+
+.academic-description-title {
+  display: -webkit-box;
+  height: 56px;
+  min-height: 56px;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.academic-description-preview {
+  display: -webkit-box;
+  height: 78px;
+  min-height: 78px;
+  overflow: hidden;
+  line-height: 1.6;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+.academic-description-author {
+  min-height: 24px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.academic-read-more,
+.academic-read-more-placeholder {
+  display: block;
+  height: 32px;
+  flex: 0 0 32px;
+}
+
+.academic-read-more {
+  align-self: flex-start;
+  padding: 4px 0;
+  border: 0;
+  background: transparent;
+  color: var(--primary);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.academic-description-card > .actions {
+  margin-top: auto;
+  padding-top: 14px;
+}
+
+.module-item.academic-description-card {
+  height: 100%;
+  min-height: 360px;
+  align-self: stretch;
+}
+
+.module-item.academic-description-card > .academic-description-title {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.32;
+}
+
+.module-item.academic-description-card > .academic-description-preview {
+  margin: 0;
+  -webkit-line-clamp: 3;
+}
+
+.module-item.academic-description-card > .meta {
+  height: 64px;
+  min-height: 64px;
+  overflow: hidden;
+  align-content: flex-start;
+}
+
+.academic-description-modal[hidden] {
+  display: none !important;
+}
+
+.academic-description-modal {
+  position: fixed;
+  z-index: 10000;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
+.academic-description-backdrop {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: rgba(4, 25, 19, .68);
+  cursor: pointer;
+}
+
+.academic-description-dialog {
+  position: relative;
+  z-index: 1;
+  width: min(100%, 680px);
+  max-height: min(80vh, 720px);
+  overflow-y: auto;
+  padding: 28px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--white);
+  color: var(--ink);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, .28);
+}
+
+.academic-description-dialog header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.academic-description-dialog h2 {
+  margin: 0;
+  color: var(--primary);
+  font-size: clamp(20px, 3vw, 28px);
+}
+
+.academic-description-close {
+  flex: 0 0 auto;
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: var(--soft);
+  color: var(--primary);
+  font-size: 26px;
+  cursor: pointer;
+}
+
+.academic-description-dialog > p {
+  margin: 20px 0 0;
+  color: var(--muted);
+  line-height: 1.75;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+body.academic-description-open {
+  overflow: hidden;
+}
+
+@media (max-width: 560px) {
+  .academic-description-modal { padding: 14px; }
+  .academic-description-dialog { max-height: 86vh; padding: 22px 18px; }
+  .module-item.academic-description-card { min-height: 360px; }
+}

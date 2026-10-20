@@ -18,6 +18,7 @@
     rel="stylesheet">
     <link rel="stylesheet" href="../css/resources.css?v=9">
     <link rel="stylesheet" href="../css/software.css?v=1">
+    <link rel="stylesheet" href="../css/academic-cards.css?v=1">
     <script src="../js/student-config.js?v=18"></script>
     <script src="../js/student-auth.js?v=39"></script>
       <link rel="stylesheet" href="../css/mobile-interface.css?v=1">
@@ -112,8 +113,16 @@
     engineering students.</span></div>
   </footer>
   <div class="toast" id="toast"></div>
+  <div class="academic-description-modal" id="academicDescriptionModal" hidden>
+    <button class="academic-description-backdrop" type="button" aria-label="Tutup deskripsi" data-close-academic-description></button>
+    <section class="academic-description-dialog" role="dialog" aria-modal="true" aria-labelledby="academicDescriptionTitle">
+      <header><h2 id="academicDescriptionTitle">Deskripsi</h2><button class="academic-description-close" type="button" aria-label="Tutup" data-close-academic-description>&times;</button></header>
+      <p id="academicDescriptionContent"></p>
+    </section>
+  </div>
+  <script src="../js/academic-description.js?v=1"></script>
   <script src="../js/navbar.js?v=36"></script>
-  <script type="module" src="../js/resources.js?v=18"></script>
+  <script type="module" src="../js/resources.js?v=19"></script>
     <script src="../js/pwa.js?v=2"></script>
       <script src="../js/push-config.js?v=1"></script>
       <script type="module" src="../js/pwa-push.js?v=5"></script>

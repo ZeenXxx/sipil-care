@@ -52,11 +52,6 @@ const toggleBookmark = item => {
   render();
 };
 
-const truncateText = (text, len = 80) => {
-  if (!text) return '';
-  return text.length > len ? text.slice(0, len) + '...' : text;
-};
-
 const getThumbnailDisplay = (thumb) => {
   if (!thumb) return 'RES';
   // Jika thumbnail masih URL, ambil 3 karakter pertama atau kategori
@@ -67,7 +62,11 @@ const getThumbnailDisplay = (thumb) => {
 
 const card = i => {
   const url = accessUrl(i);
-  return `<article class="card resource-card"><div class="icon">${escapeText(getThumbnailDisplay(i.thumbnail))}</div><div class="meta"><span class="badge">${escapeText(i.category)}</span><span class="badge">${escapeText(i.type)}</span><span class="badge">${escapeText(i.date)}</span></div><h3>${escapeText(i.title)}</h3><p>${escapeText(truncateText(i.description, 120))}</p><small>Author: ${escapeText(i.author)}</small><div class="actions"><a class="btn btn-primary" href="${url}">Akses File</a><button class="btn btn-ghost" data-access-url="${url}">Salin Link</button><button class="btn btn-ghost" data-bookmark-resource="${escapeText(i.id || i.slug || slugify(i.title))}">${isBookmarked(i) ? 'Tersimpan' : 'Simpan'}</button></div></article>`;
+  const description = String(i.description || '').trim();
+  const readMore = description.length > 120
+    ? '<button class="academic-read-more" type="button" data-academic-read-more>Baca selengkapnya</button>'
+    : '<span class="academic-read-more-placeholder" aria-hidden="true"></span>';
+  return `<article class="card resource-card academic-description-card"><div class="icon">${escapeText(getThumbnailDisplay(i.thumbnail))}</div><div class="meta"><span class="badge">${escapeText(i.category)}</span><span class="badge">${escapeText(i.type)}</span><span class="badge">${escapeText(i.date)}</span></div><h3 class="academic-description-title">${escapeText(i.title)}</h3><p class="academic-description-preview">${escapeText(description)}</p>${readMore}<div class="academic-description-full" hidden>${escapeText(description)}</div><small class="academic-description-author">Author: ${escapeText(i.author || '-')}</small><div class="actions"><a class="btn btn-primary" href="${url}">Akses File</a><button class="btn btn-ghost" data-access-url="${url}">Salin Link</button><button class="btn btn-ghost" data-bookmark-resource="${escapeText(i.id || i.slug || slugify(i.title))}">${isBookmarked(i) ? 'Tersimpan' : 'Simpan'}</button></div></article>`;
 };
 const filtered = () => {
   const q = (resourceSearch?.value || '').toLowerCase();
