@@ -8,7 +8,7 @@
     <link rel="manifest" href="../manifest.webmanifest?v=2">
     <link rel="stylesheet" href="../css/style.css?v=26">
     <link rel="stylesheet" href="../css/navbar.css?v=35">
-    <link rel="stylesheet" href="../css/diagram-portal.css?v=1">
+    <link rel="stylesheet" href="../css/diagram-portal.css?v=2">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -43,16 +43,30 @@
               </div>
             </details>
             <details open>
-              <summary>Tambah batang frame</summary>
+              <summary>Tambah batang frame (garis)</summary>
               <div class="portal-fields two">
                 <div><label for="portalMemberI">Node i</label><select class="control" id="portalMemberI"></select></div>
                 <div><label for="portalMemberJ">Node j</label><select class="control" id="portalMemberJ"></select></div>
+                <p class="portal-field-note portal-full">Batang di sini hanya menambahkan garis elemen di antara dua node.</p>
+                <button class="btn btn-primary full-btn" id="portalAddMember" type="button">Tambah garis batang</button>
+              </div>
+            </details>
+            <details>
+              <summary>Properti analisis (material &amp; penampang)</summary>
+              <div class="portal-fields two">
                 <div><label for="portalE">E (MPa)</label><input class="control" id="portalE" type="number" min="0.001" step="1000" value="200000"></div>
                 <div><label for="portalA">A (cm²)</label><input class="control" id="portalA" type="number" min="0.001" step="1" value="100"></div>
-                <div><label for="portalI">I (cm⁴)</label><input class="control" id="portalI" type="number" min="0.001" step="1000" value="80000"></div>
-                <div><label for="portalMemberQ">q lokal y (kN/m)</label><input class="control" id="portalMemberQ" type="number" step="0.1" value="0"></div>
+                <div class="portal-full"><label for="portalI">I (cm⁴)</label><input class="control" id="portalI" type="number" min="0.001" step="1000" value="80000"></div>
+                <p class="portal-field-note portal-full">Satu set E, A, dan I dipakai bersama oleh semua batang. Perubahan nilai memperbarui semua batang.</p>
+              </div>
+            </details>
+            <details>
+              <summary>Beban merata batang</summary>
+              <div class="portal-fields">
+                <label for="portalMemberLoadTarget">Batang</label><select class="control" id="portalMemberLoadTarget"></select>
+                <label for="portalMemberQ">q lokal y (kN/m)</label><input class="control" id="portalMemberQ" type="number" step="0.1" value="0">
                 <p class="portal-field-note">q positif searah sumbu lokal +y (kiri jika dilihat dari i menuju j).</p>
-                <button class="btn btn-primary full-btn" id="portalAddMember" type="button">Tambah batang</button>
+                <button class="btn btn-primary full-btn" id="portalSetMemberLoad" type="button">Atur beban batang</button>
               </div>
             </details>
             <details open>
@@ -97,8 +111,8 @@
     </main>
     <footer class="site-footer"><div class="footer-grid"><div><a class="footer-brand" href="../index.html"><img src="../assets/images/logo-hms.png" alt="Logo HMS"><span>SIPIL CARE</span></a><p>Platform digital akademik Teknik Sipil.</p></div><div><h3>Navigasi</h3><a href="../pages/resources.html">Resources</a><a href="../pages/tools.html">Tools</a></div><div><h3>Structural tools</h3><a href="diagram-struktur.html">Structural Diagram Analyzer (1D)</a><a href="diagram-portal.html">Portal Frame Analyzer 2.0</a></div><div><h3>HMS Unjani</h3><p>2026</p></div></div><div class="footer-bottom"><span>&copy; 2026 PENDPROF HMS - HMS UNJANI</span><span>Built for civil engineering students.</span></div></footer>
     <div class="toast" id="toast"></div>
-    <script src="../js/navbar.js?v=33"></script>
-    <script src="../js/diagram-portal.js?v=1"></script>
+    <script src="../js/navbar.js?v=34"></script>
+    <script src="../js/diagram-portal.js?v=2"></script>
     <script src="../js/pwa.js?v=2"></script>
   </body>
 </html>

@@ -38,6 +38,10 @@
     const nodeOptions = state.nodes.map(item => `<option value="${item.id}">${nodeLabel(item.id)} (${fmt(item.x, 2)}, ${fmt(item.y, 2)})</option>`).join('');
     ['portalMemberI', 'portalMemberJ', 'portalLoadNode'].forEach(id => { $(id).innerHTML = nodeOptions; });
     if (state.nodes.length > 1) $('portalMemberJ').value = state.nodes[1].id;
+    const memberSelect = $('portalMemberLoadTarget');
+    const previousMember = memberSelect.value;
+    memberSelect.innerHTML = state.members.map(item => `<option value="${item.id}">B${item.id} (${nodeLabel(item.i)}–${nodeLabel(item.j)})</option>`).join('');
+    if (state.members.some(item => String(item.id) === previousMember)) memberSelect.value = previousMember;
   }
 
   function renderModel() {
@@ -104,11 +108,27 @@
 
   function addMember() {
     const i = Number($('portalMemberI').value), j = Number($('portalMemberJ').value);
-    const E = Number($('portalE').value), A = Number($('portalA').value), inertia = Number($('portalI').value), q = Number($('portalMemberQ').value || 0);
+    const E = Number($('portalE').value), A = Number($('portalA').value), inertia = Number($('portalI').value);
     if (i === j) return msg('Node i dan j harus berbeda.');
-    if (![E, A, inertia, q].every(Number.isFinite) || E <= 0 || A <= 0 || inertia <= 0) return msg('E, A, dan I harus lebih besar dari nol.');
-    state.members.push({ id: state.nextMember++, i, j, e: E, a: A, inertia, q });
-    clearResults(); renderModel(); msg('Batang frame ditambahkan.', true);
+    if (![E, A, inertia].every(Number.isFinite) || E <= 0 || A <= 0 || inertia <= 0) return msg('E, A, dan I pada Properti Analisis harus lebih besar dari nol.');
+    state.members.push({ id: state.nextMember++, i, j, e: E, a: A, inertia, q: 0 });
+    clearResults(); updateSelects(); renderModel(); msg('Garis batang ditambahkan dengan properti analisis yang berlaku.', true);
+  }
+
+  function updateMemberProperties() {
+    const E = Number($('portalE').value), A = Number($('portalA').value), inertia = Number($('portalI').value);
+    if (![E, A, inertia].every(Number.isFinite) || E <= 0 || A <= 0 || inertia <= 0) return msg('E, A, dan I harus lebih besar dari nol.');
+    state.members.forEach(item => { item.e = E; item.a = A; item.inertia = inertia; });
+    clearResults(); renderModel(); msg('Properti analisis diperbarui untuk semua batang.', true);
+  }
+
+  function setMemberLoad() {
+    const target = member($('portalMemberLoadTarget').value);
+    const q = Number($('portalMemberQ').value || 0);
+    if (!target) return msg('Tambahkan batang terlebih dahulu.');
+    if (!Number.isFinite(q)) return msg('Beban merata harus berupa angka.');
+    target.q = q;
+    clearResults(); renderModel(); msg(`Beban merata batang B${target.id} diperbarui.`, true);
   }
 
   function addNodeLoad() {
@@ -251,6 +271,12 @@
   $('portalAddNode').addEventListener('click', addNode);
   $('portalAddMember').addEventListener('click', addMember);
   $('portalAddLoad').addEventListener('click', addNodeLoad);
+  $('portalSetMemberLoad').addEventListener('click', setMemberLoad);
+  ['portalE', 'portalA', 'portalI'].forEach(id => $(id).addEventListener('change', updateMemberProperties));
+  $('portalMemberLoadTarget').addEventListener('change', () => {
+    const selected = member($('portalMemberLoadTarget').value);
+    if (selected) $('portalMemberQ').value = selected.q;
+  });
   $('portalAnalyze').addEventListener('click', () => {
     try {
       const result = analyze(); state.results = result; renderResults(result); msg('Analisis selesai. Periksa kembali asumsi, satuan, dan tanda beban.', true);
@@ -258,7 +284,10 @@
   });
   $('portalReset').addEventListener('click', () => {
     state.nodes = defaultNodes(); state.members = defaultMembers(); state.nextNode = 5; state.nextMember = 4; state.results = null;
-    updateSelects(); renderModel(); $('portalResultSummary').innerHTML = '<p>Model portal contoh dimuat. Tekan Analisis untuk menghitung.</p>';
+    $('portalE').value = 200000; $('portalA').value = 100; $('portalI').value = 80000; $('portalMemberQ').value = 0;
+    updateSelects();
+    if (state.members[0]) { $('portalMemberLoadTarget').value = state.members[0].id; $('portalMemberQ').value = state.members[0].q; }
+    renderModel(); $('portalResultSummary').innerHTML = '<p>Model portal contoh dimuat. Tekan Analisis untuk menghitung.</p>';
     $('portalNodeResults').innerHTML = '<tr><td colspan="7">Belum ada hasil.</td></tr>';
     $('portalMemberResults').innerHTML = '<tr><td colspan="7">Belum ada hasil.</td></tr>';
     $('portalDiagrams').innerHTML = '<p>Diagram akan ditampilkan setelah analisis.</p>'; msg('Model contoh satu bentang satu lantai dimuat.', true);
@@ -274,7 +303,7 @@
   });
   $('portalMemberRows').addEventListener('click', event => {
     const id = Number(event.target.dataset.removeMember); if (!id) return;
-    state.members = state.members.filter(item => item.id !== id); clearResults(); renderModel(); msg('Batang dihapus.');
+    state.members = state.members.filter(item => item.id !== id); clearResults(); updateSelects(); renderModel(); msg('Batang dihapus.');
   });
 
   state.nodes = defaultNodes(); state.members = defaultMembers(); state.nextNode = 5; state.nextMember = 4;
