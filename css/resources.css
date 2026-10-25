@@ -101,18 +101,51 @@ html.dark .badge-popular {
 
 /* Dark mode */
 html.dark .legend-bar {
-  background: rgba(255,255,255,0.04);
-  border-color: rgba(255,255,255,0.1);
+  background: var(--surface-raised);
+  border-color: var(--line);
 }
 
 html.dark .legend-text {
-  background: #1a2e24;
-  border-color: rgba(255,255,255,0.12);
+  background: var(--surface);
+  border-color: var(--line);
 }
 
-html.dark .legend-text strong { color: #e0f0e8; }
-html.dark .legend-text em    { color: #8ab8a0; }
-html.dark .legend-label      { color: #8ab8a0; }
+html.dark .legend-text strong { color: var(--ink); }
+html.dark .legend-text em    { color: var(--muted); }
+html.dark .legend-label      { color: var(--muted); }
+
+html.dark .student-dashboard-profile,
+html.dark .student-dashboard-card,
+html.dark .student-dashboard-summary article,
+html.dark .student-member-card > div,
+html.dark .student-course-preview,
+html.dark .student-course-catalog,
+html.dark .student-elective-builder,
+html.dark .student-gpa-chart,
+html.dark .student-gpa-history article,
+html.dark .student-bookmark-item,
+html.dark .student-activity-item {
+  background: var(--surface);
+  border-color: var(--line);
+  color: var(--ink);
+}
+
+html.dark .student-course-table-wrap {
+  background: var(--surface-raised);
+  border-color: var(--line);
+}
+
+html.dark .student-course-table {
+  background: var(--surface);
+  color: var(--ink);
+}
+
+html.dark .student-course-table th,
+html.dark .student-course-table tfoot td {
+  background: var(--surface-raised);
+  color: var(--ink);
+  border-color: var(--line);
+}
 
 .student-dashboard-head { padding-bottom: 36px; }
 

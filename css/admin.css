@@ -4154,3 +4154,102 @@ th  {
     grid-template-columns: 1fr;
   }
 }
+
+/* Dark appearance for the admin surfaces and form controls. */
+html.dark .login-page {
+  background: linear-gradient(120deg, rgba(21, 25, 29, .96), rgba(21, 25, 29, .88)), url('../assets/images/engineering-bg.png') center/cover;
+}
+
+html.dark .admin-stat,
+html.dark .dashboard-jump a,
+html.dark .dashboard-status-card,
+html.dark .dashboard-quick-actions a,
+html.dark .admin-card,
+html.dark .attendance-recap-scroll,
+html.dark .attendance-recap-scroll th,
+html.dark .backup-restore-preview span,
+html.dark .backup-restore-options .admin-mini-check,
+html.dark .admin-guide-step,
+html.dark .admin-guide-card,
+html.dark .admin-panel-card,
+html.dark .admin-inline-card,
+html.dark .admin-workspace-panel,
+html.dark .analytics-grid article,
+html.dark .analytics-metrics article,
+html.dark .academic-settings-summary article,
+html.dark .student-activity-summary article {
+  background: var(--surface);
+  border-color: var(--line);
+  color: var(--ink);
+  box-shadow: 0 10px 26px rgba(0, 0, 0, .18);
+}
+
+html.dark .badge.status-published,
+html.dark .badge.video-watch-success {
+  background: #293d34;
+  color: #b3d8c4;
+}
+
+html.dark .badge.status-draft,
+html.dark .zoom-reconcile-row.warning {
+  background: #3a3427;
+  color: #e2d29a;
+}
+
+html.dark .badge.status-archived,
+html.dark .badge.video-watch-muted,
+html.dark .zoom-reconcile-row.unknown {
+  background: #2b3036;
+  color: #c0c6cb;
+}
+
+html.dark .badge.video-watch-progress {
+  background: #273540;
+  color: #b8cfdf;
+}
+
+html.dark .zoom-reconcile-row.ok {
+  background: #24352c;
+}
+
+html.dark .zoom-reconcile-row.danger {
+  background: #3a292b;
+}
+
+html.dark .admin-page input,
+html.dark .admin-page select,
+html.dark .admin-page textarea {
+  background-color: var(--surface-raised);
+  border-color: var(--line);
+  color: var(--ink);
+}
+
+html.dark .admin-page input::placeholder,
+html.dark .admin-page textarea::placeholder {
+  color: #929aa1;
+}
+
+html.dark .admin-page table {
+  color: var(--ink);
+}
+
+html.dark .admin-page th {
+  background: var(--surface-raised);
+  color: var(--ink);
+  border-color: var(--line);
+}
+
+html.dark .admin-page td {
+  border-color: var(--line);
+}
+
+html.dark .admin-page tr:nth-child(even) td {
+  background: rgba(255, 255, 255, .025);
+}
+
+html.dark .admin-restore-box,
+html.dark .admin-main .admin-mini-check {
+  background: var(--surface-raised);
+  border-color: var(--line);
+  color: var(--ink);
+}

@@ -2607,19 +2607,23 @@ html.dark .video-description-dialog {
 
 /* ===== DARK MODE ===== */
 html.dark {
-  --primary: #4ade9a;
-  --primary2: #38c785;
-  --gold: #f0d93a;
-  --ink: #e8f1ee;
-  --muted: #93b0a7;
-  --soft: #1a2e27;
-  --line: #2a4038;
-  --white: #111e1a;
-  --shadow: 0 18px 44px rgba(0,0,0,.4);
+  color-scheme: dark;
+  --primary: #a4c1b2;
+  --primary2: #89aa9a;
+  --gold: #d9c783;
+  --ink: #e3e5e7;
+  --muted: #a5abb1;
+  --soft: #22272c;
+  --line: #383f46;
+  --white: #191d22;
+  --surface: #1d2227;
+  --surface-raised: #252b31;
+  --surface-hover: #2c3339;
+  --shadow: 0 18px 44px rgba(0,0,0,.28);
 }
 
 html.dark body {
-  background: #0e1a16;
+  background: #15191d;
   color: var(--ink);
 }
 
@@ -2637,33 +2641,47 @@ html.dark .announcement-body,
 html.dark .changelog-item,
 html.dark .developer-credit,
 html.dark .notice-card {
-  background: #162520;
+  background: var(--surface);
   border-color: var(--line);
   color: var(--ink);
 }
 
+html.dark input,
+html.dark select,
+html.dark textarea {
+  color-scheme: dark;
+  background-color: var(--surface-raised);
+  border-color: var(--line);
+  color: var(--ink);
+}
+
+html.dark input::placeholder,
+html.dark textarea::placeholder {
+  color: #929aa1;
+}
+
 html.dark .chat-bubble.admin {
-  background: #1e3530;
-  border-color: #2a4d42;
+  background: #293139;
+  border-color: #414b54;
 }
 
 html.dark .chat-bubble.student {
-  background: #0f4d3a;
+  background: #344a42;
   color: #fff;
 }
 
 html.dark .chat-feed {
-  background: #0e1a16;
+  background: #15191d;
   border-color: var(--line);
 }
 
 html.dark .page-head {
-  background: linear-gradient(90deg, #0e1a16, #132219);
+  background: linear-gradient(90deg, #15191d, #1b2025);
   border-bottom-color: var(--line);
 }
 
 html.dark .hero {
-  background: linear-gradient(90deg, rgba(14,26,22,.98), rgba(14,26,22,.9)), url('../assets/images/engineering-bg.png') center/cover;
+  background: linear-gradient(90deg, rgba(21,25,29,.98), rgba(21,25,29,.9)), url('../assets/images/engineering-bg.png') center/cover;
 }
 
 html.dark .hero p {
@@ -2671,17 +2689,17 @@ html.dark .hero p {
 }
 
 html.dark .visual {
-  background: linear-gradient(135deg, #162520, #1a2e27);
+  background: linear-gradient(135deg, #1d2227, #252b31);
   border-color: var(--line);
 }
 
 html.dark .visual:before {
-  background-image: linear-gradient(rgba(74,222,154,.07) 1px, transparent 1px), linear-gradient(90deg, rgba(74,222,154,.07) 1px, transparent 1px);
+  background-image: linear-gradient(rgba(164,193,178,.055) 1px, transparent 1px), linear-gradient(90deg, rgba(164,193,178,.055) 1px, transparent 1px);
 }
 
 html.dark .btn-secondary,
 html.dark .btn-ghost {
-  background: #162520;
+  background: var(--surface-raised);
   color: var(--primary);
   border-color: var(--primary);
 }
@@ -2689,74 +2707,74 @@ html.dark .btn-ghost {
 html.dark .btn-secondary:hover,
 html.dark .btn-ghost:hover {
   background: var(--primary);
-  color: #0e1a16;
+  color: #18211d;
 }
 
 html.dark .soft {
-  background: #132219;
+  background: #1b2025;
 }
 
 html.dark .mini span {
-  background: #1a2e27;
+  background: var(--surface-raised);
   color: var(--muted);
 }
 
 html.dark .icon {
-  background: #1a2e27;
+  background: var(--surface-raised);
 }
 
 html.dark .badge {
-  background: #1a2e27;
+  background: var(--surface-raised);
   color: var(--primary);
 }
 
 html.dark .filter {
-  background: #162520;
+  background: var(--surface-raised);
   color: var(--primary);
 }
 
 html.dark .filter.active,
 html.dark .filter:hover {
   background: var(--primary);
-  color: #0e1a16;
+  color: #18211d;
 }
 
 html.dark .btn-primary,
 html.dark .primary-btn {
   background: var(--primary);
-  color: #0e1a16;
+  color: #18211d;
 }
 
 html.dark .btn-primary:hover,
 html.dark .primary-btn:hover {
-  background: #38c785;
+  background: #89aa9a;
 }
 
 html.dark .stats {
-  background: #0a1510;
+  background: #111519;
 }
 
 html.dark .announcement-media.has-image {
-  background: #132219;
+  background: #1b2025;
 }
 
 html.dark .announcement-card {
-  background: linear-gradient(180deg, #162520, #132219);
+  background: linear-gradient(180deg, #20262c, #1a1f24);
   border-color: var(--line);
   box-shadow: 0 16px 38px rgba(0,0,0,.3);
 }
 
 html.dark .announcement-type {
-  background: #1a2e27;
+  background: var(--surface-raised);
   color: var(--primary);
 }
 
 html.dark .announcement-date {
-  background: rgba(240, 217, 58, .14);
+  background: rgba(217, 199, 131, .12);
   color: var(--gold);
 }
 
 html.dark .admin-chat-status.online {
-  background: #162520;
-  border-color: rgba(74,222,154,.2);
+  background: var(--surface-raised);
+  border-color: var(--line);
 }

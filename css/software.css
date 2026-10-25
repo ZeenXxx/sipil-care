@@ -76,8 +76,8 @@
 }
 
 html.dark .resource-software-link {
-  background: linear-gradient(110deg, #192d25, #17251f);
-  border-color: rgba(74, 222, 154, .18);
+  background: linear-gradient(110deg, var(--surface-raised), var(--surface));
+  border-color: var(--line);
 }
 
 @media (max-width: 640px) {

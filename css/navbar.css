@@ -1625,44 +1625,44 @@ html.dark .dark-toggle .icon-sun  { display: block; }
 
 /* dark mode navbar */
 html.dark .navbar {
-  background: rgba(14, 26, 22, .95);
-  border-bottom-color: rgba(74, 222, 154, .1);
+  background: rgba(21, 25, 29, .96);
+  border-bottom-color: var(--line);
   box-shadow: 0 12px 28px rgba(0,0,0,.3);
 }
 
 html.dark .brand strong { color: var(--primary); }
-html.dark .brand small  { color: #6b9e8d; }
+html.dark .brand small  { color: var(--muted); }
 
 html.dark .nav-links a {
-  color: #b0cfc5;
+  color: #c4cbc7;
 }
 
 html.dark .nav-links a:hover,
 html.dark .nav-links a.active {
   color: var(--primary);
-  background: rgba(74, 222, 154, .1);
+  background: rgba(164, 193, 178, .12);
 }
 
 html.dark .nav-dropdown-toggle {
-  color: #b0cfc5;
+  color: #c4cbc7;
 }
 
 html.dark .nav-dropdown:hover .nav-dropdown-toggle,
 html.dark .nav-dropdown.open .nav-dropdown-toggle,
 html.dark .nav-dropdown.active .nav-dropdown-toggle {
   color: var(--primary);
-  background: rgba(74, 222, 154, .1);
+  background: rgba(164, 193, 178, .12);
 }
 
 html.dark .nav-dropdown-menu {
-  background: #162520;
-  border-color: rgba(74, 222, 154, .14);
+  background: var(--surface);
+  border-color: var(--line);
   box-shadow: 0 22px 48px rgba(0, 0, 0, .32);
 }
 
 html.dark .menu-toggle {
-  background: #162520;
-  border-color: rgba(74, 222, 154, .18);
+  background: var(--surface-raised);
+  border-color: var(--line);
 }
 
 html.dark .menu-toggle span,
@@ -1677,74 +1677,74 @@ html.dark .menu-toggle.active {
 
 html.dark .menu-toggle.active span { background: transparent; }
 html.dark .menu-toggle.active span:before,
-html.dark .menu-toggle.active span:after { background: #0e1a16; }
+html.dark .menu-toggle.active span:after { background: #18211d; }
 
 html.dark .global-search-toggle,
 html.dark .global-search-close {
-  background: #1a2e27;
+  background: var(--surface-raised);
   color: var(--primary);
-  border-color: rgba(74, 222, 154, .18);
+  border-color: var(--line);
 }
 
 html.dark .global-search-panel,
 html.dark .global-search-result {
-  background: #162520;
-  border-color: rgba(74, 222, 154, .14);
+  background: var(--surface);
+  border-color: var(--line);
 }
 
 html.dark .global-search-input {
-  background: #1a2e27;
+  background: var(--surface-raised);
   color: var(--primary);
-  border-color: rgba(74, 222, 154, .18);
+  border-color: var(--line);
 }
 
 html.dark .global-search-result:hover {
-  background: #1a2e27;
+  background: var(--surface-raised);
 }
 
 html.dark .nav-links {
-  background: linear-gradient(180deg, #162520 0%, #132219 100%);
-  border-color: rgba(74, 222, 154, .12);
+  background: linear-gradient(180deg, #20262c 0%, #1b2025 100%);
+  border-color: var(--line);
 }
 
 html.dark .nav-links a {
-  background: #1a2e27;
-  border-color: rgba(74, 222, 154, .1);
+  background: var(--surface-raised);
+  border-color: var(--line);
   border-left-color: var(--primary);
 }
 
 html.dark .nav-dropdown-toggle {
-  background: #1a2e27;
-  border-color: rgba(74, 222, 154, .1);
+  background: var(--surface-raised);
+  border-color: var(--line);
   border-left-color: var(--primary);
 }
 
 html.dark .dark-toggle {
-  background: #1a2e27;
-  border-color: rgba(74, 222, 154, .2);
+  background: var(--surface-raised);
+  border-color: var(--line);
   color: var(--primary);
 }
 
 html.dark .student-account-menu {
-  background: #162520;
-  border-color: rgba(74, 222, 154, .14);
+  background: var(--surface);
+  border-color: var(--line);
 }
 
 html.dark .student-login-choice-menu {
-  background: #162520;
-  border-color: rgba(74, 222, 154, .14);
+  background: var(--surface);
+  border-color: var(--line);
 }
 
 html.dark .student-login-choice-menu a:hover {
-  background: rgba(74, 222, 154, .1);
+  background: rgba(164, 193, 178, .12);
 }
 
 html.dark .student-login-choice-menu span {
-  color: #9fb6ad;
+  color: var(--muted);
 }
 
 html.dark .student-account-info {
-  background: #1a2e27;
+  background: var(--surface-raised);
 }
 
 html.dark .student-account-action {
@@ -1752,7 +1752,7 @@ html.dark .student-account-action {
 }
 
 html.dark .student-account-action:hover {
-  background: rgba(74, 222, 154, .1);
+  background: rgba(164, 193, 178, .12);
 }
 
 html.dark .student-account-action.danger { color: #f87171; }
@@ -1762,9 +1762,9 @@ html.dark .student-logout,
 html.dark .student-password,
 html.dark .student-social,
 html.dark .student-login-link {
-  background: #1a2e27;
+  background: var(--surface-raised);
   color: var(--primary);
-  border-color: rgba(74, 222, 154, .18);
+  border-color: var(--line);
 }
 
 html.dark .student-logout:hover,
@@ -1772,7 +1772,7 @@ html.dark .student-password:hover,
 html.dark .student-social:hover,
 html.dark .student-login-link:hover {
   background: var(--primary);
-  color: #0e1a16;
+  color: #18211d;
 }
 
 @media(max-width:820px) {
@@ -1842,7 +1842,7 @@ html.dark .student-login-link:hover {
 }
 
 html.dark .student-greeting-bar {
-  background: linear-gradient(90deg, #0a2e22, #0f3d2c);
+  background: linear-gradient(90deg, #20262c, #252b31);
 }
 
 @media(max-width:680px) {
@@ -1875,7 +1875,7 @@ html.dark .student-greeting-bar {
 }
 
 html.dark .student-notif-badge {
-  border-color: #0e1a16;
+  border-color: #15191d;
 }
 
 @keyframes badgePop {
@@ -1991,7 +1991,7 @@ html.dark .student-account-info strong { color: var(--primary); }
 html.dark .student-account-info span { color: var(--muted); }
 html.dark .student-account-divider { background: var(--line); }
 html.dark .student-notif-label { color: var(--primary); }
-html.dark .student-notif-row:hover { background: rgba(74,222,154,.08); }
+html.dark .student-notif-row:hover { background: rgba(164,193,178,.1); }
 html.dark .student-account-avatar-big { background: linear-gradient(135deg, #0f4d3a, #1a6b52); }
 
 .student-push-preferences {
