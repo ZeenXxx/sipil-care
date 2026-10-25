@@ -12,6 +12,7 @@
     <meta name="apple-mobile-web-app-title" content="SIPIL CARE">
     <link rel="stylesheet" href="../css/style.css?v=29">
     <link rel="stylesheet" href="../css/navbar.css?v=37">
+    <link rel="stylesheet" href="../css/changelog.css?v=1">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -30,30 +31,28 @@
     <main>
       <section class="page-head">
         <div class="container">
-          <span class="eyebrow">Changelog</span>
-          <h1>Riwayat update SIPIL CARE</h1>
-          <p class="lead">Catatan ringkas fitur baru, perbaikan bug, dan peningkatan tampilan dibuat otomatis dari perubahan file, bukan dari pesan commit.</p>
+          <span class="eyebrow">Update website</span>
+          <h1>Yang terbaru di SIPIL CARE</h1>
+          <p class="lead">Lihat ringkasan pembaruan terbaru dan perubahan yang ikut dalam rilis website.</p>
         </div>
       </section>
 
       <section class="section">
-        <div class="container changelog-layout">
-          <aside class="changelog-summary card">
-            <span class="badge">Otomatis</span>
+        <div class="container changelog-latest-wrap">
+          <article class="changelog-latest card" aria-live="polite">
+            <header class="changelog-latest-header">
+              <span class="changelog-latest-badge"><span aria-hidden="true">●</span> Update terbaru</span>
+              <time id="changelogDate">Memuat tanggal...</time>
+            </header>
             <h2 id="changelogSummaryTitle">Memuat update...</h2>
-            <p id="changelogSummaryText">Changelog sedang dimuat dari data update SIPIL CARE.</p>
-            <a class="btn btn-primary" href="help.html">Buka Bantuan</a>
-          </aside>
-          <div class="changelog-list" id="changelogList">
-            <article class="changelog-item">
-              <time>Memuat</time>
-              <div>
-                <span class="changelog-type improved">Ditingkatkan</span>
-                <h3>Memuat changelog</h3>
-                <p>Riwayat update sedang disiapkan.</p>
-              </div>
-            </article>
-          </div>
+            <p class="changelog-intro" id="changelogSummaryText">Pembaruan website sedang dimuat.</p>
+            <div class="changelog-divider"></div>
+            <h3 class="changelog-section-title">Apa saja yang diperbarui</h3>
+            <ul class="changelog-items" id="changelogList">
+              <li class="changelog-entry"><span class="changelog-entry-mark" aria-hidden="true"></span><div><strong>Memuat perubahan</strong><p>Rincian update sedang disiapkan.</p></div></li>
+            </ul>
+            <a class="btn btn-secondary changelog-help-link" href="help.html">Buka Bantuan &amp; FAQ</a>
+          </article>
         </div>
       </section>
     </main>
@@ -68,7 +67,7 @@
       <div class="footer-bottom"><span>(c) 2026 PENDPROF HMS - HMS UNJANI</span><span>Built for civil engineering students.</span></div>
     </footer>
     <script src="../js/navbar.js?v=36"></script>
-    <script src="../js/changelog.js?v=1"></script>
+    <script src="../js/changelog.js?v=2"></script>
       <script src="../js/pwa.js?v=2"></script>
       <script src="../js/push-config.js?v=1"></script>
       <script type="module" src="../js/pwa-push.js?v=5"></script>

@@ -101,8 +101,8 @@ const rules = [
   {
     key: 'changelog',
     type: 'added',
-    title: 'Changelog Otomatis',
-    description: 'Riwayat update kini dibuat dari file yang berubah, lalu ditampilkan dengan bahasa yang lebih rapi dan mudah dipahami mahasiswa.',
+    title: 'Riwayat Update Terbaru',
+    description: 'Halaman riwayat perubahan menampilkan satu pembaruan terbaru beserta tanggal rilis dan daftar ringkas perubahan yang terdeteksi otomatis dari file website.',
     match: file => file.includes('changelog') || file === 'scripts/generate-changelog.js' || file === 'js/changelog.js'
   },
   {
@@ -208,7 +208,7 @@ const rules = [
     type: 'improved',
     title: 'Tampilan Public Website',
     description: 'Tampilan halaman public diperhalus agar lebih responsif, konsisten, dan nyaman dibuka dari perangkat mobile.',
-    match: file => file === 'css/style.css' || file === 'index.html' || (file.startsWith('pages/') && !file.startsWith('pages/admin/'))
+    match: file => file === 'css/style.css' || file === 'index.html' || (file.startsWith('pages/') && !file.startsWith('pages/admin/') && file !== 'pages/changelog.html')
   },
   {
     key: 'backend-security',
@@ -267,6 +267,6 @@ const nextEntry = {
   items: mergedItems
 };
 
-const next = [nextEntry, ...existing.filter(item => item.id !== generatedKey && !(item.generated && item.date === date))].slice(0, 40);
+const next = [nextEntry];
 fs.writeFileSync(outputPath, `${JSON.stringify(next, null, 2)}\n`);
 console.log(`Changelog updated: ${selected.length} item(s), ${changedFiles.length} changed file(s).`);

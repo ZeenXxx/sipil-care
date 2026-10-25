@@ -1,17 +1,18 @@
 const list = document.getElementById('changelogList');
 const summaryTitle = document.getElementById('changelogSummaryTitle');
 const summaryText = document.getElementById('changelogSummaryText');
+const dateLabel = document.getElementById('changelogDate');
 
 const fallbackEntries = [
   {
-    date: '2026-05-20',
-    dateLabel: '20 Mei 2026',
-    summary: 'Changelog SIPIL CARE',
+    date: '',
+    dateLabel: 'Belum tersedia',
+    summary: 'Belum ada pembaruan terbaru',
     items: [
       {
-        type: 'added',
-        title: 'Changelog Otomatis',
-        description: 'Riwayat update ditampilkan dari data changelog agar mahasiswa bisa melihat perbaikan dan fitur baru dengan lebih jelas.'
+        type: 'improved',
+        title: 'Pembaruan sedang disiapkan',
+        description: 'Informasi rilis terbaru akan muncul di sini setelah website diperbarui.'
       }
     ]
   }
@@ -34,24 +35,27 @@ const escapeText = value => String(value || '').replace(/[&<>"']/g, char => ({
 const renderEntries = entries => {
   const data = Array.isArray(entries) && entries.length ? entries : fallbackEntries;
   const latest = data[0];
-  if (summaryTitle) summaryTitle.textContent = latest?.dateLabel ? `Update ${latest.dateLabel}` : 'Update Terbaru';
+  if (summaryTitle) summaryTitle.textContent = latest?.summary || 'Pembaruan terbaru SIPIL CARE';
+  if (dateLabel) {
+    dateLabel.dateTime = latest?.date || '';
+    dateLabel.textContent = latest?.dateLabel || 'Tanggal belum tersedia';
+  }
   if (summaryText) {
-    summaryText.textContent = latest?.summary
-      ? `Fokus update terbaru: ${latest.summary}.`
-      : 'Riwayat update SIPIL CARE akan tampil otomatis ketika ada perubahan website.';
+    summaryText.textContent = 'Berikut ringkasan perubahan yang termasuk dalam pembaruan website terbaru.';
   }
   if (!list) return;
 
-  list.innerHTML = data.map(entry => (entry.items || []).map(item => `
-    <article class="changelog-item">
-      <time datetime="${escapeText(entry.date)}">${escapeText(entry.dateLabel || entry.date)}</time>
+  const latestItems = Array.isArray(latest?.items) ? latest.items : [];
+  list.innerHTML = latestItems.map(item => `
+    <li class="changelog-entry">
+      <span class="changelog-entry-mark ${escapeText(item.type || 'improved')}" aria-hidden="true"></span>
       <div>
         <span class="changelog-type ${escapeText(item.type || 'improved')}">${escapeText(typeLabels[item.type] || 'Ditingkatkan')}</span>
-        <h3>${escapeText(item.title)}</h3>
+        <strong>${escapeText(item.title)}</strong>
         <p>${escapeText(item.description)}</p>
       </div>
-    </article>
-  `).join('')).join('') || '<p class="global-search-empty">Belum ada changelog.</p>';
+    </li>
+  `).join('') || '<li class="changelog-entry"><div><strong>Belum ada rincian update</strong><p>Rincian perubahan akan tampil ketika rilis website berikutnya dibuat.</p></div></li>';
 };
 
 fetch('../data/changelog.json', { cache: 'no-store' })
