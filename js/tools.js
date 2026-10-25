@@ -499,8 +499,13 @@ const spectrumTxtContent = result => result.rows
 const spectrumTableHtml = rows => rows.map(row => (
   '<tr><td>' + spectrumTxtNumber(row[0], 3) + '</td><td>' + spectrumTxtNumber(row[1], 5) + '</td></tr>'
 )).join('');
+let lastSpectrumRenderResult = null;
 const drawSpectrumChart = (canvas, result) => {
   if (!canvas || !result?.rows?.length) return;
+  const darkMode = document.documentElement.classList.contains('dark');
+  const chartColors = darkMode
+    ? { background: '#1d2227', grid: '#3a424a', text: '#a5abb1', line: '#a4c1b2' }
+    : { background: '#ffffff', grid: '#d9e5e0', text: '#63736d', line: '#0f4d3a' };
   const ratio = window.devicePixelRatio || 1;
   const width = Math.max(720, canvas.clientWidth || 900);
   const height = 420;
@@ -520,12 +525,12 @@ const drawSpectrumChart = (canvas, result) => {
   const x = t => padding.left + (t / maxT) * plotWidth;
   const y = sa => padding.top + plotHeight - (sa / maxSa) * plotHeight;
 
-  ctx.fillStyle = '#ffffff';
+  ctx.fillStyle = chartColors.background;
   ctx.fillRect(0, 0, width, height);
-  ctx.strokeStyle = '#d9e5e0';
+  ctx.strokeStyle = chartColors.grid;
   ctx.lineWidth = 1;
   ctx.font = '12px Inter, Arial, sans-serif';
-  ctx.fillStyle = '#63736d';
+  ctx.fillStyle = chartColors.text;
   ctx.textAlign = 'right';
   ctx.textBaseline = 'middle';
   for (let i = 0; i <= 5; i += 1) {
@@ -550,7 +555,7 @@ const drawSpectrumChart = (canvas, result) => {
     ctx.fillText(spectrumTxtNumber(t, 1), px, padding.top + plotHeight + 12);
   }
 
-  ctx.strokeStyle = '#0f4d3a';
+  ctx.strokeStyle = chartColors.line;
   ctx.lineWidth = 3;
   ctx.beginPath();
   result.rows.forEach((row, index) => {
@@ -561,13 +566,13 @@ const drawSpectrumChart = (canvas, result) => {
   });
   ctx.stroke();
 
-  ctx.fillStyle = '#0f4d3a';
+  ctx.fillStyle = chartColors.line;
   ctx.font = '700 16px Inter, Arial, sans-serif';
   ctx.textAlign = 'left';
   ctx.textBaseline = 'top';
   ctx.fillText('Grafik Respons Spektrum', padding.left, 12);
   ctx.font = '12px Inter, Arial, sans-serif';
-  ctx.fillStyle = '#63736d';
+  ctx.fillStyle = chartColors.text;
   ctx.fillText('Sa (g)', 16, padding.top - 8);
   ctx.textAlign = 'center';
   ctx.fillText('T (detik)', padding.left + plotWidth / 2, height - 26);
@@ -575,6 +580,7 @@ const drawSpectrumChart = (canvas, result) => {
 const renderSpectrumResult = result => {
   const target = document.getElementById('spectrumPreview');
   if (!target) return;
+  lastSpectrumRenderResult = result;
   const siteText = result.siteClass === 'manual' ? 'Manual Fa/Fv' : 'Kelas situs ' + result.siteClass;
   target.innerHTML =
     '<h3>Hasil respons spektrum</h3>' +
@@ -586,6 +592,12 @@ const renderSpectrumResult = result => {
     '</div>';
   requestAnimationFrame(() => drawSpectrumChart(document.getElementById('spectrumChart'), result));
 };
+new MutationObserver(() => {
+  const canvas = document.getElementById('spectrumChart');
+  if (canvas && lastSpectrumRenderResult) {
+    drawSpectrumChart(canvas, lastSpectrumRenderResult);
+  }
+}).observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
 const renderSpectrumPreview = () => {
   const target = document.getElementById('spectrumPreview');
   if (!target) return;

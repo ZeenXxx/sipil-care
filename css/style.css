@@ -2778,3 +2778,100 @@ html.dark .admin-chat-status.online {
   background: var(--surface-raised);
   border-color: var(--line);
 }
+
+/* Unify panels across pages whose individual stylesheets use light-only colors. */
+html.dark body :is(
+  .card,
+  [class*="-card"],
+  [class*="-panel"],
+  [class*="-box"],
+  [class*="-item"],
+  .module-item,
+  .structural-tool-link,
+  .tool-note,
+  .result-card,
+  .image-preview,
+  .tool-verification-panel,
+  .tool-panel,
+  .table-wrap,
+  .table-responsive,
+  .timeline div
+) {
+  background: var(--surface);
+  border-color: var(--line);
+  color: var(--ink);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, .16);
+}
+
+html.dark body :is(input, select, textarea, .control) {
+  color-scheme: dark;
+  background-color: var(--surface-raised);
+  border-color: var(--line);
+  color: var(--ink);
+}
+
+html.dark body :is(input, textarea)::placeholder {
+  color: #929aa1;
+}
+
+html.dark body .tools-hero {
+  background: linear-gradient(135deg, #1b2025, #252b31);
+  border-bottom-color: var(--line);
+  color: var(--ink);
+}
+
+html.dark body .tools-hero .eyebrow,
+html.dark body .tools-hero h1,
+html.dark body .tools-hero .lead {
+  color: var(--ink);
+}
+
+html.dark body .tools-hero-panel {
+  background: #2a3036;
+  border-color: var(--line);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, .2);
+}
+
+html.dark body .tools-tabs {
+  background: var(--surface);
+  border-color: var(--line);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, .16);
+}
+
+html.dark body .tool-tab {
+  color: var(--muted);
+}
+
+html.dark body .tool-tab:hover,
+html.dark body .tool-tab.active {
+  background: var(--primary);
+  color: #18211d;
+}
+
+html.dark body .tool-card .inline-check,
+html.dark body .file-control,
+html.dark body .file-list,
+html.dark body .file-item,
+html.dark body .geo-preview pre,
+html.dark body .spectrum-summary-grid span,
+html.dark body .spectrum-chart-wrap,
+html.dark body .spectrum-table-wrap,
+html.dark body .tool-verification-panel li,
+html.dark body .pdf-image-item {
+  background: var(--surface-raised);
+  border-color: var(--line);
+  color: var(--ink);
+}
+
+html.dark body .spectrum-table th {
+  background: #30373e;
+  color: var(--ink);
+}
+
+html.dark body .spectrum-chart-wrap {
+  overflow-x: auto;
+}
+
+html.dark body .download-link {
+  color: #18211d;
+}

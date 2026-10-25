@@ -173,3 +173,65 @@ body { background: #f5f8f7; }
 @media (max-width: 1080px) { .tools-feature-grid { grid-template-columns: 1fr; } .tools-tabs { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 @media (max-width: 640px) { .structural-tool-link { display: grid; } }
 @media (max-width: 520px) { .tools-tabs { grid-template-columns: 1fr; } }
+
+html.dark .tools-hero {
+  background: linear-gradient(135deg, #1b2025, #252b31);
+  border-bottom: 1px solid var(--line);
+  color: var(--ink);
+}
+
+html.dark .tools-hero .eyebrow,
+html.dark .tools-hero h1,
+html.dark .tools-hero .lead {
+  color: var(--ink);
+}
+
+html.dark .tools-hero-panel {
+  background: #2a3036;
+  border-color: var(--line);
+}
+
+html.dark .tools-hero-panel span {
+  color: var(--gold);
+}
+
+html.dark .tools-tabs,
+html.dark .tool-panel,
+html.dark .structural-tool-link,
+html.dark .tool-verification-panel,
+html.dark .tool-note,
+html.dark .result-card,
+html.dark .image-preview,
+html.dark .pdf-image-item {
+  background: var(--surface);
+  border-color: var(--line);
+  color: var(--ink);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, .16);
+}
+
+html.dark .tool-card .inline-check,
+html.dark .file-control,
+html.dark .file-list,
+html.dark .file-item,
+html.dark .geo-preview pre,
+html.dark .spectrum-summary-grid span,
+html.dark .spectrum-chart-wrap,
+html.dark .spectrum-table-wrap,
+html.dark .tool-verification-panel li {
+  background: var(--surface-raised);
+  border-color: var(--line);
+  color: var(--ink);
+}
+
+html.dark .spectrum-table th {
+  background: #30373e;
+  color: var(--ink);
+}
+
+html.dark .file-list {
+  border-style: dashed;
+}
+
+html.dark .file-order-controls button {
+  border-color: var(--line);
+}
