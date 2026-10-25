@@ -1227,11 +1227,10 @@ button, input, select, textarea  {
 }
 
 .video-card .video-body h3 {
-    display: -webkit-box;
-    height: 56px;
-    overflow: hidden;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
+    display: block;
+    height: auto;
+    min-height: 56px;
+    overflow: visible;
 }
 
 .video-card .video-description {
