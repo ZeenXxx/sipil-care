@@ -13,6 +13,7 @@
     <link rel="stylesheet" href="../css/style.css?v=29">
     <link rel="stylesheet" href="../css/navbar.css?v=37">
     <link rel="stylesheet" href="../css/tools.css?v=14">
+    <link rel="stylesheet" href="../css/unmerge-pdf.css?v=1">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -30,8 +31,8 @@
     <main>
       <section class="page-head tools-hero">
         <div class="container tools-hero-grid">
-          <div><span class="eyebrow">Academic tools</span><h1>Toolkit praktis untuk tugas Teknik Sipil</h1><p class="lead">Kalkulator konversi, KML/KMZ to CSV Civil 3D, response spectrum ETABS, PDF tools, Structural Analyzer, Preliminary Design, dan kalkulator tulangan balok.</p></div>
-          <div class="tools-hero-panel"><span>11</span><strong>alat akademik</strong><p>Converter lengkap, geospasial, response spectrum, PDF tools, analyzer struktur, preliminary design, dan tulangan balok.</p></div>
+          <div><span class="eyebrow">Academic tools</span><h1>Toolkit praktis untuk tugas Teknik Sipil</h1><p class="lead">Kalkulator konversi, KML/KMZ to CSV Civil 3D, response spectrum ETABS, PDF tools termasuk unmerge PDF, Structural Analyzer, Preliminary Design, dan kalkulator tulangan balok.</p></div>
+          <div class="tools-hero-panel"><span>12</span><strong>alat akademik</strong><p>Converter lengkap, geospasial, response spectrum, PDF tools, analyzer struktur, preliminary design, dan tulangan balok.</p></div>
         </div>
       </section>
       <section class="section">
@@ -61,6 +62,7 @@
             <button class="tool-tab" type="button" data-tool-tab="spectrum">Spektrum ETABS</button>
             <button class="tool-tab" type="button" data-tool-tab="export">Export PDF</button>
             <button class="tool-tab" type="button" data-tool-tab="merge">PDF Merger</button>
+            <button class="tool-tab" type="button" data-tool-tab="unmerge">Unmerge PDF</button>
             <button class="tool-tab" type="button" data-tool-tab="image">PDF to Image</button>
             <button class="tool-tab" type="button" data-tool-tab="jpgpdf">JPG to PDF</button>
           </div>
@@ -155,6 +157,19 @@
               <div class="tool-note"><h3>Privasi file</h3><p>File PDF diproses lokal di browser. Tidak ada upload ke server SIPIL CARE.</p><p class="small-text">Untuk file besar, proses bisa membutuhkan beberapa detik tergantung perangkat.</p></div>
             </div>
           </section>
+          <section class="tool-panel" id="tool-unmerge">
+            <div class="tool-header"><div><span class="tool-code">UP</span><h2>Unmerge PDF</h2></div><p>Pisahkan setiap halaman dari satu PDF menjadi file PDF tersendiri, lalu unduh semuanya dalam satu file ZIP.</p></div>
+            <div class="tool-layout">
+              <div class="card tool-card unmerge-card">
+                <label for="unmergePdfFile">Pilih satu file PDF</label>
+                <input class="control file-control" id="unmergePdfFile" type="file" accept=".pdf,application/pdf">
+                <button class="btn btn-primary full-btn" id="unmergePdfBtn" type="button">Pisahkan PDF</button>
+                <progress class="unmerge-progress" id="unmergePdfProgress" max="100" value="0" hidden></progress>
+                <p class="unmerge-status" id="unmergePdfStatus" aria-live="polite">Belum ada PDF dipilih.</p>
+              </div>
+              <div class="tool-note unmerge-note"><h3>Hasil dan privasi</h3><p>Setiap halaman menjadi satu PDF dengan ukuran halaman aslinya. Semua proses dilakukan langsung di browser; file tidak diunggah ke server.</p><p class="small-text">Hasil seluruh halaman dikemas menjadi satu ZIP agar mudah diunduh.</p></div>
+            </div>
+          </section>
           <section class="tool-panel" id="tool-image">
             <div class="tool-header"><div><span class="tool-code">PI</span><h2>PDF to image</h2></div><p>Ubah halaman PDF menjadi gambar PNG untuk kebutuhan preview, dokumentasi, atau lampiran chat.</p></div>
             <div class="tool-layout">
@@ -176,7 +191,7 @@
       <div class="footer-grid">
         <div><a class="footer-brand" href="../index.html"><img src="../assets/images/logo-hms.png" alt="Logo HMS"><span>SIPIL CARE</span></a><p>Platform Digital Akademik Mahasiswa Teknik Sipil UNJANI - HIMPUNAN MAHASISWA SIPIL UNJANI untuk akses referensi, standar, modul, video, dan perangkat belajar mahasiswa.</p></div>
         <div><h3>Navigasi</h3><a href="resources.html">Resources</a><a href="praktikum-studio.html">Praktikum &amp; Studio</a><a href="videos.html">Videos</a><a href="tools.html">Tools</a><a href="about.html">About</a></div>
-        <div><h3>Tools</h3><a href="tools.html#converter">Converter</a><a href="tools.html#kmlcsv">KML/KMZ to CSV</a><a href="tools.html#spectrum">Spektrum ETABS</a><a href="../tools/diagram-struktur.html">Structural Analyzer 1D</a><a href="../tools/diagram-portal.html">Portal Frame Analyzer 2.0</a><a href="../tools/preliminary-design.html">Preliminary Design</a><a href="../tools/tulangan-balok.html">Tulangan Balok</a><a href="tools.html#jpgpdf">JPG to PDF</a></div>
+        <div><h3>Tools</h3><a href="tools.html#converter">Converter</a><a href="tools.html#kmlcsv">KML/KMZ to CSV</a><a href="tools.html#spectrum">Spektrum ETABS</a><a href="../tools/diagram-struktur.html">Structural Analyzer 1D</a><a href="../tools/diagram-portal.html">Portal Frame Analyzer 2.0</a><a href="../tools/preliminary-design.html">Preliminary Design</a><a href="../tools/tulangan-balok.html">Tulangan Balok</a><a href="tools.html#jpgpdf">JPG to PDF</a><a href="tools.html#unmerge">Unmerge PDF</a></div>
         <div><h3>HMS Unjani</h3><p>Kampus UNJANI<br>Academic Resource Platform<br>2026</p></div>
       </div>
       <div class="footer-bottom"><span>© 2026 PENDPROF HMS - HMS UNJANI</span><span>Built for civil engineering students.</span></div>
@@ -188,6 +203,7 @@
     <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
     <script src="../js/navbar.js?v=36"></script>
     <script src="../js/tools.js?v=19"></script>
+    <script src="../js/unmerge-pdf.js?v=1"></script>
       <script src="../js/pwa.js?v=2"></script>
       <script src="../js/push-config.js?v=1"></script>
       <script type="module" src="../js/pwa-push.js?v=5"></script>

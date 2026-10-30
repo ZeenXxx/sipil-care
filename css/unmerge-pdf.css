@@ -1,0 +1,26 @@
+.unmerge-card {
+  align-content: start;
+}
+
+.unmerge-progress {
+  width: 100%;
+  height: 10px;
+  accent-color: var(--primary);
+}
+
+.unmerge-status {
+  min-height: 1.5em;
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.unmerge-card button:disabled {
+  cursor: wait;
+  opacity: .7;
+}
+
+html.dark .unmerge-progress {
+  color-scheme: dark;
+}
