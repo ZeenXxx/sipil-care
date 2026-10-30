@@ -13,7 +13,7 @@
     <link rel="stylesheet" href="../css/style.css?v=29">
     <link rel="stylesheet" href="../css/navbar.css?v=37">
     <link rel="stylesheet" href="../css/tools.css?v=14">
-    <link rel="stylesheet" href="../css/unmerge-pdf.css?v=1">
+    <link rel="stylesheet" href="../css/unmerge-pdf.css?v=2">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -158,16 +158,29 @@
             </div>
           </section>
           <section class="tool-panel" id="tool-unmerge">
-            <div class="tool-header"><div><span class="tool-code">UP</span><h2>Unmerge PDF</h2></div><p>Pisahkan setiap halaman dari satu PDF menjadi file PDF tersendiri, lalu unduh semuanya dalam satu file ZIP.</p></div>
+            <div class="tool-header"><div><span class="tool-code">UP</span><h2>Unmerge PDF</h2></div><p>Pilih semua halaman atau tentukan halaman tertentu. Hasil pilihan bisa digabung ke satu PDF atau dipisahkan menjadi satu PDF per halaman.</p></div>
             <div class="tool-layout">
               <div class="card tool-card unmerge-card">
                 <label for="unmergePdfFile">Pilih satu file PDF</label>
                 <input class="control file-control" id="unmergePdfFile" type="file" accept=".pdf,application/pdf">
-                <button class="btn btn-primary full-btn" id="unmergePdfBtn" type="button">Pisahkan PDF</button>
+                <fieldset class="unmerge-fieldset">
+                  <legend>Halaman yang diambil</legend>
+                  <label class="unmerge-choice"><input type="radio" name="unmergePageMode" value="all" checked> Semua halaman</label>
+                  <label class="unmerge-choice"><input type="radio" name="unmergePageMode" value="custom"> Halaman tertentu</label>
+                  <label for="unmergePageNumbers">Nomor halaman</label>
+                  <input class="control" id="unmergePageNumbers" type="text" inputmode="text" placeholder="Contoh: 1, 3-5" disabled>
+                  <small>Gunakan koma untuk memisahkan halaman dan tanda hubung untuk rentang.</small>
+                </fieldset>
+                <fieldset class="unmerge-fieldset">
+                  <legend>Bentuk hasil</legend>
+                  <label class="unmerge-choice"><input type="radio" name="unmergeOutputMode" value="single" checked> Gabungkan pilihan ke satu PDF</label>
+                  <label class="unmerge-choice"><input type="radio" name="unmergeOutputMode" value="separate"> Satu PDF per halaman (ZIP)</label>
+                </fieldset>
+                <button class="btn btn-primary full-btn" id="unmergePdfBtn" type="button" disabled>Proses PDF</button>
                 <progress class="unmerge-progress" id="unmergePdfProgress" max="100" value="0" hidden></progress>
-                <p class="unmerge-status" id="unmergePdfStatus" aria-live="polite">Belum ada PDF dipilih.</p>
+                <p class="unmerge-status" id="unmergePdfStatus" aria-live="polite">Pilih PDF untuk melihat jumlah halamannya.</p>
               </div>
-              <div class="tool-note unmerge-note"><h3>Hasil dan privasi</h3><p>Setiap halaman menjadi satu PDF dengan ukuran halaman aslinya. Semua proses dilakukan langsung di browser; file tidak diunggah ke server.</p><p class="small-text">Hasil seluruh halaman dikemas menjadi satu ZIP agar mudah diunduh.</p></div>
+              <div class="tool-note unmerge-note"><h3>Hasil dan privasi</h3><p>Mode satu PDF mempertahankan urutan halaman yang kamu pilih. Mode ZIP membuat file PDF terpisah untuk setiap halaman pilihan.</p><p class="small-text">File diproses langsung di browser dan tidak diunggah ke server.</p></div>
             </div>
           </section>
           <section class="tool-panel" id="tool-image">
@@ -203,7 +216,7 @@
     <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
     <script src="../js/navbar.js?v=36"></script>
     <script src="../js/tools.js?v=19"></script>
-    <script src="../js/unmerge-pdf.js?v=1"></script>
+    <script src="../js/unmerge-pdf.js?v=2"></script>
       <script src="../js/pwa.js?v=2"></script>
       <script src="../js/push-config.js?v=1"></script>
       <script type="module" src="../js/pwa-push.js?v=5"></script>
