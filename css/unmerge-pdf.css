@@ -30,6 +30,41 @@
   margin: -4px 0 0;
 }
 
+.merge-picker-label {
+  display: block;
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.merge-file-picker {
+  position: relative;
+}
+
+.merge-picker-input {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  margin: -1px !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  clip-path: inset(50%) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+.merge-remove-button {
+  border-color: rgba(153, 40, 48, .24) !important;
+  background: rgba(153, 40, 48, .07) !important;
+  color: #922b32 !important;
+}
+
+.merge-remove-button:hover:not(:disabled) {
+  border-color: #922b32 !important;
+  background: #922b32 !important;
+  color: #fff !important;
+}
+
 .pdf-dropzone.is-dragging {
   border-color: var(--primary);
   background: var(--surface-hover, var(--soft));
@@ -110,4 +145,10 @@ html.dark .pdf-dropzone {
 
 html.dark .pdf-dropzone.is-dragging {
   border-color: var(--primary);
+}
+
+html.dark .merge-remove-button {
+  border-color: rgba(236, 159, 164, .35) !important;
+  background: rgba(164, 70, 77, .16) !important;
+  color: #f0b4b8 !important;
 }

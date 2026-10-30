@@ -13,7 +13,7 @@
     <link rel="stylesheet" href="../css/style.css?v=29">
     <link rel="stylesheet" href="../css/navbar.css?v=37">
     <link rel="stylesheet" href="../css/tools.css?v=14">
-    <link rel="stylesheet" href="../css/unmerge-pdf.css?v=3">
+    <link rel="stylesheet" href="../css/unmerge-pdf.css?v=4">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -153,7 +153,7 @@
           <section class="tool-panel" id="tool-merge">
             <div class="tool-header"><div><span class="tool-code">PM</span><h2>PDF merger</h2></div><p>Gabungkan beberapa PDF menjadi satu file. Pilih banyak file sekaligus, lalu cek daftar dan atur dengan tombol Naik/Turun jika browser mengurutkan otomatis.</p></div>
             <div class="tool-layout">
-              <div class="card tool-card"><label for="mergeFiles">Pilih atau tambahkan file PDF</label><div class="pdf-dropzone" id="mergeDropZone"><strong>Seret dan lepas beberapa PDF di sini</strong><span>File dari folder berbeda juga bisa ditambahkan bertahap.</span></div><p class="pdf-dropzone-status" id="mergeDropStatus" aria-live="polite">Urutan file bisa diatur setelah ditambahkan.</p><input class="control file-control" id="mergeFiles" type="file" accept=".pdf,application/pdf" multiple><div class="file-list" id="mergeList"><p>Belum ada PDF dipilih.</p></div><div class="action-row"><button class="btn btn-primary full-btn" type="button" id="mergeBtn">Gabungkan PDF</button><button class="btn btn-secondary full-btn" type="button" id="clearMergeBtn">Reset urutan</button></div></div>
+              <div class="card tool-card"><span class="merge-picker-label">Tambahkan beberapa PDF dari satu folder. Untuk folder berikutnya, tekan tombol tambah lagi.</span><div class="pdf-dropzone" id="mergeDropZone"><strong>Seret dan lepas beberapa PDF di sini</strong><span>File dari folder berbeda akan ditambahkan ke daftar.</span></div><p class="pdf-dropzone-status" id="mergeDropStatus" aria-live="polite">File dari setiap pemilihan akan ditambahkan ke daftar.</p><div class="merge-file-picker"><input class="control file-control merge-picker-input" id="mergeFiles" type="file" accept=".pdf,application/pdf" multiple aria-label="Pilih beberapa file PDF"><button class="btn btn-secondary full-btn" id="addMergeFilesBtn" type="button">Tambah PDF dari folder lain</button></div><div class="file-list" id="mergeList"><p>Belum ada PDF dipilih.</p></div><div class="action-row"><button class="btn btn-primary full-btn" type="button" id="mergeBtn">Gabungkan PDF</button><button class="btn btn-secondary full-btn" type="button" id="clearMergeBtn">Hapus semua PDF</button></div></div>
               <div class="tool-note"><h3>Privasi file</h3><p>File PDF diproses lokal di browser. Tidak ada upload ke server SIPIL CARE.</p><p class="small-text">Untuk file besar, proses bisa membutuhkan beberapa detik tergantung perangkat.</p></div>
             </div>
           </section>
@@ -216,7 +216,7 @@
     <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
     <script src="../js/navbar.js?v=36"></script>
-    <script src="../js/tools.js?v=19"></script>
+    <script src="../js/tools.js?v=20"></script>
     <script src="../js/pdf-merge-drop.js?v=1"></script>
     <script src="../js/unmerge-pdf.js?v=3"></script>
       <script src="../js/pwa.js?v=2"></script>

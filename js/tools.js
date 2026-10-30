@@ -684,20 +684,34 @@ const mergeFiles = document.getElementById('mergeFiles');
 const mergeList = document.getElementById('mergeList');
 const mergeBtn = document.getElementById('mergeBtn');
 const clearMergeBtn = document.getElementById('clearMergeBtn');
+const addMergeFilesBtn = document.getElementById('addMergeFilesBtn');
+const mergeDropStatus = document.getElementById('mergeDropStatus');
 let selectedMergeFiles = [];
+const escapeMergeHtml = value => String(value || '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);
 const renderMergeList = () => {
   mergeList.innerHTML = selectedMergeFiles.length ? selectedMergeFiles.map((file, index) => `
     <div class="file-item merge-file-item">
-      <span>${index + 1}. ${file.name}</span>
+      <span>${index + 1}. ${escapeMergeHtml(file.name)}</span>
       <small>${(file.size / 1024 / 1024).toFixed(2)} MB</small>
-      <div class="file-order-controls" aria-label="Atur urutan ${file.name}">
+      <div class="file-order-controls" aria-label="Atur urutan ${escapeMergeHtml(file.name)}">
         <button type="button" data-merge-move="up" data-index="${index}" ${index === 0 ? 'disabled' : ''}>Naik</button>
         <button type="button" data-merge-move="down" data-index="${index}" ${index === selectedMergeFiles.length - 1 ? 'disabled' : ''}>Turun</button>
+        <button class="merge-remove-button" type="button" data-merge-remove data-index="${index}" aria-label="Hapus ${escapeMergeHtml(file.name)} dari daftar">Hapus</button>
       </div>
     </div>
   `).join('') : '<p>Belum ada PDF dipilih.</p>';
 };
 mergeList.addEventListener('click', event => {
+  const removeButton = event.target.closest('[data-merge-remove]');
+  if (removeButton) {
+    const index = Number(removeButton.dataset.index);
+    const removedFile = selectedMergeFiles[index];
+    if (!removedFile) return;
+    selectedMergeFiles.splice(index, 1);
+    renderMergeList();
+    if (mergeDropStatus) mergeDropStatus.textContent = `${removedFile.name} dihapus dari daftar. ${selectedMergeFiles.length} PDF tersisa.`;
+    return;
+  }
   const button = event.target.closest('[data-merge-move]');
   if (!button) return;
   const index = Number(button.dataset.index);
@@ -708,16 +722,19 @@ mergeList.addEventListener('click', event => {
   renderMergeList();
 });
 mergeFiles.addEventListener('change', () => {
-  const pickedFiles = Array.from(mergeFiles.files || []);
+  const pickedFiles = Array.from(mergeFiles.files || []).filter(file => file.type === 'application/pdf' || /\.pdf$/i.test(file.name));
   selectedMergeFiles = selectedMergeFiles.concat(pickedFiles);
   mergeFiles.value = '';
   renderMergeList();
+  if (mergeDropStatus && pickedFiles.length) mergeDropStatus.textContent = `${pickedFiles.length} PDF ditambahkan; total ${selectedMergeFiles.length}. Tekan “Tambah PDF dari folder lain” lagi untuk memilih dari folder berikutnya.`;
 });
+addMergeFilesBtn?.addEventListener('click', () => mergeFiles.click());
 clearMergeBtn?.addEventListener('click', () => {
   selectedMergeFiles = [];
   mergeFiles.value = '';
   renderMergeList();
-  showToast('Urutan PDF direset. Pilih ulang file sesuai urutan yang diinginkan.');
+  if (mergeDropStatus) mergeDropStatus.textContent = 'Daftar PDF sudah dikosongkan.';
+  showToast('Daftar PDF sudah dikosongkan. Pilih ulang file sesuai urutan yang diinginkan.');
 });
 mergeBtn.addEventListener('click', async () => {
   const files = selectedMergeFiles;
