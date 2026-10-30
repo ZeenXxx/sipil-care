@@ -12,7 +12,7 @@
     <meta name="apple-mobile-web-app-title" content="SIPIL CARE">
     <link rel="stylesheet" href="../css/style.css?v=29">
     <link rel="stylesheet" href="../css/navbar.css?v=37">
-    <link rel="stylesheet" href="../css/changelog.css?v=1">
+    <link rel="stylesheet" href="../css/changelog.css?v=2">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -33,7 +33,7 @@
         <div class="container">
           <span class="eyebrow">Update website</span>
           <h1>Yang terbaru di SIPIL CARE</h1>
-          <p class="lead">Lihat ringkasan pembaruan terbaru dan perubahan yang ikut dalam rilis website.</p>
+            <p class="lead">Lihat fitur baru serta fitur yang ditingkatkan atau diperbaiki pada update website terbaru.</p>
         </div>
       </section>
 
@@ -47,10 +47,14 @@
             <h2 id="changelogSummaryTitle">Memuat update...</h2>
             <p class="changelog-intro" id="changelogSummaryText">Pembaruan website sedang dimuat.</p>
             <div class="changelog-divider"></div>
-            <h3 class="changelog-section-title">Apa saja yang diperbarui</h3>
-            <ul class="changelog-items" id="changelogList">
-              <li class="changelog-entry"><span class="changelog-entry-mark" aria-hidden="true"></span><div><strong>Memuat perubahan</strong><p>Rincian update sedang disiapkan.</p></div></li>
-            </ul>
+            <section class="changelog-category" aria-labelledby="changelogNewTitle">
+              <h3 class="changelog-section-title" id="changelogNewTitle">Fitur baru</h3>
+              <ul class="changelog-items" id="changelogNewItems"><li class="changelog-entry"><div><p>Memuat daftar fitur baru...</p></div></li></ul>
+            </section>
+            <section class="changelog-category" aria-labelledby="changelogImprovedTitle">
+              <h3 class="changelog-section-title" id="changelogImprovedTitle">Fitur yang ditingkatkan atau diperbaiki</h3>
+              <ul class="changelog-items" id="changelogImprovedItems"><li class="changelog-entry"><div><p>Memuat daftar peningkatan...</p></div></li></ul>
+            </section>
             <a class="btn btn-secondary changelog-help-link" href="help.html">Buka Bantuan &amp; FAQ</a>
           </article>
         </div>
@@ -67,7 +71,7 @@
       <div class="footer-bottom"><span>(c) 2026 PENDPROF HMS - HMS UNJANI</span><span>Built for civil engineering students.</span></div>
     </footer>
     <script src="../js/navbar.js?v=36"></script>
-    <script src="../js/changelog.js?v=2"></script>
+    <script src="../js/changelog.js?v=3"></script>
       <script src="../js/pwa.js?v=2"></script>
       <script src="../js/push-config.js?v=1"></script>
       <script type="module" src="../js/pwa-push.js?v=5"></script>

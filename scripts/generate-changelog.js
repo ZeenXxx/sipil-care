@@ -6,6 +6,14 @@ const root = path.resolve(__dirname, '..');
 const outputPath = path.join(root, 'data', 'changelog.json');
 
 const run = command => execSync(command, { cwd: root, encoding: 'utf8' }).trim();
+let existing = [];
+try {
+  existing = JSON.parse(fs.readFileSync(outputPath, 'utf8'));
+  if (!Array.isArray(existing)) existing = [];
+} catch {
+  existing = [];
+}
+
 const todayId = () => new Intl.DateTimeFormat('en-CA', {
   timeZone: 'Asia/Jakarta',
   year: 'numeric',
@@ -19,12 +27,19 @@ const todayLabel = date => new Intl.DateTimeFormat('id-ID', {
   year: 'numeric'
 }).format(new Date(`${date}T00:00:00+07:00`));
 
-let activeDiffBase = 'git diff --unified=0';
+let activeDiffBase = '';
+let currentCommit = '';
+const changeTypeByFile = new Map();
 const diffCache = new Map();
 const readFileDiff = file => {
   if (diffCache.has(file)) return diffCache.get(file);
   try {
-    const diff = run(`${activeDiffBase} -- "${file}"`);
+    const workingDiff = [run(`git diff --unified=0 -- "${file}"`), run(`git diff --cached --unified=0 -- "${file}"`)].filter(Boolean).join('\n');
+    let committedDiff = '';
+    if (activeDiffBase) {
+      try { committedDiff = run(`${activeDiffBase} -- "${file}"`); } catch { committedDiff = ''; }
+    }
+    const diff = [committedDiff, workingDiff].filter(Boolean).join('\n');
     diffCache.set(file, diff);
     return diff;
   } catch {
@@ -58,33 +73,51 @@ const isSiteIdentityOnly = file => {
 
 const parseStatus = () => {
   try {
-    const statusFiles = run('git status --short')
+    currentCommit = process.env.VERCEL_GIT_COMMIT_SHA || run('git rev-parse HEAD');
+    const statusLines = run('git status --short --untracked-files=all')
       .split(/\r?\n/)
-      .filter(Boolean)
-      .map(line => {
-        const file = line[2] === ' ' ? line.slice(3) : line.replace(/^[ MADRCU?!]{1,2}\s+/, '');
-        return file.trim().replace(/^.* -> /, '').replace(/\\/g, '/');
-      })
-      .filter(file => ![
-        'data/changelog.json'
-      ].includes(file));
-    if (statusFiles.length) return statusFiles.filter(file => !isCacheBustOnly(file));
+      .filter(Boolean);
+    const workingFiles = statusLines.map(line => {
+      const code = line.slice(0, 2);
+      const file = line.slice(3).trim().replace(/^.* -> /, '').replace(/\\/g, '/');
+      if (code.includes('?') || code.includes('A')) changeTypeByFile.set(file, 'added');
+      else if (code.includes('D')) changeTypeByFile.set(file, 'removed');
+      else changeTypeByFile.set(file, 'modified');
+      return file;
+    }).filter(file => file !== 'data/changelog.json');
 
     const previousSha = process.env.VERCEL_GIT_PREVIOUS_SHA;
-    const currentSha = process.env.VERCEL_GIT_COMMIT_SHA;
-    const diffCommand = previousSha && currentSha
-      ? `git diff --name-only ${previousSha} ${currentSha}`
-      : 'git diff --name-only HEAD~1 HEAD';
-    activeDiffBase = previousSha && currentSha
-      ? `git diff --unified=0 ${previousSha} ${currentSha}`
-      : 'git diff --unified=0 HEAD~1 HEAD';
-
-    return run(diffCommand)
-      .split(/\r?\n/)
-      .map(line => line.trim().replace(/\\/g, '/'))
-      .filter(Boolean)
-      .filter(file => file !== 'data/changelog.json')
-      .filter(file => !isCacheBustOnly(file));
+    let baseSha = previousSha || existing[0]?.sourceCommit || '';
+    if (!baseSha) {
+      try { baseSha = run('git log -1 --format=%H -- data/changelog.json'); } catch { baseSha = ''; }
+    }
+    if (!baseSha) {
+      try { baseSha = run('git rev-parse HEAD~1'); } catch { baseSha = ''; }
+    }
+    let committedFiles = [];
+    if (baseSha && baseSha !== currentCommit) {
+      activeDiffBase = `git diff --unified=0 ${baseSha} ${currentCommit}`;
+      try {
+        committedFiles = run(`git diff --name-status ${baseSha} ${currentCommit}`)
+          .split(/\r?\n/)
+          .filter(Boolean)
+          .map(line => {
+            const [code, ...pathParts] = line.split('\t');
+            const file = pathParts[pathParts.length - 1]?.trim().replace(/\\/g, '/');
+            if (!file) return '';
+            if (!changeTypeByFile.has(file)) {
+              if (code.startsWith('A')) changeTypeByFile.set(file, 'added');
+              else if (code.startsWith('D')) changeTypeByFile.set(file, 'removed');
+              else changeTypeByFile.set(file, 'modified');
+            }
+            return file;
+          })
+          .filter(file => file && file !== 'data/changelog.json');
+      } catch {
+        activeDiffBase = '';
+      }
+    }
+    return [...new Set([...committedFiles, ...workingFiles])].filter(file => !isCacheBustOnly(file));
   } catch {
     return [];
   }
@@ -100,9 +133,9 @@ const rules = [
   },
   {
     key: 'changelog',
-    type: 'added',
-    title: 'Riwayat Update Terbaru',
-    description: 'Halaman riwayat perubahan menampilkan satu pembaruan terbaru beserta tanggal rilis dan daftar ringkas perubahan yang terdeteksi otomatis dari file website.',
+    type: 'improved',
+    title: 'Pemberitahuan Update Lebih Jelas',
+    description: 'Riwayat update kini memisahkan fitur baru dari fitur yang ditingkatkan atau diperbaiki agar mahasiswa mudah mengetahui isi rilis.',
     match: file => file.includes('changelog') || file === 'scripts/generate-changelog.js' || file === 'js/changelog.js'
   },
   {
@@ -176,11 +209,25 @@ const rules = [
     match: file => file === 'student-login.html' || file === 'js/student-auth.js'
   },
   {
+    key: 'unmerge-pdf',
+    type: 'added',
+    title: 'Unmerge PDF',
+    description: 'Alat baru untuk memilih semua halaman atau nomor halaman tertentu dari PDF, lalu menyimpan pilihan sebagai satu PDF atau file PDF terpisah dalam ZIP.',
+    match: (file, diff) => file === 'js/unmerge-pdf.js' || file === 'css/unmerge-pdf.css' || (file === 'pages/tools.html' && diff.includes('tool-unmerge'))
+  },
+  {
+    key: 'pdf-merge-controls',
+    type: 'improved',
+    title: 'PDF Merger Lebih Fleksibel',
+    description: 'PDF Merger kini dapat menerima file dari beberapa folder secara bertahap atau lewat seret-lepas, serta menghapus file satu per satu dari daftar.',
+    match: (file, diff) => file === 'js/pdf-merge-drop.js' || (file === 'js/tools.js' && diff.includes('data-merge-remove')) || (file === 'pages/tools.html' && diff.includes('mergeDropZone'))
+  },
+  {
     key: 'civil-tools',
     type: 'improved',
     title: 'Tools Teknik Sipil',
     description: 'Tools akademik Teknik Sipil diperbarui untuk membantu perhitungan, analisis struktur, preliminary design, dan pengelolaan file.',
-    match: file => file.startsWith('tools/') || file.startsWith('js/diagram') || file.startsWith('js/preliminary') || file.startsWith('js/tulangan') || file === 'pages/tools.html' || file === 'js/tools.js'
+    match: (file, diff) => file.startsWith('tools/') || file.startsWith('js/diagram') || file.startsWith('js/preliminary') || file.startsWith('js/tulangan') || (file === 'pages/tools.html' && !diff.includes('tool-unmerge') && !diff.includes('mergeDropZone')) || (file === 'js/tools.js' && !diff.includes('data-merge-remove'))
   },
   {
     key: 'resources-content',
@@ -208,7 +255,7 @@ const rules = [
     type: 'improved',
     title: 'Tampilan Public Website',
     description: 'Tampilan halaman public diperhalus agar lebih responsif, konsisten, dan nyaman dibuka dari perangkat mobile.',
-    match: file => file === 'css/style.css' || file === 'index.html' || (file.startsWith('pages/') && !file.startsWith('pages/admin/') && file !== 'pages/changelog.html')
+    match: file => file === 'css/style.css' || file === 'index.html' || (file.startsWith('pages/') && !file.startsWith('pages/admin/') && !['pages/changelog.html', 'pages/tools.html'].includes(file))
   },
   {
     key: 'backend-security',
@@ -220,6 +267,13 @@ const rules = [
 ];
 
 const changedFiles = parseStatus();
+if (!changedFiles.length) {
+  console.log(existing.length
+    ? 'No website changes detected; keeping the latest changelog entry.'
+    : 'No website changes detected; changelog was not overwritten.');
+  process.exit(0);
+}
+
 const siteIdentityTouched = changedFiles.some(file => {
   const diff = readFileDiff(file);
   return diff.includes('site-identity') || diff.includes('Platform Digital Akademik Mahasiswa Teknik Sipil UNJANI');
@@ -229,22 +283,52 @@ const siteIdentityOnly = siteIdentityTouched
 const matched = siteIdentityOnly
   ? rules.filter(rule => rule.key === 'site-identity')
   : rules.filter(rule => changedFiles.some(file => rule.match(file, readFileDiff(file))));
-const selected = matched.length ? matched : [{
-  key: 'maintenance',
-  type: 'improved',
-  title: 'Pemeliharaan Website',
-  description: 'SIPIL CARE mendapatkan pembaruan teknis untuk menjaga stabilitas dan kenyamanan penggunaan.'
-}];
+const coveredFiles = new Set();
+matched.forEach(rule => changedFiles.forEach(file => {
+  if (rule.match(file, readFileDiff(file))) coveredFiles.add(file);
+}));
+
+const areaForFile = file => {
+  const normalized = file.toLowerCase();
+  const basename = path.basename(file).replace(/\.[^.]+$/, '');
+  if (normalized.includes('unmerge-pdf')) return 'Unmerge PDF';
+  if (normalized.includes('merge') && normalized.includes('pdf')) return 'PDF Merger';
+  if (file.startsWith('tools/') || file === 'pages/tools.html' || file === 'js/tools.js') return 'Alat Akademik';
+  if (file.startsWith('pages/admin/')) return 'Panel Admin';
+  if (file.startsWith('pages/')) return `Halaman ${humanize(basename)}`;
+  if (file.startsWith('data/')) return 'Konten Akademik';
+  if (file.startsWith('css/')) return 'Tampilan Website';
+  if (file.startsWith('api/') || file.startsWith('functions/') || file.startsWith('supabase/')) return 'Sistem Website';
+  if (file.startsWith('js/')) return `Fitur ${humanize(basename)}`;
+  return 'Website SIPIL CARE';
+};
+function humanize(value) {
+  return value.replace(/[-_]+/g, ' ').replace(/\bpdf\b/gi, 'PDF').replace(/\bjpg\b/gi, 'JPG').replace(/\bkmz?\b/gi, match => match.toUpperCase()).replace(/\b\w/g, char => char.toUpperCase());
+}
+
+const automaticItems = [];
+const automaticGroups = new Map();
+changedFiles.filter(file => !coveredFiles.has(file)).forEach(file => {
+  const type = changeTypeByFile.get(file) === 'added' ? 'added' : 'improved';
+  const area = areaForFile(file);
+  const key = `${type}:${area}`;
+  automaticGroups.set(key, { type, area, files: [...(automaticGroups.get(key)?.files || []), file] });
+});
+automaticGroups.forEach(group => {
+  automaticItems.push({
+    key: `automatic-${group.type}-${group.area.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`,
+    type: group.type,
+    title: group.type === 'added' ? `${group.area} baru` : `${group.area} diperbarui`,
+    description: group.type === 'added'
+      ? `Bagian baru ${group.area} terdeteksi dalam rilis website terbaru.`
+      : `Perubahan pada ${group.area} terdeteksi dan disertakan dalam rilis website terbaru.`
+  });
+});
+
+const selected = [...matched, ...automaticItems];
 
 const date = todayId();
 const generatedKey = `${date}:${selected.map(item => item.key).sort().join(',')}`;
-let existing = [];
-try {
-  existing = JSON.parse(fs.readFileSync(outputPath, 'utf8'));
-  if (!Array.isArray(existing)) existing = [];
-} catch {
-  existing = [];
-}
 
 const sameDayGenerated = existing.find(item => item.generated && item.date === date);
 const mergedItems = [
@@ -261,9 +345,8 @@ const nextEntry = {
   date,
   dateLabel: todayLabel(date),
   generated: true,
-  summary: mergedItems.length === 1
-    ? mergedItems[0].title
-    : mergedItems.map(item => item.title).slice(0, 3).join(', '),
+  sourceCommit: currentCommit,
+  summary: `${mergedItems.filter(item => item.type === 'added').length} fitur baru, ${mergedItems.filter(item => item.type !== 'added').length} peningkatan/perbaikan`,
   items: mergedItems
 };
 

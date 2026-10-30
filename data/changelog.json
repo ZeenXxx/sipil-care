@@ -1,15 +1,26 @@
 [
   {
-    "id": "2026-10-26:changelog",
-    "date": "2026-10-26",
-    "dateLabel": "26 Oktober 2026",
+    "id": "2026-10-31:changelog",
+    "date": "2026-10-31",
+    "dateLabel": "31 Oktober 2026",
     "generated": true,
-    "summary": "Riwayat Update Terbaru",
+    "sourceCommit": "a52a470976227a597cd254ae4a2f35c41867118e",
+    "summary": "1 fitur baru, 2 peningkatan/perbaikan",
     "items": [
       {
+        "type": "improved",
+        "title": "Pemberitahuan Update Lebih Jelas",
+        "description": "Riwayat update kini memisahkan fitur baru dari fitur yang ditingkatkan atau diperbaiki agar mahasiswa mudah mengetahui isi rilis."
+      },
+      {
         "type": "added",
-        "title": "Riwayat Update Terbaru",
-        "description": "Halaman riwayat perubahan menampilkan satu pembaruan terbaru beserta tanggal rilis dan daftar ringkas perubahan yang terdeteksi otomatis dari file website."
+        "title": "Unmerge PDF",
+        "description": "Alat baru untuk memilih semua halaman atau nomor halaman tertentu dari PDF, lalu menyimpan pilihan sebagai satu PDF atau file PDF terpisah dalam ZIP."
+      },
+      {
+        "type": "improved",
+        "title": "PDF Merger Lebih Fleksibel",
+        "description": "PDF Merger kini dapat menerima file dari beberapa folder secara bertahap atau lewat seret-lepas, serta menghapus file satu per satu dari daftar."
       }
     ]
   }
