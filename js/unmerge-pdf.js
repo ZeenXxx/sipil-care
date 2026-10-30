@@ -1,5 +1,6 @@
 (() => {
   const fileInput = document.getElementById('unmergePdfFile');
+  const dropZone = document.getElementById('unmergeDropZone');
   const pageNumbersInput = document.getElementById('unmergePageNumbers');
   const splitButton = document.getElementById('unmergePdfBtn');
   const progress = document.getElementById('unmergePdfProgress');
@@ -21,6 +22,39 @@
     .replace(/-+/g, '-')
     .replace(/^-|-$/g, '') || 'dokumen';
   const selectedMode = inputs => inputs.find(input => input.checked)?.value;
+
+  if (dropZone) {
+    const isPdf = file => file.type === 'application/pdf' || /\.pdf$/i.test(file.name);
+    ['dragenter', 'dragover'].forEach(type => dropZone.addEventListener(type, event => {
+      event.preventDefault();
+      dropZone.classList.add('is-dragging');
+      if (event.dataTransfer) event.dataTransfer.dropEffect = 'copy';
+    }));
+    ['dragleave', 'drop'].forEach(type => dropZone.addEventListener(type, event => {
+      event.preventDefault();
+      dropZone.classList.remove('is-dragging');
+    }));
+    dropZone.addEventListener('drop', event => {
+      if (fileInput.disabled) return;
+      const droppedFiles = Array.from(event.dataTransfer?.files || []);
+      const pdfFiles = droppedFiles.filter(isPdf);
+      if (pdfFiles.length !== 1 || droppedFiles.length !== 1) {
+        setStatus(pdfFiles.length > 1
+          ? 'Unmerge memproses satu PDF setiap kali. Jatuhkan satu file saja.'
+          : 'Jatuhkan satu file PDF yang valid.');
+        return;
+      }
+      try {
+        const transfer = new DataTransfer();
+        transfer.items.add(pdfFiles[0]);
+        fileInput.files = transfer.files;
+        fileInput.dispatchEvent(new Event('change', { bubbles: true }));
+      } catch (error) {
+        console.error('Could not read dropped PDF:', error);
+        setStatus('Browser tidak dapat membaca file yang dijatuhkan. Gunakan pemilih file di atas.');
+      }
+    });
+  }
 
   const updatePageMode = () => {
     const customPages = selectedMode(pageModeInputs) === 'custom';

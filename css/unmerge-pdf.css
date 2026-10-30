@@ -2,6 +2,39 @@
   align-content: start;
 }
 
+.pdf-dropzone {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  padding: 18px;
+  border: 2px dashed var(--line);
+  border-radius: 8px;
+  background: var(--soft);
+  color: var(--ink);
+  text-align: center;
+  transition: border-color .18s ease, background-color .18s ease;
+}
+
+.pdf-dropzone strong {
+  color: var(--primary);
+}
+
+.pdf-dropzone span,
+.pdf-dropzone-status {
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.pdf-dropzone-status {
+  margin: -4px 0 0;
+}
+
+.pdf-dropzone.is-dragging {
+  border-color: var(--primary);
+  background: var(--surface-hover, var(--soft));
+}
+
 .unmerge-fieldset {
   display: grid;
   gap: 10px;
@@ -69,4 +102,12 @@ html.dark .unmerge-progress {
 
 html.dark .unmerge-fieldset {
   border-color: var(--line);
+}
+
+html.dark .pdf-dropzone {
+  border-color: var(--line);
+}
+
+html.dark .pdf-dropzone.is-dragging {
+  border-color: var(--primary);
 }
