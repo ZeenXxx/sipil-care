@@ -18,24 +18,29 @@ const escapeText = value => String(value || '').replace(/[&<>"']/g, char => ({
   "'": '&#39;'
 }[char]));
 
-const videoCard = item => `
-  <article class="card video-card">
-    <div class="thumb">${escapeText(item.thumbnail || 'VI')}</div>
-    <div class="video-body">
-      <div class="meta">
-        <span class="badge">${escapeText(item.category || 'Video')}</span>
-        ${item.channel ? `<span class="badge">Channel: ${escapeText(item.channel)}</span>` : ''}
-        ${item.duration ? `<span class="badge">Durasi: ${escapeText(item.duration)}</span>` : ''}
+const videoCard = item => {
+  const channel = String(item.channel || '').trim() || 'HMS UNJANI';
+  const duration = String(item.duration || '').trim();
+  const hasDuration = duration && duration !== channel;
+  return `
+    <article class="card video-card">
+      <div class="thumb">${escapeText(item.thumbnail || 'VI')}</div>
+      <div class="video-body">
+        <div class="meta">
+          <span class="badge">${escapeText(item.category || 'Video')}</span>
+          <span class="badge">Channel: ${escapeText(channel)}</span>
+          ${hasDuration ? `<span class="badge">Durasi: ${escapeText(duration)}</span>` : ''}
+        </div>
+        <h3>${escapeText(item.title || 'Video')}</h3>
+        <p class="video-description">${escapeText(item.description || '')}</p>
+        <div class="actions">
+          ${item.youtube && item.youtube !== '#' ? `<a class="btn btn-primary" href="${escapeText(item.youtube)}" target="_blank" rel="noopener noreferrer">Watch</a>` : '<button class="btn btn-primary" type="button" disabled title="Link video belum tersedia">Link belum tersedia</button>'}
+          <a class="btn btn-ghost" href="pages/videos.html">More Videos</a>
+        </div>
       </div>
-      <h3>${escapeText(item.title)}</h3>
-      <p>${escapeText(item.description)}</p>
-      <div class="actions">
-        ${item.youtube && item.youtube !== '#' ? `<a class="btn btn-primary" href="${escapeText(item.youtube)}" target="_blank" rel="noopener noreferrer">Watch</a>` : '<button class="btn btn-primary" type="button" disabled title="Link video belum tersedia">Link belum tersedia</button>'}
-        <a class="btn btn-ghost" href="pages/videos.html">More Videos</a>
-      </div>
-    </div>
-  </article>
-`;
+    </article>
+  `;
+};
 
 const parseDisplayDate = value => {
   if (!value) return { label: 'Tanggal belum diatur', machine: '' };

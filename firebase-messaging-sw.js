@@ -1,7 +1,7 @@
 importScripts('https://www.gstatic.com/firebasejs/12.13.0/firebase-app-compat.js');
 importScripts('https://www.gstatic.com/firebasejs/12.13.0/firebase-messaging-compat.js');
 
-const CACHE_NAME = 'sipilcare-pwa-v3';
+const CACHE_NAME = 'sipilcare-pwa-v4';
 const APP_SHELL = [
   '/',
   '/index.html',
@@ -83,6 +83,22 @@ self.addEventListener('fetch', event => {
           return response;
         })
         .catch(() => caches.match(event.request).then(cached => cached || caches.match('/index.html')))
+    );
+    return;
+  }
+
+  const isScriptOrStyle = requestUrl.pathname.startsWith('/css/') || requestUrl.pathname.startsWith('/js/');
+  if (isScriptOrStyle) {
+    event.respondWith(
+      fetch(event.request)
+        .then(response => {
+          if (response.ok) {
+            const copy = response.clone();
+            caches.open(CACHE_NAME).then(cache => cache.put(event.request, copy));
+          }
+          return response;
+        })
+        .catch(() => caches.match(event.request))
     );
     return;
   }
