@@ -24,13 +24,14 @@ const videoCard = item => `
     <div class="video-body">
       <div class="meta">
         <span class="badge">${escapeText(item.category || 'Video')}</span>
-        <span class="badge">Channel: ${escapeText(item.channel || item.duration || 'Learning')}</span>
+        ${item.channel ? `<span class="badge">Channel: ${escapeText(item.channel)}</span>` : ''}
+        ${item.duration ? `<span class="badge">Durasi: ${escapeText(item.duration)}</span>` : ''}
       </div>
       <h3>${escapeText(item.title)}</h3>
       <p>${escapeText(item.description)}</p>
       <div class="actions">
-        <a class="btn btn-primary" href="${escapeText(item.youtube || '#')}" target="_blank" rel="noopener">Watch</a>
-        <a class="btn btn-ghost" href="pages/videos">More Videos</a>
+        ${item.youtube && item.youtube !== '#' ? `<a class="btn btn-primary" href="${escapeText(item.youtube)}" target="_blank" rel="noopener noreferrer">Watch</a>` : '<button class="btn btn-primary" type="button" disabled title="Link video belum tersedia">Link belum tersedia</button>'}
+        <a class="btn btn-ghost" href="pages/videos.html">More Videos</a>
       </div>
     </div>
   </article>
@@ -282,24 +283,17 @@ async function loadHomeVideos() {
   if (!target) return;
 
   try {
-    const videosRef = query(collection(db, 'videos'), where('status', '==', 'published'), orderBy('title'));
-    let snapshot = await getDocs(videosRef);
-    if (snapshot.empty) snapshot = await getDocs(query(collection(db, 'videos'), orderBy('title')));
-    const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })).filter(item => (item.status || 'published') === 'published');
+    const snapshot = await getDocs(collection(db, 'videos'));
+    const data = snapshot.docs
+      .map(doc => ({ id: doc.id, ...doc.data() }))
+      .filter(item => (item.status || 'published') === 'published')
+      .sort((a, b) => String(a.title || '').localeCompare(String(b.title || ''), 'id'));
     if (countTarget) countTarget.textContent = data.length;
-    target.innerHTML = data.slice(0, 3).map(videoCard).join('') || '<div class="card empty span-2"><strong>Video pembelajaran belum tersedia.</strong><p>Daftar video akan muncul di sini setelah pengelola menerbitkannya.</p><a class="btn btn-secondary" href="pages/videos.html">Buka halaman video</a></div>';
+    target.innerHTML = data.slice(0, 3).map(videoCard).join('') || '<div class="card empty span-2"><strong>Belum ada video yang diterbitkan.</strong><p>Video yang berstatus terbit di halaman Videos akan muncul di sini.</p><a class="btn btn-secondary" href="pages/videos.html">Buka halaman video</a></div>';
   } catch (err) {
     console.error('Firestore videos fetch failed:', err);
-    fetch('data/videos.json')
-      .then(response => response.json())
-      .then(data => {
-        if (countTarget) countTarget.textContent = data.length;
-        target.innerHTML = data.slice(0, 3).map(videoCard).join('') || '<div class="card empty span-2"><strong>Video pembelajaran belum tersedia.</strong><p>Daftar video akan muncul di sini setelah pengelola menerbitkannya.</p><a class="btn btn-secondary" href="pages/videos.html">Buka halaman video</a></div>';
-      })
-      .catch(() => {
-        if (countTarget) countTarget.textContent = '0';
-        target.innerHTML = '<div class="card empty span-2"><strong>Video belum dapat dimuat.</strong><p>Coba buka halaman video atau muat ulang beberapa saat lagi.</p><a class="btn btn-secondary" href="pages/videos.html">Buka halaman video</a></div>';
-      });
+    if (countTarget) countTarget.textContent = '—';
+    target.innerHTML = '<div class="card empty span-2"><strong>Daftar video tidak dapat dimuat saat ini.</strong><p>Beranda hanya menampilkan video terbit dari halaman Videos. Coba muat ulang atau buka daftar video langsung.</p><a class="btn btn-secondary" href="pages/videos.html">Buka halaman video</a></div>';
   }
 }
 
