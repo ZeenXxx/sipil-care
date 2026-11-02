@@ -12,6 +12,7 @@
     <meta name="apple-mobile-web-app-title" content="SIPIL CARE">
     <link rel="stylesheet" href="../css/style.css?v=29">
     <link rel="stylesheet" href="../css/navbar.css?v=37">
+    <link rel="stylesheet" href="../css/help-guide.css?v=1">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -30,12 +31,12 @@
     <main>
       <section class="page-head">
         <div class="container">
-          <span class="eyebrow">Bantuan</span>
-          <h1>FAQ dan panduan cepat SIPIL CARE</h1>
-          <p class="lead">Temukan jawaban untuk login, download resource, penggunaan tools, notifikasi, dan cara menghubungi admin HMS.</p>
+          <span class="eyebrow">Pusat Bantuan SIPIL CARE</span>
+          <h1>Panduan penggunaan dari akun sampai tools</h1>
+          <p class="lead">Ikuti langkah penggunaan akun, pencarian materi, praktikum, video, software, tools akademik, dan bantuan. Panduan ini bisa dibuka tanpa login.</p>
           <div class="actions help-head-actions">
             <a class="btn btn-primary" href="../student-login.html">Login Mahasiswa</a>
-            <a class="btn btn-secondary" href="../student-login.html?mode=recover">Lupa Password</a>
+            <a class="btn btn-secondary" href="#panduan-akun">Mulai dari akun</a>
           </div>
         </div>
       </section>
@@ -43,13 +44,174 @@
       <section class="section soft">
         <div class="container">
           <span class="eyebrow">Panduan mulai</span>
-          <h2 class="title">Mulai pakai SIPIL CARE dalam 4 langkah</h2>
+          <h2 class="title">Alur singkat penggunaan</h2>
           <div class="grid g4 onboarding-grid">
-            <article class="card quick"><span class="icon">01</span><h3>Siapkan akun</h3><p>Akun mahasiswa dibuat oleh admin/developer. Gunakan NIM sebagai identitas login.</p></article>
-            <article class="card quick"><span class="icon">02</span><h3>Login pertama</h3><p>Password awal mengikuti format <b>NIM@Sipil</b>, kecuali admin memberi password lain.</p></article>
-            <article class="card quick"><span class="icon">03</span><h3>Cari materi</h3><p>Pakai tombol Cari atau menu Materi untuk membuka resource, praktikum, video, dan software.</p></article>
-            <article class="card quick"><span class="icon">04</span><h3>Laporkan kendala</h3><p>Jika login, download, atau tools bermasalah, kirim detail lewat Contact atau live chat.</p></article>
+            <article class="card quick"><span class="icon">01</span><h3>Dapatkan akun</h3><p>Minta akun, password awal, dan kode pemulihan kepada admin/HMS.</p></article>
+            <article class="card quick"><span class="icon">02</span><h3>Masuk dan amankan</h3><p>Login dengan NIM, lalu ganti password melalui menu akun bila diperlukan.</p></article>
+            <article class="card quick"><span class="icon">03</span><h3>Belajar dan gunakan tools</h3><p>Jelajahi materi, praktikum, video, software, serta alat akademik.</p></article>
+            <article class="card quick"><span class="icon">04</span><h3>Simpan dan minta bantuan</h3><p>Simpan konten penting dan laporkan kendala lewat halaman Contact.</p></article>
           </div>
+        </div>
+      </section>
+
+      <section class="section help-guide-section" id="panduan-akun">
+        <div class="container">
+          <span class="eyebrow">Panduan langkah demi langkah</span>
+          <h2 class="title">Gunakan setiap bagian SIPIL CARE</h2>
+          <p class="help-guide-intro">Nomor lingkaran pada ilustrasi menandai bagian yang perlu dipilih. Tampilan menu dapat sedikit berbeda antara HP dan laptop.</p>
+          <nav class="help-guide-nav" aria-label="Daftar panduan">
+            <a href="#panduan-akun">Akun</a><a href="#panduan-profil">Profil</a><a href="#panduan-resource">Resources</a><a href="#panduan-praktikum">Praktikum</a><a href="#panduan-video">Video</a><a href="#panduan-software">Software</a><a href="#panduan-tools">Tools</a><a href="#panduan-info">Info &amp; bantuan</a>
+          </nav>
+
+          <article class="help-guide-card" aria-labelledby="panduanAkunTitle">
+            <div class="help-guide-copy">
+              <span class="help-step-label">01 · AKUN MAHASISWA</span>
+              <h3 id="panduanAkunTitle">Minta akun, lalu login</h3>
+              <ol>
+                <li>Akun mahasiswa dibuat oleh admin/HMS; pengguna tidak mendaftar sendiri.</li>
+                <li>Jika belum memiliki akun, hubungi pengelola dan siapkan NIM serta angkatan.</li>
+                <li>Minta username/NIM, password awal, dan kode pemulihan. Password awal tidak selalu sama untuk setiap akun.</li>
+                <li>Buka <a href="../student-login.html">Login Mahasiswa</a>, masukkan NIM dan password yang diberikan, lalu tekan <b>Login</b>.</li>
+                <li>Jika sistem meminta perubahan password, masukkan password saat ini dan password baru. Password baru minimal 6 karakter.</li>
+              </ol>
+              <div class="help-guide-actions"><a class="btn btn-primary" href="../student-login.html">Buka Login</a><a class="btn btn-secondary" href="../student-login.html?mode=recover">Lupa password</a></div>
+            </div>
+            <figure class="help-guide-figure" aria-label="Ilustrasi langkah login: isi NIM dan password, lalu pilih tombol Login">
+              <div class="guide-mock-window"><div class="guide-mock-top"><span></span><span></span><span></span><b>SIPIL CARE</b></div><div class="guide-mock-login"><strong>Masuk ke SIPIL CARE</strong><div class="guide-mock-field">NIM mahasiswa <i>1</i></div><div class="guide-mock-field">Password <i>2</i></div><div class="guide-mock-button">Login <i>3</i></div><small>Akun dibuat oleh admin/HMS</small></div></div>
+              <figcaption>Ilustrasi form login mahasiswa</figcaption>
+            </figure>
+          </article>
+
+          <article class="help-guide-card" id="panduan-profil" aria-labelledby="panduanProfilTitle">
+            <div class="help-guide-copy">
+              <span class="help-step-label">02 · PROFIL DAN SIMPANAN</span>
+              <h3 id="panduanProfilTitle">Buka dashboard dan kelola akun</h3>
+              <ol>
+                <li>Setelah login, tekan ikon profil/inisial akun di navbar.</li>
+                <li>Pilih <b>Dashboard Saya</b> untuk melihat informasi akun, ringkasan akademik yang tersedia, dan konten yang disimpan.</li>
+                <li>Tekan <b>Simpan</b> pada kartu resource atau video untuk memasukkannya ke daftar Simpanan.</li>
+                <li>Untuk mengganti password, buka menu akun lalu pilih <b>Ubah Password</b>. Masukkan password lama dan password baru.</li>
+                <li>Jika lupa password, pilih <b>Lupa Password</b> di halaman login, lalu gunakan kode pemulihan dari admin dan buat password baru minimal 6 karakter.</li>
+              </ol>
+              <p class="help-guide-note">Jangan bagikan password atau kode pemulihan. Jika kode pemulihan tidak tersedia, hubungi admin/HMS.</p>
+            </div>
+            <figure class="help-guide-figure" aria-label="Ilustrasi menu profil: pilih ikon profil, kemudian Dashboard Saya atau Ubah Password">
+              <div class="guide-mock-window"><div class="guide-mock-top"><span></span><span></span><span></span><b>Menu akun</b></div><div class="guide-mock-menu"><div class="guide-mock-avatar">A <i>1</i></div><div class="guide-mock-menuitem">Dashboard Saya <i>2</i></div><div class="guide-mock-menuitem">Simpanan</div><div class="guide-mock-menuitem">Ubah Password <i>3</i></div></div></div>
+              <figcaption>Ilustrasi menu akun mahasiswa</figcaption>
+            </figure>
+          </article>
+
+          <article class="help-guide-card" id="panduan-resource" aria-labelledby="panduanResourceTitle">
+            <div class="help-guide-copy">
+              <span class="help-step-label">03 · RESOURCE AKADEMIK</span>
+              <h3 id="panduanResourceTitle">Cari, baca, dan akses materi</h3>
+              <ol>
+                <li>Buka menu <b>Materi → Resources</b> atau <a href="resources.html">halaman Resources</a>.</li>
+                <li>Ketik judul atau kata kunci pada kolom pencarian. Gunakan pilihan tipe file dan kategori untuk mempersempit hasil.</li>
+                <li>Pilih <b>Baca selengkapnya</b> untuk membuka keterangan penuh, lalu tekan <b>Akses File</b>.</li>
+                <li>Login jika diminta, periksa judul file, lalu tekan tombol download.</li>
+                <li>Tekan <b>Simpan</b> jika ingin membuka materi itu lagi dari Dashboard Saya.</li>
+              </ol>
+              <p class="help-guide-note">Resource umum, Software, Video, dan Praktikum &amp; Studio berada di halaman masing-masing. Materi praktikum dapat dibatasi menurut semester, angkatan, kelas, atau roster.</p>
+            </div>
+            <figure class="help-guide-figure" aria-label="Ilustrasi halaman Resources: cari kata kunci, pilih filter, lalu buka kartu materi">
+              <div class="guide-mock-window"><div class="guide-mock-top"><span></span><span></span><span></span><b>Resources</b></div><div class="guide-mock-search">Cari SNI, modul, ETABS... <i>1</i></div><div class="guide-mock-chips"><span>Struktur <i>2</i></span><span>Hidrologi</span><span>SNI</span></div><div class="guide-mock-resource"><b>SNI / Modul Teknik Sipil</b><small>PDF · Materi akademik</small><button>Baca selengkapnya <i>3</i></button></div></div>
+              <figcaption>Ilustrasi pencarian dan kartu resource</figcaption>
+            </figure>
+          </article>
+
+          <article class="help-guide-card" id="panduan-praktikum" aria-labelledby="panduanPraktikumTitle">
+            <div class="help-guide-copy">
+              <span class="help-step-label">04 · PRAKTIKUM &amp; STUDIO</span>
+              <h3 id="panduanPraktikumTitle">Buka modul dan isi absensi</h3>
+              <ol>
+                <li>Buka <a href="praktikum-studio.html">Praktikum &amp; Studio</a>.</li>
+                <li>Pilih mata kuliah, semester, atau kelas yang sesuai dengan jadwalmu.</li>
+                <li>Buka modul atau materi yang tersedia, lalu ikuti petunjuk akses pada kartu.</li>
+                <li>Untuk absensi, pilih sesi yang sedang aktif dan masukkan kode sesuai arahan asisten laboratorium.</li>
+                <li>Jika sesi atau modul tidak terlihat, pastikan akunmu terdaftar pada kelas/roster praktikum yang tepat; hubungi aslab jika masih belum muncul.</li>
+              </ol>
+            </div>
+            <figure class="help-guide-figure" aria-label="Ilustrasi halaman Praktikum dan Studio dengan pilihan mata kuliah dan sesi aktif">
+              <div class="guide-mock-window"><div class="guide-mock-top"><span></span><span></span><span></span><b>Praktikum &amp; Studio</b></div><div class="guide-mock-field">Pilih mata kuliah <i>1</i></div><div class="guide-mock-resource"><b>Modul praktikum</b><small>Semester dan kelas terdaftar</small><button>Buka modul <i>2</i></button></div><div class="guide-mock-button">Sesi absensi aktif <i>3</i></div></div>
+              <figcaption>Ilustrasi pemilihan modul dan absensi</figcaption>
+            </figure>
+          </article>
+
+          <article class="help-guide-card" id="panduan-video" aria-labelledby="panduanVideoTitle">
+            <div class="help-guide-copy">
+              <span class="help-step-label">05 · VIDEO PEMBELAJARAN</span>
+              <h3 id="panduanVideoTitle">Temukan dan tonton video</h3>
+              <ol>
+                <li>Buka <a href="videos.html">Videos</a> dari menu Materi.</li>
+                <li>Gunakan pencarian atau kategori untuk menemukan topik yang kamu perlukan.</li>
+                <li>Tekan <b>Watch</b> pada kartu video. Video biasa akan dibuka melalui sumber pemutarnya; playlist mengikuti video/daftar putar yang dipilih.</li>
+                <li>Untuk video praktikum yang menyediakan pencatatan progres, putar video melalui halaman SIPIL CARE dan lihat status tontonan di halaman tersebut.</li>
+                <li>Tekan <b>Simpan</b> pada kartu untuk menandai video agar mudah ditemukan kembali.</li>
+              </ol>
+            </div>
+            <figure class="help-guide-figure" aria-label="Ilustrasi kartu video: cari video lalu tekan Watch atau Simpan">
+              <div class="guide-mock-window"><div class="guide-mock-top"><span></span><span></span><span></span><b>Videos</b></div><div class="guide-mock-search">Cari video ETABS, SNI... <i>1</i></div><div class="guide-mock-resource"><b>Tutorial Teknik Sipil</b><small>Playlist / video pembelajaran</small><div class="guide-mock-buttons"><button>Watch <i>2</i></button><button>Simpan <i>3</i></button></div></div></div>
+              <figcaption>Ilustrasi kartu video pembelajaran</figcaption>
+            </figure>
+          </article>
+
+          <article class="help-guide-card" id="panduan-software" aria-labelledby="panduanSoftwareTitle">
+            <div class="help-guide-copy">
+              <span class="help-step-label">06 · SOFTWARE</span>
+              <h3 id="panduanSoftwareTitle">Cari software dan petunjuknya</h3>
+              <ol>
+                <li>Buka menu <b>Materi → Software</b> atau <a href="software.html">halaman Software</a>.</li>
+                <li>Cari nama aplikasi, seperti ETABS, AutoCAD, atau Civil 3D. Gunakan filter bidang jika diperlukan.</li>
+                <li>Baca deskripsi, kebutuhan sistem, dan petunjuk yang disediakan sebelum membuka file.</li>
+                <li>Tekan tombol akses pada kartu software. Login mungkin diperlukan untuk membuka file.</li>
+                <li>Gunakan installer sesuai perangkat dan ketentuan lisensi dari penyedia software.</li>
+              </ol>
+              <p class="help-guide-note">Unduh installer hanya dari sumber yang dicantumkan pengelola, dan perhatikan versi serta kompatibilitas perangkat.</p>
+            </div>
+            <figure class="help-guide-figure" aria-label="Ilustrasi halaman Software: cari aplikasi, pilih bidang, dan buka kartu software">
+              <div class="guide-mock-window"><div class="guide-mock-top"><span></span><span></span><span></span><b>Software Teknik Sipil</b></div><div class="guide-mock-search">Cari ETABS, AutoCAD... <i>1</i></div><div class="guide-mock-field">Semua bidang <i>2</i></div><div class="guide-mock-resource"><b>Software dan panduan</b><small>Deskripsi · Versi · Petunjuk</small><button>Akses software <i>3</i></button></div></div>
+              <figcaption>Ilustrasi katalog software</figcaption>
+            </figure>
+          </article>
+
+          <article class="help-guide-card" id="panduan-tools" aria-labelledby="panduanToolsTitle">
+            <div class="help-guide-copy">
+              <span class="help-step-label">07 · TOOLS AKADEMIK</span>
+              <h3 id="panduanToolsTitle">Pilih alat, masukkan data, periksa hasil</h3>
+              <ol>
+                <li>Buka <a href="tools.html">Tools</a>. Di laptop, pilih tab tool; di HP, pilih tool melalui dropdown.</li>
+                <li>Pilih alat yang sesuai: konversi satuan, KML/KMZ ke CSV, spektrum ETABS, PDF Merger, Unmerge PDF, PDF to Image, JPG to PDF, atau alat analisis struktur.</li>
+                <li>Isi input dan satuan dengan teliti. Periksa kembali nilai yang dimasukkan sebelum memproses.</li>
+                <li>Tekan tombol proses/hitung. Jika tool menampilkan preview atau tabel hasil, periksa hasilnya sebelum mengunduh.</li>
+                <li>PDF Merger: tambahkan beberapa PDF, atur urutan, dan hapus file satu per satu bila perlu. Unmerge PDF: pilih halaman seperti <b>1, 3-5</b>, tentukan satu PDF atau PDF terpisah dalam ZIP, lalu proses.</li>
+              </ol>
+              <p class="help-guide-note">Tools berjalan di browser. Hasil perhitungan merupakan bantuan akademik; pastikan asumsi, satuan, dan ketentuan dosen/standar tetap diperiksa.</p>
+            </div>
+            <figure class="help-guide-figure" aria-label="Ilustrasi halaman Tools: pilih tool, isi input, lalu periksa hasil sebelum download">
+              <div class="guide-mock-window"><div class="guide-mock-top"><span></span><span></span><span></span><b>Tools Akademik</b></div><div class="guide-mock-field">Pilih tools <i>1</i></div><div class="guide-mock-field">Input data / pilih file <i>2</i></div><div class="guide-mock-button">Proses / Hitung <i>3</i></div><div class="guide-mock-resource"><b>Preview / hasil</b><small>Periksa sebelum unduh <i>4</i></small></div></div>
+              <figcaption>Ilustrasi alur penggunaan tools</figcaption>
+            </figure>
+          </article>
+
+          <article class="help-guide-card" id="panduan-info" aria-labelledby="panduanInfoTitle">
+            <div class="help-guide-copy">
+              <span class="help-step-label">08 · INFO, NOTIFIKASI, DAN BANTUAN</span>
+              <h3 id="panduanInfoTitle">Ikuti update dan laporkan kendala</h3>
+              <ol>
+                <li>Buka bagian <b>Pemberitahuan</b> untuk melihat informasi dan agenda HMS/PENDPROF HMS.</li>
+                <li>Buka <a href="changelog.html">Changelog</a> untuk membaca fitur baru serta perbaikan yang sudah masuk ke rilis website.</li>
+                <li>Jika browser meminta izin notifikasi, pilih sesuai kebutuhan. Izin notifikasi juga dapat diatur kembali melalui pengaturan browser.</li>
+                <li>Untuk kendala akun, file, video, atau tools, buka <a href="contact.html">Contact</a> atau live chat.</li>
+                <li>Sertakan jenis perangkat, halaman/tool, langkah yang dilakukan, dan screenshot pesan error. Jangan mengirim password atau kode pemulihan.</li>
+              </ol>
+              <div class="help-guide-actions"><a class="btn btn-primary" href="contact.html">Hubungi pengelola</a><a class="btn btn-secondary" href="changelog.html">Lihat changelog</a></div>
+            </div>
+            <figure class="help-guide-figure" aria-label="Ilustrasi langkah membuka pemberitahuan atau mengirim laporan kendala">
+              <div class="guide-mock-window"><div class="guide-mock-top"><span></span><span></span><span></span><b>Pusat Informasi</b></div><div class="guide-mock-menuitem">Pemberitahuan HMS <i>1</i></div><div class="guide-mock-menuitem">Changelog / update <i>2</i></div><div class="guide-mock-resource"><b>Butuh bantuan?</b><small>Tulis detail kendala dan halaman terkait</small><button>Contact / Live chat <i>3</i></button></div></div>
+              <figcaption>Ilustrasi update dan kontak pengelola</figcaption>
+            </figure>
+          </article>
         </div>
       </section>
 
@@ -62,7 +224,7 @@
               <h3>Login dan akun</h3>
               <ul>
                 <li>Pastikan NIM ditulis lengkap tanpa spasi.</li>
-                <li>Password awal biasanya <b>NIM@Sipil</b>, kecuali admin memberi password lain.</li>
+                <li>Gunakan password awal yang diberikan admin/HMS; format password tidak diasumsikan sama untuk semua akun.</li>
                 <li>Sesi mahasiswa otomatis berakhir jika 1 hari tidak membuka website.</li>
                 <li>Jika akun nonaktif atau belum dibuat, hubungi admin/HMS dengan menyertakan NIM dan angkatan.</li>
               </ul>
@@ -93,7 +255,7 @@
         <div class="container grid g2">
           <article class="card faq">
             <h3>Bagaimana cara login mahasiswa?</h3>
-            <p>Gunakan NIM dan password yang diberikan admin/HMS. Jika password belum pernah diubah, format awalnya adalah NIM + @Sipil.</p>
+            <p>Gunakan NIM dan password yang diberikan admin/HMS. Akun dibuat oleh pengelola; jika belum memilikinya, hubungi admin/HMS.</p>
             <a class="btn btn-secondary" href="../student-login.html">Buka Login Mahasiswa</a>
           </article>
           <article class="card faq">
@@ -103,7 +265,7 @@
           </article>
           <article class="card faq">
             <h3>Lupa password mahasiswa?</h3>
-            <p>Pilih tab Lupa Password di halaman login, lalu masukkan NIM, kode pemulihan, dan password baru.</p>
+            <p>Pilih tab Lupa Password, masukkan NIM, kode pemulihan dari admin, dan password baru minimal 6 karakter.</p>
             <a class="btn btn-secondary" href="../student-login.html?mode=recover">Reset Password</a>
           </article>
           <article class="card faq">
@@ -140,6 +302,37 @@
             <h3>Bagaimana tahu fitur terbaru?</h3>
             <p>Buka Changelog untuk melihat update, perbaikan, dan fitur baru yang sudah masuk ke SIPIL CARE.</p>
             <a class="btn btn-secondary" href="changelog.html">Buka Changelog</a>
+          </article>
+          <article class="card faq">
+            <h3>Bagaimana menyimpan materi atau video?</h3>
+            <p>Tekan tombol Simpan pada kartu konten. Konten yang disimpan bisa dibuka kembali dari bagian Simpanan di Dashboard Saya.</p>
+            <a class="btn btn-secondary" href="student-dashboard.html">Buka Dashboard Saya</a>
+          </article>
+          <article class="card faq">
+            <h3>Bagaimana menonton video atau playlist?</h3>
+            <p>Buka Videos, cari judulnya, lalu tekan Watch. Ikuti player atau tautan playlist yang terbuka. Progres dicatat untuk video praktikum yang mendukung fitur tersebut.</p>
+            <a class="btn btn-secondary" href="videos.html">Buka Videos</a>
+          </article>
+          <article class="card faq">
+            <h3>Di mana mencari installer dan panduan software?</h3>
+            <p>Software memiliki halaman tersendiri. Gunakan pencarian dan filter bidang, lalu baca keterangan versi, petunjuk, dan akses file pada kartunya.</p>
+            <a class="btn btn-secondary" href="software.html">Buka Software</a>
+          </article>
+          <article class="card faq">
+            <h3>Bagaimana memakai PDF Merger dan Unmerge PDF?</h3>
+            <p>Di PDF Merger tambahkan file, atur urutannya, lalu gabungkan. Di Unmerge PDF pilih file, tentukan nomor halaman, pilih bentuk hasil, kemudian proses.</p>
+            <a class="btn btn-secondary" href="tools.html#merge">Buka PDF Merger</a>
+          </article>
+          <article class="card faq">
+            <h3>Hasil tools perhitungan apakah otomatis menjadi desain final?</h3>
+            <p>Tidak. Gunakan hasil sebagai bantuan akademik. Periksa kembali input, satuan, asumsi, standar, serta arahan dosen atau pembimbing sebelum menerapkannya.</p>
+            <a class="btn btn-secondary" href="tools.html">Lihat Tools</a>
+          </article>
+          <article class="card faq">
+            <h3>Di mana panduan untuk pengelola/admin?</h3>
+            <p>Panel admin hanya untuk pengurus yang diberi akses. Masuk melalui halaman admin, lalu ikuti panduan internal sesuai menu dan permission akun.</p>
+            <a class="btn btn-secondary" href="../login.html">Login Admin</a>
+            <a class="btn btn-secondary" href="admin/guide.html">Panduan Admin</a>
           </article>
         </div>
       </section>

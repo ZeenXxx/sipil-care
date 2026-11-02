@@ -1,0 +1,354 @@
+.help-guide-intro {
+  max-width: 760px;
+  margin: -8px 0 24px;
+  color: var(--muted);
+  line-height: 1.7;
+}
+
+.help-guide-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 24px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface, #fff);
+}
+
+.help-guide-nav a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  padding: 8px 13px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--primary);
+  font-size: 14px;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.help-guide-nav a:hover,
+.help-guide-nav a:focus-visible {
+  background: var(--primary);
+  color: #fff;
+}
+
+.help-guide-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(280px, .85fr);
+  align-items: center;
+  gap: clamp(20px, 4vw, 44px);
+  margin: 0 0 20px;
+  padding: clamp(20px, 3vw, 34px);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface, #fff);
+  box-shadow: 0 12px 32px rgba(15, 77, 58, .07);
+  scroll-margin-top: 24px;
+}
+
+.help-guide-copy {
+  min-width: 0;
+}
+
+.help-step-label {
+  display: inline-block;
+  margin-bottom: 10px;
+  color: var(--primary);
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: .08em;
+}
+
+.help-guide-copy h3 {
+  margin: 0 0 14px;
+  color: var(--primary);
+  font-size: clamp(22px, 2.4vw, 30px);
+  line-height: 1.2;
+}
+
+.help-guide-copy ol {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding-left: 23px;
+  color: var(--ink);
+  line-height: 1.65;
+}
+
+.help-guide-copy li::marker {
+  color: var(--primary);
+  font-weight: 900;
+}
+
+.help-guide-copy a:not(.btn) {
+  color: var(--primary);
+  font-weight: 800;
+}
+
+.help-guide-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.help-guide-note {
+  margin: 16px 0 0;
+  padding: 12px 14px;
+  border-left: 4px solid var(--primary);
+  border-radius: 0 8px 8px 0;
+  background: var(--soft);
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.help-guide-figure {
+  min-width: 0;
+  margin: 0;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: linear-gradient(145deg, var(--soft), var(--surface, #fff));
+}
+
+.help-guide-figure figcaption {
+  margin-top: 10px;
+  color: var(--muted);
+  font-size: 12px;
+  text-align: center;
+}
+
+.guide-mock-window {
+  display: grid;
+  gap: 10px;
+  min-height: 210px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface, #fff);
+  box-shadow: 0 8px 22px rgba(15, 77, 58, .08);
+}
+
+.guide-mock-top {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 25px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--line);
+  color: var(--primary);
+  font-size: 11px;
+}
+
+.guide-mock-top > span {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #b9c9c3;
+}
+
+.guide-mock-top b {
+  margin-left: 6px;
+}
+
+.guide-mock-login {
+  display: grid;
+  align-content: center;
+  gap: 10px;
+  width: min(100%, 280px);
+  margin: 0 auto;
+}
+
+.guide-mock-login > strong {
+  color: var(--primary);
+  font-size: 16px;
+}
+
+.guide-mock-login > small,
+.guide-mock-resource small {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.guide-mock-field,
+.guide-mock-search,
+.guide-mock-menuitem {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 8px 36px 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--surface, #fff);
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.guide-mock-button,
+.guide-mock-resource button {
+  position: relative;
+  min-height: 36px;
+  padding: 8px 38px 8px 12px;
+  border: 0;
+  border-radius: 7px;
+  background: var(--primary);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 900;
+  text-align: left;
+}
+
+.guide-mock-field i,
+.guide-mock-search i,
+.guide-mock-menuitem i,
+.guide-mock-button i,
+.guide-mock-resource i,
+.guide-mock-avatar i {
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  display: inline-grid;
+  width: 24px;
+  height: 24px;
+  place-items: center;
+  transform: translateY(-50%);
+  border: 2px solid #e3b52b;
+  border-radius: 50%;
+  background: #fff;
+  color: #153e31;
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 900;
+}
+
+.guide-mock-menu {
+  display: grid;
+  align-content: center;
+  gap: 8px;
+  width: min(100%, 290px);
+  margin: auto;
+}
+
+.guide-mock-avatar {
+  position: relative;
+  display: grid;
+  width: 40px;
+  height: 40px;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--soft);
+  color: var(--primary);
+  font-weight: 900;
+}
+
+.guide-mock-resource {
+  display: grid;
+  gap: 7px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--soft);
+  color: var(--primary);
+  font-size: 12px;
+}
+
+.guide-mock-resource button {
+  width: fit-content;
+  max-width: 100%;
+}
+
+.guide-mock-chips,
+.guide-mock-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.guide-mock-chips span,
+.guide-mock-buttons button {
+  position: relative;
+  min-height: 30px;
+  padding: 7px 30px 7px 9px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--soft);
+  color: var(--primary);
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.guide-mock-buttons button:first-child {
+  background: var(--primary);
+  color: #fff;
+}
+
+html.dark .help-guide-card,
+html.dark .help-guide-nav,
+html.dark .help-guide-figure,
+html.dark .guide-mock-window,
+html.dark .guide-mock-field,
+html.dark .guide-mock-search,
+html.dark .guide-mock-menuitem {
+  background: var(--surface, #1c2522);
+  border-color: var(--line);
+  color: var(--ink);
+}
+
+html.dark .help-guide-note,
+html.dark .guide-mock-resource,
+html.dark .guide-mock-chips span,
+html.dark .guide-mock-buttons button {
+  background: var(--surface-raised, #252f2b);
+}
+
+@media (max-width: 760px) {
+  .help-guide-card {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .help-guide-figure {
+    width: 100%;
+  }
+}
+
+@media (max-width: 520px) {
+  .help-guide-nav {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 7px;
+    padding: 10px;
+  }
+
+  .help-guide-nav a {
+    justify-content: center;
+    padding: 7px 8px;
+    font-size: 12px;
+    text-align: center;
+  }
+
+  .help-guide-card {
+    gap: 18px;
+    padding: 17px;
+  }
+
+  .help-guide-actions {
+    display: grid;
+  }
+
+  .help-guide-actions .btn {
+    width: 100%;
+  }
+
+  .help-guide-figure {
+    padding: 9px;
+  }
+
+  .guide-mock-window {
+    min-height: 190px;
+    padding: 9px;
+  }
+}
