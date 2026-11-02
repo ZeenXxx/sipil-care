@@ -5,7 +5,7 @@ const { execSync } = require('child_process');
 const root = path.resolve(__dirname, '..');
 const outputPath = path.join(root, 'data', 'changelog.json');
 
-const run = command => execSync(command, { cwd: root, encoding: 'utf8' }).trim();
+const run = command => execSync(command, { cwd: root, encoding: 'utf8' }).trimEnd();
 let existing = [];
 try {
   existing = JSON.parse(fs.readFileSync(outputPath, 'utf8'));
@@ -117,7 +117,9 @@ const parseStatus = () => {
         activeDiffBase = '';
       }
     }
-    return [...new Set([...committedFiles, ...workingFiles])].filter(file => !isCacheBustOnly(file));
+    const generatedBuildFiles = new Set(['vercel.json', 'package.json', 'scripts/generate-changelog.js']);
+    return [...new Set([...committedFiles, ...workingFiles])]
+      .filter(file => !isCacheBustOnly(file) && !generatedBuildFiles.has(file));
   } catch {
     return [];
   }
@@ -213,7 +215,14 @@ const rules = [
     type: 'added',
     title: 'Unmerge PDF',
     description: 'Alat baru untuk memilih semua halaman atau nomor halaman tertentu dari PDF, lalu menyimpan pilihan sebagai satu PDF atau file PDF terpisah dalam ZIP.',
-    match: (file, diff) => file === 'js/unmerge-pdf.js' || file === 'css/unmerge-pdf.css' || (file === 'pages/tools.html' && diff.includes('tool-unmerge'))
+    match: (file, diff) => changeTypeByFile.get(file) === 'added' && (file === 'js/unmerge-pdf.js' || file === 'css/unmerge-pdf.css' || (file === 'pages/tools.html' && diff.includes('tool-unmerge')))
+  },
+  {
+    key: 'pdf-preview',
+    type: 'improved',
+    title: 'Preview PDF Sebelum Diunduh',
+    description: 'PDF Merger dan Unmerge PDF kini menampilkan preview hasil di samping form agar file gabungan atau halaman terpilih dapat diperiksa sebelum diunduh.',
+    match: (file, diff) => diff.includes('pdf-preview') || diff.includes('mergePdfPreview') || diff.includes('unmergePdfPreview') || diff.includes('updateMergePreview') || diff.includes('updatePreview')
   },
   {
     key: 'pdf-merge-controls',
@@ -227,7 +236,7 @@ const rules = [
     type: 'improved',
     title: 'Tools Teknik Sipil',
     description: 'Tools akademik Teknik Sipil diperbarui untuk membantu perhitungan, analisis struktur, preliminary design, dan pengelolaan file.',
-    match: (file, diff) => file.startsWith('tools/') || file.startsWith('js/diagram') || file.startsWith('js/preliminary') || file.startsWith('js/tulangan') || (file === 'pages/tools.html' && !diff.includes('tool-unmerge') && !diff.includes('mergeDropZone')) || (file === 'js/tools.js' && !diff.includes('data-merge-remove'))
+    match: (file, diff) => file.startsWith('tools/') || file.startsWith('js/diagram') || file.startsWith('js/preliminary') || file.startsWith('js/tulangan') || (file === 'pages/tools.html' && !diff.includes('tool-unmerge') && !diff.includes('mergeDropZone') && !diff.includes('pdf-preview')) || (file === 'js/tools.js' && !diff.includes('data-merge-remove') && !diff.includes('updateMergePreview'))
   },
   {
     key: 'resources-content',

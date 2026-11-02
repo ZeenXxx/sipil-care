@@ -1,4 +1,5 @@
 {
+  "buildCommand": "node scripts/generate-changelog.js",
   "outputDirectory": ".",
   "cleanUrls": true,
   "trailingSlash": false

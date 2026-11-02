@@ -1,26 +1,16 @@
 [
   {
-    "id": "2026-10-31:changelog",
-    "date": "2026-10-31",
-    "dateLabel": "31 Oktober 2026",
+    "id": "2026-11-03:pdf-preview",
+    "date": "2026-11-03",
+    "dateLabel": "3 November 2026",
     "generated": true,
-    "sourceCommit": "a52a470976227a597cd254ae4a2f35c41867118e",
-    "summary": "1 fitur baru, 2 peningkatan/perbaikan",
+    "sourceCommit": "3c60cc5fb342233605c3ae921060f70b91ff49c5",
+    "summary": "0 fitur baru, 1 peningkatan/perbaikan",
     "items": [
       {
         "type": "improved",
-        "title": "Pemberitahuan Update Lebih Jelas",
-        "description": "Riwayat update kini memisahkan fitur baru dari fitur yang ditingkatkan atau diperbaiki agar mahasiswa mudah mengetahui isi rilis."
-      },
-      {
-        "type": "added",
-        "title": "Unmerge PDF",
-        "description": "Alat baru untuk memilih semua halaman atau nomor halaman tertentu dari PDF, lalu menyimpan pilihan sebagai satu PDF atau file PDF terpisah dalam ZIP."
-      },
-      {
-        "type": "improved",
-        "title": "PDF Merger Lebih Fleksibel",
-        "description": "PDF Merger kini dapat menerima file dari beberapa folder secara bertahap atau lewat seret-lepas, serta menghapus file satu per satu dari daftar."
+        "title": "Preview PDF Sebelum Diunduh",
+        "description": "PDF Merger dan Unmerge PDF kini menampilkan preview hasil di samping form agar file gabungan atau halaman terpilih dapat diperiksa sebelum diunduh."
       }
     ]
   }
