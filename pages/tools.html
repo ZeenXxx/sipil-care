@@ -12,7 +12,7 @@
     <meta name="apple-mobile-web-app-title" content="SIPIL CARE">
     <link rel="stylesheet" href="../css/style.css?v=29">
     <link rel="stylesheet" href="../css/navbar.css?v=37">
-    <link rel="stylesheet" href="../css/tools.css?v=15">
+    <link rel="stylesheet" href="../css/tools.css?v=16">
     <link rel="stylesheet" href="../css/unmerge-pdf.css?v=5">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -65,6 +65,19 @@
             <button class="tool-tab" type="button" data-tool-tab="unmerge">Unmerge PDF</button>
             <button class="tool-tab" type="button" data-tool-tab="image">PDF to Image</button>
             <button class="tool-tab" type="button" data-tool-tab="jpgpdf">JPG to PDF</button>
+          </div>
+          <div class="mobile-tool-picker">
+            <label for="mobileToolSelect">Pilih tools</label>
+            <select class="control" id="mobileToolSelect" aria-label="Pilih tools akademik">
+              <option value="converter">Converter</option>
+              <option value="kmlcsv">KML/KMZ to CSV</option>
+              <option value="spectrum">Spektrum ETABS</option>
+              <option value="export">Export PDF</option>
+              <option value="merge">PDF Merger</option>
+              <option value="unmerge">Unmerge PDF</option>
+              <option value="image">PDF to Image</option>
+              <option value="jpgpdf">JPG to PDF</option>
+            </select>
           </div>
           <section class="tool-panel active" id="tool-converter">
             <div class="tool-header"><div><span class="tool-code">CV</span><h2>Kalkulator konverter</h2></div><p>Konversi satuan yang sering dipakai untuk perhitungan struktur, geoteknik, hidrologi, dan RAB.</p></div>
@@ -216,7 +229,7 @@
     <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
     <script src="../js/navbar.js?v=36"></script>
-    <script src="../js/tools.js?v=21"></script>
+    <script src="../js/tools.js?v=22"></script>
     <script src="../js/pdf-merge-drop.js?v=1"></script>
     <script src="../js/unmerge-pdf.js?v=4"></script>
       <script src="../js/pwa.js?v=2"></script>

@@ -1,5 +1,6 @@
 const tabs = document.querySelectorAll('[data-tool-tab]');
 const panels = document.querySelectorAll('.tool-panel');
+const mobileToolSelect = document.getElementById('mobileToolSelect');
 const toast = document.getElementById('toast');
 
 const showToast = message => {
@@ -23,8 +24,14 @@ const downloadBlob = (blob, filename) => {
 const setActiveTool = id => {
   tabs.forEach(tab => tab.classList.toggle('active', tab.dataset.toolTab === id));
   panels.forEach(panel => panel.classList.toggle('active', panel.id === 'tool-' + id));
+  if (mobileToolSelect) mobileToolSelect.value = id;
 };
 tabs.forEach(tab => tab.addEventListener('click', () => { const id = tab.dataset.toolTab; setActiveTool(id); history.replaceState(null, '', '#' + id); }));
+mobileToolSelect?.addEventListener('change', () => {
+  const id = mobileToolSelect.value;
+  setActiveTool(id);
+  history.replaceState(null, '', '#' + id);
+});
 const initial = location.hash.replace('#', '');
 if (initial && document.getElementById('tool-' + initial)) setActiveTool(initial);
 
