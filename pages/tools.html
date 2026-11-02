@@ -12,8 +12,8 @@
     <meta name="apple-mobile-web-app-title" content="SIPIL CARE">
     <link rel="stylesheet" href="../css/style.css?v=29">
     <link rel="stylesheet" href="../css/navbar.css?v=37">
-    <link rel="stylesheet" href="../css/tools.css?v=14">
-    <link rel="stylesheet" href="../css/unmerge-pdf.css?v=4">
+    <link rel="stylesheet" href="../css/tools.css?v=15">
+    <link rel="stylesheet" href="../css/unmerge-pdf.css?v=5">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -154,7 +154,7 @@
             <div class="tool-header"><div><span class="tool-code">PM</span><h2>PDF merger</h2></div><p>Gabungkan beberapa PDF menjadi satu file. Pilih banyak file sekaligus, lalu cek daftar dan atur dengan tombol Naik/Turun jika browser mengurutkan otomatis.</p></div>
             <div class="tool-layout">
               <div class="card tool-card"><span class="merge-picker-label">Tambahkan beberapa PDF dari satu folder. Untuk folder berikutnya, tekan tombol tambah lagi.</span><div class="pdf-dropzone" id="mergeDropZone"><strong>Seret dan lepas beberapa PDF di sini</strong><span>File dari folder berbeda akan ditambahkan ke daftar.</span></div><p class="pdf-dropzone-status" id="mergeDropStatus" aria-live="polite">File dari setiap pemilihan akan ditambahkan ke daftar.</p><div class="merge-file-picker"><input class="control file-control merge-picker-input" id="mergeFiles" type="file" accept=".pdf,application/pdf" multiple aria-label="Pilih beberapa file PDF"><button class="btn btn-secondary full-btn" id="addMergeFilesBtn" type="button">Tambah PDF dari folder lain</button></div><div class="file-list" id="mergeList"><p>Belum ada PDF dipilih.</p></div><div class="action-row"><button class="btn btn-primary full-btn" type="button" id="mergeBtn">Gabungkan PDF</button><button class="btn btn-secondary full-btn" type="button" id="clearMergeBtn">Hapus semua PDF</button></div></div>
-              <div class="tool-note"><h3>Privasi file</h3><p>File PDF diproses lokal di browser. Tidak ada upload ke server SIPIL CARE.</p><p class="small-text">Untuk file besar, proses bisa membutuhkan beberapa detik tergantung perangkat.</p></div>
+              <div class="pdf-preview-column"><section class="pdf-preview-card" aria-labelledby="mergePreviewHeading"><div class="pdf-preview-heading"><div><span class="tool-code">PV</span><div><h3 id="mergePreviewHeading">Preview hasil gabungan</h3><p id="mergePreviewStatus" aria-live="polite">Preview akan muncul setelah PDF dipilih.</p></div></div></div><iframe class="pdf-preview-frame" id="mergePdfPreview" title="Preview PDF hasil gabungan" hidden></iframe></section><div class="tool-note"><h3>Privasi file</h3><p>File PDF diproses lokal di browser. Tidak ada upload ke server SIPIL CARE.</p><p class="small-text">Untuk file besar, proses bisa membutuhkan beberapa detik tergantung perangkat.</p></div></div>
             </div>
           </section>
           <section class="tool-panel" id="tool-unmerge">
@@ -181,7 +181,7 @@
                 <progress class="unmerge-progress" id="unmergePdfProgress" max="100" value="0" hidden></progress>
                 <p class="unmerge-status" id="unmergePdfStatus" aria-live="polite">Pilih PDF untuk melihat jumlah halamannya.</p>
               </div>
-              <div class="tool-note unmerge-note"><h3>Hasil dan privasi</h3><p>Mode satu PDF mempertahankan urutan halaman yang kamu pilih. Mode ZIP membuat file PDF terpisah untuk setiap halaman pilihan.</p><p class="small-text">File diproses langsung di browser dan tidak diunggah ke server.</p></div>
+              <div class="pdf-preview-column"><section class="pdf-preview-card" aria-labelledby="unmergePreviewHeading"><div class="pdf-preview-heading"><div><span class="tool-code">PV</span><div><h3 id="unmergePreviewHeading">Preview halaman terpilih</h3><p id="unmergePreviewStatus" aria-live="polite">Preview akan muncul setelah PDF dipilih.</p></div></div></div><iframe class="pdf-preview-frame" id="unmergePdfPreview" title="Preview halaman PDF yang dipilih" hidden></iframe></section><div class="tool-note unmerge-note"><h3>Hasil dan privasi</h3><p>Mode satu PDF mempertahankan urutan halaman yang kamu pilih. Mode ZIP membuat file PDF terpisah untuk setiap halaman pilihan.</p><p class="small-text">File diproses langsung di browser dan tidak diunggah ke server.</p></div></div>
             </div>
           </section>
           <section class="tool-panel" id="tool-image">
@@ -216,9 +216,9 @@
     <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
     <script src="../js/navbar.js?v=36"></script>
-    <script src="../js/tools.js?v=20"></script>
+    <script src="../js/tools.js?v=21"></script>
     <script src="../js/pdf-merge-drop.js?v=1"></script>
-    <script src="../js/unmerge-pdf.js?v=3"></script>
+    <script src="../js/unmerge-pdf.js?v=4"></script>
       <script src="../js/pwa.js?v=2"></script>
       <script src="../js/push-config.js?v=1"></script>
       <script type="module" src="../js/pwa-push.js?v=5"></script>

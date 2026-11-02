@@ -686,8 +686,54 @@ const mergeBtn = document.getElementById('mergeBtn');
 const clearMergeBtn = document.getElementById('clearMergeBtn');
 const addMergeFilesBtn = document.getElementById('addMergeFilesBtn');
 const mergeDropStatus = document.getElementById('mergeDropStatus');
+const mergePdfPreview = document.getElementById('mergePdfPreview');
+const mergePreviewStatus = document.getElementById('mergePreviewStatus');
 let selectedMergeFiles = [];
+let mergePreviewUrl = '';
+let mergePreviewVersion = 0;
 const escapeMergeHtml = value => String(value || '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);
+const updateMergePreview = async () => {
+  const version = ++mergePreviewVersion;
+  if (mergePreviewUrl) URL.revokeObjectURL(mergePreviewUrl);
+  mergePreviewUrl = '';
+  if (mergePdfPreview) {
+    mergePdfPreview.removeAttribute('src');
+    mergePdfPreview.hidden = true;
+  }
+  if (!selectedMergeFiles.length) {
+    if (mergePreviewStatus) mergePreviewStatus.textContent = 'Preview akan muncul setelah PDF dipilih.';
+    return;
+  }
+  if (!window.PDFLib?.PDFDocument) {
+    if (mergePreviewStatus) mergePreviewStatus.textContent = 'Library PDF belum siap untuk membuat preview.';
+    return;
+  }
+
+  if (mergePreviewStatus) mergePreviewStatus.textContent = 'Menyiapkan preview PDF...';
+  try {
+    const previewPdf = await window.PDFLib.PDFDocument.create();
+    for (const file of selectedMergeFiles) {
+      const sourcePdf = await window.PDFLib.PDFDocument.load(await file.arrayBuffer());
+      const pages = await previewPdf.copyPages(sourcePdf, sourcePdf.getPageIndices());
+      pages.forEach(page => previewPdf.addPage(page));
+      if (version !== mergePreviewVersion) return;
+    }
+    const url = URL.createObjectURL(new Blob([await previewPdf.save()], { type: 'application/pdf' }));
+    if (version !== mergePreviewVersion) {
+      URL.revokeObjectURL(url);
+      return;
+    }
+    mergePreviewUrl = url;
+    mergePdfPreview.src = url;
+    mergePdfPreview.hidden = false;
+    if (mergePreviewStatus) mergePreviewStatus.textContent = `Preview ${selectedMergeFiles.length} PDF sesuai urutan daftar.`;
+  } catch (error) {
+    console.error('Could not prepare merged PDF preview:', error);
+    if (version === mergePreviewVersion && mergePreviewStatus) {
+      mergePreviewStatus.textContent = 'Preview gagal dibuat. Pastikan semua PDF tidak rusak atau terkunci.';
+    }
+  }
+};
 const renderMergeList = () => {
   mergeList.innerHTML = selectedMergeFiles.length ? selectedMergeFiles.map((file, index) => `
     <div class="file-item merge-file-item">
@@ -700,6 +746,7 @@ const renderMergeList = () => {
       </div>
     </div>
   `).join('') : '<p>Belum ada PDF dipilih.</p>';
+  updateMergePreview();
 };
 mergeList.addEventListener('click', event => {
   const removeButton = event.target.closest('[data-merge-remove]');

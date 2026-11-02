@@ -5,6 +5,8 @@
   const splitButton = document.getElementById('unmergePdfBtn');
   const progress = document.getElementById('unmergePdfProgress');
   const status = document.getElementById('unmergePdfStatus');
+  const previewFrame = document.getElementById('unmergePdfPreview');
+  const previewStatus = document.getElementById('unmergePreviewStatus');
   const pageModeInputs = Array.from(document.querySelectorAll('input[name="unmergePageMode"]'));
   const outputModeInputs = Array.from(document.querySelectorAll('input[name="unmergeOutputMode"]'));
 
@@ -13,6 +15,8 @@
   let loadedFile = null;
   let loadedDocument = null;
   let totalPages = 0;
+  let previewUrl = '';
+  let previewVersion = 0;
 
   const setStatus = message => { status.textContent = message; };
   const safeBaseName = filename => filename
@@ -22,6 +26,16 @@
     .replace(/-+/g, '-')
     .replace(/^-|-$/g, '') || 'dokumen';
   const selectedMode = inputs => inputs.find(input => input.checked)?.value;
+  const clearPreview = message => {
+    previewVersion += 1;
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+    previewUrl = '';
+    if (previewFrame) {
+      previewFrame.removeAttribute('src');
+      previewFrame.hidden = true;
+    }
+    if (previewStatus) previewStatus.textContent = message;
+  };
 
   if (dropZone) {
     const isPdf = file => file.type === 'application/pdf' || /\.pdf$/i.test(file.name);
@@ -95,11 +109,69 @@
     return selectedPages;
   };
 
+  const updatePreview = async () => {
+    if (!loadedDocument || !loadedFile) {
+      clearPreview('Preview akan muncul setelah PDF dipilih.');
+      return;
+    }
+    const version = ++previewVersion;
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+    previewUrl = '';
+    if (previewFrame) {
+      previewFrame.removeAttribute('src');
+      previewFrame.hidden = true;
+    }
+
+    let selectedPages;
+    try {
+      selectedPages = parsePageSelection();
+    } catch (error) {
+      if (previewStatus) previewStatus.textContent = error.message;
+      return;
+    }
+    if (!selectedPages.length) {
+      if (previewStatus) previewStatus.textContent = 'Pilih setidaknya satu halaman untuk melihat preview.';
+      return;
+    }
+    if (!window.PDFLib?.PDFDocument) {
+      if (previewStatus) previewStatus.textContent = 'Library PDF belum siap untuk membuat preview.';
+      return;
+    }
+
+    if (previewStatus) previewStatus.textContent = `Menyiapkan preview ${selectedPages.length} halaman...`;
+    try {
+      const previewPdf = await window.PDFLib.PDFDocument.create();
+      for (const pageNumber of selectedPages) {
+        const [page] = await previewPdf.copyPages(loadedDocument, [pageNumber - 1]);
+        previewPdf.addPage(page);
+        if (version !== previewVersion) return;
+      }
+      const url = URL.createObjectURL(new Blob([await previewPdf.save()], { type: 'application/pdf' }));
+      if (version !== previewVersion) {
+        URL.revokeObjectURL(url);
+        return;
+      }
+      previewUrl = url;
+      previewFrame.src = url;
+      previewFrame.hidden = false;
+      if (previewStatus) previewStatus.textContent = `Preview ${selectedPages.length} halaman sesuai pilihan.`;
+    } catch (error) {
+      console.error('Could not prepare selected-page preview:', error);
+      if (version === previewVersion && previewStatus) {
+        previewStatus.textContent = 'Preview gagal dibuat. Pastikan PDF tidak rusak atau terkunci.';
+      }
+    }
+  };
+
+  pageModeInputs.forEach(input => input.addEventListener('change', updatePreview));
+  pageNumbersInput.addEventListener('input', updatePreview);
+
   fileInput.addEventListener('change', async () => {
     const file = fileInput.files?.[0];
     loadedFile = null;
     loadedDocument = null;
     totalPages = 0;
+    clearPreview('Preview akan muncul setelah PDF dipilih.');
     splitButton.disabled = true;
     progress.hidden = true;
     progress.value = 0;
@@ -127,11 +199,13 @@
       if (!totalPages) throw new Error('PDF ini tidak memiliki halaman.');
       splitButton.disabled = false;
       setStatus(`PDF memiliki ${totalPages} halaman. Pilih halaman yang ingin diambil.`);
+      await updatePreview();
     } catch (error) {
       if (fileInput.files?.[0] !== file) return;
       loadedFile = null;
       loadedDocument = null;
       totalPages = 0;
+      clearPreview('PDF tidak dapat dimuat untuk preview.');
       setStatus(error.message || 'PDF tidak dapat dibaca. Pastikan file tidak rusak atau terkunci.');
     }
   });
