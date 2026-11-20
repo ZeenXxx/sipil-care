@@ -190,7 +190,7 @@ Default akun mahasiswa:
 
 ## Catatan
 
-Sesi admin memakai tabel `admin_sessions`. Browser hanya menyimpan token acak untuk mengecek sesi tersebut ke Supabase. Jika admin tidak membuka halaman admin selama 30 menit, `last_seen_at`/`expires_at` di database dianggap kedaluwarsa dan admin harus login ulang.
+Sesi admin memakai tabel `admin_sessions`. Browser hanya menyimpan token acak untuk mengecek sesi tersebut ke Supabase. Jika admin tidak membuka halaman admin selama 30 menit, `last_seen_at`/`expires_at` dianggap kedaluwarsa dan admin harus login kembali.
 
 Manajemen akun admin di dashboard tidak lagi menulis langsung ke tabel `admins`. Panel memakai RPC Supabase berikut agar database memvalidasi sesi developer dari tabel `admin_sessions`:
 

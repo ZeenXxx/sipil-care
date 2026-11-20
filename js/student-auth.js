@@ -2,7 +2,6 @@
   const CONFIG = window.SIPILCARE_AUTH_CONFIG || { mode: "local" };
   const STUDENTS_KEY = "sipilcare_students";
   const SESSION_KEY = "sipilcare_student_session";
-  const SESSION_TTL = 24 * 60 * 60 * 1000;
   const ADMIN_SESSION_KEY = "sipilcare_admin_session";
   const ADMIN_PROFILE_KEY = "sipilcare_admin_profile";
   const ADMIN_SESSION_TTL = 30 * 60 * 1000;
@@ -137,11 +136,6 @@
       if (!raw) return null;
       const session = JSON.parse(raw);
       if (!session?.nim || !session?.lastSeenAt) return null;
-      if (Date.now() - session.lastSeenAt > SESSION_TTL) {
-        localStorage.removeItem(SESSION_KEY);
-        sessionStorage.removeItem(SESSION_KEY);
-        return null;
-      }
       session.lastSeenAt = Date.now();
       localStorage.setItem(SESSION_KEY, JSON.stringify(session));
       sessionStorage.setItem(SESSION_KEY, JSON.stringify(session));
@@ -614,7 +608,7 @@
           ? "Masukkan NIM, kode pemulihan, dan password baru. Kode pemulihan diberikan oleh admin sejak akun dibuat."
           : mode === "change"
             ? "Gunakan password saat ini untuk mengganti password. Jika lupa, pilih Lupa Password."
-            : "Masuk dengan NIM dan password. Sesi login tersimpan 1 hari sejak terakhir membuka website.";
+            : "Masuk dengan NIM dan password. Sesi akan tetap aktif sampai kamu memilih Logout.";
       }
     };
 

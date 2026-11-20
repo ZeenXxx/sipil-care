@@ -3,7 +3,6 @@ const TOKEN_ID_KEY = 'sipilcare_student_push_token_id';
 const PUSH_ENABLED_KEY = 'sipilcare_student_push_enabled';
 const PUSH_PREF_KEY = 'sipilcare_student_push_categories';
 const TOKEN_COLLECTION = 'student_push_tokens';
-const SESSION_TTL = 24 * 60 * 60 * 1000;
 const rootPrefix = location.pathname.includes('/pages/') || location.pathname.includes('/tools/') ? '../' : '';
 const vapidKey = window.SIPILCARE_PUSH_CONFIG?.vapidKey || '';
 
@@ -49,7 +48,6 @@ const readSession = () => {
     if (!raw) return null;
     const session = JSON.parse(raw);
     if (!session?.nim || !session?.lastSeenAt) return null;
-    if (Date.now() - session.lastSeenAt > SESSION_TTL) return null;
     return session;
   } catch {
     return null;

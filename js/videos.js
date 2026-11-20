@@ -9,7 +9,6 @@ import {
 
 const db = getFirestore(app);
 const SESSION_KEY = 'sipilcare_student_session';
-const SESSION_TTL = 24 * 60 * 60 * 1000;
 const BOOKMARK_KEY = 'sipilcare_student_bookmarks';
 
 let videos = [];
@@ -30,7 +29,6 @@ const readStudentSession = () => {
 		if (!raw) return null;
 		const session = JSON.parse(raw);
 		if (!session?.nim || !session?.lastSeenAt) return null;
-		if (Date.now() - session.lastSeenAt > SESSION_TTL) return null;
 		return session;
 	} catch {
 		return null;
