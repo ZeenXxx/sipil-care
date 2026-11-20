@@ -200,6 +200,29 @@
     gap: 8px;
   }
 
+  .student-bulk-form {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-items: stretch;
+  }
+
+  .student-bulk-form > *,
+  .student-bulk-form .admin-account-actions {
+    width: 100%;
+    min-width: 0;
+    grid-column: 1 / -1;
+  }
+
+  .student-bulk-form .admin-account-actions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .student-bulk-form .textarea {
+    min-height: 180px;
+    resize: vertical;
+  }
+
   .admin-account-actions > *,
   .admin-form-actions > *,
   .dashboard-quick-actions > * {
