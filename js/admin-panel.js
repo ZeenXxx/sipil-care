@@ -4710,6 +4710,10 @@ function messageTableRender() {
 function liveChatRender() {
   if (!liveChatThreads) return;
   const q = (liveChatSearch?.value || '').toLowerCase();
+  const openHistoryThreads = new Set(
+    [...liveChatThreads.querySelectorAll('[data-chat-history-thread][open]')]
+      .map(item => item.dataset.chatHistoryThread)
+  );
   const grouped = liveChatMessages.reduce((acc, item) => {
     if (!acc[item.threadId]) acc[item.threadId] = [];
     acc[item.threadId].push(item);
@@ -4719,16 +4723,32 @@ function liveChatRender() {
     .map(([threadId, messages]) => ({
       threadId,
       messages: messages.sort((a, b) => String(a.createdAt).localeCompare(String(b.createdAt))),
-      latest: messages[messages.length - 1]
+      latest: messages[messages.length - 1],
+      latestStudentMessage: [...messages].reverse().find(item => item.sender !== 'admin') || messages[messages.length - 1]
     }))
     .sort((a, b) => String(b.latest.createdAt).localeCompare(String(a.latest.createdAt)))
-    .filter(thread => [thread.latest.senderName, thread.latest.nim, thread.latest.message, thread.threadId].join(' ').toLowerCase().includes(q));
+    .filter(thread => [
+      thread.threadId,
+      ...thread.messages.flatMap(item => [item.senderName, item.nim, item.message])
+    ].join(' ').toLowerCase().includes(q));
 
   liveChatThreads.innerHTML = threads.map(thread => `
     <article class="chat-thread">
-      <h4>${escapeText(thread.latest.senderName || 'Mahasiswa')} ${thread.latest.nim ? `(${escapeText(thread.latest.nim)})` : ''}</h4>
+      <h4>${escapeText(thread.latestStudentMessage.senderName || 'Mahasiswa')} ${thread.latestStudentMessage.nim ? `(${escapeText(thread.latestStudentMessage.nim)})` : ''}</h4>
       <p><b>Pesan terbaru:</b> ${escapeText(thread.latest.message)}</p>
       <p><b>Jumlah chat:</b> ${thread.messages.length} &middot; <b>Terakhir:</b> ${new Date(thread.latest.createdAt).toLocaleString('id-ID')}</p>
+      <details class="chat-history-panel" data-chat-history-thread="${escapeText(thread.threadId)}" ${openHistoryThreads.has(thread.threadId) ? 'open' : ''}>
+        <summary>Lihat riwayat percakapan (${thread.messages.length} pesan)</summary>
+        <div class="chat-history-list" aria-label="Riwayat percakapan ${escapeText(thread.latestStudentMessage.senderName || 'mahasiswa')}">
+          ${thread.messages.map(item => `
+            <div class="chat-history-message ${item.sender === 'admin' ? 'admin' : 'student'}">
+              <strong>${escapeText(item.senderName || (item.sender === 'admin' ? 'Admin HMS' : 'Mahasiswa'))}</strong>
+              <p>${escapeText(item.message)}</p>
+              <small>${new Date(item.createdAt).toLocaleString('id-ID')}</small>
+            </div>
+          `).join('')}
+        </div>
+      </details>
       <button class="action-btn" data-reply-chat="${escapeText(thread.threadId)}">Balas Chat</button>
       <button class="action-btn danger" data-close-chat="${escapeText(thread.threadId)}">Hapus Thread</button>
     </article>
